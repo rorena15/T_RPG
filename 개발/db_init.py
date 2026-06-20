@@ -119,5 +119,5 @@ def init_database():
 
     conn.commit()
     conn.close()
-    print("✅ [SYSTEM] SQLite 데이터베이스 'stigma_data.db' 구축이 완료되었습니다.")
+    print("[SYSTEM] SQLite 데이터베이스 'stigma_data.db' 구축이 완료되었습니다.")
     print(f"총 {len(equipment_data)}개의 장비와 {len(consumables_data)}개의 소모품이 인덱싱되었습니다.")
