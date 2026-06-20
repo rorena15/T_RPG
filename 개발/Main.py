@@ -521,22 +521,21 @@ def combat_loop(player, is_boss=False, current_hp=None):
             penalty = max(0.5, 1.0 - (learning_index - 10) * 0.05) if learning_index > 10 else 1.0
             
             # 평판 가중치 F 정식 정합식 대입 (Wasteland_Gate = 1)
-            f_multiplier = 1.0 + (player.reputation / MASTER_FORMULAS["formulas"]["reputation_multiplier"]["divisor"]) * 1
+            f_multiplier = 1.0 + (player.reputation / 2000) * 1
             
             # 1. 대미지 연산 및 화면 선 출력
             dmg = max(100, math.floor(player.get_attack_power() * f_multiplier * penalty * 100) - e_def + random.randint(-50, 50))
             disp_dmg, _, _ = apply_dynamic_scaling(dmg, 0, tier)
             
             print(f"\n  콰아앙! 무기가 적의 장갑판을 관통했습니다! (피해량: {disp_dmg:,})")
-            wait_for_keypress()
-            
+            time.sleep(1)
             # 2. 유저 피해 확인 후 체력 차감 및 시스템 스캔 갱신
             hp = max(0, hp - dmg)
             _, disp_ehp_new, _ = apply_dynamic_scaling(0, hp, tier)
             print(f"  [시스템 갱신] {name}의 잔여 체력: {disp_ehp_new:,}")
-            wait_for_keypress()
-            
+            time.sleep(1)
             action_logs.append(f"[타격] 적에게 {disp_dmg:,}의 피해를 입혔습니다.")
+            time.sleep(1)
 
         elif cmd == "2":
             consecutive_attacks = 0
@@ -544,8 +543,9 @@ def combat_loop(player, is_boss=False, current_hp=None):
             atk = int(atk * 0.5)
             
             print("\n  급조 바리케이드 전개! 적의 분석 궤적을 방해합니다.")
-            wait_for_keypress()
+            time.sleep(1)
             action_logs.append("[방어] 바리케이드 전개. 다음 공격의 피해를 반감시킵니다.")
+            time.sleep(2)
 
         elif cmd == "3":
             if player.max_ram >= 2:
@@ -554,18 +554,19 @@ def combat_loop(player, is_boss=False, current_hp=None):
                 player.max_ram -= 2
                 
                 print("\n  교란 신호 방출! 보스의 센서 데이터가 초기화됩니다. (RAM -2)")
-                wait_for_keypress()
+                time.sleep(1)
                 action_logs.append("[해킹] 교란 신호 성공. 적 분석 지수를 초기화했습니다.")
             else: 
                 print("\n  [오류] 시스템 RAM 가용량이 부족합니다.")
-                wait_for_keypress()
+                time.sleep(0.5)
                 action_logs.append("[오류] RAM 부족으로 해킹에 실패했습니다.")
                 
         elif cmd == "4":
             if is_boss:
                 print("\n  [거부] 보스전에서는 후퇴할 수 없습니다. 거점을 사수하십시오.")
-                wait_for_keypress()
+                time.sleep(0.5)
                 action_logs.append("[거부] 탈출 실패. 적이 퇴로를 차단했습니다.")
+                time.sleep(1)
             else:
                 dex_bonus = max(0, player.dex - 10) * 2
                 weights = [60 + dex_bonus, max(0, 20 - dex_bonus/2), max(0, 10 - dex_bonus/4), max(0, 5 - dex_bonus/4), 5 + dex_bonus/2]
@@ -579,7 +580,7 @@ def combat_loop(player, is_boss=False, current_hp=None):
                     _, disp_eatk, _ = apply_dynamic_scaling(dmg_calc, 0, tier)
                     
                     print(f"\n  후퇴 중 적에게 공격을 허용했습니다! (피해량: {disp_eatk:,})")
-                    wait_for_keypress()
+                    time.sleep(1)
                     
                     player.hp -= dmg_calc
                     _, disp_php_new, _ = apply_dynamic_scaling(0, max(0, player.hp), tier)
@@ -603,14 +604,14 @@ def combat_loop(player, is_boss=False, current_hp=None):
             _, disp_eatk, _ = apply_dynamic_scaling(atk, 0, tier)
             
             print(f"\n  {name}의 무자비한 공격! (피해량: {disp_eatk:,})")
-            wait_for_keypress()
-            
+            time.sleep(1)
             player.hp -= atk
             _, disp_php_new, _ = apply_dynamic_scaling(0, max(0, player.hp), tier)
             print(f"  [시스템 갱신] 내 잔여 체력: {disp_php_new:,} / {disp_pmaxhp:,}")
-            wait_for_keypress()
+            time.sleep(1)
             
             action_logs.append(f"[피격] 적의 공격으로 {disp_eatk:,}의 손상을 입었습니다.")
+            time.sleep(1)
             if cmd == "2": atk = 180 if is_boss else 80
 
         turn += 1
@@ -824,7 +825,7 @@ def handle_session(player, session):
     print()
     for i, choice in enumerate(session['choices']): 
         print(f"  [{i+1}] {choice['text']}")
-    
+    time.sleep(1)
     while True:
         try: ans = safe_input("\n행동 선택 (1-3): ")
         except: sys.exit()
@@ -840,9 +841,11 @@ def handle_session(player, session):
                     print(f"\n[보상] 소켓 파싱 완료: 장비 '{item_data['name']}' 코드를 획득했습니다.")
                     
             if "hp_loss" in choice_data: player.hp -= choice_data["hp_loss"]
+            time.sleep(1)
             if "thirst" in choice_data: player.thirst = min(100, player.thirst + choice_data["thirst"])
+            time.sleep(1)
             if "ram_bonus" in choice_data: player.max_ram += choice_data["ram_bonus"]
-            
+            time.sleep(1)
             print(f"\n{choice_data['log']}")
             wait_for_keypress()
             break
