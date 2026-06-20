@@ -530,3 +530,5 @@ MigrationBackup/
 stigma_data.db
 stigma_save.json
 log.txt
+
+릴리즈/
