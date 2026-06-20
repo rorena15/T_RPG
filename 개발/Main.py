@@ -7,6 +7,23 @@ import json
 import sqlite3
 import db_init
 from sys_log import sys_log
+import sys
+import os
+
+# ====================================================================
+# [0] 경로
+# ====================================================================
+def resource_path(relative_path):
+    #PyInstaller로 패키징된 경우 임시 폴더 경로를, 그렇지 않으면 절대 경로를 반환합니다.
+    try:
+        # PyInstaller로 패키징되어 실행될 때 임시 폴더 경로
+        base_path = sys._MEIPASS
+    except Exception:
+        # 일반 파이썬 스크립트로 실행될 때의 절대 경로
+        base_path = os.path.abspath(".")
+
+    return os.path.join(base_path, relative_path)
+
 # ====================================================================
 # [1] 데이터베이스 및 단일 진실 공급원(SSOT) 연산 코어 로더
 # ====================================================================
@@ -27,7 +44,7 @@ def init_and_load_db():
     formula_path = "master_formulas.json"
     if os.path.exists(formula_path):
         try:
-            with open(formula_path, "r", encoding="utf-8") as f:
+            with open(resource_path(formula_path), "r", encoding="utf-8") as f:
                 MASTER_FORMULAS = json.load(f)
             sys_log(" [SYSTEM LOG] 단일 진실 공급원(master_formulas.json) 동기화 완료.")
         except Exception as e:
@@ -55,7 +72,7 @@ def init_and_load_db():
         sys.exit()
         
     try:
-        with open(json_file_path, "r", encoding="utf-8") as f:
+        with open(resource_path(json_file_path), "r", encoding="utf-8") as f:
             db_data = json.load(f)
             AMBIENT_LORE = db_data.get("AMBIENT_LORE", [])
             CONSUMABLES_DB = db_data.get("CONSUMABLES_DB", {})
@@ -445,7 +462,7 @@ class GameMap:
 def save_data(player, grid):
     save_file = {"player": player.to_dict(), "grid": grid.to_dict()}
     try:
-        with open("stigma_save.json", "w", encoding="utf-8") as f:
+        with open(resource_path("stigma_save.json"), "w", encoding="utf-8") as f:
             json.dump(save_file, f, ensure_ascii=False, indent=4)
         print("\n[SYSTEM] 현재 동기화 로그가 로컬 환경에 안전하게 백업되었습니다.")
     except Exception as e:
@@ -706,7 +723,7 @@ def run_game():
 
     if ans == "2" and has_save:
         try:
-            with open("stigma_save.json", "r", encoding="utf-8") as f:
+            with open(resource_path("stigma_save.json"), "r", encoding="utf-8") as f:
                 data = json.load(f)
             player.from_dict(data["player"])
             grid.from_dict(data["grid"])
