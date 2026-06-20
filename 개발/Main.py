@@ -36,19 +36,19 @@ def init_and_load_db():
     """게임 부팅 시 DB 및 master_formulas.json 무결성을 검증하고 메모리에 로드합니다."""
     global AMBIENT_LORE, CONSUMABLES_DB, SESSIONS_DB, MASTER_FORMULAS
     
-    #clear_screen()
-    print(" [SYSTEM BOOT] 마스터 공급원 및 메모리 무결성 검증 중...")
+    # clear_screen()
+    sys_log(" [SYSTEM BOOT] 마스터 공급원 및 메모리 무결성 검증 중...", level="INFO")
     time.sleep(0.4)
     
-    # 1. master_formulas.json 로드 (SSOT 최우선 적용)
-    formula_path = "master_formulas.json"
-    if os.path.exists(formula_path):
+    # 1. master_formulas.json 로드 (SSOT 최우선 적용, 경로 검증 정정 완료)
+    formula_real_path = resource_path("master_formulas.json")
+    if os.path.exists(formula_real_path):
         try:
-            with open(resource_path(formula_path), "r", encoding="utf-8") as f:
+            with open(formula_real_path, "r", encoding="utf-8") as f:
                 MASTER_FORMULAS = json.load(f)
-            sys_log(" [SYSTEM LOG] 단일 진실 공급원(master_formulas.json) 동기화 완료.")
+            sys_log(" [SYSTEM LOG] 단일 진실 공급원(master_formulas.json) 동기화 완료.", level="INFO")
         except Exception as e:
-            sys_log(f" [SYSTEM WARN] 마스터 수식 로드 실패, 폴백 엔진 가동 ({e})")
+            sys_log(f" [SYSTEM WARN] 마스터 수식 로드 실패, 폴백 엔진 가동 ({e})", level="WARN")
     
     # 폴백 안전장치 (파일이 없거나 손상 시 기획서 정식 공식 기본 내장)
     if not MASTER_FORMULAS:
@@ -61,26 +61,27 @@ def init_and_load_db():
 
     # 2. SQLite DB 자동 생성 (Failsafe)
     if db_init.init_database():
-        sys_log(" [SYSTEM LOG] 하드웨어 장비 연산 데이터베이스(SQLite) 구축 완료.")
+        sys_log(" [SYSTEM LOG] 하드웨어 장비 연산 데이터베이스(SQLite) 구축 완료.", level="INFO")
     else:
-        sys_log(" [SYSTEM LOG] 로컬 장비 데이터베이스 무결성 확인 완료.")
+        sys_log(" [SYSTEM LOG] 로컬 장비 데이터베이스 무결성 확인 완료.", level="INFO", show=False)
         
-    # 3. JSON 서사/환경 데이터 로드
-    json_file_path = "database.json"
+    # 3. JSON 서사/환경 데이터 로드 (이중 resource_path 제거 완료)
+    json_file_path = resource_path("database.json")
     if not os.path.exists(json_file_path):
-        sys_log(f"\n [SYSTEM FATAL] 서사 파일 '{json_file_path}' 누락. 엔트리를 시작할 수 없습니다.")
+        sys_log(f" [SYSTEM FATAL] 서사 파일 '{json_file_path}' 누락. 엔트리를 시작할 수 없습니다.", level="FATAL")
         sys.exit()
         
     try:
-        with open(resource_path(json_file_path), "r", encoding="utf-8") as f:
+        with open(json_file_path, "r", encoding="utf-8") as f:
             db_data = json.load(f)
             AMBIENT_LORE = db_data.get("AMBIENT_LORE", [])
             CONSUMABLES_DB = db_data.get("CONSUMABLES_DB", {})
             SESSIONS_DB = db_data.get("SESSIONS_DB", [])
-        sys_log(" [SYSTEM LOG] 서사 및 생체 소모품 데이터 구조화 파싱 완료.")
+        sys_log(" [SYSTEM LOG] 서사 및 생체 소모품 데이터 구조화 파싱 완료.", level="INFO")
         time.sleep(0.6)
     except Exception as e:
-        sys_log(f"\n [SYSTEM FATAL] JSON 데이터베이스 파싱 오류: {e}")
+        sys_log(f" [SYSTEM FATAL] JSON 데이터베이스 파싱 오류: {e}", level="FATAL")
+        wait_for_keypress()
         sys.exit()
 
 def get_equipment_data(item_id):
