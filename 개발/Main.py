@@ -6,7 +6,7 @@ import os
 import json
 import sqlite3
 import db_init
-from sys_log import sys_log
+from sys_log import sys_log,track
 import sys
 import os
 
@@ -25,13 +25,25 @@ def resource_path(relative_path):
     return os.path.join(base_path, relative_path)
 
 # ====================================================================
+# [0.5] 전체 로깅
+# ====================================================================
+def track_event(event_name):
+    def decorator(func):
+        def wrapper(*args, **kwargs):
+            result = func(*args, **kwargs)
+            # 시스템 로그 파일에 지표 기록
+            sys_log(f"Event: {event_name}", event_type="METRIC")
+            return result
+        return wrapper
+    return decorator
+# ====================================================================
 # [1] 데이터베이스 및 단일 진실 공급원(SSOT) 연산 코어 로더
 # ====================================================================
 AMBIENT_LORE = []
 CONSUMABLES_DB = {}
 SESSIONS_DB = []
 MASTER_FORMULAS = {}
-
+@track
 def init_and_load_db():
     """게임 부팅 시 DB 및 master_formulas.json 무결성을 검증하고 메모리에 로드합니다."""
     global AMBIENT_LORE, CONSUMABLES_DB, SESSIONS_DB, MASTER_FORMULAS
@@ -84,6 +96,7 @@ def init_and_load_db():
         wait_for_keypress()
         sys.exit()
 
+@track
 def get_equipment_data(item_id):
     """장비 데이터는 SQLite DB에서 실시간 쿼리합니다."""
     db_path = "stigma_data.db"
@@ -113,12 +126,14 @@ def flush_input():
         import termios
         termios.tcflush(sys.stdin, termios.TCIOFLUSH)
 
+@track
 def safe_input(prompt):
     """버퍼 청소 후 명령코드를 온전히 입력받는 래퍼"""
     time.sleep(0.05)
     flush_input()
     return input(prompt)
 
+@track
 def wait_for_keypress():
     """엔터 입력 불필요 아무 키나 누르는 즉시 화면 템포가 연출 모드로 진행"""
     flush_input()
@@ -276,6 +291,7 @@ class Player:
         item_data = get_equipment_data(self.equipment["weapon"])
         return item_data.get("power", 10)
 
+    @track
     def consume_resources(self):
         self.hunger = max(0, self.hunger - 5)
         self.thirst = max(0, self.thirst - 6)
@@ -336,8 +352,8 @@ class Player:
             print("  3. 소모품 사용")
             print("  4. 장비 분해 (고철 추출)")
             print("  0. 탐색망으로 복귀")
-            
-            cmd = safe_input("\n명령어 입력: ")
+            try:cmd = safe_input("\n명령어 입력: ")
+            except: sys.exit()
             
             if cmd == "1":
                 if not self.inventory:
@@ -381,7 +397,6 @@ class Player:
                             item_data = get_equipment_data(item_id)
                             print(f"\n[처리] '{item_data['name']}'을(를) 분쇄하여 일반 고철 {gained_scrap}개를 추출했습니다.")
                 wait_for_keypress()
-                
             elif cmd == "0":
                 break
 
@@ -474,6 +489,7 @@ def save_data(player, grid):
 # ====================================================================
 # [5] 전투 시스템 (master_formulas.json 정합 수식 적용 및 UX 대기 제어)
 # ====================================================================
+@track
 def combat_loop(player, is_boss=False, current_hp=None):
     if is_boss:
         name, e_def, atk, hp = "스캐브 컬렉터 [BOSS]", 45, 180, 35000
@@ -708,6 +724,7 @@ def get_encounter_chance(player):
     base_chance = 0.10
     return base_chance + (0.25 * hp_ratio)
 
+@track
 def run_game():
     clear_screen()
     print_header("PROTOCOL: STIGMA (1막: 낙인)")
@@ -751,6 +768,7 @@ def run_game():
         print("  F           : 현재 타일 탐색 및 자원 파싱")
         print("  I           : 인벤토리 및 시스템 정비")
         print("  C           : 현재 상태 로컬 백업 (저장)")
+        print("  Q           : 시스템 접속 종료 (Exit)")
         print_divider()
         
         try: move = safe_input("\n입력: ").strip().upper()
@@ -798,7 +816,23 @@ def run_game():
                     player.consumables[it] += 1
                     print(f"\n[획득] 구석의 구급 상자에서 희귀한 '{CONSUMABLES_DB[it]['name']}' 1개를 획득했습니다.")
                 wait_for_keypress()
-            continue
+        elif move == "Q":
+                clear_screen()
+                print_header("시스템 접속 종료")
+                print("현재까지의 개척 로그를 백업하시겠습니까? (Y/N)")
+                # 유저의 저장 의사 확인 (버퍼 클리어 및 입력 제어)
+                save_choice = safe_input("저장 후 종료하시겠습니까? (Y/N): ").strip().upper()
+                if save_choice == 'Y':
+                    save_data(player, grid) # 기존에 정의한 save_data 함수 활용
+                    print("\n[SYSTEM] 데이터 동기화 완료. 프로토콜을 종료합니다.")
+                else:
+                    print("\n[SYSTEM] 데이터 백업 없이 접속을 종료합니다.")
+                    print("\n" + "="*78)
+                    print(" 생체 접속 종료. 그리드망에서 이탈합니다. ".center(76))
+                    print("="*78 + "\n")
+                time.sleep(0.8)
+                sys.exit()
+                continue
         
         px, py = grid.player_pos[0], grid.player_pos[1]
         valid_move = False
