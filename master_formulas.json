@@ -1,0 +1,567 @@
+{
+  "_meta": {
+    "project": "Project Grid: Protocol Stigma",
+    "purpose": "이 파일은 모든 기획 문서(.md)와 코드(.py)가 공유하는 단일 진실 공급원(Single Source of Truth)입니다. 숫자나 명칭을 문서에 다시 타이핑하지 말고, 항상 이 파일의 키를 참조하십시오. 값을 바꿀 일이 생기면 이 파일 하나만 고치면 됩니다.",
+    "version": "1.0.0",
+    "last_updated": "2026-06-20",
+    "resolved_conflicts": [
+      {
+        "topic": "히든 특성(3스탯 동률) 명칭",
+        "found_variants": [
+          "삼위일체 조율 (Trinitarian Resonance) - 능력 체계.md, Theology_Paradox.md, 개발 계획.md",
+          "황금 분할의 조율사 - 행위 가중치 시스템.md, 프로토타입 엔진.md, 2026-06-19-1617.py",
+          "The Harmonizer - 1막 낙인 스크립트.md"
+        ],
+        "resolution": "두 가지는 서로 다른 단계의 서로 다른 특성이었던 것으로 통합 처리. hidden_traits.stat_resonance(전직 후 15:15:15 달성, 신학 연계)와 hidden_traits.tri_balance_awakening(전직 시점 3:3:3 동률, 엔딩 분기)으로 분리 확정. 자세한 내용은 본 파일의 hidden_traits 항목 참고."
+      },
+      {
+        "topic": "평판 가중치 공식 F",
+        "found_variants": [
+          "F = 1 + (R/2000) - RPG 핵심 연산 시스템.md, 성향 및 진영 평판 시스템.md",
+          "F = 1 + (R/2000) × 지역 플래그 - 능력 체계.md, Equipment_Matrix_Engine.md, Map_Gimmick.md"
+        ],
+        "resolution": "Map_Gimmick.md가 '지역 플래그'를 City_Gate/Wasteland_Gate로 명확히 정의했으므로 이를 정식 채택. RPG 핵심 연산 시스템.md의 식은 '자기 진영 내부에서 지역 플래그=1인 경우'의 약식 표기였던 것으로 확정. formulas.reputation_factor 참고."
+      },
+      {
+        "topic": "장비 등급별 기초 위력 P_base",
+        "found_variants": [
+          "Equipment_Matrix_Engine.md: T4=20, T3=50, T2=95, T1=160, T0=280 (고정값)",
+          "db_init.py 실제 시드 데이터: T4=10~22, T3=45~56, T2=90~105, T1=160~180, T0=300~350 (아이템별 분산)"
+        ],
+        "resolution": "불일치가 아니라 미문서화된 설계 의도로 확정: P_base는 등급의 '중심값'이고, 개별 아이템은 ±10~20% 범위에서 분산값을 가짐. equipment.tier_base_power에 중심값과 허용 분산 범위를 함께 명시."
+      },
+      {
+        "topic": "프로토타입 보스 명칭과 기획서 몬스터 데이터 매칭",
+        "found_variants": [
+          "프로토타입 엔진.md / 2026-06-19-1617.py: 보스명 '스캐브 컬렉터', HP=35000",
+          "Project_Monster_Raid.md: HP 35,000 표기는 '바이오 의체 견형 괴수(Bio-Hound)'의 데이터(BaseHP=350)"
+        ],
+        "resolution": "코드의 '스캐브 컬렉터'가 실제로는 Bio-Hound의 수치를 차용한 것으로 확정. monsters.raid_boss_template에 정식 매핑 기록. 추후 코드에서 몬스터 ID를 기획서 명칭과 일치시킬 것."
+      },
+      {
+        "topic": "skill_max_level 공식의 Round() 반올림 규칙 미정의 (신규 발견, 본 정리 작업 중 적발)",
+        "found_variants": [
+          "기획 문서 예시: A=30일 때 MaxLevel=43Lv (사사오입 가정, 0.5는 올림)",
+          "Python round() 실제 계산: A=30 -> A^2/(A+10)=22.5 -> round(22.5)=22 (banker's rounding, 짝수로 반올림) -> MaxLevel=42Lv"
+        ],
+        "resolution": "기획서가 어느 언어/반올림 규칙을 가정했는지 명시되어 있지 않았던 숨은 결함. '일반 사사오입(0.5 이상은 올림)'으로 확정 표기. 코드 구현 시 Python round()를 그대로 쓰면 안 되고 math.floor(x + 0.5) 형태로 구현할 것. 자세한 내용은 formulas.skill_max_level.rounding_rule 참고."
+      }
+    ]
+  },
+
+  "world": {
+    "neo_ark": {
+      "name_kr": "네오 아크",
+      "name_en": "Neo-Ark",
+      "share": 0.05,
+      "type": "초고도 가상 도시, 디지털 전체주의",
+      "space_flag": { "City_Gate": 1, "Wasteland_Gate": 0 }
+    },
+    "dead_zone": {
+      "name_kr": "데드존",
+      "name_en": "The Dead-Zone",
+      "share": 0.95,
+      "type": "아날로그 붕괴 불모지",
+      "space_flag": { "City_Gate": 0, "Wasteland_Gate": 1 }
+    }
+  },
+
+  "base_stats": {
+    "list": ["A_VIT", "A_INT", "A_DEX"],
+    "pre_class_stage": "민간인/스캐벤저 후보생 - 이 3개 스탯만 존재",
+    "respec_on_class_change": true,
+    "post_class_growth_ratio": { "SP": 0.70, "AP": 0.30 },
+    "derived": {
+      "MaxHP": "100 + (Lv * 15) + (A_VIT * 20) + floor(f(A_VIT) * 150)",
+      "DEF_base": "(Lv * 2) + (A_VIT * 1.5) + floor(f(A_VIT) * 50)",
+      "WeightLimit_kg": "30 + (A_VIT * 2.0)",
+      "R_decay": "min(0.60, (A_VIT * 0.01) / (1 + (A_VIT * 0.01)))",
+      "MaxRAM": "4 + floor(Lv * 0.2) + floor(A_INT * 0.5) + floor(f(A_INT) * 10)",
+      "B_hack": "f(A_INT) * 1.0   // 최대 +50% 제한",
+      "Pr_analysis": "min(0.95, 0.20 + (A_INT / (A_INT + 15)))",
+      "INIT": "10 + (Lv * 0.5) + (A_DEX * 1.2)",
+      "CRT_rate": "min(0.75, (A_DEX * 0.015) / (1 + (A_DEX * 0.015)))",
+      "EVA_rate": "min(0.50, (A_DEX * 0.01) / (1 + (A_DEX * 0.01)))"
+    }
+  },
+
+  "formulas": {
+    "f_diminishing_returns": {
+      "description": "효율 저지형 기본 스탯 체감 법칙. 모든 스탯 실효 가치 계산의 기반.",
+      "segments": [
+        { "range": "0 <= A <= 15", "formula": "A * 0.02", "label": "안정적 동기화: 효율 100%" },
+        { "range": "15 < A <= 25", "formula": "0.30 + (A - 15) * 0.01", "label": "연산 과부하: 효율 50%" },
+        { "range": "A > 25", "formula": "0.40 + (A - 25) * 0.002", "label": "임계점 마비: 효율 10%" }
+      ]
+    },
+
+    "skill_max_level": {
+      "description": "스탯 투자량에 따른 스킬 레벨 소프트캡",
+      "formula": "MaxLevel = 20 + round( A^2 / (A + 10) )",
+      "rounding_rule": "일반 사사오입 (0.5 이상은 올림). Python round()는 banker's rounding이라 .5에서 짝수로 반올림되므로 그대로 쓰면 안 됨. 구현 시 math.floor(x + 0.5) 사용할 것.",
+      "examples": { "A=10": 25, "A=30": 43 },
+      "verification": "A=30 -> 30^2/(30+10)=22.5 -> 사사오입 시 23 -> 20+23=43 (기획서 예시와 일치). Python round(22.5)=22가 되어 42로 잘못 계산되는 것을 본 정리 작업에서 발견함.",
+      "early_boost": "전직 직후 첫 거점 유지 시 +3Lv 보정"
+    },
+
+    "skill_power_W": {
+      "description": "AP/SP 연동형 스킬 위력 계산",
+      "formula": "W = (SP * Alpha) * (1 + sum(Beta_i * f(A_i))) * M",
+      "vars": {
+        "Alpha": "스킬별 고유 기본 위력 지수",
+        "Beta_i": "스킬-스탯 간 상호작용 가중치 계수",
+        "M": "1 + (SP / MaxLevel)^2 * 0.1   // 마스터 보너스 가중치"
+      }
+    },
+
+    "reputation_factor": {
+      "description": "진영 평판 가중치 F. 위치(공간 플래그)와 해당 진영 평판 R에 따라 결정.",
+      "formula_canonical": "F = 1 + (R / 2000) * region_flag",
+      "formula_shorthand_note": "RPG 핵심 연산 시스템.md / 성향 평판 시스템.md의 'F = 1 + (R/2000)'은 자기 진영 내부(region_flag=1)일 때의 약식 표기. 도시/황무지 경계를 넘나드는 일반식에서는 region_flag를 반드시 포함할 것.",
+      "region_flag_source": "world.*.space_flag (City_Gate 또는 Wasteland_Gate, 둘 중 해당 위치의 값이 1)",
+      "R_range": [-1000, 1000],
+      "zero_sum": true,
+      "example": "네오 아크 내부에서 총괄국 평판 R=+1000일 때 F=1.5 (대미지 +50%). 데드존 평판으로 도시 진입(R=-1000, region_flag=1 유지) 시 F=0.5 (대미지 반토막)."
+    },
+
+    "pattern_exposure_penalty_P": {
+      "description": "동일 스킬/패턴 연속 사용 횟수(E)에 따른 대미지 페널티",
+      "segments": [
+        { "range": "E <= 10", "formula": "P = 1.0" },
+        { "range": "10 < E <= 20", "formula": "P = max(0.5, 1.0 - (E - 10) * 0.05)" },
+        { "range": "E > 20", "formula": "P = 0.5   // 최종 50% 강제 토막, 하한 고정" }
+      ]
+    },
+
+    "final_display_damage": {
+      "description": "최종 표기 대미지 산출. 모든 장비/직업/몬스터 문서가 이 식 하나로 수렴해야 함.",
+      "internal_dmg": "DMG = max(1, floor(W * EquipPower * F * P) - DEF_eff)",
+      "display_dmg": "Display_DMG = DMG * display_scaling.current_multiplier(tier)",
+      "note": "EquipPower는 equipment.equip_power_formula 참고, DEF_eff는 formulas.effective_defense 참고"
+    },
+
+    "effective_defense": {
+      "formula": "DEF_eff = max(0, (DEF_base * (1 - D_total)) - PEN)",
+      "vars": {
+        "D_total": "적용된 방어력 감소 디버프 총합 (지원형 전술 보병: f(A_INT)*0.5, 최대 50% 제한)",
+        "PEN": "방어 관통 수치"
+      }
+    },
+
+    "resistance_RES": {
+      "formula": "RES = min(0.95, (f(A_stat) * EquipRES) / (1 + (f(A_stat) * EquipRES)))"
+    },
+
+    "status_stack": {
+      "formula": "Stack_turn = Stack_current + floor(Tick * (1 - RES)) - Recovery",
+      "threshold_100": "물리 오염(방어력 반토막) 또는 연산 오염(RAM 0 고정) 페널티 발동"
+    },
+
+    "hybrid_skills": {
+      "bio_reap": {
+        "name_kr": "바이오 적출",
+        "archetype": "컴뱃 포스",
+        "trigger": "|A_VIT - A_DEX| <= 3",
+        "Pr_reap": "0.10 + (f(A_VIT) + f(A_DEX)) * 0.5",
+        "V_vamp": "floor(DMG * (0.05 + SP_Reap * 0.01))"
+      },
+      "signal_trace": {
+        "name_kr": "주파수 역추적",
+        "archetype": "메카니컬 테크",
+        "trigger": "|A_INT - A_DEX| <= 3",
+        "CRT_mult": "1.5 + (SP_Trace * 0.02 + f(A_DEX) * 0.5)",
+        "Pr_stun": "min(0.80, (SP_Trace * 0.03) / (1 + f(A_INT)))"
+      },
+      "glitch_craft": {
+        "name_kr": "프로토콜 위조",
+        "archetype": "넷 포스",
+        "trigger": "|A_INT - A_VIT| <= 3",
+        "Pr_glitch": "min(0.65, (SP_Glitch / MaxLevel) * f(A_INT) * 1.2)"
+      }
+    },
+
+    "alert_level_city": {
+      "description": "네오 아크 내부 턴당 방화벽 추적 지수 누적",
+      "formula": "Alert_turn = Alert_current + floor(10 * (1 - B_hack))",
+      "example": "B_hack=0.5(넷포스 풀투자)면 턴당 +5, B_hack=0(컴뱃포스)이면 턴당 +10"
+    },
+
+    "hunger_decay_wasteland": {
+      "description": "데드존 내부 타일 이동 시 허기 소모",
+      "formula": "Hunger_turn = Hunger_current + floor(5 * (1 - R_decay))"
+    }
+  },
+
+  "display_scaling": {
+    "description": "점진적 이원화 표기 스케일. 내부 연산은 항상 0.001 단위 정밀도 유지, 화면 표기만 단계별로 배수 적용.",
+    "stages": [
+      {
+        "stage": 1,
+        "label": "아날로그",
+        "trigger": "최고 장착 등급 T=4 구역",
+        "dmg_multiplier": 1,
+        "hp_multiplier": 1,
+        "code_condition": "highest_equip_tier >= 4"
+      },
+      {
+        "stage": 2,
+        "label": "전술 동기화",
+        "trigger": "T=3 또는 T=2 장착 시",
+        "dmg_multiplier": 100,
+        "hp_multiplier": 10,
+        "code_condition": "highest_equip_tier in [2, 3]"
+      },
+      {
+        "stage": 3,
+        "label": "신격 스케일링",
+        "trigger": "T=1 또는 T=0 장착 및 메인프레임 심부 진입",
+        "dmg_multiplier": 100000,
+        "hp_multiplier": 100,
+        "code_condition": "highest_equip_tier in [0, 1]",
+        "side_effect": "글리치 크러시 로그 활성화"
+      }
+    ],
+    "implemented_in_code": "개발/2026-06-19-1617.py의 apply_dynamic_scaling() 함수 (line 129) - 구현 완료, 기획서와 일치 확인됨",
+    "text_formatting_rule": {
+      "damage": "천만/억 단위 초과 시 아라비아 숫자 + 한글 단위 혼용 (예: '4,520만', '1억 2,840만')",
+      "hp_and_resources": "천 단위 쉼표 상시 유지 (예: '32,600 / 65,000')"
+    },
+    "theology_terminology_override": {
+      "note": "Project_Theology_Paradox.md 4번 항목에서 UI 표기어를 다음과 같이 재정의함. 서사 몰입용 대체 명칭이며 수치 로직에는 영향 없음.",
+      "stage3_dmg_label": "신의 권능 / 사탄의 능력 (Glitch Crush)",
+      "hp_label": "체화 지수 (Incarnation Index) / 생체 코드 (Bio-Code)"
+    }
+  },
+
+  "archetypes": {
+    "combat_force": {
+      "name_kr": "컴뱃 포스",
+      "name_en": "Combat Force",
+      "definition": "물리적 타격력, 신체 강화 의체 운용, 필드 전면 돌파 및 거점 무력 방어",
+      "behavior_weight_key": "kinetic",
+      "specialty_skills": ["의체 오버클럭", "바이오 적출"],
+      "sub_positions": {
+        "front_defender": { "name_kr": "전선 사수", "stat_focus": "VIT" },
+        "tactical_supporter": { "name_kr": "지원형 전술 보병", "stat_focus": "INT" },
+        "infiltrating_striker": { "name_kr": "수색형 기동 타격대", "stat_focus": "DEX" },
+        "bio_reaper": { "name_kr": "의체 도살자", "stat_focus": "VIT+DEX 균등(하이브리드)" }
+      }
+    },
+    "mechanical_tech": {
+      "name_kr": "메카니컬 테크",
+      "name_en": "Mechanical Tech",
+      "definition": "아날로그 고철 분해, 급조 무기/방어 시설 제작, 자급자족 자원 정제",
+      "behavior_weight_key": "scrap",
+      "specialty_skills": ["센트리 인프라", "주파수 역추적"],
+      "sub_positions": {
+        "sentry_master": { "name_kr": "자동화 엔지니어", "stat_focus": "INT" },
+        "anvil_combatant": { "name_kr": "전투형 대장장이", "stat_focus": "VIT" },
+        "scrap_raider": { "name_kr": "스캐벤저 레이더", "stat_focus": "DEX" },
+        "signal_hunter": { "name_kr": "디지털 추적자", "stat_focus": "INT+DEX 균등(하이브리드)" }
+      }
+    },
+    "net_force": {
+      "name_kr": "넷 포스",
+      "name_en": "Net Force",
+      "definition": "네오 아크 감시망 교란, 가상 은신처 유지, 네트워크 침투 및 원격 시스템 마비",
+      "behavior_weight_key": "cyber",
+      "specialty_skills": ["그리드 침투", "프로토콜 위조"],
+      "sub_positions": {
+        "pure_netrunner": { "name_kr": "클래식 넷러너", "stat_focus": "INT" },
+        "signal_dasher": { "name_kr": "게릴라 인필트레이터", "stat_focus": "DEX" },
+        "node_shielder": { "name_kr": "디지털 바운더리 가드", "stat_focus": "VIT" },
+        "protocol_breaker": { "name_kr": "현실 왜곡자", "stat_focus": "INT+VIT 균등(하이브리드)" }
+      }
+    }
+  },
+
+  "class_change_system": {
+    "description": "행위 가중치 기반 동적 전직",
+    "weight_keys": ["kinetic", "scrap", "cyber"],
+    "accumulation": "초기 생존 이벤트(5~10회 세션) 선택지마다 해당 가중치 +1",
+    "trigger_probability": {
+      "Pr_Combat": "W_kinetic / (W_kinetic + W_scrap + W_cyber)",
+      "Pr_Mechanical": "W_scrap / (W_kinetic + W_scrap + W_cyber)",
+      "Pr_Net": "W_cyber / (W_kinetic + W_scrap + W_cyber)"
+    },
+    "tie_breaker_rule": "가중치 완전 동률(예: 3:3:3) 시 hidden_traits.tri_balance_awakening 발동, 전직 선택지 3개 동시 개방"
+  },
+
+  "hidden_traits": {
+    "_note": "기존 문서에서 서로 다른 두 단계의 특성이 같은 이름('삼위일체'/'황금 분할')으로 혼용되고 있었습니다. 발동 시점과 조건이 명확히 다르므로 아래와 같이 분리 확정합니다.",
+
+    "tri_balance_awakening": {
+      "canonical_name_kr": "황금 분할의 조율사",
+      "canonical_name_en": "The Harmonizer",
+      "stage": "전직 시점 (1막, 프로토타입에 이미 구현됨)",
+      "trigger": "전직 시 행위 가중치 W_kinetic == W_scrap == W_cyber 완전 동률",
+      "effect": "3개 직업군 진입 분기가 동시에 열림 (class_change_system.tie_breaker_rule)",
+      "implemented_in": ["개발/프로토타입 엔진.md", "개발/2026-06-19-1617.py", "스토리/본편 스토리 - 1막 낙인 스크립트.md"],
+      "do_not_confuse_with": "stat_resonance (아래) - 이름이 비슷하지만 발동 시점/조건이 다른 별개의 특성"
+    },
+
+    "stat_resonance": {
+      "canonical_name_kr": "삼위일체 조율",
+      "canonical_name_en": "Trinitarian Resonance",
+      "stage": "전직 이후 후반 (신학 퀘스트라인 연계, 5단계/본편 콘텐츠)",
+      "trigger": "기본 스탯 3종(VIT/INT/DEX)을 정확히 15:15:15로 동률 세팅 + 레벨 30 돌파",
+      "discovery_condition": "종교 퀘스트라인 '외경의 사도들' 복선 텍스트 해독 필요 (UI 비노출, 마스킹 처리)",
+      "effect": {
+        "positive": "패턴 노출 페널티(P) 완전 상쇄, 모든 특화 스킬 가중치 변환율(Beta) 1.0 고정",
+        "negative_martyrs_overload": {
+          "name_kr": "순교자의 과부하",
+          "bio_cost_multiplier": 2.0,
+          "ram_lock_multiplier": 2.0,
+          "formula_bio": "Bio_Cost_eff = (C_bio * W_part * M_cost(k)) * 2.0",
+          "formula_ram": "RAM_Lock_eff = (C_ram * W_part * M_cost(k)) * 2.0",
+          "material_cost_alpha_penalty": "+1.0 (강화 재료 소모 공식의 alpha 상수에 가산)",
+          "narrative_flag": "[가장 완벽한 가축] - 마스터 AI의 변종 레이드 표적 우선순위 상승"
+        }
+      },
+      "implemented_in": ["기획/Project_Theology_Paradox.md", "기획/Text RPG 프로젝트 능력 체계.md", "기획/개발 계획.md"],
+      "do_not_confuse_with": "tri_balance_awakening (위) - 전직 시점의 가중치 동률과는 별개"
+    },
+
+    "dead_zone_horizon": {
+      "name_kr": "벼랑 끝의 생존자",
+      "trigger": "데드존에서 허기/갈증/오염도 동시 90% 이상 위험 상태로 전투 5회 연속 승리",
+      "reward": "기본 VIT +2, 오프라인 생존 수치 감소속도 상시 -10%"
+    },
+    "ghost_in_the_shell": {
+      "name_kr": "마스터 AI의 눈묵음",
+      "trigger": "네오 아크에서 Alert Level 95% 이상 유지한 채 차단 없이 은신처 세탁 3회 연속 성공",
+      "reward": "기본 INT +2, 가상 은신처 기본 위장 지수 +15%"
+    }
+  },
+
+  "equipment": {
+    "tier_base_power": {
+      "_note": "P_base는 등급의 중심값. 실제 db_init.py 시드 데이터는 아이템별로 이 중심값 주변에 분산을 둠(의도된 설계). 신규 아이템 추가 시 이 범위를 벗어나지 않도록 할 것.",
+      "T4_scrap":      { "name_kr": "4등급 급조", "P_base": 20,  "observed_range": [10, 22],  "C_bio": 0, "C_ram": 0 },
+      "T3_standard":   { "name_kr": "3등급 규격", "P_base": 50,  "observed_range": [45, 56],  "C_bio": 1, "C_ram": 1 },
+      "T2_refined":    { "name_kr": "2등급 정제", "P_base": 95,  "observed_range": [90, 105], "C_bio": 2, "C_ram": 2 },
+      "T1_corporate":  { "name_kr": "1등급 기업제", "P_base": 160, "observed_range": [160, 180], "C_bio": 4, "C_ram": 3 },
+      "T0_legacy":     { "name_kr": "0등급 유물",  "P_base": 280, "observed_range": [300, 350], "C_bio": 8, "C_ram": 6,
+        "note_discrepancy": "다른 4개 등급은 P_base가 관측범위의 하한~중하단에 위치(T4:-10~+2, T3:-5~+6, T2:-5~+10, T1:+0~+20 차이)하는데, T0만 유일하게 P_base(280)가 관측 최솟값(300)보다 낮음. 패턴상 P_base=280은 300의 오타일 가능성이 높음. db_init.py 수정 전에 원래 의도 확인 필요 (액션 아이템 참고)." }
+    },
+
+    "slot_weight_W_part": {
+      "S1_primary_weapon": 1.5,
+      "S2_cyberdeck": 1.5,
+      "S3_bio_part": 1.2,
+      "S4_back_equip": 1.2,
+      "S5_face": 1.0,
+      "S6_top": 1.0,
+      "S7_bottom": 1.0,
+      "S8_shoes": 1.0,
+      "S9_necklace": 0.5,
+      "S10_ring": 0.5,
+      "S11_special_part": 0.5
+    },
+
+    "equip_power_formula": {
+      "formula": "EquipPower = floor(P_base + delta_P(k)) * Rebuild_Bonus",
+      "delta_P_k": [
+        { "range": "k = 0", "value": 0 },
+        { "range": "1 <= k <= 3", "value": "k * 10" },
+        { "range": "4 <= k <= 6", "value": "30 + (k - 3) * 25" },
+        { "range": "7 <= k <= 9", "value": "105 + (k - 6) * 50" },
+        { "range": "k = 10", "value": 350 }
+      ],
+      "rebuild_bonus": {
+        "normal": 1.0,
+        "T1_to_T0_rebuild": 1.15
+      }
+    },
+
+    "binding_penalty_cost": {
+      "formula_bio": "Bio_Cost = C_bio * W_part * M_cost(k)",
+      "formula_ram": "RAM_Lock = C_ram * W_part * M_cost(k)",
+      "M_cost_k": [
+        { "range": "0 <= k <= 3", "multiplier": 1.0 },
+        { "range": "4 <= k <= 6", "multiplier": 1.2 },
+        { "range": "7 <= k <= 9", "multiplier": 1.5 },
+        { "range": "k = 10", "multiplier": 2.0 }
+      ],
+      "T4_scrap_exception": "기본 페널티 0이지만 k=10 마스터 단계에서만 C_bio=2, C_ram=1 고정 상수 강제 주입"
+    },
+
+    "enhancement_success_rate": {
+      "formula": "Pr_total = min(1.0, Pr_base(k) + sum(Pr_pity) + Pr_material)",
+      "by_stage": [
+        { "range": "+1~+3", "Pr_base": 0.80, "Pr_pity": 0.10 },
+        { "range": "+4~+6", "Pr_base": 0.50, "Pr_pity": 0.15 },
+        { "range": "+7~+9", "Pr_base": 0.25, "Pr_pity": 0.20 },
+        { "range": "+10 마스터", "Pr_base": 0.10, "Pr_pity": 0.25 }
+      ],
+      "material_boost": {
+        "구시대_티타늄_고철": { "per_item": 0.10, "max_count": 3, "max_total": 0.30 },
+        "정제_코어_플루이드": { "per_item": 0.25, "max_count": 2, "max_total": 0.50 }
+      }
+    },
+
+    "material_consumption": {
+      "formula": "소모량 = max(1, floor(alpha * (k+1)^1.2))",
+      "alpha_by_tier": {
+        "T4_T3": 1.0,
+        "T2_T1": 1.5
+      },
+      "refined_core_fluid_requirement": "T2/T1 강화 시 k>=7 구간부터 회당 1개 강제 추가",
+      "martyrs_overload_modifier": "+1.0 (hidden_traits.stat_resonance 활성 시)"
+    },
+
+    "drop_formula": {
+      "formula": "Drop_Scrap = max(1, floor(f(A_DEX) * 괴수_체급_상수))",
+      "bonus": "A_DEX가 15, 25 임계점 돌파 시마다 정제 코어 플루이드 드롭 +1"
+    },
+
+    "armor_accessory_enhancement": {
+      "defense_layer_S5_to_S8": "강화 단계당 PEN_resist +5",
+      "accessory_layer_S9_to_S10": "강화 단계당 Recovery +1.5"
+    },
+
+    "player_def_eff_formula": "Player_DEF_eff = sum_{i=5}^{8}( Slot_i 고유위력 * M_cost(k) ) * f(A_VIT)"
+  },
+
+  "monsters": {
+    "scrap_tier": {
+      "name_kr": "하위 고철형",
+      "example": "스캐브 드론 (Scav-Drone)",
+      "BaseHP": 80,
+      "DEF_base": 5,
+      "PEN": 0,
+      "display_hp": 8000,
+      "scaling_note": "100배 스케일 적용 (display_scaling.stages[1] 기준)"
+    },
+    "tactical_tier": {
+      "name_kr": "중위 전술형",
+      "example": "바이오 의체 견형 괴수 (Bio-Hound)",
+      "BaseHP": 350,
+      "DEF_base": 45,
+      "PEN": 15,
+      "display_hp": 35000
+    },
+    "raid_boss_template": {
+      "name_kr": "타이탄 크러셔 (Titan-Crusher)",
+      "BaseHP": 600,
+      "DEF_base": 150,
+      "display_hp": 60000,
+      "special": "단일 물리 타격 10회 이상 피격 시 PEN=80 고유 관통 활성화"
+    },
+    "code_boss_mapping_note": "프로토타입/2026-06-19-1617.py의 보스 '스캐브 컬렉터'(HP=35000)는 명칭상 scrap_tier 계열이지만 실제 수치는 tactical_tier(Bio-Hound)와 동일함. 코드와 기획서 명칭 정합화 필요.",
+    "adaptive_variant_triggers": {
+      "grid_hunter": { "counters": "넷 포스 광역 해킹 패킷 단일 사용", "RES": 0.95 },
+      "titan_crusher_variant": { "counters": "컴뱃 포스 물리 타격 단일 사용", "PEN_after_10_hits": 80 }
+    }
+  },
+
+  "reputation_system": {
+    "R_range": [-1000, 1000],
+    "zero_sum": true,
+    "neo_ark_friendly_threshold": 500,
+    "dead_zone_friendly_threshold": -500,
+    "npcs": {
+      "judith_kane": { "name_kr": "주디스 케인", "faction": "총괄국", "location": "네오 아크 중앙 총괄 본부" },
+      "vulkan_gates": { "name_kr": "발칸 게이츠", "faction": "데드존 스크랩 연합", "location": "데드존 녹슨 정크야드 벙커" }
+    },
+    "hybrid_hidden_npcs": {
+      "sly": { "name_kr": "리퍼닥 슬라이", "unlock": "combat_force + |VIT-DEX|<=3" },
+      "echo": { "name_kr": "부품 중개상 에코", "unlock": "mechanical_tech + |INT-DEX|<=3" },
+      "zero": { "name_kr": "아나키스트 제로", "unlock": "net_force + |INT-VIT|<=3" }
+    }
+  },
+
+  "skill_pool": {
+    "specialty": { "total": 8, "equip_max": 2, "rule": "전직한 대분류 역할군의 것만 장착 가능" },
+    "ap_sp_support": { "total": 10, "equip_max": 3, "rule": "대분류 제한 없이 자유 장착" },
+    "universal": { "total": 5, "equip_max": 2, "rule": "민간인 단계부터 상시 사용 가능" },
+    "total_equip_slots": 7
+  },
+
+  "environment_zones": {
+    "radiation_basin": {
+      "name_kr": "방사능 용융 분지",
+      "location": "데드존 최심부",
+      "tick_per_turn": 30,
+      "resist_stat": "A_VIT"
+    },
+    "mainframe_core": {
+      "name_kr": "마스터 AI 중앙 그리드 코어",
+      "location": "네오 아크 중추",
+      "tick_per_turn": 40,
+      "resist_stat": "A_INT",
+      "threshold_effect": "Stack>=100 시 RAM 0 록업, 가상 은신처 강제 폐쇄"
+    }
+  },
+
+  "dev_plan": {
+    "weekly_hours": "15~16시간 (평일 1~2시간x5일=7h, 주말 4~5시간x2일=9h)",
+    "total_duration_weeks": "50~60주 (12~14개월)",
+    "annual_hours": "750~900시간",
+    "phases": [
+      { "phase": 1, "name": "코어 엔진 및 데이터 아키텍처", "months": "1~3", "effort_pct": 20 },
+      { "phase": 2, "name": "전투 및 딥러닝 카운터 모듈", "months": "4~6", "effort_pct": 25 },
+      { "phase": 3, "name": "영문 스크립트 모듈화 및 민간인 프로토콜", "months": "7~9", "effort_pct": 25 },
+      { "phase": 4, "name": "스팀 무료 데모 빌드 및 QA", "months": "10", "effort_pct": 10 },
+      { "phase": 5, "name": "본편 종교 플롯, DLC, 최종 폴리싱", "months": "11~14", "effort_pct": 20 }
+    ],
+    "risk_note": "3단계(7~9개월)에 영문 스크립트 모듈화 전체를 끝내는 일정은 현재 기획서 분량(기획 13개 + 장비 6개 + 스토리 3개 문서) 대비 타이트함. 우선순위: 1막 분량만 먼저 완전히 끝내고 2막 이후는 데모 피드백 이후로 미루는 것을 권장."
+  },
+
+  "implementation_status": {
+    "_note": "기획서 공식이 실제 코드(개발/2026-06-19-1617.py, 883줄)에 반영된 정도. 다음 작업 우선순위 판단용.",
+    "implemented": [
+      "display_scaling (apply_dynamic_scaling 함수, 1/2/3단계 모두 일치)",
+      "SQLite+JSON 하이브리드 데이터 구조 (장비=DB, 서사/세션/소모품=JSON)",
+      "class_change_system 가중치 누적 (player.weights)",
+      "hidden_traits.tri_balance_awakening (엔딩 분기 로직)",
+      "기초 자원 소모 루프 (hunger/thirst, 단 R_decay 미적용 고정값)"
+    ],
+    "not_yet_implemented": [
+      "formulas.f_diminishing_returns (f(A) 체감 함수) - 현재 코드에 미존재",
+      "formulas.pattern_exposure_penalty_P - combat_loop에 유사 로직 있으나 E값 누적/리셋 규칙이 기획서와 다름 (보스전만 적용, 연속 공격 2회부터 E+3, 4등급 임계치 10/20 구간 아님)",
+      "formulas.reputation_factor (F) - 코드에 평판 시스템 자체가 없음",
+      "formulas.effective_defense (DEF_eff) - 코드는 단순 e_def 고정값 차감만 수행",
+      "equipment.binding_penalty_cost (Bio_Cost, RAM_Lock) - 미구현",
+      "equipment.enhancement_success_rate (강화 시스템 전체) - 미구현, 현재는 드롭 아이템 그대로 장착만 가능",
+      "hidden_traits.stat_resonance (삼위일체 조율, 후반 신학 콘텐츠) - 미구현, 1막 범위 밖"
+    ],
+    "next_priority_suggestion": "f(A) 체감 함수 → DEF_eff → pattern_exposure_penalty_P 순으로 이식 권장 (이 3개가 전투 루프의 핵심이며 서로 의존성이 있음)"
+  },
+
+  "action_items": {
+    "_note": "이 파일을 만드는 과정에서 발견된, 사람이 직접 결정해야 하는 항목들. 자동으로 고칠 수 없는 것들만 모음.",
+    "items": [
+      {
+        "priority": "high",
+        "issue": "equipment.tier_base_power.T0_legacy.P_base=280이 db_init.py 실제 시드값(300~350)과 패턴상 어긋남",
+        "decision_needed": "P_base를 300으로 정정할지, 아니면 db_init.py의 4개 T0 아이템 power를 280 기준으로 재산정할지 결정",
+        "affected_files": ["장비/Project_Equipment_Matrix_Engine.md (line 17)", "개발/db_init.py (line 74-78)"]
+      },
+      {
+        "priority": "high",
+        "issue": "formulas.skill_max_level의 Round() 함수가 일반 사사오입인지 banker's rounding인지 코드에 명시 안 됨",
+        "decision_needed": "구현 시 math.floor(x+0.5)로 통일 (본 파일 rounding_rule에 이미 확정 기록함, 코드 작성 시 반영만 하면 됨)",
+        "affected_files": ["향후 작성할 skill leveling 코드"]
+      },
+      {
+        "priority": "medium",
+        "issue": "monsters.code_boss_mapping_note - 코드의 '스캐브 컬렉터' 보스명과 기획서 'Bio-Hound' 데이터가 이름만 다르고 수치는 동일",
+        "decision_needed": "코드의 몬스터 ID/이름을 기획서 명칭에 맞춰 통일할지, 아니면 '스캐브 컬렉터'를 기획서에 정식 등재할지 결정",
+        "affected_files": ["개발/2026-06-19-1617.py", "기획/Project_Monster_Raid.md"]
+      },
+      {
+        "priority": "medium",
+        "issue": "hidden_traits 2종(tri_balance_awakening / stat_resonance)이 본 정리에서 분리되었으나, 원본 .md 문서들은 여전히 옛 명칭(삼위일체/황금 분할)을 혼용 중",
+        "decision_needed": "기획 문서 9종을 열어 본 파일의 canonical_name으로 실제 치환 작업 필요 (본 JSON은 참조용이지 .md 자동 수정 도구가 아님)",
+        "affected_files": ["기획/Text RPG 프로젝트 능력 체계.md", "기획/Project_Theology_Paradox.md", "기획/개발 계획.md", "기획/Text RPG 프로젝트 행위 가중치 기반 동적 전직 시스템.md", "개발/프로토타입 엔진.md", "스토리/본편 스토리 - 1막 낙인 스크립트.md"]
+      },
+      {
+        "priority": "low",
+        "issue": "각 .md 문서 말미의 'No-Fault Report(비판 없이 무결함 통과)' 자기 검증 문구가 실제 불일치를 잡아내지 못함",
+        "decision_needed": "해당 문구들을 삭제하거나, 최소한 '본 master_formulas.json 대조 완료' 같은 실질적 체크리스트로 교체 권장",
+        "affected_files": ["기획/Project_Monster_Raid.md", "기획/Project_NPC_Quest.md", "기획/Project_Theology_Paradox.md", "장비/Project_Equipment_Matrix_Engine.md", "기획/Project_Map_Gimmick.md"]
+      }
+    ]
+  }
+}
