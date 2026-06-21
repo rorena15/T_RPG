@@ -251,6 +251,13 @@ class Player:
         
         self.weights = {"kinetic": 0, "scrap": 0, "cyber": 0}
 
+        # --- 진행 턴 기반 적 스케일링용 상태 ---
+        # turn_count : 이동/탐색(consume_resources 호출) 1회당 1씩 누적되는 전체 진행 턴.
+        #              파밍 없이 시간만 흘려보내는 플레이를 막기 위한 적 강화의 메인 기준이다.
+        # difficulty : 게임 시작 시 선택한 난이도에 따른 턴당 증가율 배율 (이지/노멀/하드).
+        self.turn_count = 0
+        self.difficulty = "normal"
+
         # 정식 빌드 시작 인벤토리: 유물(T=0) 장비는 더 이상 기본 지급하지 않는다.
         # 0등급 유물은 본편 설계상 3막 이후 정제로 획득해야 하는 최종 등급 자산이므로,
         # 데모(1막) 단계에서 자동 지급되면 밸런스와 진행 동기를 해친다.
@@ -267,7 +274,8 @@ class Player:
             "hp": self.hp, "hunger": self.hunger, "thirst": self.thirst,
             "max_ram": self.max_ram, "dex": self.dex, "materials": self.materials,
             "consumables": self.consumables, "weights": self.weights,
-            "inventory": self.inventory, "equipment": self.equipment, "reputation": self.reputation
+            "inventory": self.inventory, "equipment": self.equipment, "reputation": self.reputation,
+            "turn_count": self.turn_count, "difficulty": self.difficulty
         }
         
     def from_dict(self, data):
@@ -282,6 +290,8 @@ class Player:
         self.weights = data.get("weights", {"kinetic": 0, "scrap": 0, "cyber": 0})
         self.inventory = data.get("inventory", [])
         self.equipment = data.get("equipment", {"weapon": "WEAPON_NONE"})
+        self.turn_count = data.get("turn_count", 0)
+        self.difficulty = data.get("difficulty", "normal")
 
     def get_attack_power(self):
         item_data = get_equipment_data(self.equipment["weapon"])
@@ -289,6 +299,7 @@ class Player:
 
     @track
     def consume_resources(self):
+        self.turn_count += 1
         self.hunger = max(0, self.hunger - 5)
         self.thirst = max(0, self.thirst - 6)
         
@@ -319,6 +330,10 @@ class Player:
         wpn_pwr = self.get_attack_power()
         
         print(f"  [장착 무기] {wpn_name:<15} (T={tier} 위력: {wpn_pwr:<3d})        [가용 평판] {self.reputation:+d}")
+
+        threat_mult = get_turn_scale_multiplier(self)
+        diff_label = {"easy": "이지", "normal": "노멀", "hard": "하드"}.get(self.difficulty, self.difficulty)
+        print(f"  [진행 턴] {self.turn_count:>4d}   [난이도] {diff_label}   [적 위협 배율] x{threat_mult:.2f}")
         print_divider()
         
         food_cnt = sum(v for k,v in self.consumables.items() if CONSUMABLES_DB.get(k, {}).get("type")=="food")
@@ -505,18 +520,53 @@ def save_data(player, grid):
 # ====================================================================
 # [5] 전투 시스템 (master_formulas.json 정합 수식 적용 및 UX 대기 제어)
 # ====================================================================
+# ====================================================================
+# 진행 턴 기반 적 스케일링
+# ====================================================================
+# 난이도별 턴당 증가율. 적 hp/atk = base * (1 + turn_count * rate), 선형 상승.
+# normal 기준 약 50턴 경과 시 +100%(2배), hard는 약 28턴, easy는 약 100턴.
+DIFFICULTY_SCALING_RATE = {"easy": 0.01, "normal": 0.02, "hard": 0.035}
+
+# 전투 시작 시점 플레이어 체력 비율이 이 값 미만이면, '위험 상태 완화'가 적용되어
+# 그 전투에 한해 턴수 증가분의 절반만 반영한다. 장비가 좋아졌다고 적이 강해지는
+# 역설계가 아니라, 순수하게 플레이어가 죽기 직전인 상황을 구제하는 안전핀이다.
+LOW_HP_RELIEF_THRESHOLD = 0.3
+LOW_HP_RELIEF_FACTOR = 0.5
+
+
+def get_turn_scale_multiplier(player):
+    """진행 턴수와 난이도에 따른 적 스탯 배율을 계산한다. 플레이어 체력이 위험 수준이면 완화한다."""
+    rate = DIFFICULTY_SCALING_RATE.get(player.difficulty, DIFFICULTY_SCALING_RATE["normal"])
+    growth = player.turn_count * rate
+
+    hp_ratio = player.hp / player.max_hp if player.max_hp > 0 else 1.0
+    if hp_ratio < LOW_HP_RELIEF_THRESHOLD:
+        growth *= LOW_HP_RELIEF_FACTOR
+
+    return 1.0 + growth
+
+
 @track
 def combat_loop(player, is_boss=False, current_hp=None):
+    scale_mult = get_turn_scale_multiplier(player)
+
     if is_boss:
         name, e_def, atk, hp = "스캐브 컬렉터 [BOSS]", 45, 180, 35000
         art, header_title = ENEMY_ART["BOSS"], "SYSTEM ALERT: 숙청 시퀀스 가동"
+        atk = int(atk * scale_mult)
+        hp = int(hp * scale_mult)
     else:
         name, e_def, atk, hp = "오염된 스캐브 드론", 5, 80, 8000
         art, header_title = ENEMY_ART["NORMAL"], "ENCOUNTER: 포식자 조우"
+        atk = int(atk * scale_mult)
         if current_hp is not None:
+            # 탈출 후 재조우: 저장된 잔여 hp는 이미 과거 시점에 스케일링된 절대값이므로
+            # 다시 곱하지 않고 그대로 사용한다. (이중 스케일링 방지)
             hp = current_hp
             name = "상처입은 스캐브 드론"
             header_title = "ENCOUNTER: 추적된 개체"
+        else:
+            hp = int(hp * scale_mult)
 
     turn = 1
     learning_index = 0
@@ -766,6 +816,21 @@ def run_game():
         except Exception as e:
             type_text(f"[ERROR] 백업 파일 손상 ({e}). 초기화 프로토콜을 가동합니다.", 0.02)
     else:
+        clear_screen()
+        print_header("난이도 선택 (DIFFICULTY PROTOCOL)")
+        print("  진행 턴이 누적될수록 적의 체력과 공격력이 함께 상승합니다.")
+        print("  상승 속도는 아래 난이도에 따라 달라지며, 파밍으로 장비를 강화해 대비해야 합니다.\n")
+        print("  1. 이지   (EASY)   - 적 강화 속도 느림. 서사를 편하게 즐기고 싶을 때.")
+        print("  2. 노멀   (NORMAL) - 표준 속도. 권장 난이도.")
+        print("  3. 하드   (HARD)   - 적 강화 속도 빠름. 파밍 압박이 강한 하드코어 플레이.")
+        diff_map = {"1": "easy", "2": "normal", "3": "hard"}
+        while True:
+            diff_ans = safe_input("\n난이도 입력 (1-3): ").strip()
+            if diff_ans in diff_map:
+                player.difficulty = diff_map[diff_ans]
+                break
+            print("\n[오류] 1, 2, 3 중에서 선택하십시오.")
+
         clear_screen()
         type_text("[SYSTEM BOOT] 생체 신호 복구 중... 인코딩 결함 발견.", 0.02)
         type_text("[LOG] 당신은 '네오 아크'의 실험실에서 폐기 처리된 불량 코드입니다.", 0.02)
