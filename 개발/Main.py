@@ -61,6 +61,35 @@ SLOT_DEFAULTS = {
 }
 TIER_TAGS = {4: "T4 급조", 3: "T3 규격", 2: "T2 정제", 1: "T1 기업", 0: "T0 유물"}
 
+_eq_cache: dict = {}
+
+SUDDEN_QUESTS = [
+    {"id": "SQ_SCRAP_A", "title": "잔해 자원 긴급 확보",
+     "desc": "산개한 고철 잔해에서 자원을 집중적으로 확보하십시오.",
+     "detail": "고철 +50개 수집", "type": "scrap", "target": 50, "turns": 10,
+     "reward_type": "consumable", "reward_id": "MED_FIX_300", "reward_desc": "군용 지혈제 1개"},
+    {"id": "SQ_SCRAP_B", "title": "집중 파밍 프로토콜",
+     "desc": "이 구역 전체에 회수 가능한 잔해가 산재합니다. 최대한 확보하십시오.",
+     "detail": "고철 +80개 수집", "type": "scrap", "target": 80, "turns": 14,
+     "reward_type": "materials", "reward_amount": 50, "reward_desc": "고철 50개 추가"},
+    {"id": "SQ_COMBAT_A", "title": "구역 정화",
+     "desc": "이 구역의 기계 밀도가 비정상입니다. 적 일부를 제압하여 경로를 확보하십시오.",
+     "detail": "전투 2회 승리", "type": "combat", "target": 2, "turns": 12,
+     "reward_type": "consumable", "reward_id": "MED_PER_50", "reward_desc": "응급 지혈대 1개"},
+    {"id": "SQ_COMBAT_B", "title": "데드존 청소부",
+     "desc": "총괄국이 자동화 기계 포대를 증파했습니다. 전투 역량을 검증하십시오.",
+     "detail": "전투 3회 승리", "type": "combat", "target": 3, "turns": 18,
+     "reward_type": "consumable", "reward_id": "MED_FIX_500", "reward_desc": "합성 바이오 젤 1개"},
+    {"id": "SQ_SEARCH_A", "title": "지형 데이터 스캔",
+     "desc": "사이버덱이 불완전한 지형 정보를 감지했습니다. 추가 스캔이 필요합니다.",
+     "detail": "탐색 3회", "type": "search", "target": 3, "turns": 7,
+     "reward_type": "ram", "reward_amount": 1, "reward_desc": "RAM +1"},
+    {"id": "SQ_SEARCH_B", "title": "광역 환경 스캐닝",
+     "desc": "광범위한 지형 정보 수집이 요청됩니다. 반복 스캔을 실시하십시오.",
+     "detail": "탐색 5회", "type": "search", "target": 5, "turns": 12,
+     "reward_type": "consumable", "reward_id": "FOOD_BOTH", "reward_desc": "수분 함유 전투식량 1개"},
+]
+
 @track
 def init_and_load_db():
     """게임 부팅 시 DB 및 master_formulas.json 무결성을 검증하고 메모리에 로드합니다."""
@@ -118,11 +147,15 @@ def init_and_load_db():
 
 @track
 def get_equipment_data(item_id):
-    """장비 데이터는 SQLite DB에서 실시간 쿼리합니다."""
+    """장비 데이터는 세션 내 캐시 우선, 미등록 시 SQLite 쿼리."""
+    if item_id in _eq_cache:
+        return _eq_cache[item_id]
     db_path = "stigma_data.db"
     if not os.path.exists(db_path):
-        return {"name": "손상된 고철", "power": 5, "type": "kinetic", "tier": 4, "desc": "DB 파일 누락."}
-        
+        result = {"name": "손상된 고철", "power": 5, "type": "kinetic", "tier": 4, "desc": "DB 파일 누락."}
+        _eq_cache[item_id] = result
+        return result
+
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
     cursor.execute("SELECT name, power, type, tier, slot, slot_weight, description FROM equipment WHERE item_id = ?", (item_id,))
@@ -130,10 +163,13 @@ def get_equipment_data(item_id):
     conn.close()
 
     if row:
-        return {"name": row[0], "power": row[1], "type": row[2], "tier": row[3],
-                "slot": row[4], "slot_weight": row[5], "desc": row[6]}
-    return {"name": "미식별 고철", "power": 5, "type": "kinetic", "tier": 4,
-            "slot": "main_weapon", "slot_weight": 1.5, "desc": "DB 미등록 부품."}
+        result = {"name": row[0], "power": row[1], "type": row[2], "tier": row[3],
+                  "slot": row[4], "slot_weight": row[5], "desc": row[6]}
+    else:
+        result = {"name": "미식별 고철", "power": 5, "type": "kinetic", "tier": 4,
+                  "slot": "main_weapon", "slot_weight": 1.5, "desc": "DB 미등록 부품."}
+    _eq_cache[item_id] = result
+    return result
 
 # ====================================================================
 # [2] 하드웨어 수준 입력 버퍼 및 키 입력 제어
@@ -172,6 +208,34 @@ def wait_for_keypress():
             sys.stdin.read(1)
         finally:
             termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+
+def read_key():
+    """엔터 없이 단일 키를 즉시 감지해 대문자 문자열로 반환합니다."""
+    flush_input()
+    if os.name == 'nt':
+        import msvcrt
+        ch = msvcrt.getch()
+        if ch == b'\x03':
+            sys.exit()
+        if ch in (b'\xe0', b'\x00'):  # 방향키 등 특수 키 — 두 번째 바이트 소비 후 무시
+            msvcrt.getch()
+            return ''
+        try:
+            return ch.decode('cp949').upper()
+        except Exception:
+            return ''
+    else:
+        import tty, termios
+        fd = sys.stdin.fileno()
+        old = termios.tcgetattr(fd)
+        try:
+            tty.setraw(fd)
+            ch = sys.stdin.read(1)
+            if ch == '\x03':
+                sys.exit()
+            return ch.upper()
+        finally:
+            termios.tcsetattr(fd, termios.TCSADRAIN, old)
 
 # 구동 프로토콜 가동
 init_and_load_db()
@@ -314,10 +378,7 @@ def show_diary(player):
             nav.append("N: 다음")
         nav.append("0: 복귀")
         print(f"  {' | '.join(nav)}")
-        try:
-            cmd = safe_input("\n  입력: ").strip().upper()
-        except:
-            sys.exit()
+        cmd = read_key()
         if cmd == "0":
             break
         elif cmd == "N" and page < pages - 1:
@@ -386,6 +447,7 @@ class Player:
         self.inventory = []
         self.equipment = {k: v for k, v in SLOT_DEFAULTS.items()}
         self.diary = []
+        self.active_quest = None
 
     def get_highest_tier(self):
         item_data = get_equipment_data(self.equipment["main_weapon"])
@@ -398,7 +460,8 @@ class Player:
             "consumables": self.consumables, "weights": self.weights,
             "inventory": self.inventory, "equipment": self.equipment, "reputation": self.reputation,
             "turn_count": self.turn_count, "difficulty": self.difficulty,
-            "enemies_defeated": self.enemies_defeated, "diary": self.diary
+            "enemies_defeated": self.enemies_defeated, "diary": self.diary,
+            "active_quest": self.active_quest,
         }
 
     def from_dict(self, data):
@@ -420,6 +483,7 @@ class Player:
         self.difficulty = data.get("difficulty", "normal")
         self.enemies_defeated = data.get("enemies_defeated", 0)
         self.diary = data.get("diary", [])
+        self.active_quest = data.get("active_quest", None)
 
     def get_attack_power(self):
         item_data = get_equipment_data(self.equipment["main_weapon"])
@@ -469,6 +533,11 @@ class Player:
         med_cnt = sum(v for k,v in self.consumables.items() if CONSUMABLES_DB.get(k, {}).get("type")=="hp")
         
         print(f"  [소지품] 회복약: {med_cnt} | 식량: {food_cnt} | 식수: {water_cnt} | 고철 자산: {self.materials}")
+        if self.active_quest:
+            q = self.active_quest
+            turns_left = max(0, q["deadline"] - self.turn_count)
+            print_divider()
+            print(f"  [돌발 퀘스트] {q['title']}  ─  진행: {q['progress']}/{q['target']}  남은 기한: {turns_left}턴")
         print_divider()
         print()
 
@@ -593,6 +662,7 @@ class Player:
                             self.inventory.pop(n - 1)
                             gained = random.randint(15, 30)
                             self.materials += gained
+                            advance_quest(self, "scrap", gained)
                             d = get_equipment_data(item_id)
                             print(f"\n  [처리] '{d['name']}' 분쇄 완료 — 일반 고철 {gained}개 추출했습니다.")
                     else:
@@ -645,7 +715,7 @@ class Player:
         
         print_divider()
         print("  [0] 이전 메뉴로 복귀")
-        cmd = safe_input("\n사용할 아이템 번호: ")
+        cmd = read_key()
         
         if cmd.isdigit() and 0 < int(cmd) <= len(avail):
             key = avail[int(cmd)-1]
@@ -667,22 +737,21 @@ class GameMap:
         self.size = 5
         self.player_pos = [0, 0]
         self.bunker_pos = [4, 4]
-        coords = [(x, y) for x in range(5) for y in range(5) if (x,y) not in [(0,0), (4,4)]]
-        self.event_locations = random.sample(coords, 6)
+        self.visited_tiles: set = {(0, 0)}
         self.session_index = 0
         self.escaped_enemy_hp = None
         self.escaped_enemy_type = None
 
     def to_dict(self):
         return {
-            "player_pos": self.player_pos, "event_locations": self.event_locations,
+            "player_pos": self.player_pos, "visited_tiles": list(self.visited_tiles),
             "session_index": self.session_index, "escaped_enemy_hp": self.escaped_enemy_hp,
             "escaped_enemy_type": self.escaped_enemy_type,
         }
 
     def from_dict(self, data):
         self.player_pos = data.get("player_pos", [0, 0])
-        self.event_locations = [tuple(x) for x in data.get("event_locations", [])]
+        self.visited_tiles = {tuple(x) for x in data.get("visited_tiles", [(0, 0)])}
         self.session_index = data.get("session_index", 0)
         self.escaped_enemy_hp = data.get("escaped_enemy_hp", None)
         self.escaped_enemy_type = data.get("escaped_enemy_type", None)
@@ -845,8 +914,7 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
         if has_consumable:
             print("  5. 소모품 사용 (USE ITEM - 전투 중 회복, 적 반격 있음)")
 
-        try: cmd = safe_input("\n명령 코드 입력: ")
-        except: sys.exit()
+        cmd = read_key()
 
         if cmd == "1":
             consecutive_attacks += 1
@@ -938,8 +1006,7 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
                     desc = h_val + t_val
                 print(f"  [{i+1}] {item['name']} x{player.consumables[key]} — {desc}")
             print("  [0] 취소")
-            try: item_cmd = safe_input("사용할 아이템: ")
-            except: sys.exit()
+            item_cmd = read_key()
             if item_cmd.isdigit() and 0 < int(item_cmd) <= len(avail):
                 key = avail[int(item_cmd) - 1]
                 item = CONSUMABLES_DB[key]
@@ -1000,6 +1067,7 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
                 print(f"  [수집] {CONSUMABLES_DB[it]['name']} 1개 획득")
             elif loot_res == "MATERIAL":
                 player.materials += 15
+                advance_quest(player, "scrap", 15)
                 print("  [수집] 일반 고철 15개 획득")
             elif loot_res == "PART":
                 part = random.choice(["PART_SCRAP_01", "PART_SCRAP_02", "PART_SCRAP_03"])
@@ -1040,8 +1108,10 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
             print(f"  [파밍] 기적적으로 온전한 '{CONSUMABLES_DB[it]['name']}' 1개를 회수했습니다.")
         else:
             player.materials += 20
+            advance_quest(player, "scrap", 20)
             print("  [파밍] 고가치 일반 고철 20개를 회수했습니다.")
 
+    advance_quest(player, "combat")
     log_diary(player, f"[전투] {name} — 제압 완료 (총 {player.enemies_defeated}기)")
     wait_for_keypress()
     return None, None
@@ -1085,10 +1155,7 @@ def run_game():
         print(f"  {exit_key}. 시스템 종료 (Exit)")
         print_divider()
 
-        try:
-            ans = safe_input("\n시스템 모드 선택: ").strip()
-        except:
-            sys.exit()
+        ans = read_key()
 
         # ── 종료 ──────────────────────────────────────────────────────────
         if ans == exit_key:
@@ -1132,10 +1199,7 @@ def run_game():
                 print_divider()
 
                 diff_map = {"1": "easy", "2": "normal", "3": "hard"}
-                try:
-                    diff_ans = safe_input("\n난이도 입력 (1-3, 0=돌아가기): ").strip()
-                except:
-                    sys.exit()
+                diff_ans = read_key()
 
                 if diff_ans == "0":
                     go_back = True
@@ -1158,6 +1222,13 @@ def run_game():
 
     while True:
         clear_screen()
+        if player.active_quest and player.turn_count > player.active_quest["deadline"]:
+            q = player.active_quest
+            print(f"\n  [퀘스트 실패] '{q['title']}' — 제한 턴 초과")
+            log_diary(player, f"[퀘스트 실패] {q['title']}")
+            player.active_quest = None
+            time.sleep(1.5)
+            clear_screen()
         grid.draw()
         player.show_status()
         
@@ -1170,8 +1241,7 @@ def run_game():
         print("  Q           : 시스템 접속 종료 (Exit)")
         print_divider()
         
-        try: move = safe_input("\n입력: ").strip().upper()
-        except: sys.exit()
+        move = read_key()
 
         if move == "I":
             player.manage_inventory()
@@ -1228,6 +1298,7 @@ def run_game():
                 if item_roll <= 0.25:
                     gained = random.randint(10, 25)
                     player.materials += gained
+                    advance_quest(player, "scrap", gained)
                     print(f"\n[획득] 엉켜있는 배선에서 일반 고철 {gained}개를 주웠습니다.")
                 elif item_roll <= 0.60:
                     if random.random() < 0.5:
@@ -1243,13 +1314,19 @@ def run_game():
                     player.consumables[it] += 1
                     print(f"\n[획득] 구석의 구급 상자에서 희귀한 '{CONSUMABLES_DB[it]['name']}' 1개를 획득했습니다.")
                 wait_for_keypress()
+            # 탐색 퀘스트 진행 및 돌발 퀘스트 (전투 미조우 시)
+            if not (0.08 <= roll < 0.08 + encounter_chance):
+                advance_quest(player, "search")
+                if roll >= 0.08 + encounter_chance + 0.20:
+                    trigger_sudden_quest(player)
         elif move == "Q":
             clear_screen()
             print_header("생체 접속 종료 — 그리드 이탈")
             print()
             type_text("  현재까지의 당신의 흔적을 세상에 남겨 두시겠습니까?", 0.02)
             print()
-            save_choice = safe_input("  저장 후 종료하시겠습니까? (Y/N): ").strip().upper()
+            print("  저장 후 종료하시겠습니까? (Y/N): ", end="", flush=True)
+            save_choice = read_key()
             if save_choice == 'Y':
                 save_data(player, grid)
                 print("\n  [SYSTEM] 데이터 동기화 완료. 그리드 접속을 종료합니다.")
@@ -1279,6 +1356,9 @@ def run_game():
             player.consume_resources()
 
             current_loc = tuple(grid.player_pos)
+            is_new_tile = current_loc not in grid.visited_tiles
+            grid.visited_tiles.add(current_loc)
+
             if current_loc == tuple(grid.bunker_pos):
                 if SESSIONS_DB and len(SESSIONS_DB) > 6:
                     handle_session(player, SESSIONS_DB[6])
@@ -1304,8 +1384,7 @@ def run_game():
                     print("  1. 소모품 사용")
                     print("  2. 현재 상태 저장")
                     print("  3. 보스전 돌입 (ENTER COMBAT)")
-                    try: prep_cmd = safe_input("\n선택: ")
-                    except: sys.exit()
+                    prep_cmd = read_key()
                     if prep_cmd == "1":
                         player.use_consumable_menu()
                     elif prep_cmd == "2":
@@ -1316,27 +1395,32 @@ def run_game():
                 run_boss_core_choice(player)
                 run_ending(player)
                 break
-            elif current_loc in grid.event_locations:
-                if SESSIONS_DB and grid.session_index < len(SESSIONS_DB):
-                    print("\n  [스캔] 이 구역에서 특이한 반응이 감지됩니다...")
-                    time.sleep(1.2)
-                    handle_session(player, SESSIONS_DB[grid.session_index])
-                grid.event_locations.remove(current_loc)
-                grid.session_index += 1
             else:
-                if random.random() < get_encounter_chance(player):
-                    print("\n[경보] 안개 속에서 기계 괴수의 광학 센서가 번뜩입니다!")
-                    wait_for_keypress()
-                    if grid.escaped_enemy_hp is not None:
-                        etype = grid.escaped_enemy_type or "drone"
+                session_triggered = False
+                if is_new_tile and SESSIONS_DB and grid.session_index < len(SESSIONS_DB) - 1:
+                    _s_base = 0.40 if grid.session_index < 3 else 0.10
+                    _s_prob = max(0.0, _s_base * (1.0 - player.turn_count / 100.0))
+                    if random.random() < _s_prob:
+                        print("\n  [스캔] 이 구역에서 특이한 반응이 감지됩니다...")
+                        time.sleep(1.2)
+                        handle_session(player, SESSIONS_DB[grid.session_index])
+                        grid.session_index += 1
+                        session_triggered = True
+
+                if not session_triggered:
+                    if random.random() < get_encounter_chance(player):
+                        print("\n[경보] 안개 속에서 기계 괴수의 광학 센서가 번뜩입니다!")
+                        wait_for_keypress()
+                        if grid.escaped_enemy_hp is not None:
+                            etype = grid.escaped_enemy_type or "drone"
+                        else:
+                            etype = "bio_hound" if random.random() < 0.20 else "drone"
+                        result_hp, result_type = combat_loop(player, is_boss=False, current_hp=grid.escaped_enemy_hp, enemy_type=etype)
+                        grid.escaped_enemy_hp = result_hp
+                        grid.escaped_enemy_type = result_type
                     else:
-                        etype = "bio_hound" if random.random() < 0.20 else "drone"
-                    result_hp, result_type = combat_loop(player, is_boss=False, current_hp=grid.escaped_enemy_hp, enemy_type=etype)
-                    grid.escaped_enemy_hp = result_hp
-                    grid.escaped_enemy_type = result_type
-                else:
-                    if random.random() < 0.2:
-                        print_ambient_lore()
+                        if random.random() < 0.2:
+                            print_ambient_lore()
 
 def handle_session(player, session):
     clear_screen()
@@ -1347,8 +1431,7 @@ def handle_session(player, session):
         print(f"  [{i+1}] {choice['text']}")
     time.sleep(1)
     while True:
-        try: ans = safe_input("\n행동 선택 (1-3): ")
-        except: sys.exit()
+        ans = read_key()
         if ans in ["1", "2", "3"]:
             choice_data = session['choices'][int(ans) - 1]
             choice_weight = choice_data.get('weight')
@@ -1360,6 +1443,7 @@ def handle_session(player, session):
                 if choice_data["reward"] == "SCRAP_MAT":
                     mat_gain = choice_data.get("materials", 30)
                     player.materials += mat_gain
+                    advance_quest(player, "scrap", mat_gain)
                     print(f"\n[획득] 일반 고철 {mat_gain}개를 회수했습니다.")
                 else:
                     player.inventory.append(choice_data["reward"])
@@ -1378,6 +1462,7 @@ def handle_session(player, session):
             if raw_mat != 0 and not choice_data.get("reward") == "SCRAP_MAT":
                 player.materials = max(0, player.materials + raw_mat)
                 if raw_mat > 0:
+                    advance_quest(player, "scrap", raw_mat)
                     print(f"\n[획득] 고철 +{raw_mat}개")
                 else:
                     print(f"\n[소비] 고철 {raw_mat}개")
@@ -1420,6 +1505,77 @@ def handle_session(player, session):
             wait_for_keypress()
             break
 
+def trigger_sudden_quest(player):
+    """12% 확률로 돌발 퀘스트 발생. 기존 활성 퀘스트가 있으면 무시."""
+    if player.active_quest is not None or not SUDDEN_QUESTS:
+        return
+    if random.random() > 0.12:
+        return
+    tpl = random.choice(SUDDEN_QUESTS)
+    deadline = player.turn_count + tpl["turns"]
+    q: dict = {
+        "id":          tpl["id"],
+        "title":       tpl["title"],
+        "type":        tpl["type"],
+        "target":      tpl["target"],
+        "progress":    0,
+        "deadline":    deadline,
+        "reward_type": tpl["reward_type"],
+        "reward_desc": tpl["reward_desc"],
+    }
+    if "reward_id"     in tpl: q["reward_id"]     = tpl["reward_id"]
+    if "reward_amount" in tpl: q["reward_amount"] = tpl["reward_amount"]
+    player.active_quest = q
+    clear_screen()
+    print_header(f"!! 돌발 퀘스트 — {tpl['title']}")
+    type_text(f"  {tpl['desc']}", 0.022)
+    print()
+    print(f"  [목표]  {tpl['detail']}")
+    print(f"  [기한]  {tpl['turns']}턴 이내  (현재 {player.turn_count}턴 → 기한 {deadline}턴)")
+    print(f"  [보상]  {tpl['reward_desc']}")
+    print()
+    log_diary(player, f"[퀘스트] {tpl['title']} 발생 (기한: {deadline}턴)")
+    wait_for_keypress()
+
+
+def _complete_quest(player):
+    """퀘스트 완료 처리: 보상 지급 후 active_quest 초기화."""
+    q = player.active_quest
+    if q is None:
+        return
+    clear_screen()
+    print_header(f"!! 돌발 퀘스트 완료 — {q['title']}")
+    print()
+    print(f"  [보상 지급]  {q['reward_desc']}")
+    rtype = q["reward_type"]
+    if rtype == "consumable":
+        rid = q["reward_id"]
+        player.consumables[rid] = player.consumables.get(rid, 0) + 1
+        print(f"  {CONSUMABLES_DB.get(rid, {}).get('name', rid)} 소지품에 추가됨.")
+    elif rtype == "materials":
+        amt = q.get("reward_amount", 30)
+        player.materials += amt
+        print(f"  잔여 고철: {player.materials}개")
+    elif rtype == "ram":
+        amt = q.get("reward_amount", 1)
+        player.max_ram += amt
+        print(f"  가용 RAM: {player.max_ram}")
+    print()
+    log_diary(player, f"[퀘스트 완료] {q['title']} → {q['reward_desc']}")
+    player.active_quest = None
+    wait_for_keypress()
+
+
+def advance_quest(player, qtype, amount=1):
+    """퀘스트 진행 갱신. qtype이 일치할 때만 progress 누적 후 완료 판정."""
+    q = player.active_quest
+    if q is None or q["type"] != qtype:
+        return
+    q["progress"] = min(q["target"], q["progress"] + amount)
+    if q["progress"] >= q["target"]:
+        _complete_quest(player)
+
+
 def handle_random_event(player, event):
     """RANDOM_EVENTS DB에서 뽑힌 미니 이벤트를 처리합니다."""
     clear_screen()
@@ -1438,6 +1594,8 @@ def handle_random_event(player, event):
             player.materials = max(0, player.materials + result["materials"])
             sign = "+" if result["materials"] > 0 else ""
             print(f"  [자원] 고철 {sign}{result['materials']}개")
+            if result["materials"] > 0:
+                advance_quest(player, "scrap", result["materials"])
         if result.get("hunger", 0) < 0:
             player.hunger = max(0, player.hunger + result["hunger"])
         if result.get("thirst", 0) < 0:
@@ -1456,8 +1614,7 @@ def handle_random_event(player, event):
             print(f"  [{i+1}] {c['text']}")
         time.sleep(0.5)
         while True:
-            try: ans = safe_input(f"\n행동 선택 (1-{len(choices)}): ")
-            except: sys.exit()
+            ans = read_key()
             if ans.isdigit() and 1 <= int(ans) <= len(choices):
                 c = choices[int(ans) - 1]
                 break
@@ -1477,6 +1634,8 @@ def handle_random_event(player, event):
             player.materials = max(0, player.materials + mat)
             sign = "+" if mat > 0 else ""
             print(f"  [자원] 고철 {sign}{mat}개")
+            if mat > 0:
+                advance_quest(player, "scrap", mat)
         if c.get("hunger", 0) > 0:
             player.hunger = min(100, player.hunger + c["hunger"])
         if c.get("thirst", 0) > 0:
@@ -1513,8 +1672,7 @@ def handle_trader(player):
         print_divider()
         print("  [0] 거래 종료")
 
-        try: cmd = safe_input("\n구매할 번호 입력: ")
-        except: sys.exit()
+        cmd = read_key()
 
         if cmd == "0":
             type_text("  '또 보자고.' 행상인이 카트를 밀며 안개 속으로 사라집니다.", 0.02)
@@ -1548,10 +1706,7 @@ def run_prologue():
     print("  1. 프롤로그 재생  (부팅 시퀀스 → 도입 서사 → 세계관 → 조작법)")
     print("  0. 스킵           (즉시 게임 시작)")
     print()
-    try:
-        skip_ans = safe_input("  선택: ").strip()
-    except:
-        sys.exit()
+    skip_ans = read_key()
     if skip_ans == "0":
         clear_screen()
         type_text("[SYSTEM] 서사 시퀀스 스킵. 생존 인터페이스 가동.", 0.022)
@@ -1687,8 +1842,7 @@ def run_boss_core_choice(player):
     print_divider()
 
     while True:
-        try: ans = safe_input("코어 처분 선택 (1-3): ")
-        except: sys.exit()
+        ans = read_key()
         if ans == "1":
             player.weights["kinetic"] += 3
             print()
