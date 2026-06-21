@@ -495,6 +495,52 @@ class Player:
         item_data = get_equipment_data(self.equipment["main_weapon"])
         return item_data.get("power", 10)
 
+    def get_armor_bonus(self):
+        """상의+하의 → (HP 보너스, 방어력 보너스)
+        미장착 슬롯은 T4 기본 수준 가상값 (HP +80, DEF +1) 부여"""
+        hp_b = 0; def_b = 0
+        for slot in ("top", "bottom"):
+            eid = self.equipment.get(slot)
+            if eid:
+                d = get_equipment_data(eid)
+                hp_b  += d.get("power", 0) * 8
+                def_b += d.get("power", 0) // 8
+            else:
+                hp_b  += 80  # T4 기본 장비 가상값
+                def_b += 1   # T4 기본 장비 가상값
+        return hp_b, def_b
+
+    def get_gear_atk_bonus(self):
+        """비무기·비방어구 8슬롯 → 추가 공격력
+        장착 시 power × 0.4 / 미장착(빈 슬롯)은 T4 기본 장비 수준 +5 가상 부여"""
+        ATKSLT = {"cyberdeck","cybernetic_parts","back_gear","face",
+                  "footwear","necklace","ring","custom_part"}
+        bonus = 0.0
+        for sl in ATKSLT:
+            eid = self.equipment.get(sl)
+            if eid:
+                d = get_equipment_data(eid)
+                bonus += d.get("power", 0) * 0.4
+            else:
+                bonus += 5  # T4 기본 장비 가상값
+        return int(bonus)
+
+    def get_cyberdeck_e_suppress(self):
+        """사이버덱 장착 시 연속 공격 E 증가 억제량"""
+        eid = self.equipment.get("cyberdeck")
+        if eid:
+            d = get_equipment_data(eid)
+            return min(2, d.get("power", 0) // 25)
+        return 0
+
+    def get_cyber_regen(self):
+        """의체부품 장착 시 전투 턴당 HP 재생량"""
+        eid = self.equipment.get("cybernetic_parts")
+        if eid:
+            d = get_equipment_data(eid)
+            return d.get("power", 0) // 20
+        return 0
+
     @track
     def consume_resources(self):
         self.turn_count += 1
@@ -526,8 +572,16 @@ class Player:
         item_data = get_equipment_data(self.equipment['main_weapon'])
         wpn_name = item_data['name']
         wpn_pwr = self.get_attack_power()
-        
+        gear_atk = self.get_gear_atk_bonus()
+        hp_b, def_b = self.get_armor_bonus()
+
         print(f"  [장착 무기] {wpn_name:<15} (T={tier} 위력: {wpn_pwr:<3d})        [가용 평판] {self.reputation:+d}")
+        if gear_atk > 0 or hp_b > 0 or def_b > 0:
+            bonus_parts = []
+            if gear_atk > 0: bonus_parts.append(f"공격력 +{gear_atk}")
+            if hp_b   > 0: bonus_parts.append(f"HP +{hp_b}")
+            if def_b  > 0: bonus_parts.append(f"방어 -{def_b}")
+            print(f"  [장비 보너스] {' | '.join(bonus_parts)}")
 
         threat_mult = get_turn_scale_multiplier(self)
         diff_label = {"easy": "이지", "normal": "노멀", "hard": "하드"}.get(self.difficulty, self.difficulty)
@@ -859,6 +913,14 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
     escape_log = ""
     action_logs = [f"[경보] 안개 속에서 {name}이(가) 나타났습니다!"]
 
+    hp_bonus, def_bonus = player.get_armor_bonus()
+    gear_atk     = player.get_gear_atk_bonus()
+    e_suppress   = player.get_cyberdeck_e_suppress()
+    cyber_regen  = player.get_cyber_regen()
+    if hp_bonus > 0:
+        player.max_hp += hp_bonus
+        player.hp = min(player.hp + hp_bonus, player.max_hp)
+
     while hp > 0 and player.hp > 0:
         if is_boss and turn > 15:
             clear_screen()
@@ -925,13 +987,18 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
         if cmd == "1":
             consecutive_attacks += 1
             if consecutive_attacks >= 2 and is_boss:
-                learning_index += 3
-                action_logs.append("[경고] 동일 공격 반복 감지. 보스가 궤적을 딥러닝 중입니다. (E +3)")
+                e_gain = max(0, 3 - e_suppress)
+                learning_index += e_gain
+                if e_suppress > 0:
+                    action_logs.append(f"[경고] 동일 공격 반복 감지. 사이버덱이 학습 신호를 교란합니다. (E +{e_gain})")
+                else:
+                    action_logs.append(f"[경고] 동일 공격 반복 감지. 보스가 궤적을 딥러닝 중입니다. (E +{e_gain})")
 
             penalty = max(0.5, 1.0 - (learning_index - 10) * 0.05) if learning_index > 10 else 1.0
             f_multiplier = 1.0 + (player.reputation / 2000) * 1
+            effective_power = player.get_attack_power() + gear_atk
 
-            dmg = max(100, math.floor(player.get_attack_power() * f_multiplier * penalty * 100) - e_def + random.randint(-50, 50))
+            dmg = max(100, math.floor(effective_power * f_multiplier * penalty * 100) - e_def + random.randint(-50, 50))
             disp_dmg, _, _ = apply_dynamic_scaling(dmg, 0, tier)
 
             print(f"\n  콰아앙! 무기가 적의 장갑판을 관통했습니다! (피해량: {disp_dmg:,})")
@@ -1040,13 +1107,17 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
             if cmd == "2":
                 atk = int(base_atk * (1.6 if phase2_triggered else 1.0))
 
-            print(f"\n  {name}의 무자비한 공격! (피해량: {atk:,})")
+            dmg_taken = max(1, atk - def_bonus)
+            print(f"\n  {name}의 무자비한 공격! (피해량: {dmg_taken:,})")
             time.sleep(1)
-            player.hp -= atk
+            player.hp -= dmg_taken
+            if cyber_regen > 0 and player.hp > 0:
+                player.hp = min(player.max_hp, player.hp + cyber_regen)
             _, disp_php_new, _ = apply_dynamic_scaling(0, max(0, player.hp), tier)
             print(f"  [시스템 갱신] 내 잔여 체력: {disp_php_new:,} / {disp_pmaxhp:,}")
             time.sleep(1)
-            action_logs.append(f"[피격] 적의 공격으로 {atk:,}의 손상을 입었습니다.")
+            def_note = f" (방어 -{def_bonus})" if def_bonus > 0 else ""
+            action_logs.append(f"[피격] 적의 공격으로 {dmg_taken:,}의 손상을 입었습니다.{def_note}")
             time.sleep(1)
 
         turn += 1
@@ -1091,6 +1162,9 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
 
         log_diary(player, f"[전투] {name} — 전술적 후퇴")
         wait_for_keypress()
+        if hp_bonus > 0:
+            player.max_hp -= hp_bonus
+            player.hp = min(player.hp, player.max_hp)
         return hp, enemy_type
 
     clear_screen()
@@ -1120,6 +1194,9 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
     advance_quest(player, "combat")
     log_diary(player, f"[전투] {name} — 제압 완료 (총 {player.enemies_defeated}기)")
     wait_for_keypress()
+    if hp_bonus > 0:
+        player.max_hp -= hp_bonus
+        player.hp = min(player.hp, player.max_hp)
     return None, None
 
 # ====================================================================
