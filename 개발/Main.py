@@ -38,6 +38,29 @@ SESSIONS_DB = []
 RANDOM_EVENTS = []
 TRADER_ITEMS = []
 MASTER_FORMULAS = {}
+
+# 11개 장비 슬롯 정의 — DB slot 컬럼 키와 1:1 대응
+SLOT_DISPLAY = {
+    "main_weapon":      "주무기",
+    "cyberdeck":        "사이버덱",
+    "cybernetic_parts": "의체부품",
+    "back_gear":        "등 장비",
+    "face":             "얼굴",
+    "top":              "상의",
+    "bottom":           "하의",
+    "footwear":         "신발",
+    "necklace":         "목걸이",
+    "ring":             "반지",
+    "custom_part":      "특화부품",
+}
+SLOT_DEFAULTS = {
+    "main_weapon": "WEAPON_NONE",
+    "cyberdeck": None, "cybernetic_parts": None, "back_gear": None,
+    "face": None, "top": None, "bottom": None, "footwear": None,
+    "necklace": None, "ring": None, "custom_part": None,
+}
+TIER_TAGS = {4: "T4 급조", 3: "T3 규격", 2: "T2 정제", 1: "T1 기업", 0: "T0 유물"}
+
 @track
 def init_and_load_db():
     """게임 부팅 시 DB 및 master_formulas.json 무결성을 검증하고 메모리에 로드합니다."""
@@ -102,13 +125,15 @@ def get_equipment_data(item_id):
         
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
-    cursor.execute("SELECT name, power, type, tier, description FROM equipment WHERE item_id = ?", (item_id,))
+    cursor.execute("SELECT name, power, type, tier, slot, slot_weight, description FROM equipment WHERE item_id = ?", (item_id,))
     row = cursor.fetchone()
     conn.close()
-    
+
     if row:
-        return {"name": row[0], "power": row[1], "type": row[2], "tier": row[3], "desc": row[4]}
-    return {"name": "미식별 고철", "power": 5, "type": "kinetic", "tier": 4, "desc": "DB 미등록 부품."}
+        return {"name": row[0], "power": row[1], "type": row[2], "tier": row[3],
+                "slot": row[4], "slot_weight": row[5], "desc": row[6]}
+    return {"name": "미식별 고철", "power": 5, "type": "kinetic", "tier": 4,
+            "slot": "main_weapon", "slot_weight": 1.5, "desc": "DB 미등록 부품."}
 
 # ====================================================================
 # [2] 하드웨어 수준 입력 버퍼 및 키 입력 제어
@@ -285,10 +310,10 @@ class Player:
         # 데모(1막) 단계에서 자동 지급되면 밸런스와 진행 동기를 해친다.
         # 개발자 검증용 유물 지급은 DEV_GRANT_LEGACY 히든 커맨드(아래)로만 가능하다.
         self.inventory = []
-        self.equipment = {"weapon": "WEAPON_NONE"}
+        self.equipment = {k: v for k, v in SLOT_DEFAULTS.items()}
 
     def get_highest_tier(self):
-        item_data = get_equipment_data(self.equipment["weapon"])
+        item_data = get_equipment_data(self.equipment["main_weapon"])
         return item_data.get("tier", 4)
 
     def to_dict(self):
@@ -312,13 +337,16 @@ class Player:
         self.consumables = data.get("consumables", {k: 0 for k in CONSUMABLES_DB.keys()})
         self.weights = data.get("weights", {"kinetic": 0, "scrap": 0, "cyber": 0})
         self.inventory = data.get("inventory", [])
-        self.equipment = data.get("equipment", {"weapon": "WEAPON_NONE"})
+        raw_eq = data.get("equipment", {})
+        if "weapon" in raw_eq and "main_weapon" not in raw_eq:
+            raw_eq["main_weapon"] = raw_eq.pop("weapon")
+        self.equipment = {k: raw_eq.get(k, v) for k, v in SLOT_DEFAULTS.items()}
         self.turn_count = data.get("turn_count", 0)
         self.difficulty = data.get("difficulty", "normal")
         self.enemies_defeated = data.get("enemies_defeated", 0)
 
     def get_attack_power(self):
-        item_data = get_equipment_data(self.equipment["weapon"])
+        item_data = get_equipment_data(self.equipment["main_weapon"])
         return item_data.get("power", 10)
 
     @track
@@ -349,7 +377,7 @@ class Player:
         
         print(f"  [생명력] {display_hp:,} / {display_max_hp:,}    [허기] {self.hunger:3d} / 100      [갈증] {self.thirst:3d} / 100")
         
-        item_data = get_equipment_data(self.equipment['weapon'])
+        item_data = get_equipment_data(self.equipment['main_weapon'])
         wpn_name = item_data['name']
         wpn_pwr = self.get_attack_power()
         
@@ -368,91 +396,151 @@ class Player:
         print("+" + "-"*76 + "+\n")
 
     def manage_inventory(self):
+        slot_keys = list(SLOT_DISPLAY.keys())
+
         while True:
             clear_screen()
             print_header("시스템 인벤토리 및 정비")
-            
-            print("[ 보유 중인 장비 목록 ]")
-            if not self.inventory: print("  - 데이터 없음 (비어있음)")
-            else:
-                for i, item_id in enumerate(self.inventory):
-                    equip_mark = "[장착중] " if self.equipment["weapon"] == item_id else "         "
-                    item_data = get_equipment_data(item_id)
-                    print(f"  [{i+1}] {equip_mark}{item_data['name']} (위력: {item_data['power']} | T={item_data.get('tier',4)})")
-            
+
+            # ── 장착 슬롯 현황 패널 ───────────────────────────────────────────
+            print("  ▌ 장착 슬롯 현황")
             print_divider()
-            print("[ 명령 프로토콜 ]")
-            print("  1. 장비 장착")
-            print("  2. 장비 해제")
-            print("  3. 소모품 사용")
-            print("  4. 장비 분해 (고철 추출)")
-            print("  0. 탐색망으로 복귀")
-            try:cmd = safe_input("\n명령어 입력: ")
-            except: sys.exit()
-            
-            if cmd == "1":
-                if not self.inventory:
-                    print("\n[알림] 교체할 장비가 없습니다.")
-                    wait_for_keypress()
-                    continue
-                choice = safe_input("장착할 아이템 번호: ")
-                if choice.isdigit() and 0 < int(choice) <= len(self.inventory):
-                    item_id = self.inventory[int(choice)-1]
-                    self.equipment["weapon"] = item_id
-                    item_data = get_equipment_data(item_id)
-                    print(f"\n[처리] '{item_data['name']}'을(를) 시스템 소켓에 결속했습니다.")
-                    wait_for_keypress()
-                    
-            elif cmd == "2":
-                if self.equipment["weapon"] == "WEAPON_NONE":
-                    print("\n[알림] 이미 소켓이 비어있는 맨손 상태입니다.")
+            for si, sk in enumerate(slot_keys, 1):
+                label = SLOT_DISPLAY[sk]
+                eid = self.equipment.get(sk)
+                if eid and eid != "WEAPON_NONE":
+                    d = get_equipment_data(eid)
+                    tag = TIER_TAGS.get(d.get("tier", 4), "T?    ")
+                    print(f"   [{si:2d}] {label}  │  ★  {d['name'][:24]}    {tag}  위력:{d['power']:>4}")
                 else:
-                    item_data = get_equipment_data(self.equipment["weapon"])
-                    print(f"\n[처리] '{item_data['name']}'의 결속을 해제했습니다.")
-                    self.equipment["weapon"] = "WEAPON_NONE"
+                    print(f"   [{si:2d}] {label}  │  ─  미장착")
+            print()
+
+            # ── 보유 장비 목록 (슬롯별 그룹) ────────────────────────────────────
+            print(f"  ▌ 보유 장비 목록  (총 {len(self.inventory)}종  /  고철: {self.materials}개)")
+            print_divider()
+            if not self.inventory:
+                print("  데이터 없음 (인벤토리가 비어있습니다)")
+            else:
+                groups = {sk: [] for sk in slot_keys}
+                groups["기타"] = []
+                num = 1
+                for item_id in self.inventory:
+                    d = get_equipment_data(item_id)
+                    sk = d.get("slot", "기타")
+                    if sk not in groups:
+                        sk = "기타"
+                    groups[sk].append((num, item_id, d))
+                    num += 1
+
+                for sk in slot_keys + ["기타"]:
+                    items = groups[sk]
+                    if not items:
+                        continue
+                    label = SLOT_DISPLAY.get(sk, sk)
+                    print(f"   ── {label} {'─' * max(2, 56 - len(label) * 2)}")
+                    for n, iid, d in items:
+                        equipped = (self.equipment.get(sk) == iid)
+                        mark = "★" if equipped else " "
+                        tag = TIER_TAGS.get(d.get("tier", 4), "T?    ")
+                        w = d.get("slot_weight", 1.0)
+                        print(f"   [{n:2d}] {mark}  {d['name'][:26]:<26}  {tag}  위력:{d['power']:>4}  W:{w:.1f}")
+            print_divider()
+
+            # ── 명령 ────────────────────────────────────────────────────────────
+            print("  [ 명령 ]")
+            print("   E <번호>     : 장착 (슬롯 자동 인식)     U <슬롯번호>  : 슬롯 해제")
+            print("   C            : 소모품 사용                D <번호>      : 분해 (고철 추출)")
+            print("   0            : 탐색망으로 복귀")
+            print_divider()
+            try:
+                cmd = safe_input("\n  명령어 입력: ").strip().upper()
+            except:
+                sys.exit()
+
+            # 장착: E <번호>
+            if cmd.startswith("E "):
+                parts = cmd.split()
+                if len(parts) == 2 and parts[1].isdigit():
+                    n = int(parts[1])
+                    if 1 <= n <= len(self.inventory):
+                        item_id = self.inventory[n - 1]
+                        d = get_equipment_data(item_id)
+                        sk = d.get("slot", "main_weapon")
+                        prev = self.equipment.get(sk)
+                        self.equipment[sk] = item_id
+                        print(f"\n  [결속] '{d['name']}' → {SLOT_DISPLAY.get(sk, sk)} 슬롯에 장착되었습니다.")
+                        if prev and prev != "WEAPON_NONE":
+                            pd = get_equipment_data(prev)
+                            print(f"  [교체] 기존 '{pd['name']}' 해제 — 인벤토리에 보관됩니다.")
+                    else:
+                        print("\n  [오류] 유효하지 않은 번호입니다.")
+                else:
+                    print("\n  [오류] 사용법: E <번호>  예) E 2")
                 wait_for_keypress()
-                
-            elif cmd == "3":
-                self.use_consumable_menu()
-                
-            elif cmd == "4":
-                if not self.inventory:
-                    print("\n[알림] 분해할 장비가 없습니다.")
-                else:
-                    choice = safe_input("분해하여 고철로 변환할 아이템 번호: ")
-                    if choice.isdigit() and 0 < int(choice) <= len(self.inventory):
-                        idx = int(choice) - 1
-                        item_id = self.inventory[idx]
-                        if self.equipment["weapon"] == item_id:
-                            print("\n[거부] 시스템 소켓에 결속 중인 장비는 분해할 수 없습니다. 먼저 해제하십시오.")
+
+            # 해제: U <슬롯번호>
+            elif cmd.startswith("U "):
+                parts = cmd.split()
+                if len(parts) == 2 and parts[1].isdigit():
+                    si = int(parts[1])
+                    if 1 <= si <= len(slot_keys):
+                        sk = slot_keys[si - 1]
+                        eid = self.equipment.get(sk)
+                        if eid and eid != "WEAPON_NONE":
+                            d = get_equipment_data(eid)
+                            self.equipment[sk] = SLOT_DEFAULTS[sk]
+                            print(f"\n  [해제] '{d['name']}' — {SLOT_DISPLAY[sk]} 슬롯 결속 해제되었습니다.")
                         else:
-                            self.inventory.pop(idx)
-                            gained_scrap = random.randint(15, 30)
-                            self.materials += gained_scrap
-                            item_data = get_equipment_data(item_id)
-                            print(f"\n[처리] '{item_data['name']}'을(를) 분쇄하여 일반 고철 {gained_scrap}개를 추출했습니다.")
+                            print(f"\n  [알림] {SLOT_DISPLAY[sk]} 슬롯은 이미 비어 있습니다.")
+                    else:
+                        print(f"\n  [오류] 슬롯 번호는 1~{len(slot_keys)} 범위입니다.")
+                else:
+                    print("\n  [오류] 사용법: U <슬롯번호>  예) U 1 = 주무기 해제")
                 wait_for_keypress()
+
+            # 소모품
+            elif cmd == "C":
+                self.use_consumable_menu()
+
+            # 분해: D <번호>
+            elif cmd.startswith("D "):
+                parts = cmd.split()
+                if len(parts) == 2 and parts[1].isdigit():
+                    n = int(parts[1])
+                    if 1 <= n <= len(self.inventory):
+                        item_id = self.inventory[n - 1]
+                        if any(v == item_id for v in self.equipment.values()):
+                            print("\n  [거부] 장착 중인 장비는 분해할 수 없습니다. 먼저 슬롯에서 해제하십시오.")
+                        else:
+                            self.inventory.pop(n - 1)
+                            gained = random.randint(15, 30)
+                            self.materials += gained
+                            d = get_equipment_data(item_id)
+                            print(f"\n  [처리] '{d['name']}' 분쇄 완료 — 일반 고철 {gained}개 추출했습니다.")
+                    else:
+                        print("\n  [오류] 유효하지 않은 번호입니다.")
+                else:
+                    print("\n  [오류] 사용법: D <번호>  예) D 3")
+                wait_for_keypress()
+
             elif cmd == "0":
                 break
 
-            # --- [개발자 전용 히든 커맨드] ---
-            # 메뉴 목록(1~4, 0)에는 노출되지 않으며, 정확한 문자열을 직접 입력해야만 동작한다.
-            # 0등급(유물) 장비 전체를 즉시 인벤토리에 지급해 밸런스/엔드게임 장비 검증에 사용한다.
-            # 일반 플레이 도중 우연히 입력될 가능성을 차단하기 위해 의도적으로 길고 고유한 문자열을 사용한다.
+            # DEV 히든 커맨드 — 메뉴에 노출 안 됨
             elif cmd == "DEV_GRANT_LEGACY":
                 conn = sqlite3.connect("stigma_data.db")
                 cursor = conn.cursor()
                 cursor.execute("SELECT item_id, name FROM equipment WHERE tier = 0")
                 legacy_items = cursor.fetchall()
                 conn.close()
-
                 granted = 0
-                for item_id, name in legacy_items:
-                    if item_id not in self.inventory:
-                        self.inventory.append(item_id)
+                for iid, _ in legacy_items:
+                    if iid not in self.inventory:
+                        self.inventory.append(iid)
                         granted += 1
                 sys_log(f"[DEV] 히든 커맨드 사용: 유물 장비 {granted}종 지급", level="DEV")
-                print(f"\n[DEV MODE] 0등급 유물 장비 {granted}종을 인벤토리에 지급했습니다.")
+                print(f"\n  [DEV MODE] 0등급 유물 장비 {granted}종을 인벤토리에 지급했습니다.")
                 wait_for_keypress()
 
     def use_consumable_menu(self):
