@@ -1598,13 +1598,13 @@ def run_boss_core_choice(player):
     print()
     print_divider()
     print("  1. 코어를 과부하 시켜 의체에 직접 이식한다.")
-    print("     ➔ 물리 격돌 W_kinetic 대폭 상승 — [컴뱃 포스] 각성 경로")
+    print("     ➔ 물리 격돌 W_kinetic 대폭 상승")
     print()
     print("  2. 코어의 희귀 희토류를 분해해 방공호 발전기에 직결한다.")
-    print("     ➔ 자원 정제 W_scrap 대폭 상승 — [메카니컬 테크] 각성 경로")
+    print("     ➔ 자원 정제 W_scrap 대폭 상승")
     print()
     print("  3. 코어 내부의 네오 아크 암호화 칩을 사이버덱에 강제 포팅한다.")
-    print("     ➔ 연산 침투 W_cyber 대폭 상승 — [넷 포스] 각성 경로")
+    print("     ➔ 연산 침투 W_cyber 대폭 상승")
     print_divider()
 
     while True:
