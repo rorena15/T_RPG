@@ -619,7 +619,7 @@ def combat_loop(player, is_boss=False, current_hp=None):
                     player.hp -= dmg_calc
                     _, disp_php_new, _ = apply_dynamic_scaling(0, max(0, player.hp), tier)
                     print(f"  [시스템 갱신] 내 체력이 {disp_php_new:,}(으)로 감소했습니다.")
-                    wait_for_keypress()
+                    time.sleep(1)
                     
                     if res == "NORMAL": escape_log = f"[탈출] 후퇴 중 적의 공격에 노출되었습니다. (피해: {disp_eatk:,})"
                     elif res == "1.5X": escape_log = f"[탈출] 치명적인 손상을 입으며 이탈했습니다. (피해: {disp_eatk:,})"
@@ -630,7 +630,7 @@ def combat_loop(player, is_boss=False, current_hp=None):
             
         else: 
             print("\n  [오류] 인식할 수 없는 명령 프로토콜입니다.")
-            wait_for_keypress()
+            time.sleep(1)
             action_logs.append("[오류] 잘못된 명령어 입력.")
 
         # --- 적의 반격 및 동적 수치 갱신 피드백 ---
