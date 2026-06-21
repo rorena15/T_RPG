@@ -279,6 +279,52 @@ def print_header(title):
 def print_divider():
     print("  " + "─" * 74)
 
+def log_diary(player, entry):
+    player.diary.append(f"[턴 {player.turn_count:>4d}]  {entry}")
+
+def show_diary(player):
+    entries = player.diary
+    if not entries:
+        clear_screen()
+        print_header("항법 일지 — N-404 행동 코드 누적 로그")
+        print()
+        print("  기록 없음. 아직 어떤 선택도 누적되지 않았습니다.")
+        print()
+        wait_for_keypress()
+        return
+
+    page_size = 18
+    total = len(entries)
+    pages = max(1, (total + page_size - 1) // page_size)
+    page = pages - 1  # 최신 페이지부터
+
+    while True:
+        clear_screen()
+        print_header(f"항법 일지 — N-404 행동 코드 누적 로그  [{page + 1} / {pages}]")
+        start = page * page_size
+        end = min(start + page_size, total)
+        for e in entries[start:end]:
+            print(f"  {e}")
+        print()
+        print_divider()
+        nav = []
+        if page > 0:
+            nav.append("P: 이전")
+        if page < pages - 1:
+            nav.append("N: 다음")
+        nav.append("0: 복귀")
+        print(f"  {' | '.join(nav)}")
+        try:
+            cmd = safe_input("\n  입력: ").strip().upper()
+        except:
+            sys.exit()
+        if cmd == "0":
+            break
+        elif cmd == "N" and page < pages - 1:
+            page += 1
+        elif cmd == "P" and page > 0:
+            page -= 1
+
 def print_ambient_lore():
     if AMBIENT_LORE:
         lore = random.choice(AMBIENT_LORE)
@@ -339,6 +385,7 @@ class Player:
         # 개발자 검증용 유물 지급은 DEV_GRANT_LEGACY 히든 커맨드(아래)로만 가능하다.
         self.inventory = []
         self.equipment = {k: v for k, v in SLOT_DEFAULTS.items()}
+        self.diary = []
 
     def get_highest_tier(self):
         item_data = get_equipment_data(self.equipment["main_weapon"])
@@ -351,7 +398,7 @@ class Player:
             "consumables": self.consumables, "weights": self.weights,
             "inventory": self.inventory, "equipment": self.equipment, "reputation": self.reputation,
             "turn_count": self.turn_count, "difficulty": self.difficulty,
-            "enemies_defeated": self.enemies_defeated
+            "enemies_defeated": self.enemies_defeated, "diary": self.diary
         }
 
     def from_dict(self, data):
@@ -372,6 +419,7 @@ class Player:
         self.turn_count = data.get("turn_count", 0)
         self.difficulty = data.get("difficulty", "normal")
         self.enemies_defeated = data.get("enemies_defeated", 0)
+        self.diary = data.get("diary", [])
 
     def get_attack_power(self):
         item_data = get_equipment_data(self.equipment["main_weapon"])
@@ -967,6 +1015,7 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
                 player.consumables[it] += 1
                 print(f"  [수집] {CONSUMABLES_DB[it]['name']} 1개 획득")
 
+        log_diary(player, f"[전투] {name} — 전술적 후퇴")
         wait_for_keypress()
         return hp, enemy_type
 
@@ -993,6 +1042,7 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
             player.materials += 20
             print("  [파밍] 고가치 일반 고철 20개를 회수했습니다.")
 
+    log_diary(player, f"[전투] {name} — 제압 완료 (총 {player.enemies_defeated}기)")
     wait_for_keypress()
     return None, None
 
@@ -1094,6 +1144,7 @@ def run_game():
                 if diff_ans in diff_map:
                     player.difficulty = diff_map[diff_ans]
                     run_prologue()
+                    log_diary(player, "[시작] 생존 프로토콜 개시 — N-404, 데드존 투입")
                     break
 
                 print("\n  [오류] 1, 2, 3 중에서 선택하십시오.")
@@ -1114,6 +1165,7 @@ def run_game():
         print("  W, A, S, D  : 그리드 이동")
         print("  F           : 현재 타일 탐색 및 자원 파싱")
         print("  I           : 인벤토리 및 시스템 정비")
+        print("  J           : 항법 일지 열람")
         print("  C           : 현재 상태 로컬 백업 (저장)")
         print("  Q           : 시스템 접속 종료 (Exit)")
         print_divider()
@@ -1123,6 +1175,9 @@ def run_game():
 
         if move == "I":
             player.manage_inventory()
+            continue
+        elif move == "J":
+            show_diary(player)
             continue
         elif move == "C":
             save_data(player, grid)
@@ -1228,6 +1283,7 @@ def run_game():
                 if SESSIONS_DB and len(SESSIONS_DB) > 6:
                     handle_session(player, SESSIONS_DB[6])
                 # 보스전 준비 화면
+                log_diary(player, "[보스] 스캐브 컬렉터 추적 확인 — 최종 전투 준비")
                 clear_screen()
                 print_header("!! CRITICAL ALERT — 스캐브 컬렉터 접근 중 !!")
                 type_text("  지면이 거대하게 진동하기 시작합니다.", 0.025)
@@ -1341,6 +1397,17 @@ def handle_session(player, session):
             time.sleep(0.6)
             type_text(f"\n  {choice_data['log']}", 0.025)
 
+            _w_label = {"kinetic": "완력", "scrap": "해체", "cyber": "해킹"}.get(choice_weight, "선택")
+            _reward_note = ""
+            if choice_data.get("reward") and choice_data["reward"] != "SCRAP_MAT":
+                _rd = get_equipment_data(choice_data["reward"])
+                _reward_note = f" → {_rd['name']} 획득"
+            elif choice_data.get("reward") == "SCRAP_MAT":
+                _reward_note = f" → 고철 +{choice_data.get('materials', 30)}"
+            if choice_data.get("ram_bonus"):
+                _reward_note += f" (RAM +{choice_data['ram_bonus']})"
+            log_diary(player, f"[세션] {session['title']} — {_w_label}{_reward_note}")
+
             if choice_weight and player.weights[choice_weight] >= 3:
                 _wcb = {
                     "kinetic": "\n  [행동 패턴 고착화] 물리적 집행이 N-404의 1순위 프로토콜로 등록됩니다.",
@@ -1380,6 +1447,7 @@ def handle_random_event(player, event):
             if key in player.consumables:
                 player.consumables[key] += 1
                 print(f"  [획득] {CONSUMABLES_DB[key]['name']} 1개")
+        log_diary(player, f"[이벤트] {event['title']}")
         wait_for_keypress()
 
     elif event["type"] == "choice":
@@ -1421,6 +1489,8 @@ def handle_random_event(player, event):
             if key in player.consumables:
                 player.consumables[key] += 1
                 print(f"  [획득] {CONSUMABLES_DB[key]['name']} 1개")
+        _ew_label = {"kinetic": "완력", "scrap": "해체", "cyber": "해킹"}.get(c.get("weight"), "선택")
+        log_diary(player, f"[이벤트] {event['title']} — {_ew_label}")
         wait_for_keypress()
 
 
@@ -1458,6 +1528,7 @@ def handle_trader(player):
                 key = chosen["id"]
                 player.consumables[key] += 1
                 print(f"\n  [거래 완료] '{chosen['name']}' 구매. 잔여 고철: {player.materials}개")
+                log_diary(player, f"[거래] {chosen['name']} 구매 (-{chosen['cost']} 고철)")
                 time.sleep(1)
             else:
                 print(f"\n  [거부] 고철이 부족합니다. ({player.materials}/{chosen['cost']}개)")
