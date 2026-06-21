@@ -624,15 +624,12 @@ class GameMap:
         self.session_index = 0
         self.escaped_enemy_hp = None
         self.escaped_enemy_type = None
-        self.visited = set()
-        self.visited.add(tuple(self.player_pos))
 
     def to_dict(self):
         return {
             "player_pos": self.player_pos, "event_locations": self.event_locations,
             "session_index": self.session_index, "escaped_enemy_hp": self.escaped_enemy_hp,
             "escaped_enemy_type": self.escaped_enemy_type,
-            "visited": [list(t) for t in self.visited]
         }
 
     def from_dict(self, data):
@@ -641,7 +638,6 @@ class GameMap:
         self.session_index = data.get("session_index", 0)
         self.escaped_enemy_hp = data.get("escaped_enemy_hp", None)
         self.escaped_enemy_type = data.get("escaped_enemy_type", None)
-        self.visited = set(tuple(x) for x in data.get("visited", [self.player_pos]))
 
     def draw(self):
         print(" [ 데드존 섹터 그리드 스캐너 ]")
@@ -652,12 +648,10 @@ class GameMap:
                     row_str += "[ P ] "
                 elif [x, y] == self.bunker_pos:
                     row_str += "[ B ] "
-                elif (x, y) in self.visited:
-                    row_str += "[///] "
                 else:
                     row_str += "[ . ] "
             print(row_str)
-        print("  (P: 의체 위치 | B: 방공호 목표 | [///]: 탐색 완료 | [ . ]: 미탐색)\n")
+        print("  (P: 현재 위치 | B: 방공호 목표 |)\n")
 
 def save_data(player, grid):
     save_file = {"player": player.to_dict(), "grid": grid.to_dict()}
@@ -867,7 +861,7 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
                     escape_log = "[탈출] 적의 사각을 파고들어 피해 없이 안전하게 이탈했습니다."
                 elif res in ["NORMAL", "1.5X", "2.0X"]:
                     dmg_calc = atk if res == "NORMAL" else int(atk * 1.5) if res == "1.5X" else int(atk * 2.0)
-                    _, disp_eatk, _ = apply_dynamic_scaling(dmg_calc, 0, tier)
+                    disp_eatk, _, _ = apply_dynamic_scaling(dmg_calc, 0, tier)
 
                     print(f"\n  후퇴 중 적에게 공격을 허용했습니다! (피해량: {disp_eatk:,})")
                     time.sleep(1)
@@ -926,7 +920,7 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
             if cmd == "2":
                 atk = int(base_atk * (1.6 if phase2_triggered else 1.0))
 
-            _, disp_eatk, _ = apply_dynamic_scaling(atk, 0, tier)
+            disp_eatk, _, _ = apply_dynamic_scaling(atk, 0, tier)
 
             print(f"\n  {name}의 무자비한 공격! (피해량: {disp_eatk:,})")
             time.sleep(1)
@@ -1230,7 +1224,6 @@ def run_game():
 
         if valid_move:
             grid.player_pos = [px, py]
-            grid.visited.add(tuple(grid.player_pos))
             player.consume_resources()
 
             current_loc = tuple(grid.player_pos)
@@ -1480,6 +1473,24 @@ def handle_trader(player):
 def run_prologue():
     """신규 게임 시작 시 전체 프롤로그 시퀀스를 재생합니다."""
     clear_screen()
+    print_header("프로토콜: 낙인 — 시퀀스 초기화")
+    print()
+    print("  [SYSTEM] 서사 시퀀스 로드 완료.")
+    print()
+    print("  1. 프롤로그 재생  (부팅 시퀀스 → 도입 서사 → 세계관 → 조작법)")
+    print("  0. 스킵           (즉시 게임 시작)")
+    print()
+    try:
+        skip_ans = safe_input("  선택: ").strip()
+    except:
+        sys.exit()
+    if skip_ans == "0":
+        clear_screen()
+        type_text("[SYSTEM] 서사 시퀀스 스킵. 생존 인터페이스 가동.", 0.022)
+        time.sleep(0.6)
+        return
+
+    clear_screen()
 
     # ── 단계 1: 부팅 시퀀스 ──────────────────────────────────────────────
     boot_log = [
@@ -1532,7 +1543,7 @@ def run_prologue():
         ("         국제 연합이 대기업 연합의 마스터 AI 기동을 승인 하였습니다."),
         ("         대기업 연합의 마스터 AI가 연산을 실행했습니다."),
         ("         연산 결과: '인류의 95%를 격리해야 인류 존속 가능'. 대붕괴 시작."),
-        ("         총괄국을 조직하여 인류의 95%를 격리,처단 권한 위힘 하였습니다"),
+        ("         총괄국을 조직하여 인류의 95%를 격리,처단 권한 위임 하였습니다"),
         (""),
         ("[2주기]  총괄국이 남은 자원 영역에 가상현실 차단막 '네오 아크'를 건설."),
         ("         차단막 밖의 95% 영토는 방사능과 폐기된 기계의 황무지 — '데드존'이 됐다."),
