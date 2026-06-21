@@ -243,10 +243,36 @@ def apply_dynamic_scaling(raw_dmg, raw_hp, highest_equip_tier):
     else: 
         return int(raw_dmg * 100000), int(raw_hp * 100), "[WARNING: HUD 글리치 발생] 시스템 연산 한계 돌파. 신격 스케일링 개방."
 
+def _ea_width(s):
+    """CJK 문자를 포함한 문자열의 터미널 표시 너비를 반환합니다 (한글·한자 = 2칸)."""
+    w = 0
+    for c in s:
+        cp = ord(c)
+        if (0x1100 <= cp <= 0x115F or 0x2E80 <= cp <= 0xA4CF or
+                0xA960 <= cp <= 0xA97F or 0xAC00 <= cp <= 0xD7FF or
+                0xF900 <= cp <= 0xFAFF or 0xFE10 <= cp <= 0xFE1F or
+                0xFE30 <= cp <= 0xFE6F or 0xFF00 <= cp <= 0xFF60 or
+                0xFFE0 <= cp <= 0xFFE6):
+            w += 2
+        else:
+            w += 1
+    return w
+
+def ea_center(s, width):
+    """CJK 표시 너비 기준 center."""
+    pad = max(0, width - _ea_width(s))
+    return " " * (pad // 2) + s + " " * (pad - pad // 2)
+
+def ea_rpad(s, width):
+    """CJK 표시 너비 기준 ljust (오른쪽 공백 패딩)."""
+    return s + " " * max(0, width - _ea_width(s))
+
 def print_header(title):
+    # 내부 너비 74, 양쪽 ║ 포함 총 78자 박스
+    # 컨텐츠 영역: ║  {title}{pad}║  →  title + pad = 72 표시 너비
     print()
     print("  ╔" + "═" * 74 + "╗")
-    print(f"  ║  {title}")
+    print("  ║  " + ea_rpad(title, 72) + "║")
     print("  ╚" + "═" * 74 + "╝")
     print()
 
@@ -371,7 +397,7 @@ class Player:
         _, display_max_hp, _ = apply_dynamic_scaling(0, self.max_hp, tier)
 
         print("  ╔" + "═" * 74 + "╗")
-        print("  ║  [ 내 의체 시스템 상태창 ]")
+        print("  ║  " + ea_rpad("[ 내 의체 시스템 상태창 ]", 72) + "║")
         print("  ╚" + "═" * 74 + "╝")
         if scale_log:
             print(f"  {scale_log}")
@@ -409,12 +435,12 @@ class Player:
             print("  ▌ 장착 슬롯 현황")
             print_divider()
             for si, sk in enumerate(slot_keys, 1):
-                label = SLOT_DISPLAY[sk]
+                label = ea_rpad(SLOT_DISPLAY[sk], 8)
                 eid = self.equipment.get(sk)
                 if eid and eid != "WEAPON_NONE":
                     d = get_equipment_data(eid)
                     tag = TIER_TAGS.get(d.get("tier", 4), "T?    ")
-                    print(f"   [{si:2d}] {label}  │  ★  {d['name'][:24]}    {tag}  위력:{d['power']:>4}")
+                    print(f"   [{si:2d}] {label}  │  ★  {d['name'][:22]}    {tag}  위력:{d['power']:>4}")
                 else:
                     print(f"   [{si:2d}] {label}  │  ─  미장착")
             print()
@@ -993,14 +1019,14 @@ def run_game():
     print()
     print("  ╔" + "═" * 74 + "╗")
     print("  ║" + " " * 74 + "║")
-    print("  ║" + "P  R  O  T  O  C  O  L  :  S  T  I  G  M  A".center(74) + "║")
+    print("  ║" + ea_center("P  R  O  T  O  C  O  L  :  S  T  I  G  M  A", 74) + "║")
     print("  ║" + " " * 74 + "║")
-    print("  ║" + "1막: 낙인  —  시스템이 폐기한 불량 코드".center(74) + "║")
+    print("  ║" + ea_center("1막: 낙인  —  시스템이 폐기한 불량 코드", 74) + "║")
     print("  ║" + " " * 74 + "║")
     print("  ╠" + "═" * 74 + "╣")
     print("  ║" + " " * 74 + "║")
-    print("  ║" + "\"시스템이 당신을 거부했다면,".center(74) + "║")
-    print("  ║" + "당신은 시스템의 규칙 밖에서 숨 쉬는 법을 배워야 한다.\"".center(74) + "║")
+    print("  ║" + ea_center("\"시스템이 당신을 거부했다면,", 74) + "║")
+    print("  ║" + ea_center("당신은 시스템의 규칙 밖에서 숨 쉬는 법을 배워야 한다.\"", 74) + "║")
     print("  ║" + " " * 74 + "║")
     print("  ╚" + "═" * 74 + "╝")
     print()
@@ -1141,7 +1167,7 @@ def run_game():
                 print("\n  [SYSTEM] 백업 없이 이탈합니다. 진행 기록은 소실됩니다.")
             print()
             print("  ╔" + "═" * 74 + "╗")
-            print("  ║  생체 접속 종료. 그리드망에서 이탈합니다.")
+            print("  ║  " + ea_rpad("생체 접속 종료. 그리드망에서 이탈합니다.", 72) + "║")
             print("  ╚" + "═" * 74 + "╝")
             print()
             time.sleep(0.8)
@@ -1643,7 +1669,7 @@ def run_ending(player):
     type_text("  마스터 AI의 그리드는 아직 살아있고 — 당신의 낙인은 이제 시작입니다.", 0.03)
     print()
     print("  ╔" + "═" * 74 + "╗")
-    print("  ║  1막 [낙인] 클리어 — DEMO END")
+    print("  ║  " + ea_rpad("1막 [낙인] 클리어 — DEMO END", 72) + "║")
     print("  ╚" + "═" * 74 + "╝")
     wait_for_keypress()
 
