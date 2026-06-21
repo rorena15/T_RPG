@@ -24,6 +24,12 @@ def resource_path(relative_path):
 
     return os.path.join(base_path, relative_path)
 
+def get_save_path():
+    # EXE 모드: exe 파일 옆에 저장 (sys._MEIPASS 임시폴더 X)
+    if getattr(sys, 'frozen', False):
+        return os.path.join(os.path.dirname(sys.executable), "stigma_save.json")
+    return os.path.join(os.path.abspath("."), "stigma_save.json")
+
 # ====================================================================
 # [0.5] 전체 로깅
 # ====================================================================
@@ -773,7 +779,7 @@ class GameMap:
 def save_data(player, grid):
     save_file = {"player": player.to_dict(), "grid": grid.to_dict()}
     try:
-        with open(resource_path("stigma_save.json"), "w", encoding="utf-8") as f:
+        with open(get_save_path(), "w", encoding="utf-8") as f:
             json.dump(save_file, f, ensure_ascii=False, indent=4)
         print("\n[SYSTEM] 현재 동기화 로그가 로컬 환경에 안전하게 백업되었습니다.")
     except Exception as e:
@@ -1146,7 +1152,7 @@ def run_game():
         print("  ╚" + "═" * 74 + "╝")
         print()
 
-        has_save = os.path.exists("stigma_save.json")
+        has_save = os.path.exists(get_save_path())
         print_divider()
         print("  1. 새로운 게임 (New Game)")
         if has_save:
@@ -1169,7 +1175,7 @@ def run_game():
             player = Player()
             grid = GameMap()
             try:
-                with open(resource_path("stigma_save.json"), "r", encoding="utf-8") as f:
+                with open(get_save_path(), "r", encoding="utf-8") as f:
                     data = json.load(f)
                 player.from_dict(data["player"])
                 grid.from_dict(data["grid"])
@@ -1319,6 +1325,7 @@ def run_game():
                 advance_quest(player, "search")
                 if roll >= 0.08 + encounter_chance + 0.20:
                     trigger_sudden_quest(player)
+            continue
         elif move == "Q":
             clear_screen()
             print_header("생체 접속 종료 — 그리드 이탈")
@@ -1399,7 +1406,7 @@ def run_game():
                 session_triggered = False
                 if is_new_tile and SESSIONS_DB and grid.session_index < len(SESSIONS_DB) - 1:
                     _s_base = 0.40 if grid.session_index < 3 else 0.10
-                    _s_prob = max(0.0, _s_base * (1.0 - player.turn_count / 100.0))
+                    _s_prob = max(0.05, _s_base * (1.0 - player.turn_count / 100.0))
                     if random.random() < _s_prob:
                         print("\n  [스캔] 이 구역에서 특이한 반응이 감지됩니다...")
                         time.sleep(1.2)

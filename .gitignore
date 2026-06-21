@@ -532,4 +532,5 @@ stigma_save.json
 log.txt
 
 릴리즈/
+QA/
 db_editor.py
