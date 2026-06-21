@@ -7,8 +7,7 @@ import json
 import sqlite3
 import db_init
 from sys_log import sys_log, track, track_event
-import sys
-import os
+from colorama import Fore, Back, Style, init as colorama_init
 
 # ====================================================================
 # [0] 경로
@@ -341,13 +340,25 @@ def print_header(title):
     # 내부 너비 74, 양쪽 ║ 포함 총 78자 박스
     # 컨텐츠 영역: ║  {title}{pad}║  →  title + pad = 72 표시 너비
     print()
-    print("  ╔" + "═" * 74 + "╗")
-    print("  ║  " + ea_rpad(title, 72) + "║")
-    print("  ╚" + "═" * 74 + "╝")
+    print(Fore.WHITE + Style.BRIGHT + "  ╔" + "═" * 74 + "╗")
+    print(Fore.WHITE + Style.BRIGHT + "  ║  " + ea_rpad(title, 72) + "║")
+    print(Fore.WHITE + Style.BRIGHT + "  ╚" + "═" * 74 + "╝")
     print()
 
 def print_divider():
-    print("  " + "─" * 74)
+    print(Fore.WHITE + Style.BRIGHT + "  " + "─" * 74)
+
+def _log_color(log):
+    """전투 로그 항목의 색상을 반환합니다."""
+    if any(log.startswith(p) for p in ("[타격]", "[회복]", "[파밍]", "[수집]", "[승리]")):
+        return Fore.GREEN + Style.BRIGHT
+    if any(log.startswith(p) for p in ("[피격]", "[페이즈 전환]")):
+        return Fore.RED + Style.BRIGHT
+    if any(log.startswith(p) for p in ("[경고]", "[탈출]", "[탈출 참사]", "[기적적 탈출]", "[경보]")):
+        return Fore.YELLOW + Style.BRIGHT
+    if any(log.startswith(p) for p in ("[해킹]", "[방어]")):
+        return Fore.CYAN + Style.BRIGHT
+    return ""
 
 def log_diary(player, entry):
     player.diary.append(f"[턴 {player.turn_count:>4d}]  {entry}")
@@ -549,10 +560,10 @@ class Player:
         
         if self.hunger == 0 or self.thirst == 0:
             self.hp -= 50
-            print("\n[SYSTEM WARN] 신체 연료 고갈. 바이오 조직 괴사가 시작됩니다. (HP -50)")
+            print(f"\n{Fore.YELLOW + Style.BRIGHT}[SYSTEM WARN]{Style.RESET_ALL} 신체 연료 고갈. 바이오 조직 괴사가 시작됩니다. (HP -50)")
             wait_for_keypress()
             if self.hp <= 0:
-                print("\n[SYSTEM FATAL] 신체 손상 100%. 불량 코드가 완전히 소거되었습니다.")
+                print(f"\n{Fore.RED + Style.BRIGHT}[SYSTEM FATAL] 신체 손상 100%. 불량 코드가 완전히 소거되었습니다.")
                 sys.exit()
 
     def show_status(self):
@@ -567,7 +578,9 @@ class Player:
             print(f"  {scale_log}")
             print_divider()
         
-        print(f"  [생명력] {display_hp:,} / {display_max_hp:,}    [허기] {self.hunger:3d} / 100      [갈증] {self.thirst:3d} / 100")
+        hp_ratio = self.hp / self.max_hp if self.max_hp > 0 else 1.0
+        hp_col = (Fore.GREEN + Style.BRIGHT) if hp_ratio > 0.6 else ((Fore.YELLOW + Style.BRIGHT) if hp_ratio > 0.3 else (Fore.RED + Style.BRIGHT))
+        print(f"  [생명력] {hp_col}{display_hp:,}{Style.RESET_ALL} / {display_max_hp:,}    [허기] {self.hunger:3d} / 100      [갈증] {self.thirst:3d} / 100")
         
         item_data = get_equipment_data(self.equipment['main_weapon'])
         wpn_name = item_data['name']
@@ -924,7 +937,7 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
     while hp > 0 and player.hp > 0:
         if is_boss and turn > 15:
             clear_screen()
-            type_text("\n[SYSTEM FATAL] 15턴 임계점 초과. 거점이 고철 분진으로 분쇄되었습니다. GAME OVER.")
+            type_text(Fore.RED + Style.BRIGHT + "\n[SYSTEM FATAL] 15턴 임계점 초과. 거점이 고철 분진으로 분쇄되었습니다. GAME OVER.")
             sys.exit()
 
         # 보스 페이즈 2 전환 (HP 50% 이하)
@@ -934,9 +947,9 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
             learning_index += 5
             clear_screen()
             print_header("!! PHASE 2 — 핵심 코어 오버클럭 !!")
-            type_text("  [경보] 스캐브 컬렉터의 핵심 코어가 과부하 상태로 돌입합니다.", 0.03)
-            type_text("  [경보] 공격 출력 160% 강제 증폭. 패턴 분석 속도 가속.", 0.03)
-            type_text("  [경보] 딥러닝 카운터 패널 전 채널 개방.", 0.03)
+            type_text(Fore.RED + Style.BRIGHT + "  [경보] 스캐브 컬렉터의 핵심 코어가 과부하 상태로 돌입합니다.", 0.03)
+            type_text(Fore.RED + Style.BRIGHT + "  [경보] 공격 출력 160% 강제 증폭. 패턴 분석 속도 가속.", 0.03)
+            type_text(Fore.YELLOW + Style.BRIGHT + "  [경보] 딥러닝 카운터 패널 전 채널 개방.", 0.03)
             time.sleep(1.5)
             action_logs.append("[페이즈 전환] 보스가 한계를 돌파했습니다! 공격력 대폭 상승!")
 
@@ -953,7 +966,8 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
             bar_len = 40
             filled = int(bar_len * hp_pct)
             phase_tag = " [!! PHASE 2 !!]" if phase2_triggered else ""
-            hp_bar = f"  [{('█' * filled) + ('░' * (bar_len - filled))}] {hp_pct*100:.1f}%{phase_tag}"
+            bar_col = (Fore.GREEN + Style.BRIGHT) if hp_pct > 0.5 else ((Fore.YELLOW + Style.BRIGHT) if hp_pct > 0.25 else (Fore.RED + Style.BRIGHT))
+            hp_bar = f"  {bar_col}[{('█' * filled) + ('░' * (bar_len - filled))}] {hp_pct*100:.1f}%{phase_tag}"
 
         print_header(header_title)
         if scale_log:
@@ -969,7 +983,7 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
             print(f"  [적 상태] 패턴 분석 지수 (E): {learning_index}/10")
 
         print("\n  [ 전투 로그 ]")
-        for log in action_logs: print(f"    {log}")
+        for log in action_logs: print(f"    {_log_color(log)}{log}")
         print_divider()
         print()
         action_logs.clear()
@@ -1001,7 +1015,7 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
             dmg = max(100, math.floor(effective_power * f_multiplier * penalty * 100) - e_def + random.randint(-50, 50))
             disp_dmg, _, _ = apply_dynamic_scaling(dmg, 0, tier)
 
-            print(f"\n  콰아앙! 무기가 적의 장갑판을 관통했습니다! (피해량: {disp_dmg:,})")
+            print(f"\n  {Fore.GREEN + Style.BRIGHT}콰아앙! 무기가 적의 장갑판을 관통했습니다! (피해량: {disp_dmg:,})")
             time.sleep(1)
             hp = max(0, hp - dmg)
             _, disp_ehp_new, _ = apply_dynamic_scaling(0, hp, tier)
@@ -1108,7 +1122,7 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
                 atk = int(base_atk * (1.6 if phase2_triggered else 1.0))
 
             dmg_taken = max(1, atk - def_bonus)
-            print(f"\n  {name}의 무자비한 공격! (피해량: {dmg_taken:,})")
+            print(f"\n  {Fore.RED + Style.BRIGHT}{name}의 무자비한 공격! (피해량: {dmg_taken:,})")
             time.sleep(1)
             player.hp -= dmg_taken
             if cyber_regen > 0 and player.hp > 0:
@@ -1125,7 +1139,7 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
     if player.hp <= 0:
         clear_screen()
         if escape_log: type_text(escape_log, 0.02)
-        type_text("\n[SYSTEM FATAL] 신체 손상 100%. 의체 붕괴. GAME OVER.", 0.03)
+        type_text(Fore.RED + Style.BRIGHT + "\n[SYSTEM FATAL] 신체 손상 100%. 의체 붕괴. GAME OVER.", 0.03)
         wait_for_keypress()
         sys.exit()
 
@@ -1169,7 +1183,7 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
 
     clear_screen()
     print_header("TARGET ELIMINATED (적 제압 완료)")
-    print(f"\n[승리] {name}의 시스템 가동이 중지되었습니다.")
+    print(f"\n{Fore.GREEN + Style.BRIGHT}[승리]{Style.RESET_ALL} {name}의 시스템 가동이 중지되었습니다.")
     player.enemies_defeated += 1
 
     if not is_boss:
@@ -1209,24 +1223,28 @@ def get_encounter_chance(player):
 
 @track
 def run_game():
+    os.system('title PROTOCOL: STIGMA — 1막: 낙인')
+    os.system('mode con: cols=90 lines=40')
+    os.system('color 0B')
+    colorama_init(autoreset=True)
     player = Player()
     grid = GameMap()
 
     while True:  # 타이틀 ~ 설정 루프
         clear_screen()
         print()
-        print("  ╔" + "═" * 74 + "╗")
-        print("  ║" + " " * 74 + "║")
-        print("  ║" + ea_center("P  R  O  T  O  C  O  L  :  S  T  I  G  M  A", 74) + "║")
-        print("  ║" + " " * 74 + "║")
-        print("  ║" + ea_center("1막: 낙인  —  시스템이 폐기한 불량 코드", 74) + "║")
-        print("  ║" + " " * 74 + "║")
-        print("  ╠" + "═" * 74 + "╣")
-        print("  ║" + " " * 74 + "║")
-        print("  ║" + ea_center("\"세상이 당신을 거부했다면,", 74) + "║")
-        print("  ║" + ea_center("당신은 세상의 규칙 밖에서 숨 쉬는 법을 배워야 한다.\"", 74) + "║")
-        print("  ║" + " " * 74 + "║")
-        print("  ╚" + "═" * 74 + "╝")
+        print(Fore.WHITE + Style.BRIGHT + "  ╔" + "═" * 74 + "╗")
+        print(Fore.WHITE + Style.BRIGHT + "  ║" + " " * 74 + "║")
+        print(Fore.WHITE + Style.BRIGHT + "  ║" + ea_center("P  R  O  T  O  C  O  L  :  S  T  I  G  M  A", 74) + "║")
+        print(Fore.WHITE + Style.BRIGHT + "  ║" + " " * 74 + "║")
+        print(Fore.CYAN  + Style.BRIGHT + "  ║" + ea_center("1막: 낙인  —  시스템이 폐기한 불량 코드", 74) + "║")
+        print(Fore.WHITE + Style.BRIGHT + "  ║" + " " * 74 + "║")
+        print(Fore.WHITE + Style.BRIGHT + "  ╠" + "═" * 74 + "╣")
+        print(Fore.WHITE + Style.BRIGHT + "  ║" + " " * 74 + "║")
+        print(Fore.CYAN  + "  ║" + ea_center("\"세상이 당신을 거부했다면,", 74) + "║")
+        print(Fore.CYAN  + "  ║" + ea_center("당신은 세상의 규칙 밖에서 숨 쉬는 법을 배워야 한다.\"", 74) + "║")
+        print(Fore.WHITE + Style.BRIGHT + "  ║" + " " * 74 + "║")
+        print(Fore.WHITE + Style.BRIGHT + "  ╚" + "═" * 74 + "╝")
         print()
 
         has_save = os.path.exists(get_save_path())
@@ -2054,9 +2072,9 @@ def run_ending(player):
     type_text("  누군가 당신을 기다리고 있다.", 0.035)
     print()
     time.sleep(1.0)
-    print("  ╔" + "═" * 74 + "╗")
-    print("  ║  " + ea_rpad("1막 [낙인] 클리어 — DEMO END", 72) + "║")
-    print("  ╚" + "═" * 74 + "╝")
+    print(Fore.GREEN + Style.BRIGHT + "  ╔" + "═" * 74 + "╗")
+    print(Fore.GREEN + Style.BRIGHT + "  ║  " + ea_rpad("1막 [낙인] 클리어 — DEMO END", 72) + "║")
+    print(Fore.GREEN + Style.BRIGHT + "  ╚" + "═" * 74 + "╝")
     wait_for_keypress()
 
 if __name__ == "__main__":
