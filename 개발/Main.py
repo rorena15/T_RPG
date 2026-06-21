@@ -1243,6 +1243,10 @@ def run_game():
                 type_text("  지면이 거대하게 진동하기 시작합니다.", 0.025)
                 type_text("  수십 개의 유압 분쇄 칼날과 회수 집게를 펼치며,", 0.025)
                 type_text("  총괄국의 자동화 청소기계 '스캐브 컬렉터'가 벙커를 향해 돌진해 옵니다.", 0.025)
+                print()
+                type_text("  사이버덱에 경보가 떴습니다 ─ [추적 목표: N-404 / 회수 우선순위: 최고 등급]", 0.025)
+                type_text("  이 기계는 처음부터 당신을 추적하고 있었습니다.", 0.025)
+                print()
                 type_text("  이 문이 부서지면 내일은 없습니다. 마지막 준비를 완료하십시오.\n", 0.025)
                 while True:
                     print_divider()
@@ -1301,8 +1305,9 @@ def handle_session(player, session):
         except: sys.exit()
         if ans in ["1", "2", "3"]:
             choice_data = session['choices'][int(ans) - 1]
-            if choice_data.get('weight'):
-                player.weights[choice_data['weight']] += 1
+            choice_weight = choice_data.get('weight')
+            if choice_weight:
+                player.weights[choice_weight] += 1
 
             # 장비 / 고철 보상
             if choice_data.get("reward"):
@@ -1345,6 +1350,16 @@ def handle_session(player, session):
 
             time.sleep(0.6)
             type_text(f"\n  {choice_data['log']}", 0.025)
+
+            if choice_weight and player.weights[choice_weight] >= 3:
+                _wcb = {
+                    "kinetic": "\n  [행동 패턴 고착화] 물리적 집행이 N-404의 1순위 프로토콜로 등록됩니다.",
+                    "scrap":   "\n  [행동 패턴 고착화] 정밀 분해가 N-404의 1순위 프로토콜로 등록됩니다.",
+                    "cyber":   "\n  [행동 패턴 고착화] 코드 침투가 N-404의 1순위 프로토콜로 등록됩니다.",
+                }
+                time.sleep(0.3)
+                type_text(_wcb[choice_weight], 0.022)
+
             wait_for_keypress()
             break
 
@@ -1714,6 +1729,14 @@ def run_ending(player):
     type_text("  방공호의 비상등이 켜집니다. 이것은 끝이 아닙니다.", 0.03)
     type_text("  마스터 AI의 그리드는 아직 살아있고 — 당신의 낙인은 이제 시작입니다.", 0.03)
     print()
+    time.sleep(1.2)
+    type_text("  그리고 —", 0.04)
+    time.sleep(0.6)
+    type_text("  데드존 어딘가에서 발신되던 그 정체불명의 신호.", 0.03)
+    type_text("  아직도 규칙적으로 송신되고 있다.", 0.03)
+    type_text("  누군가 당신을 기다리고 있다.", 0.035)
+    print()
+    time.sleep(1.0)
     print("  ╔" + "═" * 74 + "╗")
     print("  ║  " + ea_rpad("1막 [낙인] 클리어 — DEMO END", 72) + "║")
     print("  ╚" + "═" * 74 + "╝")
