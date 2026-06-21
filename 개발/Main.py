@@ -861,18 +861,17 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
                     escape_log = "[탈출] 적의 사각을 파고들어 피해 없이 안전하게 이탈했습니다."
                 elif res in ["NORMAL", "1.5X", "2.0X"]:
                     dmg_calc = atk if res == "NORMAL" else int(atk * 1.5) if res == "1.5X" else int(atk * 2.0)
-                    disp_eatk, _, _ = apply_dynamic_scaling(dmg_calc, 0, tier)
 
-                    print(f"\n  후퇴 중 적에게 공격을 허용했습니다! (피해량: {disp_eatk:,})")
+                    print(f"\n  후퇴 중 적에게 공격을 허용했습니다! (피해량: {dmg_calc:,})")
                     time.sleep(1)
                     player.hp -= dmg_calc
                     _, disp_php_new, _ = apply_dynamic_scaling(0, max(0, player.hp), tier)
                     print(f"  [시스템 갱신] 내 체력이 {disp_php_new:,}(으)로 감소했습니다.")
                     time.sleep(1)
 
-                    if res == "NORMAL": escape_log = f"[탈출] 후퇴 중 적의 공격에 노출되었습니다. (피해: {disp_eatk:,})"
-                    elif res == "1.5X": escape_log = f"[탈출] 치명적인 손상을 입으며 이탈했습니다. (피해: {disp_eatk:,})"
-                    else: escape_log = f"[탈출 참사] 도주 중 의체 중심부가 관통당했습니다! (피해: {disp_eatk:,})"
+                    if res == "NORMAL": escape_log = f"[탈출] 후퇴 중 적의 공격에 노출되었습니다. (피해: {dmg_calc:,})"
+                    elif res == "1.5X": escape_log = f"[탈출] 치명적인 손상을 입으며 이탈했습니다. (피해: {dmg_calc:,})"
+                    else: escape_log = f"[탈출 참사] 도주 중 의체 중심부가 관통당했습니다! (피해: {dmg_calc:,})"
                 elif res == "LUCKY":
                     escape_log = "[기적적 탈출] 무사히 이탈하며 적 주변의 잔해에서 쓸만한 물자를 챙겼습니다."
                 break
@@ -920,15 +919,13 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
             if cmd == "2":
                 atk = int(base_atk * (1.6 if phase2_triggered else 1.0))
 
-            disp_eatk, _, _ = apply_dynamic_scaling(atk, 0, tier)
-
-            print(f"\n  {name}의 무자비한 공격! (피해량: {disp_eatk:,})")
+            print(f"\n  {name}의 무자비한 공격! (피해량: {atk:,})")
             time.sleep(1)
             player.hp -= atk
             _, disp_php_new, _ = apply_dynamic_scaling(0, max(0, player.hp), tier)
             print(f"  [시스템 갱신] 내 잔여 체력: {disp_php_new:,} / {disp_pmaxhp:,}")
             time.sleep(1)
-            action_logs.append(f"[피격] 적의 공격으로 {disp_eatk:,}의 손상을 입었습니다.")
+            action_logs.append(f"[피격] 적의 공격으로 {atk:,}의 손상을 입었습니다.")
             time.sleep(1)
 
         turn += 1
