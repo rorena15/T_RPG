@@ -250,9 +250,12 @@ class Player:
         if "MED_FIX_100" in self.consumables: self.consumables["MED_FIX_100"] = 1
         
         self.weights = {"kinetic": 0, "scrap": 0, "cyber": 0}
-        
-        # T=0 유물 무기 딱 1개만 정제 지급 완료
-        self.inventory = ["WEAPON_LEGACY_01"]
+
+        # 정식 빌드 시작 인벤토리: 유물(T=0) 장비는 더 이상 기본 지급하지 않는다.
+        # 0등급 유물은 본편 설계상 3막 이후 정제로 획득해야 하는 최종 등급 자산이므로,
+        # 데모(1막) 단계에서 자동 지급되면 밸런스와 진행 동기를 해친다.
+        # 개발자 검증용 유물 지급은 DEV_GRANT_LEGACY 히든 커맨드(아래)로만 가능하다.
+        self.inventory = []
         self.equipment = {"weapon": "WEAPON_NONE"}
 
     def get_highest_tier(self):
@@ -392,6 +395,26 @@ class Player:
                 wait_for_keypress()
             elif cmd == "0":
                 break
+
+            # --- [개발자 전용 히든 커맨드] ---
+            # 메뉴 목록(1~4, 0)에는 노출되지 않으며, 정확한 문자열을 직접 입력해야만 동작한다.
+            # 0등급(유물) 장비 전체를 즉시 인벤토리에 지급해 밸런스/엔드게임 장비 검증에 사용한다.
+            # 일반 플레이 도중 우연히 입력될 가능성을 차단하기 위해 의도적으로 길고 고유한 문자열을 사용한다.
+            elif cmd == "DEV_GRANT_LEGACY":
+                conn = sqlite3.connect("stigma_data.db")
+                cursor = conn.cursor()
+                cursor.execute("SELECT item_id, name FROM equipment WHERE tier = 0")
+                legacy_items = cursor.fetchall()
+                conn.close()
+
+                granted = 0
+                for item_id, name in legacy_items:
+                    if item_id not in self.inventory:
+                        self.inventory.append(item_id)
+                        granted += 1
+                sys_log(f"[DEV] 히든 커맨드 사용: 유물 장비 {granted}종 지급", level="DEV")
+                print(f"\n[DEV MODE] 0등급 유물 장비 {granted}종을 인벤토리에 지급했습니다.")
+                wait_for_keypress()
 
     def use_consumable_menu(self):
         clear_screen()
