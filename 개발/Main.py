@@ -6,7 +6,7 @@ import os
 import json
 import sqlite3
 import db_init
-from sys_log import sys_log,track
+from sys_log import sys_log, track, track_event
 import sys
 import os
 
@@ -27,15 +27,8 @@ def resource_path(relative_path):
 # ====================================================================
 # [0.5] 전체 로깅
 # ====================================================================
-def track_event(event_name):
-    def decorator(func):
-        def wrapper(*args, **kwargs):
-            result = func(*args, **kwargs)
-            # 시스템 로그 파일에 지표 기록
-            sys_log(f"Event: {event_name}", event_type="METRIC")
-            return result
-        return wrapper
-    return decorator
+# track / track_event 는 sys_log.py에서 가져온다 (SQLite events 테이블에 적재되는 버전).
+
 # ====================================================================
 # [1] 데이터베이스 및 단일 진실 공급원(SSOT) 연산 코어 로더
 # ====================================================================

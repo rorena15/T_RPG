@@ -5,13 +5,16 @@ from sys_log import sys_log
 
 def init_database():
     db_path = "stigma_data.db"
-    
-    # 이미 존재하면 삭제하고 새로 생성 (초기화용)
-    if os.path.exists(db_path):
-        os.remove(db_path)
-        
+
+    # [중요] 과거에는 DB 파일 자체를 통째로 지우고 새로 만들었으나(os.remove),
+    # 이 경우 events 테이블에 누적된 플레이 데이터가 게임을 재시작할 때마다 전부 유실된다.
+    # 따라서 파일 자체는 보존하고, 정적 참조 테이블(equipment/consumables)만
+    # DROP 후 재생성하는 방식으로 변경한다. events 테이블은 건드리지 않는다.
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
+
+    cursor.execute("DROP TABLE IF EXISTS equipment")
+    cursor.execute("DROP TABLE IF EXISTS consumables")
 
     # =========================================================
     # 1. 장비(Equipment) 테이블 생성
@@ -616,6 +619,44 @@ def init_database():
         INSERT INTO consumables (item_id, name, type, val, is_percent, hunger, thirst)
         VALUES (?, ?, ?, ?, ?, ?, ?)
     ''', consumables_data)
+
+    # =========================================================
+    # 3. 플레이 이벤트(Events) 테이블 생성 - 함수 호출 단위 텔레메트리
+    # =========================================================
+    # 컬럼 설명:
+    #   id            : 자동 증가 PK
+    #   session_id    : 게임 1회 실행(프로세스)을 식별하는 UUID4. 한 세션 내 이벤트를 묶어서 분석 가능
+    #   timestamp     : 이벤트 기록 시각 (ISO 8601, 로컬 시간)
+    #   func_name     : 호출된 함수명 (대문자, 예: COMBAT_LOOP)
+    #   args_json     : 위치 인자 스냅샷 (JSON). 거대 객체(Player 등)는 to_dict() 등으로 축약, 직렬화 불가 항목은 repr() 폴백
+    #   kwargs_json   : 키워드 인자 스냅샷 (JSON)
+    #   result_json   : 반환값 스냅샷 (JSON). 직렬화 불가 시 repr() 폴백, None 반환은 null로 기록
+    #   duration_ms   : 함수 실행 소요 시간 (밀리초, 소수점 포함)
+    #   success       : 정상 종료 1 / 예외 발생 0
+    #   error_type    : 예외 발생 시 예외 클래스명 (정상 종료 시 NULL)
+    #   error_message : 예외 발생 시 메시지 (정상 종료 시 NULL)
+    #   player_hp     : 호출 시점의 플레이어 HP (player 인자가 있을 때만 채워짐, 없으면 NULL)
+    #   player_turn_context : 호출 시점의 부가 게임 상태 JSON (hunger/thirst/reputation/materials 등, 추출 가능할 때만)
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS events (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            session_id TEXT NOT NULL,
+            timestamp TEXT NOT NULL,
+            func_name TEXT NOT NULL,
+            args_json TEXT,
+            kwargs_json TEXT,
+            result_json TEXT,
+            duration_ms REAL,
+            success INTEGER NOT NULL,
+            error_type TEXT,
+            error_message TEXT,
+            player_hp INTEGER,
+            player_turn_context TEXT
+        )
+    ''')
+    # 세션별/함수별 집계 쿼리를 빠르게 하기 위한 인덱스
+    cursor.execute('CREATE INDEX IF NOT EXISTS idx_events_session ON events(session_id)')
+    cursor.execute('CREATE INDEX IF NOT EXISTS idx_events_func ON events(func_name)')
 
     conn.commit()
     conn.close()
