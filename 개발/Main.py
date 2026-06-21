@@ -1015,60 +1015,104 @@ def get_encounter_chance(player):
 
 @track
 def run_game():
-    clear_screen()
-    print()
-    print("  ╔" + "═" * 74 + "╗")
-    print("  ║" + " " * 74 + "║")
-    print("  ║" + ea_center("P  R  O  T  O  C  O  L  :  S  T  I  G  M  A", 74) + "║")
-    print("  ║" + " " * 74 + "║")
-    print("  ║" + ea_center("1막: 낙인  —  시스템이 폐기한 불량 코드", 74) + "║")
-    print("  ║" + " " * 74 + "║")
-    print("  ╠" + "═" * 74 + "╣")
-    print("  ║" + " " * 74 + "║")
-    print("  ║" + ea_center("\"시스템이 당신을 거부했다면,", 74) + "║")
-    print("  ║" + ea_center("당신은 시스템의 규칙 밖에서 숨 쉬는 법을 배워야 한다.\"", 74) + "║")
-    print("  ║" + " " * 74 + "║")
-    print("  ╚" + "═" * 74 + "╝")
-    print()
-    print_divider()
-    print("  1. 새로운 게임 (New Game)")
-    has_save = os.path.exists("stigma_save.json")
-    if has_save:
-        print("  2. 동기화 복구 (Load Game)")
-    print_divider()
-    ans = safe_input("\n시스템 모드 선택: ")
-    
     player = Player()
     grid = GameMap()
 
-    if ans == "2" and has_save:
-        try:
-            with open(resource_path("stigma_save.json"), "r", encoding="utf-8") as f:
-                data = json.load(f)
-            player.from_dict(data["player"])
-            grid.from_dict(data["grid"])
-            clear_screen()
-            type_text("[SYSTEM] 로컬 백업소에서 생체 신호를 성공적으로 복구했습니다.", 0.02)
-        except Exception as e:
-            type_text(f"[ERROR] 백업 파일 손상 ({e}). 초기화 프로토콜을 가동합니다.", 0.02)
-        wait_for_keypress()
-    else:
+    while True:  # 타이틀 ~ 설정 루프
         clear_screen()
-        print_header("난이도 선택 (DIFFICULTY PROTOCOL)")
-        print("  진행 턴이 누적될수록 적의 체력과 공격력이 함께 상승합니다.")
-        print("  상승 속도는 아래 난이도에 따라 달라지며, 파밍으로 장비를 강화해 대비해야 합니다.\n")
-        print("  1. 이지   (EASY)   - 적 강화 속도 느림. 서사를 편하게 즐기고 싶을 때.")
-        print("  2. 노멀   (NORMAL) - 표준 속도. 권장 난이도.")
-        print("  3. 하드   (HARD)   - 적 강화 속도 빠름. 파밍 압박이 강한 하드코어 플레이.")
-        diff_map = {"1": "easy", "2": "normal", "3": "hard"}
-        while True:
-            diff_ans = safe_input("\n난이도 입력 (1-3): ").strip()
-            if diff_ans in diff_map:
-                player.difficulty = diff_map[diff_ans]
-                break
-            print("\n[오류] 1, 2, 3 중에서 선택하십시오.")
+        print()
+        print("  ╔" + "═" * 74 + "╗")
+        print("  ║" + " " * 74 + "║")
+        print("  ║" + ea_center("P  R  O  T  O  C  O  L  :  S  T  I  G  M  A", 74) + "║")
+        print("  ║" + " " * 74 + "║")
+        print("  ║" + ea_center("1막: 낙인  —  시스템이 폐기한 불량 코드", 74) + "║")
+        print("  ║" + " " * 74 + "║")
+        print("  ╠" + "═" * 74 + "╣")
+        print("  ║" + " " * 74 + "║")
+        print("  ║" + ea_center("\"시스템이 당신을 거부했다면,", 74) + "║")
+        print("  ║" + ea_center("당신은 시스템의 규칙 밖에서 숨 쉬는 법을 배워야 한다.\"", 74) + "║")
+        print("  ║" + " " * 74 + "║")
+        print("  ╚" + "═" * 74 + "╝")
+        print()
 
-        run_prologue()
+        has_save = os.path.exists("stigma_save.json")
+        print_divider()
+        print("  1. 새로운 게임 (New Game)")
+        if has_save:
+            print("  2. 동기화 복구 (Load Game)")
+        exit_key = "3" if has_save else "2"
+        print(f"  {exit_key}. 시스템 종료 (Exit)")
+        print_divider()
+
+        try:
+            ans = safe_input("\n시스템 모드 선택: ").strip()
+        except:
+            sys.exit()
+
+        # ── 종료 ──────────────────────────────────────────────────────────
+        if ans == exit_key:
+            clear_screen()
+            type_text("  [SYSTEM] 그리드 접속을 종료합니다.", 0.025)
+            time.sleep(0.5)
+            sys.exit()
+
+        # ── 세이브 로드 ───────────────────────────────────────────────────
+        if ans == "2" and has_save:
+            player = Player()
+            grid = GameMap()
+            try:
+                with open(resource_path("stigma_save.json"), "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                player.from_dict(data["player"])
+                grid.from_dict(data["grid"])
+                clear_screen()
+                type_text("  [SYSTEM] 로컬 백업소에서 생체 신호를 성공적으로 복구했습니다.", 0.02)
+            except Exception as e:
+                type_text(f"  [ERROR] 백업 파일 손상 ({e}). 초기화 프로토콜을 가동합니다.", 0.02)
+            wait_for_keypress()
+            break  # 게임 루프 진입
+
+        # ── 새로운 게임 ───────────────────────────────────────────────────
+        if ans == "1":
+            player = Player()
+            grid = GameMap()
+            go_back = False
+
+            while True:  # 난이도 선택 루프
+                clear_screen()
+                print_header("난이도 선택 (DIFFICULTY PROTOCOL)")
+                print("  진행 턴이 누적될수록 적의 체력과 공격력이 함께 상승합니다.")
+                print("  상승 속도는 아래 난이도에 따라 달라지며, 파밍으로 장비를 강화해 대비해야 합니다.\n")
+                print("  1. 이지   (EASY)   — 적 강화 속도 느림. 서사를 편하게 즐기고 싶을 때.")
+                print("  2. 노멀   (NORMAL) — 표준 속도. 권장 난이도.")
+                print("  3. 하드   (HARD)   — 적 강화 속도 빠름. 파밍 압박이 강한 하드코어 플레이.")
+                print_divider()
+                print("  0. 메인 화면으로 돌아가기")
+                print_divider()
+
+                diff_map = {"1": "easy", "2": "normal", "3": "hard"}
+                try:
+                    diff_ans = safe_input("\n난이도 입력 (1-3, 0=돌아가기): ").strip()
+                except:
+                    sys.exit()
+
+                if diff_ans == "0":
+                    go_back = True
+                    break
+
+                if diff_ans in diff_map:
+                    player.difficulty = diff_map[diff_ans]
+                    run_prologue()
+                    break
+
+                print("\n  [오류] 1, 2, 3 중에서 선택하십시오.")
+                time.sleep(0.8)
+
+            if go_back:
+                continue  # 타이틀 루프 재시작
+            break  # 게임 루프 진입
+
+        # 잘못된 입력 → 타이틀 재표시
 
     while True:
         clear_screen()
