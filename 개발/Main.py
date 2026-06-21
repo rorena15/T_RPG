@@ -244,12 +244,14 @@ def apply_dynamic_scaling(raw_dmg, raw_hp, highest_equip_tier):
         return int(raw_dmg * 100000), int(raw_hp * 100), "[WARNING: HUD 글리치 발생] 시스템 연산 한계 돌파. 신격 스케일링 개방."
 
 def print_header(title):
-    print("\n+" + "-"*76 + "+")
-    print(f"| {title.center(74)} |")
-    print("+" + "-"*76 + "+\n")
+    print()
+    print("  ╔" + "═" * 74 + "╗")
+    print(f"  ║  {title}")
+    print("  ╚" + "═" * 74 + "╝")
+    print()
 
 def print_divider():
-    print("-" * 78)
+    print("  " + "─" * 74)
 
 def print_ambient_lore():
     if AMBIENT_LORE:
@@ -368,12 +370,12 @@ class Player:
         _, display_hp, scale_log = apply_dynamic_scaling(0, self.hp, tier)
         _, display_max_hp, _ = apply_dynamic_scaling(0, self.max_hp, tier)
 
-        print("+" + "-"*76 + "+")
-        print("|" + "[ 내 의체 시스템 상태창 ]".center(76) + "|")
-        print("+" + "-"*76 + "+")
+        print("  ╔" + "═" * 74 + "╗")
+        print("  ║  [ 내 의체 시스템 상태창 ]")
+        print("  ╚" + "═" * 74 + "╝")
         if scale_log:
             print(f"  {scale_log}")
-            print("+" + "-"*76 + "+")
+            print_divider()
         
         print(f"  [생명력] {display_hp:,} / {display_max_hp:,}    [허기] {self.hunger:3d} / 100      [갈증] {self.thirst:3d} / 100")
         
@@ -393,7 +395,8 @@ class Player:
         med_cnt = sum(v for k,v in self.consumables.items() if CONSUMABLES_DB.get(k, {}).get("type")=="hp")
         
         print(f"  [소지품] 회복약: {med_cnt} | 식량: {food_cnt} | 식수: {water_cnt} | 고철 자산: {self.materials}")
-        print("+" + "-"*76 + "+\n")
+        print_divider()
+        print()
 
     def manage_inventory(self):
         slot_keys = list(SLOT_DISPLAY.keys())
@@ -755,14 +758,15 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
         print(art)
         if is_boss:
             print(hp_bar)
-        print(f"--- 전투 턴 [{turn}] | {name} HP: {disp_ehp:,} ---")
-        print(f" [내 의체] HP: {disp_php:,}/{disp_pmaxhp:,} | 가용 RAM: {player.max_ram}")
+        print(f"  ─── 전투 턴 [{turn}] │ {name} HP: {disp_ehp:,}")
+        print(f"  [내 의체] HP: {disp_php:,}/{disp_pmaxhp:,} │ 가용 RAM: {player.max_ram}")
         if is_boss:
-            print(f" [적 상태] 패턴 분석 지수 (E): {learning_index}/10")
+            print(f"  [적 상태] 패턴 분석 지수 (E): {learning_index}/10")
 
-        print("\n[ 전투 로그 ]")
-        for log in action_logs: print(f"  {log}")
-        print("-" * 78 + "\n")
+        print("\n  [ 전투 로그 ]")
+        for log in action_logs: print(f"    {log}")
+        print_divider()
+        print()
         action_logs.clear()
 
         has_consumable = any(v > 0 for v in player.consumables.values())
@@ -1135,9 +1139,11 @@ def run_game():
                 print("\n  [SYSTEM] 데이터 동기화 완료. 그리드 접속을 종료합니다.")
             else:
                 print("\n  [SYSTEM] 백업 없이 이탈합니다. 진행 기록은 소실됩니다.")
-            print("\n" + "=" * 78)
-            print(" 생체 접속 종료. 그리드망에서 이탈합니다. ".center(76))
-            print("=" * 78 + "\n")
+            print()
+            print("  ╔" + "═" * 74 + "╗")
+            print("  ║  생체 접속 종료. 그리드망에서 이탈합니다.")
+            print("  ╚" + "═" * 74 + "╝")
+            print()
             time.sleep(0.8)
             sys.exit()
         
@@ -1412,9 +1418,7 @@ def run_prologue():
     clear_screen()
 
     # ── 단계 2: 도입 서사 ────────────────────────────────────────────────
-    print("+" + "─" * 76 + "+")
-    print("|" + " 1막: 낙인 (Stigma) — 시스템이 폐기한 불량 코드 ".center(76) + "|")
-    print("+" + "─" * 76 + "+\n")
+    print_header("1막: 낙인 (Stigma) — 시스템이 폐기한 불량 코드")
     time.sleep(0.5)
 
     narr = [
@@ -1637,9 +1641,10 @@ def run_ending(player):
     type_text("  벙커 외부로 가이거 계수기의 비명음과 방사능 폭풍 소리가 아스라이 멀어집니다.", 0.03)
     type_text("  방공호의 비상등이 켜집니다. 이것은 끝이 아닙니다.", 0.03)
     type_text("  마스터 AI의 그리드는 아직 살아있고 — 당신의 낙인은 이제 시작입니다.", 0.03)
-    print("\n" + "=" * 78)
-    print(" 1막 [낙인] 클리어 (DEMO END) ".center(76))
-    print("=" * 78)
+    print()
+    print("  ╔" + "═" * 74 + "╗")
+    print("  ║  1막 [낙인] 클리어 — DEMO END")
+    print("  ╚" + "═" * 74 + "╝")
     wait_for_keypress()
 
 if __name__ == "__main__":
