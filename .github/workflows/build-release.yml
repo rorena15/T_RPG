@@ -7,6 +7,10 @@ on:
         description: '릴리즈 버전'
         required: true
         default: 'v1.0.0'
+      inputs:
+        ㄴdescription: '업데이트 내용'
+          required: true
+          default: '버그 수정'
 
 jobs:
   build-windows:
