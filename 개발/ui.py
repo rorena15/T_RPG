@@ -8,7 +8,7 @@ import time
 import random
 from colorama import Fore, Back, Style
 import constants
-from sys_log import sys_log, track
+from sys_log import sys_log, track, log_error
 
 def flush_input():
     """타이핑 연출 중 유저가 미리 입력한 키를 강제로 날려 무차별 오작동을 차단합니다."""
