@@ -15,6 +15,7 @@
     - `colorama`
         
     - `rich`
+    - `pygame-ce`
         
 
 ## 설치 및 실행
@@ -26,7 +27,7 @@
 Bash
 
 ```
-pip install colorama rich
+pip install colorama rich pygame-ce
 ```
 
 ### 2. 데이터베이스 초기화 및 실행
