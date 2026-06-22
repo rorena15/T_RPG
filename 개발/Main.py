@@ -21,7 +21,7 @@ from combat import combat_loop, get_encounter_chance, apply_dynamic_scaling
 from quest import trigger_sudden_quest, handle_random_event, handle_trader, advance_quest
 from story import handle_session, run_prologue, run_boss_core_choice, run_ending
 from updater import check_and_prompt_update
-from sys_log import sys_log, track, track_event
+from sys_log import sys_log, track, track_event, log_error, setup_global_exception_hook
 import core
 
 _console = Console(highlight=False)
@@ -323,5 +323,6 @@ def run_game():
 
 
 if __name__ == "__main__":
+    setup_global_exception_hook()  # 잡히지 않은 예외 자동 로그
     core.init_and_load_db()
     run_game()
