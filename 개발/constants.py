@@ -3,7 +3,7 @@
 # 런타임 전역(AMBIENT_LORE 등)은 core.init_and_load_db()가
 # import constants 후 constants.XXX = ... 로 직접 갱신한다.
 
-GAME_VERSION = "1.1.6"
+GAME_VERSION = "1.0.0"
 
 AMBIENT_LORE = []
 CONSUMABLES_DB = {}
@@ -120,3 +120,39 @@ LOW_HP_RELIEF_THRESHOLD = 0.3
 LOW_HP_RELIEF_FACTOR = 0.5
 
 
+
+# ====================================================================
+# 기초 스탯 파생 공식 상수 (기획서: RPG 핵심 연산 시스템.md 기준)
+# HP 스케일: 현재 게임 기준값 1500에 맞춰 역산 조정된 상수
+# ====================================================================
+
+def f_A(A):
+    """기초 스탯 A의 실효 가치 f(A).
+    구간 1 (A≤15): 효율 100% — 안정적 동기화
+    구간 2 (15<A≤25): 효율 50% — 연산 과부하
+    구간 3 (A>25): 효율 10% — 임계점 마비
+    """
+    if A <= 15:   return A * 0.02
+    elif A <= 25: return 0.30 + (A - 15) * 0.01
+    else:         return 0.40 + (A - 25) * 0.002
+
+# MaxHP: STAT_HP_BASE + (Lv*STAT_HP_LV) + (VIT*STAT_HP_VIT) + floor(f(VIT)*STAT_HP_fVIT)
+# VIT=10, Lv=1 => 300 + 30 + 1000 + 150 = 1480 ≈ 1500
+STAT_HP_BASE  = 300
+STAT_HP_LV    = 30
+STAT_HP_VIT   = 100
+STAT_HP_fVIT  = 750
+
+# DEF_base: (Lv*STAT_DEF_LV) + (VIT*STAT_DEF_VIT) + floor(f(VIT)*STAT_DEF_fVIT)
+STAT_DEF_LV   = 1
+STAT_DEF_VIT  = 2
+STAT_DEF_fVIT = 30
+
+# MaxRAM: 4 + floor(INT_S * STAT_RAM_INT)
+STAT_RAM_INT  = 0.2
+
+# 스탯 기본값 (민간인/1막 시작 시)
+STAT_DEFAULT_VIT = 10
+STAT_DEFAULT_INT = 10
+STAT_DEFAULT_DEX = 10
+STAT_DEFAULT_LV  = 1
