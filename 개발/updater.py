@@ -117,10 +117,14 @@ def check_and_prompt_update(current_version: str, console=None):
 
     output(f"\n[bold cyan][ 업데이트 ][/bold cyan]  현재 [yellow]{current_version}[/yellow]  →  최신 [green]{latest_version}[/green]")
     output(f"  릴리즈 노트: {release.get('html_url', '')}\n")
+    output("  지금 업데이트 하시겠습니까? (Y=예 / 다른 키=건너뜀)")
 
-    choice = input("  지금 업데이트 하시겠습니까? (y/N): ").strip().lower()
-    if choice != "y":
+    from ui import read_key, flush_input
+    flush_input()
+    choice = read_key()
+    if choice.upper() != "Y":
         output("  업데이트를 건너뜁니다.\n")
+        flush_input()
         return
 
     output("  다운로드 중...")
