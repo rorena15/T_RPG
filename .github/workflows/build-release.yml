@@ -23,14 +23,17 @@ jobs:
 
       - name: 의존성 설치
         run: pip install rich colorama pyinstaller
-      
+
       - name: 버전 주입
         shell: pwsh
         run: |
           $version = "${{ github.event.inputs.version }}".TrimStart("v")
-          (Get-Content 개발/Main.py) -replace 'GAME_VERSION = ".*?"', "GAME_VERSION = `"$version`"" | Set-Content 개발/Main.py
-              
+          (Get-Content 개발/constants.py) `
+            -replace 'GAME_VERSION = ".*?"', "GAME_VERSION = `"$version`"" `
+            | Set-Content 개발/constants.py
+
       - name: EXE 빌드
+        shell: pwsh
         run: |
           cd 개발
           pyinstaller --onefile `
