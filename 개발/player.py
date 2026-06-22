@@ -15,6 +15,7 @@ from colorama import Fore, Back, Style
 from combat import apply_dynamic_scaling, get_turn_scale_multiplier
 from quest import advance_quest
 from sys_log import sys_log, track, log_error
+import sound
 
 class Player:
     def __init__(self):
@@ -212,7 +213,7 @@ class Player:
         r_decay = self.calc_hunger_decay_rate()
         self.hunger = max(0, self.hunger - max(1, round(5 * (1 - r_decay))))
         self.thirst = max(0, self.thirst - max(1, round(6 * (1 - r_decay))))
-        
+        sound.check_survival_alert(self.hunger, self.thirst)
         if self.hunger == 0 or self.thirst == 0:
             self.hp -= 50
             print(f"\n{Fore.YELLOW + Style.BRIGHT}[SYSTEM WARN]{Style.RESET_ALL} 신체 연료 고갈. 바이오 조직 괴사가 시작됩니다. (HP -50)")

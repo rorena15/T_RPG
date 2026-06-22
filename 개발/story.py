@@ -14,9 +14,11 @@ from ui import (clear_screen, print_header, print_divider, type_text,
 from combat import combat_loop, get_turn_scale_multiplier
 from quest import advance_quest
 from sys_log import sys_log, log_error
+import sound
 
 def handle_session(player, session):
     clear_screen()
+    sound.play_typing_bgm()
     print_header(session['title'])
     type_text(session['text'], 0.02)
     print()
@@ -95,6 +97,7 @@ def handle_session(player, session):
                 time.sleep(0.3)
                 type_text(_wcb[choice_weight], 0.022)
 
+            sound.resume_map_ambient()
             wait_for_keypress()
             break
 
@@ -106,6 +109,7 @@ def run_prologue():
     print()
     print("  [SYSTEM] 서사 시퀀스 로드 완료.")
     print()
+    sound.play_typing_bgm()
     print("  1. 프롤로그 재생  (부팅 시퀀스 → 도입 서사 → 세계관 → 조작법)")
     print("  0. 스킵           (즉시 게임 시작)")
     print()
@@ -224,6 +228,7 @@ def run_prologue():
 def run_boss_core_choice(player):
     """보스 격파 후 코어 처분 선택 — 최종 직업 가중치에 영향을 미칩니다."""
     clear_screen()
+    sound.play_typing_bgm()
     print_header("BOSS GLITCH LOG — 핵심 코어 노출")
     type_text("  거대한 기계 괴수가 스파크를 뿜으며 무릎을 꿇습니다.", 0.03)
     type_text("  중앙 제어선이 마비되며 파랗게 요동치는 동력 코어가 노출됩니다.", 0.03)
@@ -376,5 +381,6 @@ def run_ending(player):
     print(Fore.GREEN + Style.BRIGHT + "  ╔" + "═" * 74 + "╗")
     print(Fore.GREEN + Style.BRIGHT + "  ║  " + ea_rpad("1막 [낙인] 클리어 — DEMO END", 72) + "║")
     print(Fore.GREEN + Style.BRIGHT + "  ╚" + "═" * 74 + "╝")
+    sound.stop_all()
     wait_for_keypress()
 
