@@ -49,7 +49,7 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
         boss_max_hp = hp
         atk = base_atk
     elif enemy_type == "bio_hound":
-        name, e_def, base_atk, hp = "바이오 하운드 [변이체]", 15, 200, 16000
+        name, e_def, base_atk, hp = "바이오 하운드 [변이체]", 15, 250, 16000
         art, header_title = constants.ENEMY_ART["BIOHOUND"], "ENCOUNTER: 생물형 기계 괴수"
         base_atk = int(base_atk * scale_mult)
         if current_hp is not None:
@@ -57,10 +57,10 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
             name = "상처입은 바이오 하운드"
             header_title = "ENCOUNTER: 추적된 변이체"
         else:
-            hp = int(hp * scale_mult)
+            hp = int(random.randint(12000, 22000) * scale_mult)
         atk = base_atk
     else:
-        name, e_def, base_atk, hp = "오염된 스캐브 드론", 5, 150, 12000
+        name, e_def, base_atk, hp = "오염된 스캐브 드론", 5, 200, 12000
         art, header_title = constants.ENEMY_ART["NORMAL"], "ENCOUNTER: 포식자 조우"
         base_atk = int(base_atk * scale_mult)
         if current_hp is not None:
@@ -68,7 +68,7 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
             name = "상처입은 스캐브 드론"
             header_title = "ENCOUNTER: 추적된 개체"
         else:
-            hp = int(hp * scale_mult)
+            hp = int(random.randint(8000, 16000) * scale_mult)
         atk = base_atk
 
     turn = 1
