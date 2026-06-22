@@ -42,14 +42,14 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
     phase2_triggered = False
 
     if is_boss:
-        name, e_def, base_atk, hp = "스캐브 컬렉터 [BOSS]", 45, 180, 35000
+        name, e_def, base_atk, hp = "스캐브 컬렉터 [BOSS]", 45, 400, 35000
         art, header_title = constants.ENEMY_ART["BOSS"], "SYSTEM ALERT: 숙청 시퀀스 가동"
         base_atk = int(base_atk * scale_mult)
         hp = int(hp * scale_mult)
         boss_max_hp = hp
         atk = base_atk
     elif enemy_type == "bio_hound":
-        name, e_def, base_atk, hp = "바이오 하운드 [변이체]", 15, 110, 10000
+        name, e_def, base_atk, hp = "바이오 하운드 [변이체]", 15, 200, 16000
         art, header_title = constants.ENEMY_ART["BIOHOUND"], "ENCOUNTER: 생물형 기계 괴수"
         base_atk = int(base_atk * scale_mult)
         if current_hp is not None:
@@ -60,7 +60,7 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
             hp = int(hp * scale_mult)
         atk = base_atk
     else:
-        name, e_def, base_atk, hp = "오염된 스캐브 드론", 5, 80, 8000
+        name, e_def, base_atk, hp = "오염된 스캐브 드론", 5, 150, 12000
         art, header_title = constants.ENEMY_ART["NORMAL"], "ENCOUNTER: 포식자 조우"
         base_atk = int(base_atk * scale_mult)
         if current_hp is not None:
@@ -237,17 +237,17 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
                     escape_log = "[탈출] 적의 사각을 파고들어 피해 없이 안전하게 이탈했습니다."
                 elif res in ["NORMAL", "1.5X", "2.0X"]:
                     dmg_calc = atk if res == "NORMAL" else int(atk * 1.5) if res == "1.5X" else int(atk * 2.0)
-
-                    print(f"\n  후퇴 중 적에게 공격을 허용했습니다! (피해량: {dmg_calc:,})")
+                    disp_dmg_calc, _, _ = apply_dynamic_scaling(dmg_calc, 0, tier)
+                    print(f"\n  후퇴 중 적에게 공격을 허용했습니다! (피해량: {disp_dmg_calc:,})")
                     time.sleep(1)
                     player.hp -= dmg_calc
                     _, disp_php_new, _ = apply_dynamic_scaling(0, max(0, player.hp), tier)
                     print(f"  [시스템 갱신] 내 체력이 {disp_php_new:,}(으)로 감소했습니다.")
                     time.sleep(1)
 
-                    if res == "NORMAL": escape_log = f"[탈출] 후퇴 중 적의 공격에 노출되었습니다. (피해: {dmg_calc:,})"
-                    elif res == "1.5X": escape_log = f"[탈출] 치명적인 손상을 입으며 이탈했습니다. (피해: {dmg_calc:,})"
-                    else: escape_log = f"[탈출 참사] 도주 중 의체 중심부가 관통당했습니다! (피해: {dmg_calc:,})"
+                    if res == "NORMAL": escape_log = f"[탈출] 후퇴 중 적의 공격에 노출되었습니다. (피해: {disp_dmg_calc:,})"
+                    elif res == "1.5X": escape_log = f"[탈출] 치명적인 손상을 입으며 이탈했습니다. (피해: {disp_dmg_calc:,})"
+                    else: escape_log = f"[탈출 참사] 도주 중 의체 중심부가 관통당했습니다! (피해: {disp_dmg_calc:,})"
                 elif res == "LUCKY":
                     escape_log = "[기적적 탈출] 무사히 이탈하며 적 주변의 잔해에서 쓸만한 물자를 챙겼습니다."
                 break
@@ -296,7 +296,8 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
 
             # VIT stat_def + 장비 def_bonus 합산 방어 적용
             dmg_taken = max(1, atk - def_bonus - stat_def)
-            print(f"\n  {Fore.RED + Style.BRIGHT}{name}의 무자비한 공격! (피해량: {dmg_taken:,})")
+            disp_dmg_taken, _, _ = apply_dynamic_scaling(dmg_taken, 0, tier)
+            print(f"\n  {Fore.RED + Style.BRIGHT}{name}의 무자비한 공격! (피해량: {disp_dmg_taken:,})")
             time.sleep(1)
             player.hp -= dmg_taken
             if cyber_regen > 0 and player.hp > 0:
@@ -305,7 +306,7 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
             print(f"  [시스템 갱신] 내 잔여 체력: {disp_php_new:,} / {disp_pmaxhp:,}")
             time.sleep(1)
             def_note = f" (방어 -{def_bonus})" if def_bonus > 0 else ""
-            action_logs.append(f"[피격] 적의 공격으로 {dmg_taken:,}의 손상을 입었습니다.{def_note}")
+            action_logs.append(f"[피격] 적의 공격으로 {disp_dmg_taken:,}의 손상을 입었습니다.{def_note}")
             time.sleep(1)
 
         turn += 1
