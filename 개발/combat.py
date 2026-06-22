@@ -8,7 +8,7 @@ import constants
 from core import get_equipment_data
 from ui import (clear_screen, print_header, print_divider, type_text,
                 wait_for_keypress, safe_input, read_key, log_diary)
-from sys_log import sys_log, track
+from sys_log import sys_log, track, log_error
 
 def apply_dynamic_scaling(raw_dmg, raw_hp, highest_equip_tier):
     if highest_equip_tier >= 4:
