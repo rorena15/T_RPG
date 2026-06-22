@@ -1,38 +1,41 @@
 # combat.py — 전투 시스템
 # 의존성: constants, core, ui, sys_log
 
+import sys
 import math
 import random
 import time
 import constants
+from colorama import Fore, Style
 from core import get_equipment_data
 from ui import (clear_screen, print_header, print_divider, type_text,
-                wait_for_keypress, safe_input, read_key, log_diary)
+                wait_for_keypress, read_key, log_diary,
+                roll_medkit, roll_food, roll_water, _log_color)
 from sys_log import sys_log, track
+
 
 def apply_dynamic_scaling(raw_dmg, raw_hp, highest_equip_tier):
     if highest_equip_tier >= 4:
         return int(raw_dmg), int(raw_hp), ""
     elif highest_equip_tier in [2, 3]:
         return int(raw_dmg * 100), int(raw_hp * 10), "[SYSTEM: 전술 동기화 가동] 시각 피질의 정보 처리량이 가속됩니다."
-    else: 
+    else:
         return int(raw_dmg * 100000), int(raw_hp * 100), "[WARNING: HUD 글리치 발생] 시스템 연산 한계 돌파. 신격 스케일링 개방."
 
 
 def get_turn_scale_multiplier(player):
-    """진행 턴수와 난이도에 따른 적 스탯 배율을 계산한다. 플레이어 체력이 위험 수준이면 완화한다."""
     rate = constants.DIFFICULTY_SCALING_RATE.get(player.difficulty, constants.DIFFICULTY_SCALING_RATE["normal"])
     growth = player.turn_count * rate
-
     hp_ratio = player.hp / player.max_hp if player.max_hp > 0 else 1.0
     if hp_ratio < constants.LOW_HP_RELIEF_THRESHOLD:
         growth *= constants.LOW_HP_RELIEF_FACTOR
-
     return 1.0 + growth
 
 
 @track
 def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
+    from quest import advance_quest  # 지연 임포트 (순환 참조 방지)
+
     scale_mult = get_turn_scale_multiplier(player)
     boss_max_hp = 0
     phase2_triggered = False
@@ -72,12 +75,13 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
     consecutive_attacks = 0
     escaped = False
     escape_log = ""
+    res = "SAFE"
     action_logs = [f"[경보] 안개 속에서 {name}이(가) 나타났습니다!"]
 
     hp_bonus, def_bonus = player.get_armor_bonus()
-    gear_atk     = player.get_gear_atk_bonus()
-    e_suppress   = player.get_cyberdeck_e_suppress()
-    cyber_regen  = player.get_cyber_regen()
+    gear_atk    = player.get_gear_atk_bonus()
+    e_suppress  = player.get_cyberdeck_e_suppress()
+    cyber_regen = player.get_cyber_regen()
     if hp_bonus > 0:
         player.max_hp += hp_bonus
         player.hp = min(player.hp + hp_bonus, player.max_hp)
@@ -88,7 +92,6 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
             type_text(Fore.RED + Style.BRIGHT + "\n[SYSTEM FATAL] 15턴 임계점 초과. 거점이 고철 분진으로 분쇄되었습니다. GAME OVER.")
             sys.exit()
 
-        # 보스 페이즈 2 전환 (HP 50% 이하)
         if is_boss and not phase2_triggered and hp <= boss_max_hp * 0.5:
             phase2_triggered = True
             atk = int(base_atk * 1.6)
@@ -108,7 +111,6 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
         _, disp_php, _ = apply_dynamic_scaling(0, player.hp, tier)
         _, disp_pmaxhp, _ = apply_dynamic_scaling(0, player.max_hp, tier)
 
-        # 보스 체력바 시각화
         if is_boss:
             hp_pct = hp / boss_max_hp if boss_max_hp > 0 else 0
             bar_len = 40
@@ -176,7 +178,6 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
             consecutive_attacks = 0
             learning_index = max(0, learning_index - 4)
             atk = int(atk * 0.5)
-
             print("\n  급조 바리케이드 전개! 적의 분석 궤적을 방해합니다.")
             time.sleep(1)
             action_logs.append("[방어] 바리케이드 전개. 다음 공격의 피해를 반감시킵니다.")
@@ -187,7 +188,6 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
                 consecutive_attacks = 0
                 learning_index = 0
                 player.max_ram -= 2
-
                 print("\n  교란 신호 방출! 적의 센서 데이터가 초기화됩니다. (RAM -2)")
                 time.sleep(1)
                 action_logs.append("[해킹] 교란 신호 성공. 적 분석 지수를 초기화했습니다.")
@@ -212,14 +212,12 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
                     escape_log = "[탈출] 적의 사각을 파고들어 피해 없이 안전하게 이탈했습니다."
                 elif res in ["NORMAL", "1.5X", "2.0X"]:
                     dmg_calc = atk if res == "NORMAL" else int(atk * 1.5) if res == "1.5X" else int(atk * 2.0)
-
                     print(f"\n  후퇴 중 적에게 공격을 허용했습니다! (피해량: {dmg_calc:,})")
                     time.sleep(1)
                     player.hp -= dmg_calc
                     _, disp_php_new, _ = apply_dynamic_scaling(0, max(0, player.hp), tier)
                     print(f"  [시스템 갱신] 내 체력이 {disp_php_new:,}(으)로 감소했습니다.")
                     time.sleep(1)
-
                     if res == "NORMAL": escape_log = f"[탈출] 후퇴 중 적의 공격에 노출되었습니다. (피해: {dmg_calc:,})"
                     elif res == "1.5X": escape_log = f"[탈출] 치명적인 손상을 입으며 이탈했습니다. (피해: {dmg_calc:,})"
                     else: escape_log = f"[탈출 참사] 도주 중 의체 중심부가 관통당했습니다! (피해: {dmg_calc:,})"
@@ -263,12 +261,9 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
             time.sleep(1)
             action_logs.append("[오류] 잘못된 명령어 입력.")
 
-        # --- 적의 반격 ---
         if hp > 0 and not escaped:
-            # 페이즈 2 전환 후 방어가 풀리지 않도록 atk 재복구
             if cmd == "2":
                 atk = int(base_atk * (1.6 if phase2_triggered else 1.0))
-
             dmg_taken = max(1, atk - def_bonus)
             print(f"\n  {Fore.RED + Style.BRIGHT}{name}의 무자비한 공격! (피해량: {dmg_taken:,})")
             time.sleep(1)
@@ -361,9 +356,7 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
         player.hp = min(player.hp, player.max_hp)
     return None, None
 
-# ====================================================================
-# [6] 메인 구동 루프 망 명세
-# ====================================================================
+
 def get_encounter_chance(player):
     hp_ratio = player.hp / player.max_hp
     base_chance = 0.10
