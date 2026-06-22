@@ -7,12 +7,14 @@ import json
 import time
 import math
 import random
+from rich.console import Console
 from colorama import Fore, Back, Style, init as colorama_init
 import constants
-import core
+from core import get_save_path, save_data
 from ui import (clear_screen, print_header, print_divider, type_text,
                 wait_for_keypress, safe_input, read_key, log_diary,
-                show_diary, print_ambient_lore, roll_medkit, roll_food, roll_water)
+                show_diary, print_ambient_lore, roll_medkit, roll_food, roll_water,
+                ea_center, ea_rpad)
 from player import Player
 from map import GameMap
 from combat import combat_loop, get_encounter_chance, apply_dynamic_scaling
@@ -20,6 +22,9 @@ from quest import trigger_sudden_quest, handle_random_event, handle_trader, adva
 from story import handle_session, run_prologue, run_boss_core_choice, run_ending
 from updater import check_and_prompt_update
 from sys_log import sys_log, track, track_event
+import core
+
+_console = Console(highlight=False)
 
 def run_game():
     os.system('title PROTOCOL: STIGMA — 1막: 낙인')
@@ -132,7 +137,7 @@ def run_game():
             clear_screen()
         grid.draw()
         player.show_status()
-        
+
         print(" [명령 프로토콜]")
         print("  W, A, S, D  : 그리드 이동")
         print("  F           : 현재 타일 탐색 및 자원 파싱")
@@ -141,7 +146,7 @@ def run_game():
         print("  C           : 현재 상태 로컬 백업 (저장)")
         print("  Q           : 시스템 접속 종료 (Exit)")
         print_divider()
-        
+
         move = read_key()
 
         if move == "I":
@@ -153,7 +158,7 @@ def run_game():
         elif move == "C":
             save_data(player, grid)
             continue
-            
+
         if move == "F":
             player.consume_resources()
             print("\n[행동] 주변의 고철 더미를 뒤지기 시작합니다...")
@@ -163,13 +168,10 @@ def run_game():
             roll = random.random()
 
             if roll < 0.08 and constants.TRADER_ITEMS:
-                # 행상인 NPC 조우 (8%)
                 handle_trader(player)
             elif roll < 0.08 + encounter_chance:
-                # 전투 조우 (encounter_chance%)
                 print("\n[경고] 탐색 중 발생한 소음이 기계 괴수를 끌어들였습니다!")
                 wait_for_keypress()
-                # 바이오 하운드 20% 확률 등장 (재조우 시 이전 타입 유지)
                 if grid.escaped_enemy_hp is not None:
                     etype = grid.escaped_enemy_type or "drone"
                 else:
@@ -178,11 +180,9 @@ def run_game():
                 grid.escaped_enemy_hp = result_hp
                 grid.escaped_enemy_type = result_type
             elif roll < 0.08 + encounter_chance + 0.20 and constants.RANDOM_EVENTS:
-                # 랜덤 서사 이벤트 (20%)
                 event = random.choice(constants.RANDOM_EVENTS)
                 handle_random_event(player, event)
             elif roll < 0.08 + encounter_chance + 0.20 + 0.30:
-                # 공탐색 — 분위기 로그 (30%)
                 _empty = random.choice([
                     "적막만이 돌아옵니다. 이 구역은 이미 누군가 쓸고 간 흔적입니다.",
                     "먼지와 녹슨 고철 외에는 쓸만한 게 없습니다.",
@@ -194,7 +194,6 @@ def run_game():
                 print(f"\n  {_empty}")
                 print_ambient_lore()
             else:
-                # 자원 파밍 (나머지 ~22%)
                 item_roll = random.random()
                 if item_roll <= 0.25:
                     gained = random.randint(10, 25)
@@ -215,7 +214,6 @@ def run_game():
                     player.consumables[it] += 1
                     print(f"\n[획득] 구석의 구급 상자에서 희귀한 '{constants.CONSUMABLES_DB[it]['name']}' 1개를 획득했습니다.")
                 wait_for_keypress()
-            # 탐색 퀘스트 진행 및 돌발 퀘스트 (전투 미조우 시)
             if not (0.08 <= roll < 0.08 + encounter_chance):
                 advance_quest(player, "search")
                 if roll >= 0.08 + encounter_chance + 0.20:
@@ -241,7 +239,7 @@ def run_game():
             print()
             time.sleep(0.8)
             sys.exit()
-        
+
         px, py = grid.player_pos[0], grid.player_pos[1]
         valid_move = False
         if move == "W" and py < grid.size - 1: py += 1; valid_move = True
@@ -264,7 +262,6 @@ def run_game():
             if current_loc == tuple(grid.bunker_pos):
                 if constants.SESSIONS_DB and len(constants.SESSIONS_DB) > 6:
                     handle_session(player, constants.SESSIONS_DB[6])
-                # 보스전 준비 화면
                 log_diary(player, "[보스] 스캐브 컬렉터 추적 확인 — 최종 전투 준비")
                 clear_screen()
                 print_header("!! CRITICAL ALERT — 스캐브 컬렉터 접근 중 !!")
@@ -323,7 +320,6 @@ def run_game():
                     else:
                         if random.random() < 0.2:
                             print_ambient_lore()
-
 
 
 if __name__ == "__main__":
