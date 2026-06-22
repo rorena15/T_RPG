@@ -6,11 +6,12 @@ import random
 import os
 import sys
 import constants
+from colorama import Fore, Back, Style
 from core import get_equipment_data
 from ui import (clear_screen, print_header, print_divider, type_text,
                 wait_for_keypress, safe_input, read_key, log_diary,
                 show_diary, ea_rpad)
-from combat import combat_loop
+from combat import combat_loop, get_turn_scale_multiplier
 from quest import advance_quest
 from sys_log import sys_log, log_error
 
@@ -377,5 +378,3 @@ def run_ending(player):
     print(Fore.GREEN + Style.BRIGHT + "  ╚" + "═" * 74 + "╝")
     wait_for_keypress()
 
-if __name__ == "__main__":
-    run_game()

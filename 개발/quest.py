@@ -198,3 +198,5 @@ def handle_trader(player):
         else:
             print("\n  [오류] 올바른 번호를 입력하세요.")
             time.sleep(0.5)
+
+

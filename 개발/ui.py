@@ -176,8 +176,8 @@ def show_diary(player):
             page -= 1
 
 def print_ambient_lore():
-    if AMBIENT_LORE:
-        lore = random.choice(AMBIENT_LORE)
+    if constants.AMBIENT_LORE:
+        lore = random.choice(constants.AMBIENT_LORE)
         print()
         print("  " + "─" * 70)
         type_text(f"  {lore}", 0.018)

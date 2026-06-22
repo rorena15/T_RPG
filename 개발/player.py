@@ -4,6 +4,7 @@
 import math
 import random
 import sqlite3
+import sys
 import time
 import constants
 from core import get_equipment_data, get_save_path
@@ -12,6 +13,7 @@ from ui import (clear_screen, print_header, print_divider, type_text,
                 show_diary, ea_rpad, ea_center)
 from colorama import Fore, Back, Style
 from combat import apply_dynamic_scaling, get_turn_scale_multiplier
+from quest import advance_quest
 from sys_log import sys_log, track, log_error
 
 class Player:
@@ -464,3 +466,4 @@ class Player:
                 self.thirst = min(100, self.thirst + item["thirst"])
                 print(f"\n[섭취] '{item['name']}' 섭취 완료. 바이오 연료가 보충되었습니다.")
             wait_for_keypress()
+
