@@ -33,6 +33,7 @@ class Player:
         self.hunger  = 100
         self.thirst  = 100
         self.alert_level = 0
+        self.temp_weapon_uses: dict = {}
         self.materials = 0
         self.reputation = 0 # 정식 공식 적용을 위한 밸런스 인자 기본 동기화
         
@@ -124,6 +125,7 @@ class Player:
         return {
             "hp": self.hp, "max_hp": self.max_hp, "hunger": self.hunger, "thirst": self.thirst,
             "alert_level": self.alert_level,
+            "temp_weapon_uses": self.temp_weapon_uses,
             "vit": self.vit, "int_s": self.int_s, "dex": self.dex, "lv": self.lv,
             "max_ram": self.max_ram, "materials": self.materials,
             "consumables": self.consumables, "weights": self.weights,
@@ -144,6 +146,7 @@ class Player:
         self.max_hp  = data.get("max_hp",  self.calc_max_hp())
         self.max_ram = data.get("max_ram", self.calc_max_ram())
         self.alert_level = data.get("alert_level", 0)
+        self.temp_weapon_uses = data.get("temp_weapon_uses", {})
         self.materials = data.get("materials", 0)
         self.reputation = data.get("reputation", 0)
         self.consumables = data.get("consumables", {k: 0 for k in constants.CONSUMABLES_DB.keys()})

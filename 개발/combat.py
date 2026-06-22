@@ -14,6 +14,22 @@ from ui import (clear_screen, print_header, print_divider, type_text,
 from quest import advance_quest
 from sys_log import sys_log, track, log_error
 
+_NAIWPN_ID = "NEOARC_AI_WPN"
+
+def _neoarc_decay(player, used: bool):
+    """네오 아크 AI 화기 내구도 감소. 이번 전투에서 사용했을 때만 차감하고, 0 도달 시 파기."""
+    if not used or _NAIWPN_ID not in player.inventory:
+        return
+    player.temp_weapon_uses[_NAIWPN_ID] = player.temp_weapon_uses.get(_NAIWPN_ID, 2) - 1
+    remaining = player.temp_weapon_uses[_NAIWPN_ID]
+    if remaining <= 0:
+        player.inventory.remove(_NAIWPN_ID)
+        del player.temp_weapon_uses[_NAIWPN_ID]
+        print(f"\n  {Fore.RED + Style.BRIGHT}[경고] 죽은 AI의 서비스 화기 — 열손상 임계 초과. 자동 파기됨.{Style.RESET_ALL}")
+    else:
+        print(f"\n  {Fore.YELLOW}[화기 상태] 죽은 AI의 서비스 화기 — 잔여 내구: {remaining}전투{Style.RESET_ALL}")
+
+
 def apply_dynamic_scaling(raw_dmg, raw_hp, highest_equip_tier):
     if highest_equip_tier >= 4:
         return int(raw_dmg), int(raw_hp), ""
@@ -73,6 +89,13 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
             hp = int(random.randint(8000, 16000) * scale_mult)
         atk = base_atk
         player.alert_level = min(100, player.alert_level + 15)
+
+    # ── 보조 화기 — 네오 아크 AI 폐기 화기 전용 ─────────────────────────
+    _NAIWPN = "NEOARC_AI_WPN"
+    sub_wpn_power = 100
+    sub_wpn_name  = "죽은 AI의 서비스 화기"
+    sub_charges    = 2 if _NAIWPN in player.inventory else 0
+    sub_wpn_used   = False  # 이 전투에서 사용 여부 (전투 종료 시 내구도 차감 판정)
 
     turn = 1
     learning_index = 0
@@ -155,6 +178,8 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
         print("  4. 전술적 후퇴 (ESCAPE - 민첩 비례 탈출 및 확률적 파밍)")
         if has_consumable:
             print("  5. 소모품 사용 (USE ITEM - 전투 중 회복, 적 반격 있음)")
+        if sub_charges > 0:
+            print(f"  {Fore.MAGENTA + Style.BRIGHT}6. 보조 화기 투입 [{sub_wpn_name}] — {sub_charges}발 잔여 (RAM 2 소모, 과부하 단기 사격){Style.RESET_ALL}")
 
         cmd = read_key()
 
@@ -286,6 +311,41 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
             else:
                 action_logs.append("[취소] 소모품 사용을 중단했습니다.")
 
+        elif cmd == "6" and sub_charges > 0:
+            if player.max_ram >= 2:
+                consecutive_attacks += 1
+                if consecutive_attacks >= 2 and is_boss:
+                    e_gain = max(0, 3 - e_suppress)
+                    learning_index += e_gain
+                sub_charges -= 1
+                sub_wpn_used = True
+                player.max_ram -= 2
+
+                f_multiplier = 1.0 + (player.reputation / 2000)
+                penalty = max(0.5, 1.0 - (learning_index - 10) * 0.05) if learning_index > 10 else 1.0
+                sub_dmg = max(75, math.floor((sub_wpn_power + gear_atk) * f_multiplier * penalty * 70) - e_def + random.randint(-25, 50))
+
+                is_crit = random.random() < stat_crt
+                if is_crit:
+                    sub_dmg = math.floor(sub_dmg * 1.5)
+                    action_logs.append("[치명타] 보조 화기 치명 사격 발동! (×1.5)")
+
+                disp_sub_dmg, _, _ = apply_dynamic_scaling(sub_dmg, 0, tier)
+                crit_tag = Fore.YELLOW + Style.BRIGHT + " [CRITICAL!]" + Style.RESET_ALL if is_crit else ""
+                charges_tag = f"잔여 {sub_charges}발" if sub_charges > 0 else "탄약 소진 — 보조 화기 열손상"
+                print(f"\n  {Fore.MAGENTA + Style.BRIGHT}보조 화기 투입! [{sub_wpn_name}] 과부하 단기 사격! (피해: {disp_sub_dmg:,}){crit_tag}")
+                time.sleep(1)
+                hp = max(0, hp - sub_dmg)
+                _, disp_ehp_new, _ = apply_dynamic_scaling(0, hp, tier)
+                print(f"  [시스템 갱신] {name}의 잔여 체력: {disp_ehp_new:,}")
+                time.sleep(1)
+                action_logs.append(f"[보조 화기] {sub_wpn_name} — {disp_sub_dmg:,} 피해. {charges_tag}")
+                time.sleep(1)
+            else:
+                print("\n  [오류] RAM 부족. 보조 화기를 투입할 수 없습니다.")
+                time.sleep(0.5)
+                action_logs.append("[오류] RAM 부족. 보조 화기 투입 실패.")
+
         else:
             print("\n  [오류] 인식할 수 없는 명령 프로토콜입니다.")
             time.sleep(1)
@@ -353,6 +413,7 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
                 print(f"  [수집] {constants.CONSUMABLES_DB[it]['name']} 1개 획득")
 
         log_diary(player, f"[전투] {name} — 전술적 후퇴")
+        _neoarc_decay(player, sub_wpn_used)
         wait_for_keypress()
         if hp_bonus > 0:
             player.max_hp -= hp_bonus
@@ -385,6 +446,7 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
 
     advance_quest(player, "combat")
     log_diary(player, f"[전투] {name} — 제압 완료 (총 {player.enemies_defeated}기)")
+    _neoarc_decay(player, sub_wpn_used)
     wait_for_keypress()
     if hp_bonus > 0:
         player.max_hp -= hp_bonus

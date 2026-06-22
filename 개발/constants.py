@@ -12,6 +12,24 @@ RANDOM_EVENTS = []
 TRADER_ITEMS = []
 MASTER_FORMULAS = {}
 
+# 특수 아이템 — SQLite에 없는 이벤트 전용 아이템 (get_equipment_data fallback 참조)
+SPECIAL_ITEMS = {
+    "NEOARC_AI_WPN": {
+        "id": "NEOARC_AI_WPN",
+        "name": "죽은 AI의 서비스 화기",
+        "power": 100,
+        "tier": 1,
+        "slot": "main_weapon",
+        "type": "weapon",
+        "slot_weight": 1.5,
+        "hp_bonus": 0,
+        "def_bonus": 0,
+        "e_suppress": 0,
+        "cyber_regen": 0,
+        "desc": "[T=1 기업제·폐기 예정] 네오 아크 AI 잔해에서 회수한 과부하 화기. 2전투 후 열손상으로 자동 파기.",
+    }
+}
+
 # 11개 장비 슬롯 정의 — DB slot 컬럼 키와 1:1 대응
 
 SLOT_DISPLAY = {

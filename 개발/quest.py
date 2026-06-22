@@ -4,6 +4,7 @@
 import random
 import time
 import constants
+from colorama import Fore, Style
 from core import get_equipment_data
 from ui import (clear_screen, print_header, print_divider, type_text,
                 wait_for_keypress, safe_input, read_key, log_diary)
@@ -110,6 +111,25 @@ def handle_random_event(player, event):
                 player.consumables[key] += 1
                 print(f"  [획득] {constants.CONSUMABLES_DB[key]['name']} 1개")
         log_diary(player, f"[이벤트] {event['title']}")
+        wait_for_keypress()
+
+    elif event["type"] == "weapon_item":
+        result = event["result"]
+        time.sleep(0.5)
+        wid = result["weapon_id"]
+        uses = result.get("weapon_uses", 2)
+        type_text(result["log"], 0.02)
+        if result.get("hp_loss", 0) > 0:
+            player.hp = max(1, player.hp - result["hp_loss"])
+        if result.get("materials", 0) != 0:
+            player.materials = max(0, player.materials + result["materials"])
+        if wid not in player.inventory:
+            player.inventory.append(wid)
+            player.temp_weapon_uses[wid] = uses
+            print(f"\n  {Fore.MAGENTA + Style.BRIGHT}[획득] 죽은 AI의 서비스 화기 — 잔여 내구: {uses}전투{Style.RESET_ALL}")
+        else:
+            print(f"\n  [무시] 이미 동일 화기를 보유 중입니다.")
+        log_diary(player, f"[이벤트] {event['title']} — 기업제 화기 회수")
         wait_for_keypress()
 
     elif event["type"] == "choice":

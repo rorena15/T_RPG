@@ -606,6 +606,20 @@
         "thirst": 0
       }
     }
+  ,
+    {
+      "id": "DEAD_AI_WEAPON",
+      "title": "죽은 네오 아크 AI의 잔해",
+      "text": "폐허 더미 아래 반쯤 묻힌 금속 실루엣이 눈에 걸립니다.\n가까이 다가서자 총괄국 마크가 각인된 AI 셸이 보입니다. 이미 사망한 네오 아크 경비 AI입니다.\n손에 쥔 채로 굳어버린 기업제 화기가 아직 손상되지 않았습니다.",
+      "type": "weapon_item",
+      "result": {
+        "log": "[회수] 죽은 AI의 서비스 화기를 인벤토리에 확보했습니다. 과부하 사격 2전투 후 열손상 파기됩니다.",
+        "weapon_id": "NEOARC_AI_WPN",
+        "weapon_uses": 2,
+        "hp_loss": 0,
+        "materials": 0
+      }
+    }
   ],
   "TRADER_ITEMS": [
     {"id": "MED_PER_10",  "name": "소형 반창고 팩",     "cost": 15},

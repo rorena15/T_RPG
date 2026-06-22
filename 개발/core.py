@@ -78,6 +78,10 @@ def get_equipment_data(item_id):
     """장비 데이터는 세션 내 캐시 우선, 미등록 시 SQLite 쿼리."""
     if item_id in _eq_cache:
         return _eq_cache[item_id]
+    if item_id in constants.SPECIAL_ITEMS:
+        result = constants.SPECIAL_ITEMS[item_id]
+        _eq_cache[item_id] = result
+        return result
     db_path = "stigma_data.db"
     if not os.path.exists(db_path):
         result = {"name": "손상된 고철", "power": 5, "type": "kinetic", "tier": 4, "desc": "DB 파일 누락."}
