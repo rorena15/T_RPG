@@ -7,10 +7,10 @@ on:
         description: '릴리즈 버전'
         required: true
         default: 'v1.0.0'
-      inputs:
-        ㄴdescription: '업데이트 내용'
-          required: true
-          default: '버그 수정'
+      notes:
+        description: '업데이트 내용'
+        required: true
+        default: '버그 수정'
 
 jobs:
   build-windows:
@@ -26,7 +26,7 @@ jobs:
           python-version: '3.11'
 
       - name: 의존성 설치
-        run: pip install rich colorama pyinstaller
+        run: pip install rich colorama pyinstaller pygame-ce
 
       - name: 버전 주입
         shell: pwsh
@@ -45,6 +45,7 @@ jobs:
             --icon="Protocol_Stigma_1.ico" `
             --add-data "database.json;." `
             --add-data "master_formulas.json;." `
+            --add-data "..\assets;assets" `
             Main.py
 
       - name: GitHub Release 생성
@@ -53,6 +54,8 @@ jobs:
           tag_name: ${{ github.event.inputs.version }}
           name: "PROTOCOL: STIGMA ${{ github.event.inputs.version }} - 1막: 낙인"
           body: |
+            ${{ github.event.inputs.notes }}
+
             Windows 64비트 실행 파일입니다.
             다운로드 후 바로 실행 가능합니다. (Python 설치 불필요)
           files: 개발/dist/PROTOCOL_STIGMA.exe
