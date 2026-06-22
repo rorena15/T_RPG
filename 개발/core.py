@@ -8,7 +8,7 @@ import sqlite3
 import time
 import db_init
 import constants
-from sys_log import sys_log, track
+from sys_log import sys_log, track, log_error
 
 _eq_cache: dict = {}
 
