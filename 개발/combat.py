@@ -11,6 +11,7 @@ from core import get_equipment_data
 from ui import (clear_screen, print_header, print_divider, type_text,
                 wait_for_keypress, safe_input, read_key, log_diary,
                 _log_color, roll_medkit, roll_food, roll_water)
+import skills as _skills
 from quest import advance_quest
 from sys_log import sys_log, track, log_error
 
@@ -97,6 +98,8 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
     sub_charges    = 2 if _NAIWPN in player.inventory else 0
     sub_wpn_used   = False  # 이 전투에서 사용 여부 (전투 종료 시 내구도 차감 판정)
 
+    combat_ctx = {"skip_enemy_attack": False}  # skills 모듈이 턴마다 갱신
+
     turn = 1
     learning_index = 0
     consecutive_attacks = 0
@@ -180,6 +183,10 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
             print("  5. 소모품 사용 (USE ITEM - 전투 중 회복, 적 반격 있음)")
         if sub_charges > 0:
             print(f"  {Fore.MAGENTA + Style.BRIGHT}6. 보조 화기 투입 [{sub_wpn_name}] — {sub_charges}발 잔여 (RAM 2 소모, 과부하 단기 사격){Style.RESET_ALL}")
+        if player.skill_slots:
+            for _i, _sid in enumerate(player.skill_slots):
+                _sk = _skills.SKILL_DEFS.get(_sid, {})
+                print(f"  {Fore.YELLOW + Style.BRIGHT}S{'12'[_i] if len(player.skill_slots) > 1 else ''}. {_sk.get('name','?')} — {_sk.get('desc','')}{Style.RESET_ALL}")
 
         cmd = read_key()
 
@@ -196,8 +203,9 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
             penalty = max(0.5, 1.0 - (learning_index - 10) * 0.05) if learning_index > 10 else 1.0
             f_multiplier = 1.0 + (player.reputation / 2000) * 1
             effective_power = player.get_attack_power() + gear_atk
+            atk_mult = _skills.get_atk_mult(player)
 
-            dmg = max(50, math.floor(effective_power * f_multiplier * penalty * 50) - e_def + random.randint(-25, 25))
+            dmg = max(50, math.floor(effective_power * f_multiplier * penalty * atk_mult * 50) - e_def + random.randint(-25, 25))
 
             # DEX 치명타 판정 (기획서 CRT 공식: DEX=10 → 13%)
             is_crit = random.random() < stat_crt
@@ -205,6 +213,7 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
                 dmg = math.floor(dmg * 1.5)
                 action_logs.append(f"[치명타] DEX 반응속도로 치명적 타격 발동! (×1.5)")
 
+            dmg = _skills.apply_outgoing_buffs(player, dmg, action_logs)  # 그리드 침투 +15%
             disp_dmg, _, _ = apply_dynamic_scaling(dmg, 0, tier)
             crit_tag = Fore.YELLOW + Style.BRIGHT + " [CRITICAL!]" + Style.RESET_ALL if is_crit else ""
 
@@ -214,6 +223,7 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
             _, disp_ehp_new, _ = apply_dynamic_scaling(0, hp, tier)
             print(f"  [시스템 갱신] {name}의 잔여 체력: {disp_ehp_new:,}")
             time.sleep(1)
+            _skills.on_attack_used(player, action_logs)       # 오버클럭 소모·드레인
             action_logs.append(f"[타격] 적에게 {disp_dmg:,}의 피해를 입혔습니다.")
             time.sleep(1)
 
@@ -324,6 +334,7 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
                 f_multiplier = 1.0 + (player.reputation / 2000)
                 penalty = max(0.5, 1.0 - (learning_index - 10) * 0.05) if learning_index > 10 else 1.0
                 sub_dmg = max(75, math.floor((sub_wpn_power + gear_atk) * f_multiplier * penalty * 70) - e_def + random.randint(-25, 50))
+                sub_dmg = _skills.apply_outgoing_buffs(player, sub_dmg, action_logs)
 
                 is_crit = random.random() < stat_crt
                 if is_crit:
@@ -346,19 +357,34 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
                 time.sleep(0.5)
                 action_logs.append("[오류] RAM 부족. 보조 화기 투입 실패.")
 
+        elif cmd.upper() == "S" and player.skill_slots:
+            slots = player.skill_slots
+            consecutive_attacks = 0
+            if len(slots) == 1:
+                _skills.execute(player, slots[0], combat_ctx)
+            else:
+                print("\n  [S1] 또는 [S2] 를 입력하세요.")
+                scmd = read_key()
+                idx = 0 if scmd in ("s", "S", "1") else (1 if scmd == "2" else -1)
+                if 0 <= idx < len(slots):
+                    _skills.execute(player, slots[idx], combat_ctx)
+                else:
+                    action_logs.append("[취소] 스킬 입력 취소.")
+
         else:
             print("\n  [오류] 인식할 수 없는 명령 프로토콜입니다.")
             time.sleep(1)
             action_logs.append("[오류] 잘못된 명령어 입력.")
 
         # --- 적의 반격 ---
-        if hp > 0 and not escaped:
+        if hp > 0 and not escaped and not combat_ctx.get("skip_enemy_attack"):
             # 페이즈 2 전환 후 방어가 풀리지 않도록 atk 재복구
             if cmd == "2":
                 atk = int(base_atk * (1.6 if phase2_triggered else 1.0))
 
             # VIT stat_def + 장비 def_bonus 합산 방어 적용
             dmg_taken = max(1, atk - def_bonus - stat_def)
+            dmg_taken = _skills.apply_incoming_buffs(player, dmg_taken, action_logs)  # 그리드 침투 -30%
             disp_dmg_taken, _, _ = apply_dynamic_scaling(dmg_taken, 0, tier)
             print(f"\n  {Fore.RED + Style.BRIGHT}{name}의 무자비한 공격! (피해량: {disp_dmg_taken:,})")
             time.sleep(1)
@@ -372,6 +398,7 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
             action_logs.append(f"[피격] 적의 공격으로 {disp_dmg_taken:,}의 손상을 입었습니다.{def_note}")
             time.sleep(1)
 
+        combat_ctx["skip_enemy_attack"] = False   # 매 턴 리셋
         turn += 1
 
     if player.hp <= 0:

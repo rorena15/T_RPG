@@ -15,6 +15,7 @@ from combat import combat_loop, get_turn_scale_multiplier
 from quest import advance_quest
 from sys_log import sys_log, log_error
 import sound
+import skills as _skills
 
 def handle_session(player, session):
     clear_screen()
@@ -331,6 +332,20 @@ def run_ending(player):
         type_text("  코드는 현실보다 강하다. 당신은 시스템의 균열을 타고 흐릅니다.", 0.03)
         type_text("  총괄국 AI가 당신을 단 한 번도 예측하지 못했습니다.", 0.03)
     print_divider()
+    time.sleep(0.8)
+
+    # ── 각성 스킬 지급 ──────────────────────────────────────────────────
+    job, skill_id = _skills.grant_awakening_skill(player)
+    if skill_id:
+        sk = _skills.SKILL_DEFS[skill_id]
+        job_label = _skills.JOB_LABEL.get(job, job)
+        print()
+        print(f"  {Fore.YELLOW + Style.BRIGHT}[ 각성 스킬 해금 ]{Style.RESET_ALL}")
+        print(f"  직업: {Fore.CYAN + Style.BRIGHT}{job_label}{Style.RESET_ALL}")
+        print(f"  스킬: {Fore.GREEN + Style.BRIGHT}{sk['name']}{Style.RESET_ALL}")
+        type_text(f"  ▶ {sk['desc']}", 0.022)
+        type_text("  전투 중 [S] 키로 사용 가능합니다.", 0.022)
+        log_diary(player, f"[각성] {job_label} — {sk['name']} 해금")
 
     print()
     time.sleep(1)

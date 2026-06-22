@@ -34,6 +34,9 @@ class Player:
         self.thirst  = 100
         self.alert_level = 0
         self.temp_weapon_uses: dict = {}
+        self.job_class: str = ""          # combat / mech / net / balanced
+        self.skill_slots: list = []       # 장착된 스킬 ID 목록 (최대 2)
+        self.active_buffs: dict = {}      # 활성 버프 {skill_id: 잔여량}
         self.materials = 0
         self.reputation = 0 # 정식 공식 적용을 위한 밸런스 인자 기본 동기화
         
@@ -126,6 +129,9 @@ class Player:
             "hp": self.hp, "max_hp": self.max_hp, "hunger": self.hunger, "thirst": self.thirst,
             "alert_level": self.alert_level,
             "temp_weapon_uses": self.temp_weapon_uses,
+            "job_class": self.job_class,
+            "skill_slots": self.skill_slots,
+            "active_buffs": self.active_buffs,
             "vit": self.vit, "int_s": self.int_s, "dex": self.dex, "lv": self.lv,
             "max_ram": self.max_ram, "materials": self.materials,
             "consumables": self.consumables, "weights": self.weights,
@@ -147,6 +153,9 @@ class Player:
         self.max_ram = data.get("max_ram", self.calc_max_ram())
         self.alert_level = data.get("alert_level", 0)
         self.temp_weapon_uses = data.get("temp_weapon_uses", {})
+        self.job_class   = data.get("job_class", "")
+        self.skill_slots = data.get("skill_slots", [])
+        self.active_buffs = data.get("active_buffs", {})
         self.materials = data.get("materials", 0)
         self.reputation = data.get("reputation", 0)
         self.consumables = data.get("consumables", {k: 0 for k in constants.CONSUMABLES_DB.keys()})
