@@ -12,7 +12,7 @@ from ui import (clear_screen, print_header, print_divider, type_text,
                 ea_rpad, ea_center)
 from colorama import Fore, Back, Style
 from combat import apply_dynamic_scaling, get_turn_scale_multiplier
-from sys_log import sys_log, track
+from sys_log import sys_log, track, log_error
 
 class Player:
     def __init__(self):
@@ -333,7 +333,8 @@ class Player:
             print_divider()
             try:
                 cmd = safe_input("\n  명령어 입력: ").strip().upper()
-            except:
+            except Exception as _e:
+                log_error(_e, "manage_inventory/DEV_GRANT_LEGACY")
                 sys.exit()
 
             # 장착: E <번호>
