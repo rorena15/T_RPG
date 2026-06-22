@@ -193,25 +193,42 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
         if cmd == "1":
             consecutive_attacks += 1
             if consecutive_attacks >= 2 and is_boss:
-                e_gain = max(0, 3 - e_suppress)
-                learning_index += e_gain
-                if e_suppress > 0:
-                    action_logs.append(f"[경고] 동일 공격 반복 감지. 사이버덱이 학습 신호를 교란합니다. (E +{e_gain})")
+                if _skills.is_learning_blocked(player):
+                    action_logs.append("[패턴 차단] 보스 딥러닝 신호 차단 — E 증가 무효!")
                 else:
-                    action_logs.append(f"[경고] 동일 공격 반복 감지. 보스가 궤적을 딥러닝 중입니다. (E +{e_gain})")
+                    e_gain = max(0, 3 - e_suppress)
+                    learning_index += e_gain
+                    if e_suppress > 0:
+                        action_logs.append(f"[경고] 동일 공격 반복. 사이버덱이 학습 신호를 교란합니다. (E +{e_gain})")
+                    else:
+                        action_logs.append(f"[경고] 동일 공격 반복. 보스가 궤적을 딥러닝 중입니다. (E +{e_gain})")
 
             penalty = max(0.5, 1.0 - (learning_index - 10) * 0.05) if learning_index > 10 else 1.0
             f_multiplier = 1.0 + (player.reputation / 2000) * 1
             effective_power = player.get_attack_power() + gear_atk
             atk_mult = _skills.get_atk_mult(player)
 
-            dmg = max(50, math.floor(effective_power * f_multiplier * penalty * atk_mult * 50) - e_def + random.randint(-25, 25))
+            # 유압 분쇄: 배율 + 방어 관통
+            hyd_mult, hyd_pierce = _skills.consume_hydraulic_crush(player, action_logs)
+            eff_e_def = int(e_def * (1 - hyd_pierce))
 
-            # DEX 치명타 판정 (기획서 CRT 공식: DEX=10 → 13%)
-            is_crit = random.random() < stat_crt
+            dmg = max(50, math.floor(effective_power * f_multiplier * penalty * atk_mult * hyd_mult * 50) - eff_e_def + random.randint(-25, 25))
+
+            # 주파수 역추적 강제 치명타 / 고스트 치명타율 +30% / 신경 가속기 ×2 / DEX 기본 치명타
+            forced_crit, st_mult = _skills.apply_signal_trace(player, combat_ctx, action_logs)
+            ghost_crt  = player.active_buffs.pop("ghost_crt", 0.0)
+            neural_mult = 2.0 if player.active_buffs.pop("neural_acc", 0) else 1.0
+            if neural_mult > 1.0:
+                action_logs.append("[신경 가속기] 시냅스 가속 — 치명타율 2배!")
+            effective_crt = min(0.75, (stat_crt + ghost_crt) * neural_mult)
+            if ghost_crt > 0:
+                action_logs.append(f"[고스트 프로토콜] 치명타율 +{ghost_crt*100:.0f}%!")
+            is_crit = forced_crit or random.random() < effective_crt
+            crt_mult_used = st_mult if forced_crit else 1.5
+            if is_crit and not forced_crit:
+                action_logs.append(f"[치명타] DEX 반응속도 — 치명적 타격! (×{crt_mult_used})")
             if is_crit:
-                dmg = math.floor(dmg * 1.5)
-                action_logs.append(f"[치명타] DEX 반응속도로 치명적 타격 발동! (×1.5)")
+                dmg = math.floor(dmg * crt_mult_used)
 
             dmg = _skills.apply_outgoing_buffs(player, dmg, action_logs)  # 그리드 침투 +15%
             disp_dmg, _, _ = apply_dynamic_scaling(dmg, 0, tier)
@@ -223,7 +240,7 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
             _, disp_ehp_new, _ = apply_dynamic_scaling(0, hp, tier)
             print(f"  [시스템 갱신] {name}의 잔여 체력: {disp_ehp_new:,}")
             time.sleep(1)
-            _skills.on_attack_used(player, action_logs)       # 오버클럭 소모·드레인
+            _skills.on_attack_used(player, action_logs, dmg_dealt=dmg)
             action_logs.append(f"[타격] 적에게 {disp_dmg:,}의 피해를 입혔습니다.")
             time.sleep(1)
 
@@ -268,7 +285,11 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
                     max(1, 5  - eva_bonus * 0.25),       # 2.0X
                     5  + eva_bonus * 0.5                 # LUCKY: DEX 높을수록 가끔 행운
                 ]
-                res = random.choices(["SAFE", "NORMAL", "1.5X", "2.0X", "LUCKY"], weights=weights, k=1)[0]
+                if player.active_buffs.pop("void_shift", 0):
+                    res = "SAFE"
+                    action_logs.append("[허공 전위] 탈출 경로 확정 — SAFE!")
+                else:
+                    res = random.choices(["SAFE", "NORMAL", "1.5X", "2.0X", "LUCKY"], weights=weights, k=1)[0]
 
                 escaped = True
                 if res == "SAFE":
@@ -371,6 +392,21 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
                 else:
                     action_logs.append("[취소] 스킬 입력 취소.")
 
+            # 보조 스킬 직접 피해 처리 (junk_cannon, pulse_grenade)
+            aux_dmg = combat_ctx.pop("aux_skill_dmg", 0)
+            if aux_dmg > 0 and hp > 0:
+                hp = max(0, hp - aux_dmg)
+                disp_aux, _, _ = apply_dynamic_scaling(aux_dmg, 0, tier)
+                _, disp_ehp_aux, _ = apply_dynamic_scaling(0, hp, tier)
+                print(f"\n  {Fore.YELLOW + Style.BRIGHT}[스킬 직접 피해] {disp_aux:,}!{Style.RESET_ALL}")
+                print(f"  [시스템 갱신] {name}의 잔여 체력: {disp_ehp_aux:,}")
+                action_logs.append(f"[스킬] 직접 피해 {disp_aux:,}")
+                time.sleep(0.8)
+            # 펄스 수류탄 보스 E지수 감소
+            if combat_ctx.pop("pulse_e_drain", False) and is_boss:
+                learning_index = max(0, learning_index - 3)
+                action_logs.append("[펄스 수류탄] 보스 패턴 학습 지수 -3")
+
         else:
             print("\n  [오류] 인식할 수 없는 명령 프로토콜입니다.")
             time.sleep(1)
@@ -382,9 +418,10 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
             if cmd == "2":
                 atk = int(base_atk * (1.6 if phase2_triggered else 1.0))
 
-            # VIT stat_def + 장비 def_bonus 합산 방어 적용
-            dmg_taken = max(1, atk - def_bonus - stat_def)
-            dmg_taken = _skills.apply_incoming_buffs(player, dmg_taken, action_logs)  # 그리드 침투 -30%
+            # 데이터 사이펀 적 공격력 감소 + VIT/장비 방어 합산
+            curr_atk = int(atk * _skills.get_enemy_atk_mult(player))
+            dmg_taken = max(1, curr_atk - def_bonus - stat_def)
+            dmg_taken = _skills.apply_incoming_buffs(player, dmg_taken, action_logs, combat_ctx)
             disp_dmg_taken, _, _ = apply_dynamic_scaling(dmg_taken, 0, tier)
             print(f"\n  {Fore.RED + Style.BRIGHT}{name}의 무자비한 공격! (피해량: {disp_dmg_taken:,})")
             time.sleep(1)
@@ -399,6 +436,7 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
             time.sleep(1)
 
         combat_ctx["skip_enemy_attack"] = False   # 매 턴 리셋
+        _skills.end_of_turn_tick(player, action_logs)
         turn += 1
 
     if player.hp <= 0:

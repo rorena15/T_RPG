@@ -334,18 +334,22 @@ def run_ending(player):
     print_divider()
     time.sleep(0.8)
 
-    # ── 각성 스킬 지급 ──────────────────────────────────────────────────
-    job, skill_id = _skills.grant_awakening_skill(player)
-    if skill_id:
-        sk = _skills.SKILL_DEFS[skill_id]
-        job_label = _skills.JOB_LABEL.get(job, job)
+    # ── 각성 스킬 지급 ─────────────────────────────────────────────────
+    job, unlocked = _skills.grant_awakening_skill(player)
+    job_label = _skills.JOB_LABEL.get(job, job)
+    if unlocked:
         print()
-        print(f"  {Fore.YELLOW + Style.BRIGHT}[ 각성 스킬 해금 ]{Style.RESET_ALL}")
-        print(f"  직업: {Fore.CYAN + Style.BRIGHT}{job_label}{Style.RESET_ALL}")
-        print(f"  스킬: {Fore.GREEN + Style.BRIGHT}{sk['name']}{Style.RESET_ALL}")
-        type_text(f"  ▶ {sk['desc']}", 0.022)
-        type_text("  전투 중 [S] 키로 사용 가능합니다.", 0.022)
-        log_diary(player, f"[각성] {job_label} — {sk['name']} 해금")
+        print(f"  {Fore.YELLOW + Style.BRIGHT}[ 특화 스킬 지급 — {job_label} ]{Style.RESET_ALL}")
+        print(f"  특화 스킬 슬롯: 최대 {Fore.CYAN}2개{Style.RESET_ALL} (현재 {len(unlocked)}개 장착됨)")
+        print_divider()
+        for i, sid in enumerate(unlocked):
+            sk = _skills.SKILL_DEFS[sid]
+            print(f"  [S{'12'[i]}] {Fore.GREEN + Style.BRIGHT}{sk['name']}{Style.RESET_ALL}")
+            print(f"       {sk['desc']}")
+        print_divider()
+        print(f"  {Fore.CYAN}[안내]{Style.RESET_ALL} 특수 스킬은 별도 조건 달성 시 언락됩니다.")
+        log_diary(player, f"[각성] {job_label} — 특화 스킬 지급: {', '.join(unlocked)}")
+        type_text("  전투 중 [S] 키로 사용합니다. (슬롯 2개 시 S1/S2 선택)", 0.022)
 
     print()
     time.sleep(1)
