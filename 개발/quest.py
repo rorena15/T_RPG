@@ -6,8 +6,8 @@ import time
 import constants
 from core import get_equipment_data
 from ui import (clear_screen, print_header, print_divider, type_text,
-                wait_for_keypress, safe_input, read_key, log_diary)
-from sys_log import sys_log
+                wait_for_keypress, safe_input, log_diary)
+from sys_log import sys_log, log_error
 
 def trigger_sudden_quest(player):
     """12% 확률로 돌발 퀘스트 발생. 기존 활성 퀘스트가 있으면 무시."""
@@ -198,5 +198,3 @@ def handle_trader(player):
         else:
             print("\n  [오류] 올바른 번호를 입력하세요.")
             time.sleep(0.5)
-
-
