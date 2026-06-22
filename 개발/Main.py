@@ -8,15 +8,9 @@ import sqlite3
 import db_init
 from sys_log import sys_log, track, track_event
 from colorama import Fore, Back, Style, init as colorama_init
-from rich.console import Console
-from rich.panel import Panel
-from rich.table import Table
-from rich.text import Text
-from rich.rule import Rule
-from rich.columns import Columns
-from rich import box as rich_box
+from updater import check_and_prompt_update
 
-_console = Console(highlight=False)
+GAME_VERSION = "1.0.0"
 
 # ====================================================================
 # [0] 경로
@@ -346,17 +340,16 @@ def ea_rpad(s, width):
     return s + " " * max(0, width - _ea_width(s))
 
 def print_header(title):
-    _console.print()
-    _console.print(Panel(
-        f"[bold white]{title}[/bold white]",
-        border_style="bright_cyan",
-        padding=(0, 2),
-        expand=True,
-    ))
-    _console.print()
+    # 내부 너비 74, 양쪽 ║ 포함 총 78자 박스
+    # 컨텐츠 영역: ║  {title}{pad}║  →  title + pad = 72 표시 너비
+    print()
+    print(Fore.WHITE + Style.BRIGHT + "  ╔" + "═" * 74 + "╗")
+    print(Fore.WHITE + Style.BRIGHT + "  ║  " + ea_rpad(title, 72) + "║")
+    print(Fore.WHITE + Style.BRIGHT + "  ╚" + "═" * 74 + "╝")
+    print()
 
 def print_divider():
-    _console.rule(style="cyan dim")
+    print(Fore.WHITE + Style.BRIGHT + "  " + "─" * 74)
 
 def _log_color(log):
     """전투 로그 항목의 색상을 반환합니다."""
@@ -581,90 +574,48 @@ class Player:
         _, display_hp, scale_log = apply_dynamic_scaling(0, self.hp, tier)
         _, display_max_hp, _ = apply_dynamic_scaling(0, self.max_hp, tier)
 
-        hp_ratio = self.hp / self.max_hp if self.max_hp > 0 else 1.0
-        hp_color = "bold green" if hp_ratio > 0.6 else ("bold yellow" if hp_ratio > 0.3 else "bold red")
-
-        # HP 바
-        bar_len = 20
-        filled = int(bar_len * hp_ratio)
-        hp_bar = f"[{hp_color}]{'█' * filled}[/][dim]{'░' * (bar_len - filled)}[/]"
-
-        # 허기/갈증 색
-        hun_col = "green" if self.hunger > 40 else ("yellow" if self.hunger > 15 else "red")
-        thr_col = "cyan"  if self.thirst > 40 else ("yellow" if self.thirst > 15 else "red")
-
-        item_data = get_equipment_data(self.equipment['main_weapon'])
-        wpn_name  = item_data['name']
-        wpn_pwr   = self.get_attack_power()
-        gear_atk  = self.get_gear_atk_bonus()
-        hp_b, def_b = self.get_armor_bonus()
-        threat_mult = get_turn_scale_multiplier(self)
-        diff_label  = {"easy": "이지", "normal": "노멀", "hard": "하드"}.get(self.difficulty, self.difficulty)
-
-        food_cnt  = sum(v for k,v in self.consumables.items() if CONSUMABLES_DB.get(k,{}).get("type")=="food")
-        water_cnt = sum(v for k,v in self.consumables.items() if CONSUMABLES_DB.get(k,{}).get("type")=="water")
-        med_cnt   = sum(v for k,v in self.consumables.items() if CONSUMABLES_DB.get(k,{}).get("type")=="hp")
-
-        # 상태 테이블 — 2컬럼(라벨|값) 구조
-        tbl = Table(box=rich_box.SIMPLE, show_header=False, padding=(0,2), expand=True)
-        tbl.add_column("label", style="dim cyan", min_width=12, no_wrap=True)
-        tbl.add_column("value", no_wrap=False)
-
+        print("  ╔" + "═" * 74 + "╗")
+        print("  ║  " + ea_rpad("[ 내 의체 시스템 상태창 ]", 72) + "║")
+        print("  ╚" + "═" * 74 + "╝")
         if scale_log:
-            tbl.add_row("⚠ 스케일링", f"[bold yellow]{scale_log}[/]")
+            print(f"  {scale_log}")
+            print_divider()
+        
+        hp_ratio = self.hp / self.max_hp if self.max_hp > 0 else 1.0
+        hp_col = (Fore.GREEN + Style.BRIGHT) if hp_ratio > 0.6 else ((Fore.YELLOW + Style.BRIGHT) if hp_ratio > 0.3 else (Fore.RED + Style.BRIGHT))
+        print(f"  [생명력] {hp_col}{display_hp:,}{Style.RESET_ALL} / {display_max_hp:,}    [허기] {self.hunger:3d} / 100      [갈증] {self.thirst:3d} / 100")
+        
+        item_data = get_equipment_data(self.equipment['main_weapon'])
+        wpn_name = item_data['name']
+        wpn_pwr = self.get_attack_power()
+        gear_atk = self.get_gear_atk_bonus()
+        hp_b, def_b = self.get_armor_bonus()
 
-        tbl.add_row(
-            "생명력",
-            f"[{hp_color}]{display_hp:,}[/]  /  {display_max_hp:,}    {hp_bar}",
-        )
-        tbl.add_row(
-            "허기 / 갈증",
-            f"[{hun_col}]{self.hunger:3d}[/] / 100    [{thr_col}]{self.thirst:3d}[/] / 100",
-        )
-        tbl.add_row(
-            "장착 무기",
-            f"[bold white]{wpn_name}[/]  [dim](T={tier} | 위력 {wpn_pwr})[/]",
-        )
+        print(f"  [장착 무기] {wpn_name:<15} (T={tier} 위력: {wpn_pwr:<3d})        [가용 평판] {self.reputation:+d}")
+        if gear_atk > 0 or hp_b > 0 or def_b > 0:
+            bonus_parts = []
+            if gear_atk > 0: bonus_parts.append(f"공격력 +{gear_atk}")
+            if hp_b   > 0: bonus_parts.append(f"HP +{hp_b}")
+            if def_b  > 0: bonus_parts.append(f"방어 -{def_b}")
+            print(f"  [장비 보너스] {' | '.join(bonus_parts)}")
 
-        bonus_parts = []
-        if gear_atk > 0: bonus_parts.append(f"공격 [green]+{gear_atk}[/green]")
-        if hp_b > 0:     bonus_parts.append(f"HP [green]+{hp_b}[/green]")
-        if def_b > 0:    bonus_parts.append(f"방어 [cyan]-{def_b}[/cyan]")
-        bonus_str = "  |  ".join(bonus_parts) if bonus_parts else "[dim]없음[/dim]"
-        tbl.add_row("장비 보너스", bonus_str)
-
-        threat_col = "red" if threat_mult > 2 else "yellow"
-        tbl.add_row(
-            "전황 정보",
-            f"진행 [white]{self.turn_count}턴[/white]   "
-            f"난이도 [dim]{diff_label}[/dim]   "
-            f"위협 배율 [{threat_col}]x{threat_mult:.2f}[/{threat_col}]   "
-            f"평판 [cyan]{self.reputation:+d}[/cyan]   "
-            f"RAM [magenta]{self.max_ram}[/magenta]",
-        )
-        tbl.add_row(
-            "소지품",
-            f"회복약 [bold]{med_cnt}[/bold]    "
-            f"식량 [bold]{food_cnt}[/bold]    "
-            f"식수 [bold]{water_cnt}[/bold]    "
-            f"고철 [bold yellow]{self.materials}[/bold yellow]",
-        )
-
-        _console.print(Panel(tbl, title="[bold cyan]▌ 내 의체 시스템 상태창[/]", border_style="cyan"))
-
+        threat_mult = get_turn_scale_multiplier(self)
+        diff_label = {"easy": "이지", "normal": "노멀", "hard": "하드"}.get(self.difficulty, self.difficulty)
+        print(f"  [진행 턴] {self.turn_count:>4d}   [난이도] {diff_label}   [적 위협 배율] x{threat_mult:.2f}")
+        print_divider()
+        
+        food_cnt = sum(v for k,v in self.consumables.items() if CONSUMABLES_DB.get(k, {}).get("type")=="food")
+        water_cnt = sum(v for k,v in self.consumables.items() if CONSUMABLES_DB.get(k, {}).get("type")=="water")
+        med_cnt = sum(v for k,v in self.consumables.items() if CONSUMABLES_DB.get(k, {}).get("type")=="hp")
+        
+        print(f"  [소지품] 회복약: {med_cnt} | 식량: {food_cnt} | 식수: {water_cnt} | 고철 자산: {self.materials}")
         if self.active_quest:
             q = self.active_quest
             turns_left = max(0, q["deadline"] - self.turn_count)
-            quest_col = "yellow" if turns_left > 3 else "bold red"
-            _console.print(Panel(
-                f"[bold yellow]▶ {q['title']}[/bold yellow]   "
-                f"[dim]진행[/dim] [white]{q['progress']}/{q['target']}[/white]   "
-                f"[dim]기한[/dim] [{quest_col}]{turns_left}턴 남음[/{quest_col}]",
-                border_style="yellow" if turns_left > 3 else "red",
-                title="[yellow]▌ 돌발 퀘스트[/yellow]",
-                padding=(0, 2),
-            ))
-        _console.print()
+            print_divider()
+            print(f"  [돌발 퀘스트] {q['title']}  ─  진행: {q['progress']}/{q['target']}  남은 기한: {turns_left}턴")
+        print_divider()
+        print()
 
     def manage_inventory(self):
         slot_keys = list(SLOT_DISPLAY.keys())
@@ -882,27 +833,18 @@ class GameMap:
         self.escaped_enemy_type = data.get("escaped_enemy_type", None)
 
     def draw(self):
-        grid = Text()
+        print(" [ 데드존 섹터 그리드 스캐너 ]")
         for y in range(self.size - 1, -1, -1):
-            grid.append("  ")
+            row_str = "    "
             for x in range(self.size):
                 if [x, y] == self.player_pos:
-                    grid.append("◈ N404 ", style="bold yellow")
+                    row_str += "[ P ] "
                 elif [x, y] == self.bunker_pos:
-                    grid.append("◉ BUNK ", style="bold green")
-                elif (x, y) in self.visited_tiles:
-                    grid.append("· ···  ", style="dim white")
+                    row_str += "[ B ] "
                 else:
-                    grid.append("░ ░░░  ", style="bright_black")
-            grid.append("\n")
-        _console.print(Panel(
-            grid,
-            title="[bold cyan]▌ 데드존 섹터 그리드 스캐너[/bold cyan]",
-            subtitle="[yellow]◈[/yellow] 현재위치  [green]◉[/green] 방공호  [white]·[/white] 방문완료  [bright_black]░[/bright_black] 미탐색",
-            border_style="cyan",
-            expand=False,
-        ))
-        _console.print()
+                    row_str += "[ . ] "
+            print(row_str)
+        print("  (P: 현재 위치 | B: 방공호 목표 |)\n")
 
 def save_data(player, grid):
     save_file = {"player": player.to_dict(), "grid": grid.to_dict()}
@@ -1284,28 +1226,30 @@ def get_encounter_chance(player):
 
 @track
 def run_game():
-    if os.name == 'nt':
-        os.system('title PROTOCOL: STIGMA — 1막: 낙인')
+    os.system('title PROTOCOL: STIGMA — 1막: 낙인')
+    os.system('mode con: cols=90 lines=40')
+    os.system('color 0B')
     colorama_init(autoreset=True)
+    check_and_prompt_update(GAME_VERSION, console=_console)
     player = Player()
     grid = GameMap()
 
     while True:  # 타이틀 ~ 설정 루프
         clear_screen()
-
-        title_text = Text(justify="center")
-        title_text.append("\n")
-        title_text.append("P  R  O  T  O  C  O  L  :  S  T  I  G  M  A\n", style="bold white")
-        title_text.append("\n")
-        title_text.append("1막: 낙인  —  시스템이 폐기한 불량 코드\n", style="bold cyan")
-        title_text.append("\n")
-        title_text.append("─" * 54 + "\n", style="dim cyan")
-        title_text.append("\n")
-        title_text.append('"세상이 당신을 거부했다면,\n', style="italic cyan")
-        title_text.append(' 당신은 세상의 규칙 밖에서 숨 쉬는 법을 배워야 한다."\n', style="italic cyan")
-        title_text.append("\n")
-        _console.print(Panel(title_text, border_style="bright_cyan", padding=(1, 4)))
-        _console.print()
+        print()
+        print(Fore.WHITE + Style.BRIGHT + "  ╔" + "═" * 74 + "╗")
+        print(Fore.WHITE + Style.BRIGHT + "  ║" + " " * 74 + "║")
+        print(Fore.WHITE + Style.BRIGHT + "  ║" + ea_center("P  R  O  T  O  C  O  L  :  S  T  I  G  M  A", 74) + "║")
+        print(Fore.WHITE + Style.BRIGHT + "  ║" + " " * 74 + "║")
+        print(Fore.CYAN  + Style.BRIGHT + "  ║" + ea_center("1막: 낙인  —  시스템이 폐기한 불량 코드", 74) + "║")
+        print(Fore.WHITE + Style.BRIGHT + "  ║" + " " * 74 + "║")
+        print(Fore.WHITE + Style.BRIGHT + "  ╠" + "═" * 74 + "╣")
+        print(Fore.WHITE + Style.BRIGHT + "  ║" + " " * 74 + "║")
+        print(Fore.CYAN  + "  ║" + ea_center("\"세상이 당신을 거부했다면,", 74) + "║")
+        print(Fore.CYAN  + "  ║" + ea_center("당신은 세상의 규칙 밖에서 숨 쉬는 법을 배워야 한다.\"", 74) + "║")
+        print(Fore.WHITE + Style.BRIGHT + "  ║" + " " * 74 + "║")
+        print(Fore.WHITE + Style.BRIGHT + "  ╚" + "═" * 74 + "╝")
+        print()
 
         has_save = os.path.exists(get_save_path())
         print_divider()
@@ -1393,16 +1337,14 @@ def run_game():
         grid.draw()
         player.show_status()
         
-        cmd_tbl = Table(box=rich_box.SIMPLE, show_header=False, padding=(0,2), expand=True)
-        cmd_tbl.add_column("key", style="bold yellow", min_width=14)
-        cmd_tbl.add_column("desc", style="white")
-        cmd_tbl.add_row("[W/A/S/D]", "그리드 이동  (허기·갈증 소모)")
-        cmd_tbl.add_row("[F]",       "현재 타일 탐색  (전투·이벤트·자원)")
-        cmd_tbl.add_row("[I]",       "인벤토리  (장비 장착 / 소모품 / 분해)")
-        cmd_tbl.add_row("[J]",       "항법 일지 열람")
-        cmd_tbl.add_row("[C]",       "현재 상태 저장")
-        cmd_tbl.add_row("[Q]",       "시스템 접속 종료")
-        _console.print(Panel(cmd_tbl, title="[bold cyan]▌ 명령 프로토콜[/]", border_style="cyan"))
+        print(" [명령 프로토콜]")
+        print("  W, A, S, D  : 그리드 이동")
+        print("  F           : 현재 타일 탐색 및 자원 파싱")
+        print("  I           : 인벤토리 및 시스템 정비")
+        print("  J           : 항법 일지 열람")
+        print("  C           : 현재 상태 로컬 백업 (저장)")
+        print("  Q           : 시스템 접속 종료 (Exit)")
+        print_divider()
         
         move = read_key()
 
