@@ -298,6 +298,7 @@ def run_game():
                 combat_loop(player, is_boss=True)
                 run_boss_core_choice(player)
                 run_ending(player)
+                save_data(player, grid)
                 break
             else:
                 session_triggered = False

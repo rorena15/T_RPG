@@ -48,6 +48,7 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
         hp = int(hp * scale_mult)
         boss_max_hp = hp
         atk = base_atk
+        player.alert_level = min(100, player.alert_level + 60)
     elif enemy_type == "bio_hound":
         name, e_def, base_atk, hp = "바이오 하운드 [변이체]", 15, 250, 16000
         art, header_title = constants.ENEMY_ART["BIOHOUND"], "ENCOUNTER: 생물형 기계 괴수"
@@ -59,6 +60,7 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
         else:
             hp = int(random.randint(12000, 22000) * scale_mult)
         atk = base_atk
+        player.alert_level = min(100, player.alert_level + 30)
     else:
         name, e_def, base_atk, hp = "오염된 스캐브 드론", 5, 200, 12000
         art, header_title = constants.ENEMY_ART["NORMAL"], "ENCOUNTER: 포식자 조우"
@@ -70,6 +72,7 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
         else:
             hp = int(random.randint(8000, 16000) * scale_mult)
         atk = base_atk
+        player.alert_level = min(100, player.alert_level + 15)
 
     turn = 1
     learning_index = 0

@@ -10,7 +10,7 @@ from colorama import Fore, Back, Style
 from core import get_equipment_data
 from ui import (clear_screen, print_header, print_divider, type_text,
                 wait_for_keypress, safe_input, read_key, log_diary,
-                show_diary, ea_rpad)
+                show_diary, ea_rpad, ea_center)
 from combat import combat_loop, get_turn_scale_multiplier
 from quest import advance_quest
 from sys_log import sys_log, log_error
@@ -381,6 +381,154 @@ def run_ending(player):
     print(Fore.GREEN + Style.BRIGHT + "  ╔" + "═" * 74 + "╗")
     print(Fore.GREEN + Style.BRIGHT + "  ║  " + ea_rpad("1막 [낙인] 클리어 — DEMO END", 72) + "║")
     print(Fore.GREEN + Style.BRIGHT + "  ╚" + "═" * 74 + "╝")
+    wait_for_keypress()
+    run_act2_teaser(player)
     sound.stop_all()
     wait_for_keypress()
+
+
+def run_act2_teaser(player):
+    """1막 클리어 후 2막 예고 시퀀스 — 직업 스킬 미리보기 + 두 진영 신호."""
+    w_k = player.weights['kinetic']
+    w_s = player.weights['scrap']
+    w_c = player.weights['cyber']
+
+    if w_k == w_s == w_c:
+        job_tag = "황금 분할의 조율사"
+        skills = [
+            ("삼위일체 오버클럭",  "VIT · INT · DEX 전체 +3 임시 강화 (3턴)"),
+            ("균형 파열",          "패턴 노출 지수를 즉시 절반으로 초기화"),
+            ("프로토콜 위조",      "적의 마지막 공격 로그를 자해로 역전환 (RAM 3 소모)"),
+        ]
+    elif w_k >= w_s and w_k >= w_c:
+        job_tag = "컴뱃 포스 (Combat Force)"
+        skills = [
+            ("의체 오버클럭",  "2턴간 공격력 200% — 턴당 HP 5% 소모"),
+            ("바이오 적출",    "타격 성공 시 적의 생체연료 흡수 (허기·갈증 +15)"),
+            ("타이탄 클리어",  "적 방어력 완전 무시 관통 타격 (RAM 3 소모)"),
+        ]
+    elif w_s >= w_k and w_s >= w_c:
+        job_tag = "메카니컬 테크 (Mechanical Tech)"
+        skills = [
+            ("센트리 건 배치",  "전투 중 자동 포탑 설치 — 매 턴 적에게 고정 피해"),
+            ("분해 분석",       "적 격파 시 희귀 파츠 추출 확률 +60%"),
+            ("긴급 정제",       "전투 중 고철 50개 소모 → HP 20% 즉시 회복"),
+        ]
+    else:
+        job_tag = "넷 포스 (Net Force)"
+        skills = [
+            ("그리드 침투",   "적 패턴 분석 지수를 즉시 0 초기화 (RAM 2 소모)"),
+            ("신호 위장",     "Alert Level 누적 정지 3턴 (네오 아크 전용)"),
+            ("코드 역해킹",   "적의 다음 공격을 자해로 전환 (RAM 4 소모, 50% 성공률)"),
+        ]
+
+    # ── 스크린 1: 직업 스킬 예고 ────────────────────────────────────────
+    clear_screen()
+    print_header(f"각성 코드 분석 — {job_tag}")
+    print()
+    type_text(f"  [{job_tag}]의 의식 코드가 신경망 깊숙이 새겨졌습니다.", 0.028)
+    type_text("  본편(2막)이 시작되는 순간, 다음 능력들이 해금됩니다.", 0.025)
+    print()
+    print_divider()
+    print("  [ 해금 예정 스킬 — 2막 ]")
+    print_divider()
+    time.sleep(0.4)
+    for sname, sdesc in skills:
+        print(f"\n  {Fore.CYAN + Style.BRIGHT}▶  {sname}{Style.RESET_ALL}")
+        type_text(f"     {sdesc}", 0.018)
+        time.sleep(0.2)
+    print()
+    wait_for_keypress()
+
+    # ── 스크린 2: 두 진영의 신호 수신 ───────────────────────────────────
+    clear_screen()
+    print_header("긴급 수신 — 미지의 이중 신호 포착")
+    print()
+    time.sleep(0.6)
+    type_text("  방공호 터미널이 두 개의 주파수를 동시에 포착합니다.", 0.025)
+    print()
+    time.sleep(0.5)
+
+    print_divider()
+    type_text(f"  {Fore.CYAN + Style.BRIGHT}[신호 A — 네오 아크 방면 암호화 채널]{Style.RESET_ALL}", 0.02)
+    time.sleep(0.3)
+    print()
+    type_text('  "...불량 코드. 흥미롭군. 나는 주디스 케인이다.', 0.03)
+    type_text('   당신의 행위 로그를 분석했다. 제안이 있다.', 0.03)
+    type_text('   우리 편이 되면 살아남는다. 거부하면 — 소거한다."', 0.03)
+    print()
+    print(f"  {Fore.CYAN + Style.BRIGHT}[ 총괄국 집행관  ·  진영 우호도 시스템  ·  2막 해금 ]{Style.RESET_ALL}")
+    time.sleep(0.8)
+
+    print_divider()
+    type_text(f"  {Fore.YELLOW + Style.BRIGHT}[신호 B — 데드존 심부 아날로그 주파수]{Style.RESET_ALL}", 0.02)
+    time.sleep(0.3)
+    print()
+    type_text('  "[잡음] ...살아있나? 발칸이다.', 0.03)
+    type_text('   기업 놈들이 너를 사냥하러 온다. 이미 냄새를 맡았어.', 0.03)
+    type_text('   우리 라인에 합류해. 대신 — 쉽지 않을 거다."', 0.03)
+    print()
+    print(f"  {Fore.YELLOW + Style.BRIGHT}[ 스크랩 연합 수장  ·  저항군 평판 시스템  ·  2막 해금 ]{Style.RESET_ALL}")
+    print_divider()
+    time.sleep(0.5)
+    print()
+    type_text("  두 신호는 서로를 모른다.", 0.028)
+    type_text("  그러나 둘 다 당신을 원한다.", 0.028)
+    print()
+    time.sleep(0.6)
+    print_divider()
+    print("  이 신호에 응답하겠습니까?")
+    print()
+    print(f"  {Fore.CYAN + Style.BRIGHT}[1]{Style.RESET_ALL} 주디스 케인에게 응답한다  — 총괄국 라인")
+    print(f"  {Fore.YELLOW + Style.BRIGHT}[2]{Style.RESET_ALL} 발칸 게이츠에게 응답한다  — 저항군 라인")
+    print(f"  {Fore.WHITE}[3]{Style.RESET_ALL} 양쪽 모두 무시한다          — 독자 노선")
+    print_divider()
+    print(f"  {Fore.WHITE + Style.DIM}[ 이 선택은 본편(2막)에서 이어집니다 ]{Style.RESET_ALL}")
+
+    while True:
+        ans = read_key()
+        if ans in ["1", "2", "3"]:
+            break
+
+    print()
+    if ans == "1":
+        type_text('  [송신] "...수신했다, 케인. 제안을 듣겠다."', 0.03)
+        time.sleep(0.5)
+        type_text(f'  {Fore.CYAN + Style.BRIGHT}[수신] "현명한 선택이다. 좌표를 전송한다. 임무는 2막에서 시작된다."{Style.RESET_ALL}', 0.03)
+        log_diary(player, "[2막 예고] 주디스 케인의 제안 수락 — 총괄국 라인 선택")
+    elif ans == "2":
+        type_text('  [송신] "...발칸. 합류한다. 좌표 보내줘."', 0.03)
+        time.sleep(0.5)
+        type_text(f'  {Fore.YELLOW + Style.BRIGHT}[수신] "[잡음] ...하. 역시. 기다리고 있겠다."{Style.RESET_ALL}', 0.03)
+        log_diary(player, "[2막 예고] 발칸 게이츠의 제안 수락 — 저항군 라인 선택")
+    else:
+        type_text("  두 신호를 모두 무시한다. 당신만의 코드로 움직인다.", 0.03)
+        log_diary(player, "[2막 예고] 두 진영 모두 무시 — 독자 노선")
+
+    time.sleep(0.8)
+    wait_for_keypress()
+
+    # ── 스크린 3: 2막 타이틀 카드 ───────────────────────────────────────
+    clear_screen()
+    print()
+    time.sleep(1.0)
+    type_text("  당신의 낙인은 끝이 아닌 시작이었습니다.", 0.032)
+    print()
+    time.sleep(0.6)
+    type_text("  데드존의 고철 더미 아래 — 세계의 균열이 벌어지고 있습니다.", 0.025)
+    print()
+    time.sleep(0.8)
+    print_divider()
+    print()
+    print(Fore.WHITE + Style.BRIGHT + "  ╔" + "═" * 74 + "╗")
+    print(Fore.WHITE + Style.BRIGHT + "  ║" + " " * 74 + "║")
+    print(Fore.CYAN  + Style.BRIGHT + "  ║" + ea_center("P  R  O  T  O  C  O  L  :  S  T  I  G  M  A", 74) + "║")
+    print(Fore.WHITE + Style.BRIGHT + "  ║" + ea_center("2막: 화려한 가축과 야만적 해방자", 74) + "║")
+    print(Fore.WHITE + Style.BRIGHT + "  ║" + " " * 74 + "║")
+    print(Fore.YELLOW + Style.BRIGHT + "  ║" + ea_center("— COMING SOON —", 74) + "║")
+    print(Fore.WHITE + Style.BRIGHT + "  ║" + " " * 74 + "║")
+    print(Fore.WHITE + Style.BRIGHT + "  ╚" + "═" * 74 + "╝")
+    print()
+    time.sleep(0.5)
+    type_text("  데모 플레이에 감사합니다. 당신의 선택이 본편에서 이어집니다.", 0.025)
 

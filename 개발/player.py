@@ -32,6 +32,7 @@ class Player:
         self.max_ram = self.calc_max_ram()
         self.hunger  = 100
         self.thirst  = 100
+        self.alert_level = 0
         self.materials = 0
         self.reputation = 0 # 정식 공식 적용을 위한 밸런스 인자 기본 동기화
         
@@ -122,6 +123,7 @@ class Player:
     def to_dict(self):
         return {
             "hp": self.hp, "max_hp": self.max_hp, "hunger": self.hunger, "thirst": self.thirst,
+            "alert_level": self.alert_level,
             "vit": self.vit, "int_s": self.int_s, "dex": self.dex, "lv": self.lv,
             "max_ram": self.max_ram, "materials": self.materials,
             "consumables": self.consumables, "weights": self.weights,
@@ -141,6 +143,7 @@ class Player:
         self.lv    = data.get("lv",    constants.STAT_DEFAULT_LV)
         self.max_hp  = data.get("max_hp",  self.calc_max_hp())
         self.max_ram = data.get("max_ram", self.calc_max_ram())
+        self.alert_level = data.get("alert_level", 0)
         self.materials = data.get("materials", 0)
         self.reputation = data.get("reputation", 0)
         self.consumables = data.get("consumables", {k: 0 for k in constants.CONSUMABLES_DB.keys()})
@@ -261,6 +264,19 @@ class Player:
         def_ = self.calc_def_base()
         print(f"  [VIT] {self.vit:3d}  [INT] {self.int_s:3d}  [DEX] {self.dex:3d}   "
               f"[방어] {def_:3d}  [회피] {eva*100:4.1f}%  [치명] {crt*100:4.1f}%")
+
+        al = max(0, min(100, self.alert_level))
+        al_filled = al // 5
+        al_bar = "█" * al_filled + "░" * (20 - al_filled)
+        if al >= 80:
+            al_col = Fore.RED + Style.BRIGHT
+        elif al >= 50:
+            al_col = Fore.YELLOW + Style.BRIGHT
+        else:
+            al_col = Fore.GREEN
+        al_label = "위험" if al >= 80 else ("경계" if al >= 50 else "안전")
+        print(f"  [경보 레벨] {al_col}{al_bar}{Style.RESET_ALL}  {al:3d} / 100  [{al_label}]"
+              f"  {Fore.WHITE + Style.DIM}(본편 2막 활성){Style.RESET_ALL}")
         print_divider()
         
         food_cnt = sum(v for k,v in self.consumables.items() if constants.CONSUMABLES_DB.get(k, {}).get("type")=="food")
