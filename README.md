@@ -2,6 +2,8 @@
 
 > **PROTOCOL: STIGMA**는 시스템에 의해 폐기된 불량 코드로서 데드존에서 생존하고, 방공호 벙커를 장악하기까지의 여정을 그리는 **텍스트 기반 사이버펑크 RPG 게임**입니다. Windows CMD의 렌더링 문제를 극복하고 Rich 라이브러리를 통해 세련된 터미널 UI를 제공합니다.
 
+![T_RPG Banner](assets/banner.png)
+
 ## 요구사항
 
 - **Python 3.8+**
