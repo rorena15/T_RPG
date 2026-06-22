@@ -12,6 +12,7 @@
 
 - **Python 3.10+**
 - **필수 라이브러리:**
+<<<<<<< HEAD
   - `colorama` — 터미널 색상 출력
   - `pygame-ce` — 사운드 시스템 (BGM / 효과음)
 
@@ -24,6 +25,34 @@ pip install colorama pygame-ce
 ## 설치 및 실행
 
 ```bash
+=======
+    
+    - `colorama`
+        
+    - `rich`
+    - `pygame-ce`
+        
+
+## 설치 및 실행
+
+### 1. 라이브러리 설치
+
+터미널에서 아래 명령어를 입력하여 필요한 라이브러리를 설치합니다.
+
+Bash
+
+```
+pip install colorama rich pygame-ce
+```
+
+### 2. 데이터베이스 초기화 및 실행
+
+첫 실행 시 SQLite 데이터베이스가 자동으로 생성됩니다. `개발` 디렉토리로 이동한 뒤 게임을 실행하세요.
+
+Bash
+
+```
+>>>>>>> 0c004d9088c1209ffdb5033a3835794077a95670
 cd 개발
 python Main.py
 ```
