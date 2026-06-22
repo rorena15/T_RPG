@@ -8,8 +8,8 @@ import time
 import constants
 from core import get_equipment_data, get_save_path
 from ui import (clear_screen, print_header, print_divider, type_text,
-                safe_input, wait_for_keypress, log_diary, show_diary,
-                ea_rpad, ea_center)
+                safe_input, wait_for_keypress, read_key, log_diary,
+                show_diary, ea_rpad, ea_center)
 from colorama import Fore, Back, Style
 from combat import apply_dynamic_scaling, get_turn_scale_multiplier
 from sys_log import sys_log, track, log_error
