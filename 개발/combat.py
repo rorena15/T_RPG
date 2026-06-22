@@ -42,14 +42,14 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
     phase2_triggered = False
 
     if is_boss:
-        name, e_def, base_atk, hp = "스캐브 컬렉터 [BOSS]", 45, 200, 35000
+        name, e_def, base_atk, hp = "스캐브 컬렉터 [BOSS]", 45, 400, 35000
         art, header_title = constants.ENEMY_ART["BOSS"], "SYSTEM ALERT: 숙청 시퀀스 가동"
         base_atk = int(base_atk * scale_mult)
         hp = int(hp * scale_mult)
         boss_max_hp = hp
         atk = base_atk
     elif enemy_type == "bio_hound":
-        name, e_def, base_atk, hp = "바이오 하운드 [변이체]", 15, 100, 16000
+        name, e_def, base_atk, hp = "바이오 하운드 [변이체]", 15, 200, 16000
         art, header_title = constants.ENEMY_ART["BIOHOUND"], "ENCOUNTER: 생물형 기계 괴수"
         base_atk = int(base_atk * scale_mult)
         if current_hp is not None:
@@ -60,7 +60,7 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
             hp = int(hp * scale_mult)
         atk = base_atk
     else:
-        name, e_def, base_atk, hp = "오염된 스캐브 드론", 5, 75, 12000
+        name, e_def, base_atk, hp = "오염된 스캐브 드론", 5, 150, 12000
         art, header_title = constants.ENEMY_ART["NORMAL"], "ENCOUNTER: 포식자 조우"
         base_atk = int(base_atk * scale_mult)
         if current_hp is not None:
@@ -169,7 +169,7 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
             f_multiplier = 1.0 + (player.reputation / 2000) * 1
             effective_power = player.get_attack_power() + gear_atk
 
-            dmg = max(100, math.floor(effective_power * f_multiplier * penalty * 100) - e_def + random.randint(-50, 50))
+            dmg = max(50, math.floor(effective_power * f_multiplier * penalty * 50) - e_def + random.randint(-25, 25))
 
             # DEX 치명타 판정 (기획서 CRT 공식: DEX=10 → 13%)
             is_crit = random.random() < stat_crt
