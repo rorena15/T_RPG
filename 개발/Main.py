@@ -8,15 +8,7 @@ import sqlite3
 import db_init
 from sys_log import sys_log, track, track_event
 from colorama import Fore, Back, Style, init as colorama_init
-from rich.console import Console
-from rich.panel import Panel
-from rich.table import Table
-from rich.text import Text
-from rich.rule import Rule
-from rich.columns import Columns
-from rich import box as rich_box
-
-_console = Console(highlight=False)
+from i18n import t, set_lang
 
 # ====================================================================
 # [0] 경로
@@ -346,17 +338,16 @@ def ea_rpad(s, width):
     return s + " " * max(0, width - _ea_width(s))
 
 def print_header(title):
-    _console.print()
-    _console.print(Panel(
-        f"[bold white]{title}[/bold white]",
-        border_style="bright_cyan",
-        padding=(0, 2),
-        expand=True,
-    ))
-    _console.print()
+    # 내부 너비 74, 양쪽 ║ 포함 총 78자 박스
+    # 컨텐츠 영역: ║  {title}{pad}║  →  title + pad = 72 표시 너비
+    print()
+    print(Fore.WHITE + Style.BRIGHT + "  ╔" + "═" * 74 + "╗")
+    print(Fore.WHITE + Style.BRIGHT + "  ║  " + ea_rpad(title, 72) + "║")
+    print(Fore.WHITE + Style.BRIGHT + "  ╚" + "═" * 74 + "╝")
+    print()
 
 def print_divider():
-    _console.rule(style="cyan dim")
+    print(Fore.WHITE + Style.BRIGHT + "  " + "─" * 74)
 
 def _log_color(log):
     """전투 로그 항목의 색상을 반환합니다."""
@@ -581,90 +572,48 @@ class Player:
         _, display_hp, scale_log = apply_dynamic_scaling(0, self.hp, tier)
         _, display_max_hp, _ = apply_dynamic_scaling(0, self.max_hp, tier)
 
-        hp_ratio = self.hp / self.max_hp if self.max_hp > 0 else 1.0
-        hp_color = "bold green" if hp_ratio > 0.6 else ("bold yellow" if hp_ratio > 0.3 else "bold red")
-
-        # HP 바
-        bar_len = 20
-        filled = int(bar_len * hp_ratio)
-        hp_bar = f"[{hp_color}]{'█' * filled}[/][dim]{'░' * (bar_len - filled)}[/]"
-
-        # 허기/갈증 색
-        hun_col = "green" if self.hunger > 40 else ("yellow" if self.hunger > 15 else "red")
-        thr_col = "cyan"  if self.thirst > 40 else ("yellow" if self.thirst > 15 else "red")
-
-        item_data = get_equipment_data(self.equipment['main_weapon'])
-        wpn_name  = item_data['name']
-        wpn_pwr   = self.get_attack_power()
-        gear_atk  = self.get_gear_atk_bonus()
-        hp_b, def_b = self.get_armor_bonus()
-        threat_mult = get_turn_scale_multiplier(self)
-        diff_label  = {"easy": "이지", "normal": "노멀", "hard": "하드"}.get(self.difficulty, self.difficulty)
-
-        food_cnt  = sum(v for k,v in self.consumables.items() if CONSUMABLES_DB.get(k,{}).get("type")=="food")
-        water_cnt = sum(v for k,v in self.consumables.items() if CONSUMABLES_DB.get(k,{}).get("type")=="water")
-        med_cnt   = sum(v for k,v in self.consumables.items() if CONSUMABLES_DB.get(k,{}).get("type")=="hp")
-
-        # 상태 테이블 — 2컬럼(라벨|값) 구조
-        tbl = Table(box=rich_box.SIMPLE, show_header=False, padding=(0,2), expand=True)
-        tbl.add_column("label", style="dim cyan", min_width=12, no_wrap=True)
-        tbl.add_column("value", no_wrap=False)
-
+        print("  ╔" + "═" * 74 + "╗")
+        print("  ║  " + ea_rpad("[ 내 의체 시스템 상태창 ]", 72) + "║")
+        print("  ╚" + "═" * 74 + "╝")
         if scale_log:
-            tbl.add_row("⚠ 스케일링", f"[bold yellow]{scale_log}[/]")
+            print(f"  {scale_log}")
+            print_divider()
+        
+        hp_ratio = self.hp / self.max_hp if self.max_hp > 0 else 1.0
+        hp_col = (Fore.GREEN + Style.BRIGHT) if hp_ratio > 0.6 else ((Fore.YELLOW + Style.BRIGHT) if hp_ratio > 0.3 else (Fore.RED + Style.BRIGHT))
+        print(f"  [생명력] {hp_col}{display_hp:,}{Style.RESET_ALL} / {display_max_hp:,}    [허기] {self.hunger:3d} / 100      [갈증] {self.thirst:3d} / 100")
+        
+        item_data = get_equipment_data(self.equipment['main_weapon'])
+        wpn_name = item_data['name']
+        wpn_pwr = self.get_attack_power()
+        gear_atk = self.get_gear_atk_bonus()
+        hp_b, def_b = self.get_armor_bonus()
 
-        tbl.add_row(
-            "생명력",
-            f"[{hp_color}]{display_hp:,}[/]  /  {display_max_hp:,}    {hp_bar}",
-        )
-        tbl.add_row(
-            "허기 / 갈증",
-            f"[{hun_col}]{self.hunger:3d}[/] / 100    [{thr_col}]{self.thirst:3d}[/] / 100",
-        )
-        tbl.add_row(
-            "장착 무기",
-            f"[bold white]{wpn_name}[/]  [dim](T={tier} | 위력 {wpn_pwr})[/]",
-        )
+        print(f"  [장착 무기] {wpn_name:<15} (T={tier} 위력: {wpn_pwr:<3d})        [가용 평판] {self.reputation:+d}")
+        if gear_atk > 0 or hp_b > 0 or def_b > 0:
+            bonus_parts = []
+            if gear_atk > 0: bonus_parts.append(f"공격력 +{gear_atk}")
+            if hp_b   > 0: bonus_parts.append(f"HP +{hp_b}")
+            if def_b  > 0: bonus_parts.append(f"방어 -{def_b}")
+            print(f"  [장비 보너스] {' | '.join(bonus_parts)}")
 
-        bonus_parts = []
-        if gear_atk > 0: bonus_parts.append(f"공격 [green]+{gear_atk}[/green]")
-        if hp_b > 0:     bonus_parts.append(f"HP [green]+{hp_b}[/green]")
-        if def_b > 0:    bonus_parts.append(f"방어 [cyan]-{def_b}[/cyan]")
-        bonus_str = "  |  ".join(bonus_parts) if bonus_parts else "[dim]없음[/dim]"
-        tbl.add_row("장비 보너스", bonus_str)
-
-        threat_col = "red" if threat_mult > 2 else "yellow"
-        tbl.add_row(
-            "전황 정보",
-            f"진행 [white]{self.turn_count}턴[/white]   "
-            f"난이도 [dim]{diff_label}[/dim]   "
-            f"위협 배율 [{threat_col}]x{threat_mult:.2f}[/{threat_col}]   "
-            f"평판 [cyan]{self.reputation:+d}[/cyan]   "
-            f"RAM [magenta]{self.max_ram}[/magenta]",
-        )
-        tbl.add_row(
-            "소지품",
-            f"회복약 [bold]{med_cnt}[/bold]    "
-            f"식량 [bold]{food_cnt}[/bold]    "
-            f"식수 [bold]{water_cnt}[/bold]    "
-            f"고철 [bold yellow]{self.materials}[/bold yellow]",
-        )
-
-        _console.print(Panel(tbl, title="[bold cyan]▌ 내 의체 시스템 상태창[/]", border_style="cyan"))
-
+        threat_mult = get_turn_scale_multiplier(self)
+        diff_label = {"easy": "이지", "normal": "노멀", "hard": "하드"}.get(self.difficulty, self.difficulty)
+        print(f"  [진행 턴] {self.turn_count:>4d}   [난이도] {diff_label}   [적 위협 배율] x{threat_mult:.2f}")
+        print_divider()
+        
+        food_cnt = sum(v for k,v in self.consumables.items() if CONSUMABLES_DB.get(k, {}).get("type")=="food")
+        water_cnt = sum(v for k,v in self.consumables.items() if CONSUMABLES_DB.get(k, {}).get("type")=="water")
+        med_cnt = sum(v for k,v in self.consumables.items() if CONSUMABLES_DB.get(k, {}).get("type")=="hp")
+        
+        print(f"  [소지품] 회복약: {med_cnt} | 식량: {food_cnt} | 식수: {water_cnt} | 고철 자산: {self.materials}")
         if self.active_quest:
             q = self.active_quest
             turns_left = max(0, q["deadline"] - self.turn_count)
-            quest_col = "yellow" if turns_left > 3 else "bold red"
-            _console.print(Panel(
-                f"[bold yellow]▶ {q['title']}[/bold yellow]   "
-                f"[dim]진행[/dim] [white]{q['progress']}/{q['target']}[/white]   "
-                f"[dim]기한[/dim] [{quest_col}]{turns_left}턴 남음[/{quest_col}]",
-                border_style="yellow" if turns_left > 3 else "red",
-                title="[yellow]▌ 돌발 퀘스트[/yellow]",
-                padding=(0, 2),
-            ))
-        _console.print()
+            print_divider()
+            print(f"  [돌발 퀘스트] {q['title']}  ─  진행: {q['progress']}/{q['target']}  남은 기한: {turns_left}턴")
+        print_divider()
+        print()
 
     def manage_inventory(self):
         slot_keys = list(SLOT_DISPLAY.keys())
@@ -882,27 +831,18 @@ class GameMap:
         self.escaped_enemy_type = data.get("escaped_enemy_type", None)
 
     def draw(self):
-        grid = Text()
+        print(" [ 데드존 섹터 그리드 스캐너 ]")
         for y in range(self.size - 1, -1, -1):
-            grid.append("  ")
+            row_str = "    "
             for x in range(self.size):
                 if [x, y] == self.player_pos:
-                    grid.append("◈ N404 ", style="bold yellow")
+                    row_str += "[ P ] "
                 elif [x, y] == self.bunker_pos:
-                    grid.append("◉ BUNK ", style="bold green")
-                elif (x, y) in self.visited_tiles:
-                    grid.append("· ···  ", style="dim white")
+                    row_str += "[ B ] "
                 else:
-                    grid.append("░ ░░░  ", style="bright_black")
-            grid.append("\n")
-        _console.print(Panel(
-            grid,
-            title="[bold cyan]▌ 데드존 섹터 그리드 스캐너[/bold cyan]",
-            subtitle="[yellow]◈[/yellow] 현재위치  [green]◉[/green] 방공호  [white]·[/white] 방문완료  [bright_black]░[/bright_black] 미탐색",
-            border_style="cyan",
-            expand=False,
-        ))
-        _console.print()
+                    row_str += "[ . ] "
+            print(row_str)
+        print("  (P: 현재 위치 | B: 방공호 목표 |)\n")
 
 def save_data(player, grid):
     save_file = {"player": player.to_dict(), "grid": grid.to_dict()}
@@ -1284,36 +1224,57 @@ def get_encounter_chance(player):
 
 @track
 def run_game():
-    if os.name == 'nt':
-        os.system('title PROTOCOL: STIGMA — 1막: 낙인')
+    os.system('title PROTOCOL: STIGMA — 1막: 낙인')
+    os.system('mode con: cols=90 lines=40')
+    os.system('color 0B')
     colorama_init(autoreset=True)
+
+    # ── 언어 선택 ─────────────────────────────────────────────────────
+    set_lang("ko")  # 기본값 로드
+    while True:
+        clear_screen()
+        print()
+        print_divider()
+        print(f"  {t('lang_header')}")
+        print_divider()
+        print(f"  1. {t('lang_ko')}")
+        print(f"  2. {t('lang_en')}")
+        print_divider()
+        lk = read_key()
+        if lk == "1":
+            set_lang("ko")
+            break
+        elif lk == "2":
+            set_lang("en")
+            break
+
     player = Player()
     grid = GameMap()
 
     while True:  # 타이틀 ~ 설정 루프
         clear_screen()
-
-        title_text = Text(justify="center")
-        title_text.append("\n")
-        title_text.append("P  R  O  T  O  C  O  L  :  S  T  I  G  M  A\n", style="bold white")
-        title_text.append("\n")
-        title_text.append("1막: 낙인  —  시스템이 폐기한 불량 코드\n", style="bold cyan")
-        title_text.append("\n")
-        title_text.append("─" * 54 + "\n", style="dim cyan")
-        title_text.append("\n")
-        title_text.append('"세상이 당신을 거부했다면,\n', style="italic cyan")
-        title_text.append(' 당신은 세상의 규칙 밖에서 숨 쉬는 법을 배워야 한다."\n', style="italic cyan")
-        title_text.append("\n")
-        _console.print(Panel(title_text, border_style="bright_cyan", padding=(1, 4)))
-        _console.print()
+        print()
+        print(Fore.WHITE + Style.BRIGHT + "  ╔" + "═" * 74 + "╗")
+        print(Fore.WHITE + Style.BRIGHT + "  ║" + " " * 74 + "║")
+        print(Fore.WHITE + Style.BRIGHT + "  ║" + ea_center("P  R  O  T  O  C  O  L  :  S  T  I  G  M  A", 74) + "║")
+        print(Fore.WHITE + Style.BRIGHT + "  ║" + " " * 74 + "║")
+        print(Fore.CYAN  + Style.BRIGHT + "  ║" + ea_center(t("title_subtitle"), 74) + "║")
+        print(Fore.WHITE + Style.BRIGHT + "  ║" + " " * 74 + "║")
+        print(Fore.WHITE + Style.BRIGHT + "  ╠" + "═" * 74 + "╣")
+        print(Fore.WHITE + Style.BRIGHT + "  ║" + " " * 74 + "║")
+        print(Fore.CYAN  + "  ║" + ea_center(t("title_quote1"), 74) + "║")
+        print(Fore.CYAN  + "  ║" + ea_center(t("title_quote2"), 74) + "║")
+        print(Fore.WHITE + Style.BRIGHT + "  ║" + " " * 74 + "║")
+        print(Fore.WHITE + Style.BRIGHT + "  ╚" + "═" * 74 + "╝")
+        print()
 
         has_save = os.path.exists(get_save_path())
         print_divider()
-        print("  1. 새로운 게임 (New Game)")
+        print(f"  1. {t('menu_new_game')}")
         if has_save:
-            print("  2. 동기화 복구 (Load Game)")
+            print(f"  2. {t('menu_load_game')}")
         exit_key = "3" if has_save else "2"
-        print(f"  {exit_key}. 시스템 종료 (Exit)")
+        print(f"  {exit_key}. {t('menu_exit')}")
         print_divider()
 
         ans = read_key()
@@ -1321,7 +1282,7 @@ def run_game():
         # ── 종료 ──────────────────────────────────────────────────────────
         if ans == exit_key:
             clear_screen()
-            type_text("  [SYSTEM] 그리드 접속을 종료합니다.", 0.025)
+            type_text(f"  {t('exit_msg')}", 0.025)
             time.sleep(0.5)
             sys.exit()
 
@@ -1335,9 +1296,9 @@ def run_game():
                 player.from_dict(data["player"])
                 grid.from_dict(data["grid"])
                 clear_screen()
-                type_text("  [SYSTEM] 로컬 백업소에서 생체 신호를 성공적으로 복구했습니다.", 0.02)
+                type_text(f"  {t('load_success')}", 0.02)
             except Exception as e:
-                type_text(f"  [ERROR] 데이터 파일 손상 ({e}). 초기화 프로토콜을 가동합니다.", 0.02)
+                type_text(f"  {t('load_fail', e=e)}", 0.02)
             wait_for_keypress()
             break  # 게임 루프 진입
 
@@ -1349,14 +1310,14 @@ def run_game():
 
             while True:  # 난이도 선택 루프
                 clear_screen()
-                print_header("난이도 선택 (DIFFICULTY PROTOCOL)")
-                print("  진행 턴이 누적될수록 적의 체력과 공격력이 함께 상승합니다.")
-                print("  상승 속도는 난이도에 따라 달라집니다.\n")
-                print("  1. 이지   (EASY)   — 세상은 당신을 환영하며 따뜻하게 맞이 할 것 입니다")
-                print("  2. 노멀   (NORMAL) — 아직 세상은 따듯할 수도 있습니다")
-                print("  3. 하드   (HARD)   — 세상은 당신을 증오 합니다, 살아 남을 수 있을 까요?")
+                print_header(t("diff_header"))
+                print(f"  {t('diff_desc1')}")
+                print(f"  {t('diff_desc2')}\n")
+                print(f"  1. {t('diff_easy')}")
+                print(f"  2. {t('diff_normal')}")
+                print(f"  3. {t('diff_hard')}")
                 print_divider()
-                print("  0. 메인 화면으로 돌아가기")
+                print(f"  0. {t('diff_back')}")
                 print_divider()
 
                 diff_map = {"1": "easy", "2": "normal", "3": "hard"}
@@ -1372,7 +1333,7 @@ def run_game():
                     log_diary(player, "[시작] 생존 프로토콜 개시 — N-404, 데드존 투입")
                     break
 
-                print("\n  [오류] 1, 2, 3 중에서 선택하십시오.")
+                print(f"\n  {t('diff_invalid')}")
                 time.sleep(0.8)
 
             if go_back:
@@ -1393,16 +1354,14 @@ def run_game():
         grid.draw()
         player.show_status()
         
-        cmd_tbl = Table(box=rich_box.SIMPLE, show_header=False, padding=(0,2), expand=True)
-        cmd_tbl.add_column("key", style="bold yellow", min_width=14)
-        cmd_tbl.add_column("desc", style="white")
-        cmd_tbl.add_row("[W/A/S/D]", "그리드 이동  (허기·갈증 소모)")
-        cmd_tbl.add_row("[F]",       "현재 타일 탐색  (전투·이벤트·자원)")
-        cmd_tbl.add_row("[I]",       "인벤토리  (장비 장착 / 소모품 / 분해)")
-        cmd_tbl.add_row("[J]",       "항법 일지 열람")
-        cmd_tbl.add_row("[C]",       "현재 상태 저장")
-        cmd_tbl.add_row("[Q]",       "시스템 접속 종료")
-        _console.print(Panel(cmd_tbl, title="[bold cyan]▌ 명령 프로토콜[/]", border_style="cyan"))
+        print(f" {t('cmd_header')}")
+        print(f"  {t('cmd_move')}")
+        print(f"  {t('cmd_search')}")
+        print(f"  {t('cmd_inventory')}")
+        print(f"  {t('cmd_diary')}")
+        print(f"  {t('cmd_save')}")
+        print(f"  {t('cmd_quit')}")
+        print_divider()
         
         move = read_key()
 
@@ -1485,20 +1444,20 @@ def run_game():
             continue
         elif move == "Q":
             clear_screen()
-            print_header("생체 접속 종료 — 그리드 이탈")
+            print_header(t("quit_header"))
             print()
-            type_text("  현재까지의 당신의 흔적을 세상에 남겨 두시겠습니까?", 0.02)
+            type_text(t("quit_prompt"), 0.02)
             print()
-            print("  저장 후 종료하시겠습니까? (Y/N): ", end="", flush=True)
+            print(t("quit_yn"), end="", flush=True)
             save_choice = read_key()
             if save_choice == 'Y':
                 save_data(player, grid)
-                print("\n  [SYSTEM] 데이터 동기화 완료. 그리드 접속을 종료합니다.")
+                print(t("quit_saved"))
             else:
-                print("\n  [SYSTEM] 저장 없이 이탈합니다. 진행 기록은 소실됩니다.")
+                print(t("quit_nosave"))
             print()
             print("  ╔" + "═" * 74 + "╗")
-            print("  ║  " + ea_rpad("생체 접속 종료. 그리드망에서 이탈합니다.", 72) + "║")
+            print("  ║  " + ea_rpad(t("quit_banner"), 72) + "║")
             print("  ╚" + "═" * 74 + "╝")
             print()
             time.sleep(0.8)
@@ -1511,7 +1470,7 @@ def run_game():
         elif move == "A" and px > 0: px -= 1; valid_move = True
         elif move == "D" and px < grid.size - 1: px += 1; valid_move = True
         else:
-            print("\n[거부] 이동 불가능한 폐기물 장벽입니다.")
+            print(f"\n{t('move_blocked')}")
             time.sleep(0.5)
             continue
 

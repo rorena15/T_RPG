@@ -229,3 +229,34 @@ def track_event(event_name):
             return False  # 예외를 삼키지 않고 그대로 전파
 
     return _EventContext()
+
+# ====================================================================
+# 에러 로깅 헬퍼
+# ====================================================================
+import traceback as _traceback
+
+def log_error(exc: Exception, context: str = "", show: bool = False):
+    """예외를 [ERROR] 레벨로 log.txt에 기록한다.
+    context: 어느 함수/모듈에서 발생했는지 식별 문자열 (예: "combat_loop")
+    show=True 이면 화면에도 간략하게 출력한다.
+    """
+    tb_str = _traceback.format_exc().strip()
+    header = f"[{context}] {type(exc).__name__}: {exc}"
+    full   = f"{header}\n{tb_str}"
+    sys_log(full, level="ERROR", show=show)
+
+
+def setup_global_exception_hook():
+    """잡히지 않은 예외(uncaught exception)를 log.txt에 자동 기록하는
+    전역 핸들러를 설치한다. Main.py 진입점에서 1회 호출하면 된다.
+    기존 sys.excepthook 동작(표준 에러 출력)은 유지한다.
+    """
+    import sys as _sys
+    _original_hook = _sys.excepthook
+
+    def _hook(exc_type, exc_value, exc_tb):
+        tb_str = "".join(_traceback.format_exception(exc_type, exc_value, exc_tb)).strip()
+        sys_log(f"[UNCAUGHT] {exc_type.__name__}: {exc_value}\n{tb_str}", level="FATAL")
+        _original_hook(exc_type, exc_value, exc_tb)  # 기존 동작 유지
+
+    _sys.excepthook = _hook
