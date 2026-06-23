@@ -1,0 +1,43 @@
+{
+  "lang_header": "언어 선택 / Language Select",
+  "lang_ko": "한국어",
+  "lang_en": "English",
+
+  "title_subtitle": "1막: 낙인  —  시스템이 폐기한 불량 코드",
+  "title_quote1": "\"세상이 당신을 거부했다면,",
+  "title_quote2": "당신은 세상의 규칙 밖에서 숨 쉬는 법을 배워야 한다.\"",
+
+  "menu_new_game": "새로운 게임 (New Game)",
+  "menu_load_game": "동기화 복구 (Load Game)",
+  "menu_exit": "시스템 종료 (Exit)",
+
+  "diff_header": "난이도 선택 (DIFFICULTY PROTOCOL)",
+  "diff_desc1": "진행 턴이 누적될수록 적의 체력과 공격력이 함께 상승합니다.",
+  "diff_desc2": "상승 속도는 난이도에 따라 달라집니다.",
+  "diff_easy": "이지   (EASY)   — 세상은 당신을 환영하며 따뜻하게 맞이 할 것 입니다",
+  "diff_normal": "노멀   (NORMAL) — 아직 세상은 따듯할 수도 있습니다",
+  "diff_hard": "하드   (HARD)   — 세상은 당신을 증오 합니다, 살아 남을 수 있을 까요?",
+  "diff_back": "메인 화면으로 돌아가기",
+  "diff_invalid": "[오류] 1, 2, 3 중에서 선택하십시오.",
+
+  "load_success": "[SYSTEM] 로컬 백업소에서 생체 신호를 성공적으로 복구했습니다.",
+  "load_fail": "[ERROR] 데이터 파일 손상 ({e}). 초기화 프로토콜을 가동합니다.",
+  "exit_msg": "[SYSTEM] 그리드 접속을 종료합니다.",
+
+  "cmd_header": "[명령 프로토콜]",
+  "cmd_move": "W, A, S, D  : 그리드 이동",
+  "cmd_search": "F           : 현재 타일 탐색 및 자원 파싱",
+  "cmd_inventory": "I           : 인벤토리 및 시스템 정비",
+  "cmd_diary": "J           : 항법 일지 열람",
+  "cmd_save": "C           : 현재 상태 로컬 백업 (저장)",
+  "cmd_quit": "Q           : 시스템 접속 종료 (Exit)",
+
+  "quit_header": "생체 접속 종료 — 그리드 이탈",
+  "quit_prompt": "  현재까지의 당신의 흔적을 세상에 남겨 두시겠습니까?",
+  "quit_yn": "  저장 후 종료하시겠습니까? (Y/N): ",
+  "quit_saved": "\n  [SYSTEM] 데이터 동기화 완료. 그리드 접속을 종료합니다.",
+  "quit_nosave": "\n  [SYSTEM] 저장 없이 이탈합니다. 진행 기록은 소실됩니다.",
+  "quit_banner": "생체 접속 종료. 그리드망에서 이탈합니다.",
+
+  "move_blocked": "[거부] 이동 불가능한 폐기물 장벽입니다."
+}
