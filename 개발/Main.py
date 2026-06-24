@@ -1436,8 +1436,8 @@ def run_game():
     os.system('color 0B')
     colorama_init(autoreset=True)
 
-    check_and_prompt_update(constants.GAME_VERSION, console=_console)
     set_lang("ko")  # 기본값
+    check_and_prompt_update(constants.GAME_VERSION, console=_console)
 
     player = Player()
     grid = GameMap()
