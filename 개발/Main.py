@@ -201,7 +201,7 @@ def safe_input(prompt):
 def wait_for_keypress():
     """엔터 입력 불필요 아무 키나 누르는 즉시 화면 템포가 연출 모드로 진행"""
     flush_input()
-    print("\n[아무 키나 누르면 진행됩니다...]")
+    print(f"\n{t('wait_any_key')}")
     if os.name == 'nt':
         import msvcrt
         msvcrt.getch()
@@ -309,9 +309,9 @@ def apply_dynamic_scaling(raw_dmg, raw_hp, highest_equip_tier):
     if highest_equip_tier >= 4:
         return int(raw_dmg), int(raw_hp), ""
     elif highest_equip_tier in [2, 3]:
-        return int(raw_dmg * 100), int(raw_hp * 10), "[SYSTEM: 전술 동기화 가동] 시각 피질의 정보 처리량이 가속됩니다."
-    else: 
-        return int(raw_dmg * 100000), int(raw_hp * 100), "[WARNING: HUD 글리치 발생] 시스템 연산 한계 돌파. 신격 스케일링 개방."
+        return int(raw_dmg * 100), int(raw_hp * 10), t('scale_log_t23')
+    else:
+        return int(raw_dmg * 100000), int(raw_hp * 100), t('scale_log_t01')
 
 def _ea_width(s):
     """CJK 문자를 포함한 문자열의 터미널 표시 너비를 반환합니다 (한글·한자 = 2칸)."""
@@ -368,9 +368,9 @@ def show_diary(player):
     entries = player.diary
     if not entries:
         clear_screen()
-        print_header("항법 일지 — N-404 행동 코드 누적 로그")
+        print_header(t('diary_header'))
         print()
-        print("  기록 없음. 아직 어떤 선택도 누적되지 않았습니다.")
+        print(t('diary_empty'))
         print()
         wait_for_keypress()
         return
@@ -382,7 +382,7 @@ def show_diary(player):
 
     while True:
         clear_screen()
-        print_header(f"항법 일지 — N-404 행동 코드 누적 로그  [{page + 1} / {pages}]")
+        print_header(t('diary_header_paged', page=page + 1, pages=pages))
         start = page * page_size
         end = min(start + page_size, total)
         for e in entries[start:end]:
@@ -391,10 +391,10 @@ def show_diary(player):
         print_divider()
         nav = []
         if page > 0:
-            nav.append("P: 이전")
+            nav.append(t('diary_nav_prev'))
         if page < pages - 1:
-            nav.append("N: 다음")
-        nav.append("0: 복귀")
+            nav.append(t('diary_nav_next'))
+        nav.append(t('diary_nav_back'))
         print(f"  {' | '.join(nav)}")
         cmd = read_key()
         if cmd == "0":
@@ -561,10 +561,10 @@ class Player:
         
         if self.hunger == 0 or self.thirst == 0:
             self.hp -= 50
-            print(f"\n{Fore.YELLOW + Style.BRIGHT}[SYSTEM WARN]{Style.RESET_ALL} 신체 연료 고갈. 바이오 조직 괴사가 시작됩니다. (HP -50)")
+            print(f"\n{Fore.YELLOW + Style.BRIGHT}{t('resource_depleted')}")
             wait_for_keypress()
             if self.hp <= 0:
-                print(f"\n{Fore.RED + Style.BRIGHT}[SYSTEM FATAL] 신체 손상 100%. 불량 코드가 완전히 소거되었습니다.")
+                print(f"\n{Fore.RED + Style.BRIGHT}{t('resource_fatal')}")
                 sys.exit()
 
     def show_status(self):
@@ -573,45 +573,45 @@ class Player:
         _, display_max_hp, _ = apply_dynamic_scaling(0, self.max_hp, tier)
 
         print("  ╔" + "═" * 74 + "╗")
-        print("  ║  " + ea_rpad("[ 내 의체 시스템 상태창 ]", 72) + "║")
+        print("  ║  " + ea_rpad(t('status_header'), 72) + "║")
         print("  ╚" + "═" * 74 + "╝")
         if scale_log:
             print(f"  {scale_log}")
             print_divider()
-        
+
         hp_ratio = self.hp / self.max_hp if self.max_hp > 0 else 1.0
         hp_col = (Fore.GREEN + Style.BRIGHT) if hp_ratio > 0.6 else ((Fore.YELLOW + Style.BRIGHT) if hp_ratio > 0.3 else (Fore.RED + Style.BRIGHT))
         print(f"  [생명력] {hp_col}{display_hp:,}{Style.RESET_ALL} / {display_max_hp:,}    [허기] {self.hunger:3d} / 100      [갈증] {self.thirst:3d} / 100")
-        
+
         item_data = get_equipment_data(self.equipment['main_weapon'])
         wpn_name = item_data['name']
         wpn_pwr = self.get_attack_power()
         gear_atk = self.get_gear_atk_bonus()
         hp_b, def_b = self.get_armor_bonus()
 
-        print(f"  [장착 무기] {wpn_name:<15} (T={tier} 위력: {wpn_pwr:<3d})        [가용 평판] {self.reputation:+d}")
+        print(t('status_weapon', name=wpn_name, tier=tier, power=wpn_pwr, rep=self.reputation))
         if gear_atk > 0 or hp_b > 0 or def_b > 0:
             bonus_parts = []
-            if gear_atk > 0: bonus_parts.append(f"공격력 +{gear_atk}")
-            if hp_b   > 0: bonus_parts.append(f"HP +{hp_b}")
-            if def_b  > 0: bonus_parts.append(f"방어 -{def_b}")
-            print(f"  [장비 보너스] {' | '.join(bonus_parts)}")
+            if gear_atk > 0: bonus_parts.append(t('status_atk_bonus', val=gear_atk))
+            if hp_b   > 0: bonus_parts.append(t('status_hp_bonus', val=hp_b))
+            if def_b  > 0: bonus_parts.append(t('status_def_bonus', val=def_b))
+            print(t('status_gear_bonus', bonus=' | '.join(bonus_parts)))
 
         threat_mult = get_turn_scale_multiplier(self)
-        diff_label = {"easy": "이지", "normal": "노멀", "hard": "하드"}.get(self.difficulty, self.difficulty)
-        print(f"  [진행 턴] {self.turn_count:>4d}   [난이도] {diff_label}   [적 위협 배율] x{threat_mult:.2f}")
+        diff_label = {"easy": t('diff_label_easy'), "normal": t('diff_label_normal'), "hard": t('diff_label_hard')}.get(self.difficulty, self.difficulty)
+        print(t('status_turn_line', turn=self.turn_count, diff=diff_label, mult=threat_mult))
         print_divider()
-        
+
         food_cnt = sum(v for k,v in self.consumables.items() if CONSUMABLES_DB.get(k, {}).get("type")=="food")
         water_cnt = sum(v for k,v in self.consumables.items() if CONSUMABLES_DB.get(k, {}).get("type")=="water")
         med_cnt = sum(v for k,v in self.consumables.items() if CONSUMABLES_DB.get(k, {}).get("type")=="hp")
-        
-        print(f"  [소지품] 회복약: {med_cnt} | 식량: {food_cnt} | 식수: {water_cnt} | 고철 자산: {self.materials}")
+
+        print(t('status_items_line', med=med_cnt, food=food_cnt, water=water_cnt, scrap=self.materials))
         if self.active_quest:
             q = self.active_quest
             turns_left = max(0, q["deadline"] - self.turn_count)
             print_divider()
-            print(f"  [돌발 퀘스트] {q['title']}  ─  진행: {q['progress']}/{q['target']}  남은 기한: {turns_left}턴")
+            print(t('status_quest_line', title=q['title'], progress=q['progress'], target=q['target'], turns=turns_left))
         print_divider()
         print()
 
@@ -620,10 +620,10 @@ class Player:
 
         while True:
             clear_screen()
-            print_header("시스템 인벤토리 및 정비")
+            print_header(t('inv_header'))
 
             # ── 장착 슬롯 현황 패널 ───────────────────────────────────────────
-            print("  ▌ 장착 슬롯 현황")
+            print(t('inv_slot_header'))
             print_divider()
             for si, sk in enumerate(slot_keys, 1):
                 label = ea_rpad(SLOT_DISPLAY[sk], 8)
@@ -633,14 +633,14 @@ class Player:
                     tag = TIER_TAGS.get(d.get("tier", 4), "T?    ")
                     print(f"   [{si:2d}] {label}  │  ★  {d['name'][:22]}    {tag}  위력:{d['power']:>4}")
                 else:
-                    print(f"   [{si:2d}] {label}  │  ─  미장착")
+                    print(f"   [{si:2d}] {label}  │  {t('inv_not_equipped')}")
             print()
 
             # ── 보유 장비 목록 (슬롯별 그룹) ────────────────────────────────────
-            print(f"  ▌ 보유 장비 목록  (총 {len(self.inventory)}종  /  고철: {self.materials}개)")
+            print(t('inv_items_header', count=len(self.inventory), scrap=self.materials))
             print_divider()
             if not self.inventory:
-                print("  데이터 없음 (인벤토리가 비어있습니다)")
+                print(t('inv_empty'))
             else:
                 groups = {sk: [] for sk in slot_keys}
                 groups["기타"] = []
@@ -668,13 +668,13 @@ class Player:
             print_divider()
 
             # ── 명령 ────────────────────────────────────────────────────────────
-            print("  [ 명령 ]")
-            print("   E <번호>     : 장착 (슬롯 자동 인식)     U <슬롯번호>  : 슬롯 해제")
-            print("   C            : 소모품 사용                D <번호>      : 분해 (고철 추출)")
-            print("   0            : 탐색망으로 복귀")
+            print(t('inv_cmd_header'))
+            print(t('inv_cmd_line1'))
+            print(t('inv_cmd_line2'))
+            print(t('inv_cmd_line3'))
             print_divider()
             try:
-                cmd = safe_input("\n  명령어 입력: ").strip().upper()
+                cmd = safe_input(t('inv_prompt')).strip().upper()
             except:
                 sys.exit()
 
@@ -689,14 +689,14 @@ class Player:
                         sk = d.get("slot", "main_weapon")
                         prev = self.equipment.get(sk)
                         self.equipment[sk] = item_id
-                        print(f"\n  [결속] '{d['name']}' → {SLOT_DISPLAY.get(sk, sk)} 슬롯에 장착되었습니다.")
+                        print(t('inv_equipped', name=d['name'], slot=SLOT_DISPLAY.get(sk, sk)))
                         if prev and prev != "WEAPON_NONE":
                             pd = get_equipment_data(prev)
-                            print(f"  [교체] 기존 '{pd['name']}' 해제 — 인벤토리에 보관됩니다.")
+                            print(t('inv_replaced', name=pd['name']))
                     else:
-                        print("\n  [오류] 유효하지 않은 번호입니다.")
+                        print(t('inv_invalid_number'))
                 else:
-                    print("\n  [오류] 사용법: E <번호>  예) E 2")
+                    print(t('inv_equip_usage'))
                 wait_for_keypress()
 
             # 해제: U <슬롯번호>
@@ -710,13 +710,13 @@ class Player:
                         if eid and eid != "WEAPON_NONE":
                             d = get_equipment_data(eid)
                             self.equipment[sk] = SLOT_DEFAULTS[sk]
-                            print(f"\n  [해제] '{d['name']}' — {SLOT_DISPLAY[sk]} 슬롯 결속 해제되었습니다.")
+                            print(t('inv_unequipped', name=d['name'], slot=SLOT_DISPLAY[sk]))
                         else:
-                            print(f"\n  [알림] {SLOT_DISPLAY[sk]} 슬롯은 이미 비어 있습니다.")
+                            print(t('inv_slot_empty', slot=SLOT_DISPLAY[sk]))
                     else:
-                        print(f"\n  [오류] 슬롯 번호는 1~{len(slot_keys)} 범위입니다.")
+                        print(t('inv_slot_range', max=len(slot_keys)))
                 else:
-                    print("\n  [오류] 사용법: U <슬롯번호>  예) U 1 = 주무기 해제")
+                    print(t('inv_unequip_usage'))
                 wait_for_keypress()
 
             # 소모품
@@ -731,18 +731,18 @@ class Player:
                     if 1 <= n <= len(self.inventory):
                         item_id = self.inventory[n - 1]
                         if any(v == item_id for v in self.equipment.values()):
-                            print("\n  [거부] 장착 중인 장비는 분해할 수 없습니다. 먼저 슬롯에서 해제하십시오.")
+                            print(t('inv_dismantle_equipped'))
                         else:
                             self.inventory.pop(n - 1)
                             gained = random.randint(15, 30)
                             self.materials += gained
                             advance_quest(self, "scrap", gained)
                             d = get_equipment_data(item_id)
-                            print(f"\n  [처리] '{d['name']}' 분쇄 완료 — 일반 고철 {gained}개 추출했습니다.")
+                            print(t('inv_dismantled', name=d['name'], gained=gained))
                     else:
-                        print("\n  [오류] 유효하지 않은 번호입니다.")
+                        print(t('inv_invalid_number'))
                 else:
-                    print("\n  [오류] 사용법: D <번호>  예) D 3")
+                    print(t('inv_dismantle_usage'))
                 wait_for_keypress()
 
             elif cmd == "0":
@@ -761,16 +761,16 @@ class Player:
                         self.inventory.append(iid)
                         granted += 1
                 sys_log(f"[DEV] 히든 커맨드 사용: 유물 장비 {granted}종 지급", level="DEV")
-                print(f"\n  [DEV MODE] 0등급 유물 장비 {granted}종을 인벤토리에 지급했습니다.")
+                print(t('inv_dev_grant', granted=granted))
                 wait_for_keypress()
 
     def use_consumable_menu(self):
         clear_screen()
-        print_header("소모품 시스템 관리")
-        
+        print_header(t('consumable_header'))
+
         avail = [k for k, v in self.consumables.items() if v > 0]
         if not avail:
-            print("[알림] 현재 사용 가능한 소모품이 인벤토리에 없습니다.")
+            print(t('consumable_empty'))
             wait_for_keypress()
             return
 
@@ -778,32 +778,32 @@ class Player:
             item = CONSUMABLES_DB[key]
             desc = ""
             if item["type"] == "hp":
-                if item["is_percent"]: desc = f"HP {int(item['val']*100)}% 회복"
-                else: desc = f"HP {item['val']} 고정 회복"
+                if item["is_percent"]: desc = t('consumable_hp_percent', pct=int(item['val']*100))
+                else: desc = t('consumable_hp_fixed', val=item['val'])
             elif item["type"] in ["food", "water"]:
-                h_val = f"허기 +{item['hunger']} " if item['hunger'] > 0 else ""
-                t_val = f"갈증 +{item['thirst']}" if item['thirst'] > 0 else ""
-                desc = h_val + t_val
-            
+                h_val = t('consumable_hunger', val=item['hunger']) if item['hunger'] > 0 else ""
+                thirst_str = t('consumable_thirst', val=item['thirst']) if item['thirst'] > 0 else ""
+                desc = h_val + thirst_str
+
             print(f"  [{i+1}] {item['name']} (보유: {self.consumables[key]}개) - [{desc}]")
-        
+
         print_divider()
-        print("  [0] 이전 메뉴로 복귀")
+        print(t('consumable_back'))
         cmd = read_key()
-        
+
         if cmd.isdigit() and 0 < int(cmd) <= len(avail):
             key = avail[int(cmd)-1]
             item = CONSUMABLES_DB[key]
             self.consumables[key] -= 1
-            
+
             if item["type"] == "hp":
                 heal_amt = int(self.max_hp * item["val"]) if item["is_percent"] else item["val"]
                 self.hp = min(self.max_hp, self.hp + heal_amt)
-                print(f"\n[치료] '{item['name']}' 주입 완료. 생체 신호가 안정화됩니다. (HP +{heal_amt})")
+                print(t('consumable_used_hp', name=item['name'], amt=heal_amt))
             else:
                 self.hunger = min(100, self.hunger + item["hunger"])
                 self.thirst = min(100, self.thirst + item["thirst"])
-                print(f"\n[섭취] '{item['name']}' 섭취 완료. 바이오 연료가 보충되었습니다.")
+                print(t('consumable_used_food', name=item['name']))
             wait_for_keypress()
 
 class GameMap:
@@ -831,7 +831,7 @@ class GameMap:
         self.escaped_enemy_type = data.get("escaped_enemy_type", None)
 
     def draw(self):
-        print(" [ 데드존 섹터 그리드 스캐너 ]")
+        print(t('map_header'))
         for y in range(self.size - 1, -1, -1):
             row_str = "    "
             for x in range(self.size):
@@ -842,16 +842,16 @@ class GameMap:
                 else:
                     row_str += "[ . ] "
             print(row_str)
-        print("  (P: 현재 위치 | B: 방공호 목표 |)\n")
+        print(t('map_legend'))
 
 def save_data(player, grid):
     save_file = {"player": player.to_dict(), "grid": grid.to_dict()}
     try:
         with open(get_save_path(), "w", encoding="utf-8") as f:
             json.dump(save_file, f, ensure_ascii=False, indent=4)
-        print("\n[SYSTEM] 현재 동기화 로그가 로컬 환경에 안전하게 백업되었습니다.")
+        print(t('save_success'))
     except Exception as e:
-        print(f"\n[SYSTEM ERR] 백업 실패: {e}")
+        print(t('save_fail', e=e))
         
     wait_for_keypress() # 메시지 확인 후 다음으로 넘어가도록 대기
 
@@ -938,7 +938,7 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
     while hp > 0 and player.hp > 0:
         if is_boss and turn > 15:
             clear_screen()
-            type_text(Fore.RED + Style.BRIGHT + "\n[SYSTEM FATAL] 15턴 임계점 초과. 거점이 고철 분진으로 분쇄되었습니다. GAME OVER.")
+            type_text(Fore.RED + Style.BRIGHT + t('combat_timeout'))
             sys.exit()
 
         # 보스 페이즈 2 전환 (HP 50% 이하)
@@ -947,12 +947,12 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
             atk = int(base_atk * 1.6)
             learning_index += 5
             clear_screen()
-            print_header("!! PHASE 2 — 핵심 코어 오버클럭 !!")
-            type_text(Fore.RED + Style.BRIGHT + "  [경보] 스캐브 컬렉터의 핵심 코어가 과부하 상태로 돌입합니다.", 0.03)
-            type_text(Fore.RED + Style.BRIGHT + "  [경보] 공격 출력 160% 강제 증폭. 패턴 분석 속도 가속.", 0.03)
-            type_text(Fore.YELLOW + Style.BRIGHT + "  [경보] 딥러닝 카운터 패널 전 채널 개방.", 0.03)
+            print_header(t('combat_phase2_header'))
+            type_text(Fore.RED + Style.BRIGHT + t('combat_phase2_warn1'), 0.03)
+            type_text(Fore.RED + Style.BRIGHT + t('combat_phase2_warn2'), 0.03)
+            type_text(Fore.YELLOW + Style.BRIGHT + t('combat_phase2_warn3'), 0.03)
             time.sleep(1.5)
-            action_logs.append("[페이즈 전환] 보스가 한계를 돌파했습니다! 공격력 대폭 상승!")
+            action_logs.append(t('combat_phase2_log'))
 
         clear_screen()
         tier = player.get_highest_tier()
@@ -978,24 +978,24 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
         print(art)
         if is_boss:
             print(hp_bar)
-        print(f"  ─── 전투 턴 [{turn}] │ {name} HP: {disp_ehp:,}")
-        print(f"  [내 의체] HP: {disp_php:,}/{disp_pmaxhp:,} │ 가용 RAM: {player.max_ram}")
+        print(t('combat_status_turn', turn=turn, name=name, hp=f"{disp_ehp:,}"))
+        print(t('combat_status_player', hp=f"{disp_php:,}", maxhp=f"{disp_pmaxhp:,}", ram=player.max_ram))
         if is_boss:
-            print(f"  [적 상태] 패턴 분석 지수 (E): {learning_index}/10")
+            print(t('combat_status_learning', e=learning_index))
 
-        print("\n  [ 전투 로그 ]")
+        print(t('combat_log_header'))
         for log in action_logs: print(f"    {_log_color(log)}{log}")
         print_divider()
         print()
         action_logs.clear()
 
         has_consumable = any(v > 0 for v in player.consumables.values())
-        print("  1. 주무기 물리 타격 (ATTACK)")
-        print("  2. 급조 바리케이드 전개 (DEFENSE - 피격 반감 및 적 분석 지수 차감)")
-        print("  3. 패킷 우회 교란 (HACK - RAM 2 소모, 적 분석 지수 초기화)")
-        print("  4. 전술적 후퇴 (ESCAPE - 민첩 비례 탈출 및 확률적 파밍)")
+        print(t('combat_options_1'))
+        print(t('combat_options_2'))
+        print(t('combat_options_3'))
+        print(t('combat_options_4'))
         if has_consumable:
-            print("  5. 소모품 사용 (USE ITEM - 전투 중 회복, 적 반격 있음)")
+            print(t('combat_options_5'))
 
         cmd = read_key()
 
@@ -1005,9 +1005,9 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
                 e_gain = max(0, 3 - e_suppress)
                 learning_index += e_gain
                 if e_suppress > 0:
-                    action_logs.append(f"[경고] 동일 공격 반복 감지. 사이버덱이 학습 신호를 교란합니다. (E +{e_gain})")
+                    action_logs.append(t('combat_repeat_cyberdeck', gain=e_gain))
                 else:
-                    action_logs.append(f"[경고] 동일 공격 반복 감지. 보스가 궤적을 딥러닝 중입니다. (E +{e_gain})")
+                    action_logs.append(t('combat_repeat_learning', gain=e_gain))
 
             penalty = max(0.5, 1.0 - (learning_index - 10) * 0.05) if learning_index > 10 else 1.0
             f_multiplier = 1.0 + (player.reputation / 2000) * 1
@@ -1016,13 +1016,13 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
             dmg = max(100, math.floor(effective_power * f_multiplier * penalty * 100) - e_def + random.randint(-50, 50))
             disp_dmg, _, _ = apply_dynamic_scaling(dmg, 0, tier)
 
-            print(f"\n  {Fore.GREEN + Style.BRIGHT}콰아앙! 무기가 적의 장갑판을 관통했습니다! (피해량: {disp_dmg:,})")
+            print(f"\n  {Fore.GREEN + Style.BRIGHT}" + t('combat_attack_hit', dmg=f"{disp_dmg:,}"))
             time.sleep(1)
             hp = max(0, hp - dmg)
             _, disp_ehp_new, _ = apply_dynamic_scaling(0, hp, tier)
-            print(f"  [시스템 갱신] {name}의 잔여 체력: {disp_ehp_new:,}")
+            print(t('combat_enemy_hp', name=name, hp=f"{disp_ehp_new:,}"))
             time.sleep(1)
-            action_logs.append(f"[타격] 적에게 {disp_dmg:,}의 피해를 입혔습니다.")
+            action_logs.append(t('combat_attack_log', dmg=f"{disp_dmg:,}"))
             time.sleep(1)
 
         elif cmd == "2":
@@ -1030,9 +1030,9 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
             learning_index = max(0, learning_index - 4)
             atk = int(atk * 0.5)
 
-            print("\n  급조 바리케이드 전개! 적의 분석 궤적을 방해합니다.")
+            print(t('combat_defense_msg'))
             time.sleep(1)
-            action_logs.append("[방어] 바리케이드 전개. 다음 공격의 피해를 반감시킵니다.")
+            action_logs.append(t('combat_defense_log'))
             time.sleep(2)
 
         elif cmd == "3":
@@ -1041,19 +1041,19 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
                 learning_index = 0
                 player.max_ram -= 2
 
-                print("\n  교란 신호 방출! 적의 센서 데이터가 초기화됩니다. (RAM -2)")
+                print(t('combat_hack_msg'))
                 time.sleep(1)
-                action_logs.append("[해킹] 교란 신호 성공. 적 분석 지수를 초기화했습니다.")
+                action_logs.append(t('combat_hack_log'))
             else:
-                print("\n  [오류] 시스템 RAM 가용량이 부족합니다.")
+                print(t('combat_hack_no_ram'))
                 time.sleep(0.5)
-                action_logs.append("[오류] RAM 부족으로 해킹에 실패했습니다.")
+                action_logs.append(t('combat_hack_no_ram_log'))
 
         elif cmd == "4":
             if is_boss:
-                print("\n  [거부] 보스전에서는 후퇴할 수 없습니다. 거점을 사수하십시오.")
+                print(t('combat_escape_boss'))
                 time.sleep(0.5)
-                action_logs.append("[거부] 탈출 실패. 적이 퇴로를 차단했습니다.")
+                action_logs.append(t('combat_escape_boss_log'))
                 time.sleep(1)
             else:
                 dex_bonus = max(0, player.dex - 10) * 2
@@ -1062,36 +1062,36 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
 
                 escaped = True
                 if res == "SAFE":
-                    escape_log = "[탈출] 적의 사각을 파고들어 피해 없이 안전하게 이탈했습니다."
+                    escape_log = t('combat_escape_safe')
                 elif res in ["NORMAL", "1.5X", "2.0X"]:
                     dmg_calc = atk if res == "NORMAL" else int(atk * 1.5) if res == "1.5X" else int(atk * 2.0)
 
-                    print(f"\n  후퇴 중 적에게 공격을 허용했습니다! (피해량: {dmg_calc:,})")
+                    print(t('combat_escape_hit', dmg=f"{dmg_calc:,}"))
                     time.sleep(1)
                     player.hp -= dmg_calc
                     _, disp_php_new, _ = apply_dynamic_scaling(0, max(0, player.hp), tier)
-                    print(f"  [시스템 갱신] 내 체력이 {disp_php_new:,}(으)로 감소했습니다.")
+                    print(t('combat_player_hp', hp=f"{disp_php_new:,}"))
                     time.sleep(1)
 
-                    if res == "NORMAL": escape_log = f"[탈출] 후퇴 중 적의 공격에 노출되었습니다. (피해: {dmg_calc:,})"
-                    elif res == "1.5X": escape_log = f"[탈출] 치명적인 손상을 입으며 이탈했습니다. (피해: {dmg_calc:,})"
-                    else: escape_log = f"[탈출 참사] 도주 중 의체 중심부가 관통당했습니다! (피해: {dmg_calc:,})"
+                    if res == "NORMAL": escape_log = t('combat_escape_normal', dmg=f"{dmg_calc:,}")
+                    elif res == "1.5X": escape_log = t('combat_escape_heavy', dmg=f"{dmg_calc:,}")
+                    else: escape_log = t('combat_escape_disaster', dmg=f"{dmg_calc:,}")
                 elif res == "LUCKY":
-                    escape_log = "[기적적 탈출] 무사히 이탈하며 적 주변의 잔해에서 쓸만한 물자를 챙겼습니다."
+                    escape_log = t('combat_escape_lucky')
                 break
 
         elif cmd == "5" and has_consumable:
             consecutive_attacks = 0
             avail = [k for k, v in player.consumables.items() if v > 0]
-            print("\n[ 소모품 목록 ]")
+            print(t('combat_item_list'))
             for i, key in enumerate(avail):
                 item = CONSUMABLES_DB[key]
                 if item["type"] == "hp":
-                    desc = f"HP {int(item['val']*100)}% 회복" if item["is_percent"] else f"HP {item['val']} 회복"
+                    desc = t('consumable_hp_percent', pct=int(item['val']*100)) if item["is_percent"] else t('consumable_hp_fixed', val=item['val'])
                 else:
-                    h_val = f"허기 +{item['hunger']} " if item['hunger'] > 0 else ""
-                    t_val = f"갈증 +{item['thirst']}" if item['thirst'] > 0 else ""
-                    desc = h_val + t_val
+                    h_val = t('consumable_hunger', val=item['hunger']) if item['hunger'] > 0 else ""
+                    thirst_str = t('consumable_thirst', val=item['thirst']) if item['thirst'] > 0 else ""
+                    desc = h_val + thirst_str
                 print(f"  [{i+1}] {item['name']} x{player.consumables[key]} — {desc}")
             print("  [0] 취소")
             item_cmd = read_key()
@@ -1103,18 +1103,18 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
                     heal = int(player.max_hp * item["val"]) if item["is_percent"] else item["val"]
                     player.hp = min(player.max_hp, player.hp + heal)
                     _, disp_heal, _ = apply_dynamic_scaling(heal, 0, tier)
-                    action_logs.append(f"[회복] '{item['name']}' 사용. HP +{disp_heal:,}")
+                    action_logs.append(t('combat_recover_log', name=item['name'], hp=f"{disp_heal:,}"))
                 else:
                     player.hunger = min(100, player.hunger + item["hunger"])
                     player.thirst = min(100, player.thirst + item["thirst"])
-                    action_logs.append(f"[섭취] '{item['name']}' 사용. 바이오 연료 보충.")
+                    action_logs.append(t('combat_eat_log', name=item['name']))
             else:
-                action_logs.append("[취소] 소모품 사용을 중단했습니다.")
+                action_logs.append(t('combat_cancel_log'))
 
         else:
-            print("\n  [오류] 인식할 수 없는 명령 프로토콜입니다.")
+            print(t('combat_invalid_cmd'))
             time.sleep(1)
-            action_logs.append("[오류] 잘못된 명령어 입력.")
+            action_logs.append(t('combat_invalid_log'))
 
         # --- 적의 반격 ---
         if hp > 0 and not escaped:
@@ -1123,16 +1123,16 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
                 atk = int(base_atk * (1.6 if phase2_triggered else 1.0))
 
             dmg_taken = max(1, atk - def_bonus)
-            print(f"\n  {Fore.RED + Style.BRIGHT}{name}의 무자비한 공격! (피해량: {dmg_taken:,})")
+            print(f"\n  {Fore.RED + Style.BRIGHT}" + t('combat_enemy_attack', name=name, dmg=f"{dmg_taken:,}"))
             time.sleep(1)
             player.hp -= dmg_taken
             if cyber_regen > 0 and player.hp > 0:
                 player.hp = min(player.max_hp, player.hp + cyber_regen)
             _, disp_php_new, _ = apply_dynamic_scaling(0, max(0, player.hp), tier)
-            print(f"  [시스템 갱신] 내 잔여 체력: {disp_php_new:,} / {disp_pmaxhp:,}")
+            print(t('combat_player_hp_full', hp=f"{disp_php_new:,}", maxhp=f"{disp_pmaxhp:,}"))
             time.sleep(1)
-            def_note = f" (방어 -{def_bonus})" if def_bonus > 0 else ""
-            action_logs.append(f"[피격] 적의 공격으로 {dmg_taken:,}의 손상을 입었습니다.{def_note}")
+            def_note = t('combat_def_note', val=def_bonus) if def_bonus > 0 else ""
+            action_logs.append(t('combat_damage_log', dmg=f"{dmg_taken:,}", def_note=def_note))
             time.sleep(1)
 
         turn += 1
@@ -1140,13 +1140,13 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
     if player.hp <= 0:
         clear_screen()
         if escape_log: type_text(escape_log, 0.02)
-        type_text(Fore.RED + Style.BRIGHT + "\n[SYSTEM FATAL] 신체 손상 100%. 의체 붕괴. GAME OVER.", 0.03)
+        type_text(Fore.RED + Style.BRIGHT + t('combat_fatal'), 0.03)
         wait_for_keypress()
         sys.exit()
 
     if escaped:
         clear_screen()
-        print_header("COMBAT ESCAPE (전술적 후퇴)")
+        print_header(t('combat_escape_header'))
         print(f"\n{escape_log}")
         if res == "LUCKY":
             loot_types = ["MEDKIT", "MATERIAL", "PART", "WATER", "FOOD"]
@@ -1156,24 +1156,24 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
             if loot_res == "MEDKIT":
                 it = roll_medkit()
                 player.consumables[it] += 1
-                print(f"  [수집] {CONSUMABLES_DB[it]['name']} 1개 획득")
+                print(t('combat_loot_medkit', name=CONSUMABLES_DB[it]['name']))
             elif loot_res == "MATERIAL":
                 player.materials += 15
                 advance_quest(player, "scrap", 15)
-                print("  [수집] 일반 고철 15개 획득")
+                print(t('combat_loot_scrap'))
             elif loot_res == "PART":
                 part = random.choice(["PART_SCRAP_01", "PART_SCRAP_02", "PART_SCRAP_03"])
                 player.inventory.append(part)
                 item_data = get_equipment_data(part)
-                print(f"  [수집] 부품 '{item_data['name']}' 획득")
+                print(t('combat_loot_part', name=item_data['name']))
             elif loot_res == "WATER":
                 it = roll_water()
                 player.consumables[it] += 1
-                print(f"  [수집] {CONSUMABLES_DB[it]['name']} 1개 획득")
+                print(t('combat_loot_water', name=CONSUMABLES_DB[it]['name']))
             elif loot_res == "FOOD":
                 it = roll_food()
                 player.consumables[it] += 1
-                print(f"  [수집] {CONSUMABLES_DB[it]['name']} 1개 획득")
+                print(t('combat_loot_food', name=CONSUMABLES_DB[it]['name']))
 
         log_diary(player, f"[전투] {name} — 전술적 후퇴")
         wait_for_keypress()
@@ -1183,8 +1183,8 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
         return hp, enemy_type
 
     clear_screen()
-    print_header("TARGET ELIMINATED (적 제압 완료)")
-    print(f"\n{Fore.GREEN + Style.BRIGHT}[승리]{Style.RESET_ALL} {name}의 시스템 가동이 중지되었습니다.")
+    print_header(t('combat_win_header'))
+    print(f"\n{Fore.GREEN + Style.BRIGHT}" + t('combat_win_msg', name=name))
     player.enemies_defeated += 1
 
     if not is_boss:
@@ -1192,19 +1192,19 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
         if drop_roll < 0.25:
             it = roll_food()
             player.consumables[it] += 1
-            print(f"  [파밍] 적의 파편에서 '{CONSUMABLES_DB[it]['name']}' 1개를 적출했습니다.")
+            print(t('combat_farm_food', name=CONSUMABLES_DB[it]['name']))
         elif drop_roll < 0.50:
             it = roll_water()
             player.consumables[it] += 1
-            print(f"  [파밍] 적의 냉각 기관에서 '{CONSUMABLES_DB[it]['name']}' 1개를 추출했습니다.")
+            print(t('combat_farm_water', name=CONSUMABLES_DB[it]['name']))
         elif drop_roll < 0.60:
             it = roll_medkit()
             player.consumables[it] += 1
-            print(f"  [파밍] 기적적으로 온전한 '{CONSUMABLES_DB[it]['name']}' 1개를 회수했습니다.")
+            print(t('combat_farm_medkit', name=CONSUMABLES_DB[it]['name']))
         else:
             player.materials += 20
             advance_quest(player, "scrap", 20)
-            print("  [파밍] 고가치 일반 고철 20개를 회수했습니다.")
+            print(t('combat_farm_scrap'))
 
     advance_quest(player, "combat")
     log_diary(player, f"[전투] {name} — 제압 완료 (총 {player.enemies_defeated}기)")
@@ -1346,7 +1346,7 @@ def run_game():
         clear_screen()
         if player.active_quest and player.turn_count > player.active_quest["deadline"]:
             q = player.active_quest
-            print(f"\n  [퀘스트 실패] '{q['title']}' — 제한 턴 초과")
+            print(t('quest_failed', title=q['title']))
             log_diary(player, f"[퀘스트 실패] {q['title']}")
             player.active_quest = None
             time.sleep(1.5)
@@ -1377,7 +1377,7 @@ def run_game():
             
         if move == "F":
             player.consume_resources()
-            print("\n[행동] 주변의 고철 더미를 뒤지기 시작합니다...")
+            print(t('search_start'))
             time.sleep(0.5)
 
             encounter_chance = get_encounter_chance(player)
@@ -1388,7 +1388,7 @@ def run_game():
                 handle_trader(player)
             elif roll < 0.08 + encounter_chance:
                 # 전투 조우 (encounter_chance%)
-                print("\n[경고] 탐색 중 발생한 소음이 기계 괴수를 끌어들였습니다!")
+                print(t('encounter_warning'))
                 wait_for_keypress()
                 # 바이오 하운드 20% 확률 등장 (재조우 시 이전 타입 유지)
                 if grid.escaped_enemy_hp is not None:
@@ -1404,14 +1404,7 @@ def run_game():
                 handle_random_event(player, event)
             elif roll < 0.08 + encounter_chance + 0.20 + 0.30:
                 # 공탐색 — 분위기 로그 (30%)
-                _empty = random.choice([
-                    "적막만이 돌아옵니다. 이 구역은 이미 누군가 쓸고 간 흔적입니다.",
-                    "먼지와 녹슨 고철 외에는 쓸만한 게 없습니다.",
-                    "바람 소리와 정적뿐. 오늘은 운이 따르지 않습니다.",
-                    "탐색에 성과가 없었습니다. 허기와 갈증만 소모됩니다.",
-                    "이 구역은 완전히 비어 있습니다. 다른 스캐벤저가 먼저였을 겁니다.",
-                    "콘크리트 파편과 연소된 배선만 남아 있습니다.",
-                ])
+                _empty = random.choice(t('empty_search_msgs'))
                 print(f"\n  {_empty}")
                 print_ambient_lore()
             else:
@@ -1421,20 +1414,20 @@ def run_game():
                     gained = random.randint(10, 25)
                     player.materials += gained
                     advance_quest(player, "scrap", gained)
-                    print(f"\n[획득] 엉켜있는 배선에서 일반 고철 {gained}개를 주웠습니다.")
+                    print(t('farm_scrap', gained=gained))
                 elif item_roll <= 0.60:
                     if random.random() < 0.5:
                         it = roll_food()
                         player.consumables[it] += 1
-                        print(f"\n[획득] 낡은 컨테이너에서 '{CONSUMABLES_DB[it]['name']}' 1개를 발견했습니다.")
+                        print(t('farm_food', name=CONSUMABLES_DB[it]['name']))
                     else:
                         it = roll_water()
                         player.consumables[it] += 1
-                        print(f"\n[획득] 끊어진 냉각 파이프에서 '{CONSUMABLES_DB[it]['name']}' 1개를 추출했습니다.")
+                        print(t('farm_water', name=CONSUMABLES_DB[it]['name']))
                 else:
                     it = roll_medkit()
                     player.consumables[it] += 1
-                    print(f"\n[획득] 구석의 구급 상자에서 희귀한 '{CONSUMABLES_DB[it]['name']}' 1개를 획득했습니다.")
+                    print(t('farm_medkit', name=CONSUMABLES_DB[it]['name']))
                 wait_for_keypress()
             # 탐색 퀘스트 진행 및 돌발 퀘스트 (전투 미조우 시)
             if not (0.08 <= roll < 0.08 + encounter_chance):
@@ -1488,25 +1481,25 @@ def run_game():
                 # 보스전 준비 화면
                 log_diary(player, "[보스] 스캐브 컬렉터 추적 확인 — 최종 전투 준비")
                 clear_screen()
-                print_header("!! CRITICAL ALERT — 스캐브 컬렉터 접근 중 !!")
-                type_text("  지면이 거대하게 진동하기 시작합니다.", 0.025)
-                type_text("  수십 개의 유압 분쇄 칼날과 회수 집게를 펼치며,", 0.025)
-                type_text("  총괄국의 자동화 청소기계 '스캐브 컬렉터'가 벙커를 향해 돌진해 옵니다.", 0.025)
+                print_header(t('boss_alert_header'))
+                type_text(t('boss_approach_1'), 0.025)
+                type_text(t('boss_approach_2'), 0.025)
+                type_text(t('boss_approach_3'), 0.025)
                 print()
-                type_text("  사이버덱에 경보가 떴습니다 ─ [추적 목표: N-404 / 회수 우선순위: 최고 등급]", 0.025)
-                type_text("  이 기계는 처음부터 당신을 추적하고 있었습니다.", 0.025)
+                type_text(t('boss_approach_4'), 0.025)
+                type_text(t('boss_approach_5'), 0.025)
                 print()
-                type_text("  이 문이 부서지면 내일은 없습니다. 마지막 준비를 완료하십시오.\n", 0.025)
+                type_text(t('boss_approach_6') + "\n", 0.025)
                 while True:
                     print_divider()
                     tier_now = player.get_highest_tier()
                     _, disp_hp_now, _ = apply_dynamic_scaling(0, player.hp, tier_now)
                     _, disp_maxhp_now, _ = apply_dynamic_scaling(0, player.max_hp, tier_now)
-                    print(f"  [현재 상태] HP: {disp_hp_now:,}/{disp_maxhp_now:,}  허기: {player.hunger}  갈증: {player.thirst}  고철: {player.materials}")
+                    print(t('boss_prep_status', hp=f"{disp_hp_now:,}", maxhp=f"{disp_maxhp_now:,}", hunger=player.hunger, thirst=player.thirst, scrap=player.materials))
                     print_divider()
-                    print("  1. 소모품 사용")
-                    print("  2. 현재 상태 저장")
-                    print("  3. 보스전 돌입 (ENTER COMBAT)")
+                    print(t('boss_prep_1'))
+                    print(t('boss_prep_2'))
+                    print(t('boss_prep_3'))
                     prep_cmd = read_key()
                     if prep_cmd == "1":
                         player.use_consumable_menu()
@@ -1524,7 +1517,7 @@ def run_game():
                     _s_base = 0.40 if grid.session_index < 3 else 0.10
                     _s_prob = max(0.05, _s_base * (1.0 - player.turn_count / 100.0))
                     if random.random() < _s_prob:
-                        print("\n  [스캔] 이 구역에서 특이한 반응이 감지됩니다...")
+                        print(t('scan_detected'))
                         time.sleep(1.2)
                         handle_session(player, SESSIONS_DB[grid.session_index])
                         grid.session_index += 1
@@ -1532,7 +1525,7 @@ def run_game():
 
                 if not session_triggered:
                     if random.random() < get_encounter_chance(player):
-                        print("\n[경보] 안개 속에서 기계 괴수의 광학 센서가 번뜩입니다!")
+                        print(t('encounter_alert'))
                         wait_for_keypress()
                         if grid.escaped_enemy_hp is not None:
                             etype = grid.escaped_enemy_type or "drone"
@@ -1567,18 +1560,18 @@ def handle_session(player, session):
                     mat_gain = choice_data.get("materials", 30)
                     player.materials += mat_gain
                     advance_quest(player, "scrap", mat_gain)
-                    print(f"\n[획득] 일반 고철 {mat_gain}개를 회수했습니다.")
+                    print(t('session_scrap_gain', mat=mat_gain))
                 else:
                     player.inventory.append(choice_data["reward"])
                     item_data = get_equipment_data(choice_data["reward"])
-                    print(f"\n[보상] 소켓 파싱 완료: 장비 '{item_data['name']}' 코드를 획득했습니다.")
+                    print(t('session_item_gain', name=item_data['name']))
 
             # 소모품 보상
             if choice_data.get("consumable"):
                 key = choice_data["consumable"]
                 if key in player.consumables:
                     player.consumables[key] += 1
-                    print(f"\n[보상] {CONSUMABLES_DB.get(key, {}).get('name', key)} 1개를 획득했습니다.")
+                    print(t('session_consumable_gain', name=CONSUMABLES_DB.get(key, {}).get('name', key)))
 
             # 고철 직접 지급 (SCRAP_MAT 없이)
             raw_mat = choice_data.get("materials", 0)
@@ -1586,21 +1579,21 @@ def handle_session(player, session):
                 player.materials = max(0, player.materials + raw_mat)
                 if raw_mat > 0:
                     advance_quest(player, "scrap", raw_mat)
-                    print(f"\n[획득] 고철 +{raw_mat}개")
+                    print(t('session_scrap_add', val=raw_mat))
                 else:
-                    print(f"\n[소비] 고철 {raw_mat}개")
+                    print(t('session_scrap_use', val=raw_mat))
 
             # 생체 상태 변화
             if choice_data.get("hp_loss", 0):
                 player.hp = max(1, player.hp - choice_data["hp_loss"])
-                print(f"\n[피해] HP -{choice_data['hp_loss']}")
+                print(t('session_hp_loss', val=choice_data['hp_loss']))
             if choice_data.get("thirst", 0):
                 player.thirst = min(100, player.thirst + choice_data["thirst"])
             if choice_data.get("hunger", 0):
                 player.hunger = min(100, player.hunger + choice_data["hunger"])
             if choice_data.get("ram_bonus", 0):
                 player.max_ram += choice_data["ram_bonus"]
-                print(f"\n[시스템] 가용 RAM +{choice_data['ram_bonus']}")
+                print(t('session_ram_gain', val=choice_data['ram_bonus']))
 
             time.sleep(0.6)
             type_text(f"\n  {choice_data['log']}", 0.025)
@@ -1618,9 +1611,9 @@ def handle_session(player, session):
 
             if choice_weight and player.weights[choice_weight] >= 3:
                 _wcb = {
-                    "kinetic": "\n  [행동 패턴 고착화] 물리적 집행이 N-404의 1순위 프로토콜로 등록됩니다.",
-                    "scrap":   "\n  [행동 패턴 고착화] 정밀 분해가 N-404의 1순위 프로토콜로 등록됩니다.",
-                    "cyber":   "\n  [행동 패턴 고착화] 코드 침투가 N-404의 1순위 프로토콜로 등록됩니다.",
+                    "kinetic": t('session_pattern_kinetic'),
+                    "scrap":   t('session_pattern_scrap'),
+                    "cyber":   t('session_pattern_cyber'),
                 }
                 time.sleep(0.3)
                 type_text(_wcb[choice_weight], 0.022)
@@ -1650,12 +1643,12 @@ def trigger_sudden_quest(player):
     if "reward_amount" in tpl: q["reward_amount"] = tpl["reward_amount"]
     player.active_quest = q
     clear_screen()
-    print_header(f"!! 돌발 퀘스트 — {tpl['title']}")
+    print_header(t('quest_trigger_header', title=tpl['title']))
     type_text(f"  {tpl['desc']}", 0.022)
     print()
-    print(f"  [목표]  {tpl['detail']}")
-    print(f"  [기한]  {tpl['turns']}턴 이내  (현재 {player.turn_count}턴 → 기한 {deadline}턴)")
-    print(f"  [보상]  {tpl['reward_desc']}")
+    print(t('quest_goal_label', detail=tpl['detail']))
+    print(t('quest_deadline_label', turns=tpl['turns'], current=player.turn_count, deadline=deadline))
+    print(t('quest_reward_label', reward=tpl['reward_desc']))
     print()
     log_diary(player, f"[퀘스트] {tpl['title']} 발생 (기한: {deadline}턴)")
     wait_for_keypress()
@@ -1667,22 +1660,22 @@ def _complete_quest(player):
     if q is None:
         return
     clear_screen()
-    print_header(f"!! 돌발 퀘스트 완료 — {q['title']}")
+    print_header(t('quest_complete_header', title=q['title']))
     print()
-    print(f"  [보상 지급]  {q['reward_desc']}")
+    print(t('quest_reward_header', reward=q['reward_desc']))
     rtype = q["reward_type"]
     if rtype == "consumable":
         rid = q["reward_id"]
         player.consumables[rid] = player.consumables.get(rid, 0) + 1
-        print(f"  {CONSUMABLES_DB.get(rid, {}).get('name', rid)} 소지품에 추가됨.")
+        print(t('quest_consumable_added', name=CONSUMABLES_DB.get(rid, {}).get('name', rid)))
     elif rtype == "materials":
         amt = q.get("reward_amount", 30)
         player.materials += amt
-        print(f"  잔여 고철: {player.materials}개")
+        print(t('quest_scrap_remaining', val=player.materials))
     elif rtype == "ram":
         amt = q.get("reward_amount", 1)
         player.max_ram += amt
-        print(f"  가용 RAM: {player.max_ram}")
+        print(t('quest_ram_remaining', val=player.max_ram))
     print()
     log_diary(player, f"[퀘스트 완료] {q['title']} → {q['reward_desc']}")
     player.active_quest = None
@@ -1712,11 +1705,11 @@ def handle_random_event(player, event):
         type_text(result["log"], 0.02)
         if result.get("hp_loss", 0) > 0:
             player.hp = max(1, player.hp - result["hp_loss"])
-            print(f"  [피해] HP -{result['hp_loss']}")
+            print(t('event_hp_loss', val=result['hp_loss']))
         if result.get("materials", 0) != 0:
             player.materials = max(0, player.materials + result["materials"])
             sign = "+" if result["materials"] > 0 else ""
-            print(f"  [자원] 고철 {sign}{result['materials']}개")
+            print(t('event_scrap', sign=sign, val=result['materials']))
             if result["materials"] > 0:
                 advance_quest(player, "scrap", result["materials"])
         if result.get("hunger", 0) < 0:
@@ -1727,7 +1720,7 @@ def handle_random_event(player, event):
             key = result["consumable"]
             if key in player.consumables:
                 player.consumables[key] += 1
-                print(f"  [획득] {CONSUMABLES_DB[key]['name']} 1개")
+                print(t('event_item_gain', name=CONSUMABLES_DB[key]['name']))
         log_diary(player, f"[이벤트] {event['title']}")
         wait_for_keypress()
 
@@ -1751,12 +1744,12 @@ def handle_random_event(player, event):
 
         if c.get("hp_loss", 0) > 0:
             player.hp = max(1, player.hp - c["hp_loss"])
-            print(f"  [피해] HP -{c['hp_loss']}")
+            print(t('event_hp_loss', val=c['hp_loss']))
         mat = c.get("materials", 0)
         if mat != 0:
             player.materials = max(0, player.materials + mat)
             sign = "+" if mat > 0 else ""
-            print(f"  [자원] 고철 {sign}{mat}개")
+            print(t('event_scrap', sign=sign, val=mat))
             if mat > 0:
                 advance_quest(player, "scrap", mat)
         if c.get("hunger", 0) > 0:
@@ -1765,12 +1758,12 @@ def handle_random_event(player, event):
             player.thirst = min(100, player.thirst + c["thirst"])
         if c.get("ram_bonus", 0) > 0:
             player.max_ram += c["ram_bonus"]
-            print(f"  [RAM] 가용 RAM +{c['ram_bonus']}")
+            print(t('event_ram_gain', val=c['ram_bonus']))
         if c.get("consumable"):
             key = c["consumable"]
             if key in player.consumables:
                 player.consumables[key] += 1
-                print(f"  [획득] {CONSUMABLES_DB[key]['name']} 1개")
+                print(t('event_item_gain', name=CONSUMABLES_DB[key]['name']))
         _ew_label = {"kinetic": "완력", "scrap": "해체", "cyber": "해킹"}.get(c.get("weight"), "선택")
         log_diary(player, f"[이벤트] {event['title']} — {_ew_label}")
         wait_for_keypress()
@@ -1779,26 +1772,26 @@ def handle_random_event(player, event):
 def handle_trader(player):
     """행상인 NPC 조우 — 고철로 소모품을 구매합니다."""
     clear_screen()
-    print_header("ENCOUNTER: 유랑 행상인 조우")
-    type_text("  낡은 카트를 밀며 나타난 수상한 인물이 당신을 보고 멈춥니다.", 0.02)
-    type_text("  '살아있는 녀석이라니... 운이 좋군. 뭐라도 사갈 텐가?'", 0.02)
+    print_header(t('trader_header'))
+    type_text(t('trader_intro_1'), 0.02)
+    type_text(t('trader_intro_2'), 0.02)
     print()
 
     while True:
         print_divider()
-        print(f"  [보유 고철: {player.materials}개]\n")
-        print("  [ 판매 목록 ]")
+        print(f"{t('trader_scrap_label', val=player.materials)}\n")
+        print(t('trader_stock_header'))
         for i, item in enumerate(TRADER_ITEMS):
             stock_key = item["id"]
             owned = player.consumables.get(stock_key, 0)
             print(f"  [{i+1}] {item['name']:<20} — {item['cost']:>3}개  (보유: {owned}개)")
         print_divider()
-        print("  [0] 거래 종료")
+        print(t('trader_exit'))
 
         cmd = read_key()
 
         if cmd == "0":
-            type_text("  '또 보자고.' 행상인이 카트를 밀며 안개 속으로 사라집니다.", 0.02)
+            type_text(t('trader_goodbye'), 0.02)
             wait_for_keypress()
             break
 
@@ -1808,31 +1801,31 @@ def handle_trader(player):
                 player.materials -= chosen["cost"]
                 key = chosen["id"]
                 player.consumables[key] += 1
-                print(f"\n  [거래 완료] '{chosen['name']}' 구매. 잔여 고철: {player.materials}개")
+                print(t('trader_bought', name=chosen['name'], scrap=player.materials))
                 log_diary(player, f"[거래] {chosen['name']} 구매 (-{chosen['cost']} 고철)")
                 time.sleep(1)
             else:
-                print(f"\n  [거부] 고철이 부족합니다. ({player.materials}/{chosen['cost']}개)")
+                print(t('trader_no_scrap', owned=player.materials, cost=chosen['cost']))
                 time.sleep(1)
         else:
-            print("\n  [오류] 올바른 번호를 입력하세요.")
+            print(t('trader_invalid'))
             time.sleep(0.5)
 
 
 def run_prologue():
     """신규 게임 시작 시 전체 프롤로그 시퀀스를 재생합니다."""
     clear_screen()
-    print_header("프로토콜: 낙인 — 시퀀스 초기화")
+    print_header(t('prologue_header'))
     print()
-    print("  [SYSTEM] 서사 시퀀스 로드 완료.")
+    print(t('prologue_loaded'))
     print()
-    print("  1. 프롤로그 재생  (부팅 시퀀스 → 도입 서사 → 세계관 → 조작법)")
-    print("  0. 스킵           (즉시 게임 시작)")
+    print(t('prologue_option_play'))
+    print(t('prologue_option_skip'))
     print()
     skip_ans = read_key()
     if skip_ans == "0":
         clear_screen()
-        type_text("[SYSTEM] 서사 시퀀스 스킵. 생존 인터페이스 가동.", 0.022)
+        type_text(t('prologue_skipped'), 0.022)
         time.sleep(0.6)
         return
 
@@ -1840,17 +1833,17 @@ def run_prologue():
 
     # ── 단계 1: 부팅 시퀀스 ──────────────────────────────────────────────
     boot_log = [
-        ("  [SYSTEM BOOT]   시각 센서 복구 중...   0%", 0.04),
-        ("  [SYSTEM BOOT]   시각 센서 복구 중...  12%", 0.04),
-        ("  [SYSTEM BOOT]   시각 센서 복구 중...  45%", 0.03),
-        ("  [SYSTEM BOOT]   시각 센서 복구 중... 100%", 0.03),
+        (t('prologue_boot_0'),   0.04),
+        (t('prologue_boot_12'),  0.04),
+        (t('prologue_boot_45'),  0.03),
+        (t('prologue_boot_100'), 0.03),
         ("", 0.1),
-        ("  [SYSTEM LOG]    바이오 링크 프로토콜 체크 중...", 0.03),
-        ("  [ERROR  ]       중앙 서버 핸드셰이크 실패 — 접속 불가.", 0.03),
-        ("  [SYSTEM LOG]    유기체 일련번호 조회 중... 'N-404'", 0.03),
-        ("  [ERROR  ]       등록되지 않은 코드. 승인 거부.", 0.04),
-        ("  [WARNING]       분류: 무국적 불량 코드 (Civilian).", 0.04),
-        ("  [SYSTEM ]       시스템 조치: 추적 후 영구 폐기.", 0.04),
+        (t('prologue_boot_check'),  0.03),
+        (t('prologue_boot_fail1'),  0.03),
+        (t('prologue_boot_id'),     0.03),
+        (t('prologue_boot_fail2'),  0.04),
+        (t('prologue_boot_class'),  0.04),
+        (t('prologue_boot_action'), 0.04),
     ]
     for line, spd in boot_log:
         type_text(line, spd)
@@ -1860,21 +1853,10 @@ def run_prologue():
     clear_screen()
 
     # ── 단계 2: 도입 서사 ────────────────────────────────────────────────
-    print_header("1막: 낙인 (Stigma) — 시스템이 폐기한 불량 ***")
+    print_header(t('prologue_act1_header'))
     time.sleep(0.5)
 
-    narr = [
-        "눈을 뜨자마자 온몸의 감각을 찌르는 것은 지독한 녹슨 기름 냄새와 차가운 빗방울이었다.",
-        "고개를 들자 수십 미터 높이의 거대한 강철 무덤이 하늘을 완전히 가로막고 있다.",
-        "네오 아크 상층민들이 쓰다 버린 드론의 사체, 마모된 메인보드 파편이 끝없는 산을 이룬 곳.",
-        "이곳은 시스템이 당신을 쓰레기처럼 내던진 '폐기물 처리장' — 데드존의 외각이다.",
-        "",
-        "배 속에서 내장 조직이 꼬이는 듯한 강렬한 통증이 느껴진다.",
-        "목 뒤의 소켓이 차갑게 식어가며, 단 하나의 메시지가 눈 앞을 아득히 채웁니다:",
-        "",
-        "  \"당신은 폐기된 ***입니다. 회수 또는 소거.\"",
-    ]
-    for line in narr:
+    for line in t('prologue_narr'):
         type_text(f"  {line}", 0.022) if line else print()
         time.sleep(0.1)
 
@@ -1883,85 +1865,63 @@ def run_prologue():
     clear_screen()
 
     # ── 단계 3: 세계관 브리핑 ────────────────────────────────────────────
-    print_header("세계관 브리핑 — 당신이 버려진 이유")
-    world_log = [
-        ("[1주기]  지구 천연자원이 완전히 고갈되었습니다."),
-        ("         국제 연합이 대기업 연합의 마스터 AI 기동을 승인 하였습니다."),
-        ("         대기업 연합의 마스터 AI가 연산을 실행했습니다."),
-        ("         연산 결과: '인류의 95%를 격리해야 인류 존속 가능'. 대붕괴 시작."),
-        ("         총괄국을 조직하여 인류의 95%를 격리,처단 권한 위임 하였습니다"),
-        (""),
-        ("[2주기]  총괄국이 남은 자원 영역에 가상현실 차단막 '네오 아크'를 건설."),
-        ("         차단막 밖의 95% 영토는 방사능과 폐기된 기계의 황무지 — '데드존'이 됐다."),
-        ("         총괄국 수장 주디스 케인이 네오 아크를 완전 통제하고 있다."),
-        (""),
-        ("[현재]   데드존의 스캐벤저들이 구시대 유물을 발굴하며 총괄국에 균열을 내고 있다."),
-        ("         당신은 네오 아크 실험실에서 '불량 ***'로 낙인찍혀 이곳에 폐기됐다."),
-        ("         살아있는 불법 ***는 총괄국 AI에 의해 회수 또는 소거 대상이다."),
-    ]
-    for line in world_log:
+    print_header(t('prologue_world_header'))
+    for line in t('prologue_world'):
         type_text(f"  {line}", 0.02) if line else print()
         time.sleep(0.05)
 
     time.sleep(0.8)
     print()
     print_divider()
-    type_text("  당신의 목표: 쓰레기 바다를 탐색해 방공호 벙커를 장악하라.", 0.025)
-    type_text("  당신의 행동 방식이 당신의 삶을 결정할 것이다.", 0.025)
+    type_text(t('prologue_goal_1'), 0.025)
+    type_text(t('prologue_goal_2'), 0.025)
     print_divider()
 
     wait_for_keypress()
     clear_screen()
 
     # ── 단계 4: 조작법 안내 ──────────────────────────────────────────────
-    print_header("생존 프로토콜 안내 — 운용 매뉴얼")
-    guide = [
-        ("W / A / S / D", "그리드 이동. 1타일 이동 시 허기/갈증이 소모됩니다."),
-        ("F             ", "현재 위치 탐색. 전투·이벤트·자원 획득이 발생합니다."),
-        ("I             ", "인벤토리. 장비 장착, 소모품 사용, 분해 가능."),
-        ("C             ", "현재 상태 저장 (stigma_save.json 동기화)."),
-        ("Q             ", "게임 종료. 저장 여부 선택 가능."),
-    ]
-    for key, desc in guide:
+    print_header(t('prologue_manual_header'))
+    for key, desc in t('prologue_guide'):
         print(f"  [{key}]  {desc}")
 
     print()
     print_divider()
-    type_text("  [경고] 허기/갈증이 0이 되면 매 턴 HP가 감소합니다.", 0.022)
-    type_text("  [경고] 이동·탐색 중 기계 괴수와의 전투가 발생할 수 있습니다.", 0.022)
-    type_text("  [경보] 당신의 선택은 데이터로 기록됩니다. 선택이 곧 당신입니다.", 0.025)
+    type_text(t('prologue_warn_1'), 0.022)
+    type_text(t('prologue_warn_2'), 0.022)
+    type_text(t('prologue_warn_3'), 0.025)
     print_divider()
     print()
-    type_text("  목표 좌표: (4, 4) — 방공호 벙커 [B]. 지역 우상단.", 0.022)
-    type_text("  이동하며 탐색하라. 허기와 갈증을 관리하라. 살아남아라.", 0.022)
+    type_text(t('prologue_nav_1'), 0.022)
+    type_text(t('prologue_nav_2'), 0.022)
 
     wait_for_keypress()
     clear_screen()
-    type_text("[SYSTEM] 생존 인터페이스 가동. 그리드 스캐너 활성화.", 0.022)
+    type_text(t('prologue_start'), 0.022)
     time.sleep(0.6)
 
 
 def run_boss_core_choice(player):
     """보스 격파 후 코어 처분 선택 — 최종 직업 가중치에 영향을 미칩니다."""
     clear_screen()
-    print_header("BOSS GLITCH LOG — 핵심 코어 노출")
-    type_text("  거대한 기계 괴수가 스파크를 뿜으며 무릎을 꿇습니다.", 0.03)
-    type_text("  중앙 제어선이 마비되며 파랗게 요동치는 동력 코어가 노출됩니다.", 0.03)
-    type_text("  이 코어를 아지트 터미널에 꽂는 순간, 거점이 완성된다.", 0.03)
+    print_header(t('boss_core_header'))
+    type_text(t('boss_core_kneel_1'), 0.03)
+    type_text(t('boss_core_kneel_2'), 0.03)
+    type_text(t('boss_core_kneel_3'), 0.03)
     print()
     time.sleep(1.0)
-    type_text("  [SYSTEM] 경고. 코어 처분 방식이 행동 코드에 영구 기록됩니다.", 0.03)
-    type_text("           이 선택이 당신의 각성 경로를 확정합니다.", 0.03)
+    type_text(t('boss_core_warn_1'), 0.03)
+    type_text(t('boss_core_warn_2'), 0.03)
     print()
     print_divider()
-    print("  1. 코어를 과부하 시켜 의체에 직접 이식한다.")
-    print("     ➔ 물리 격돌 W_kinetic 대폭 상승")
+    print(t('boss_core_opt1'))
+    print(t('boss_core_opt1_sub'))
     print()
-    print("  2. 코어의 희귀 희토류를 분해해 방공호 발전기에 직결한다.")
-    print("     ➔ 자원 정제 W_scrap 대폭 상승")
+    print(t('boss_core_opt2'))
+    print(t('boss_core_opt2_sub'))
     print()
-    print("  3. 코어 내부의 네오 아크 암호화 칩을 사이버덱에 강제 포팅한다.")
-    print("     ➔ 연산 침투 W_cyber 대폭 상승")
+    print(t('boss_core_opt3'))
+    print(t('boss_core_opt3_sub'))
     print_divider()
 
     while True:
@@ -1969,20 +1929,20 @@ def run_boss_core_choice(player):
         if ans == "1":
             player.weights["kinetic"] += 3
             print()
-            type_text("  신경망 리미터가 과부하 상태로 돌입합니다. 의체 전역에 금속음이 울립니다.", 0.03)
-            type_text("  폭발적인 에너지가 근육 신경망을 재배선합니다. 강해집니다.", 0.03)
+            type_text(t('boss_core_kinetic_1'), 0.03)
+            type_text(t('boss_core_kinetic_2'), 0.03)
             break
         elif ans == "2":
             player.weights["scrap"] += 3
             print()
-            type_text("  코어를 정밀 분해합니다. 방공호 발전기가 오렌지빛으로 점화됩니다.", 0.03)
-            type_text("  터미널 화면에 '장인 인증 코드'가 파싱됩니다. 기술이 각인됩니다.", 0.03)
+            type_text(t('boss_core_scrap_1'), 0.03)
+            type_text(t('boss_core_scrap_2'), 0.03)
             break
         elif ans == "3":
             player.weights["cyber"] += 3
             print()
-            type_text("  사이버덱이 달아오르며 암호화 칩이 신경망 내부에 포팅됩니다.", 0.03)
-            type_text("  총괄국 군사 기밀 코드가 덱에 박혀 흐릅니다. 세계가 코드로 보입니다.", 0.03)
+            type_text(t('boss_core_cyber_1'), 0.03)
+            type_text(t('boss_core_cyber_2'), 0.03)
             break
 
     time.sleep(1.5)
@@ -1992,17 +1952,17 @@ def run_boss_core_choice(player):
 def run_ending(player):
     clear_screen()
     print_header("PIONEER PROTOCOL: NORMALIZATION EXECUTION")
-    type_text("  코어가 아지트 터미널에 꽂히는 순간 —", 0.03)
-    type_text("  암흑천지였던 지하 방공호에 오렌지색 비상등이 켜지며 아날로그 진동음이 바닥을 울립니다.", 0.03)
-    type_text("  총괄국의 마스터 AI 감시망을 차단한 첫 번째 디지털 은신처가 완성됩니다.", 0.03)
-    type_text("  눈부신 경고창과 함께 당신의 행위 로그 전체가 스캔되기 시작합니다.\n", 0.03)
+    type_text(t('ending_core_1'), 0.03)
+    type_text(t('ending_core_2'), 0.03)
+    type_text(t('ending_core_3'), 0.03)
+    type_text(t('ending_core_4') + "\n", 0.03)
 
     total = sum(player.weights.values()) or 1
     w_k, w_s, w_c = player.weights['kinetic'], player.weights['scrap'], player.weights['cyber']
 
     time.sleep(1)
     print_divider()
-    print("  [ 행위 로그 분석 — 의식 코드 동기화율 ]")
+    print(t('ending_analysis_header'))
     print_divider()
 
     bar_len = 30
@@ -2010,41 +1970,41 @@ def run_ending(player):
         filled = int(bar_len * val / tot) if tot else 0
         return f"[{'█' * filled}{'░' * (bar_len - filled)}] {val/tot*100:.1f}%"
 
-    print(f"  컴뱃 포스     (kinetic) : {make_bar(w_k, total)}  ({w_k}회)")
-    print(f"  메카니컬 테크 (scrap)   : {make_bar(w_s, total)}  ({w_s}회)")
-    print(f"  넷 포스       (cyber)   : {make_bar(w_c, total)}  ({w_c}회)")
+    print(t('ending_kinetic_label', bar=make_bar(w_k, total), count=w_k))
+    print(t('ending_scrap_label', bar=make_bar(w_s, total), count=w_s))
+    print(t('ending_cyber_label', bar=make_bar(w_c, total), count=w_c))
     print()
     time.sleep(1.5)
 
     print_divider()
     if w_k == w_s == w_c:
-        type_text("  [HIDDEN PROTOCOL] tri_balance_awakening — 황금의 조율사 해제", 0.035)
+        type_text(t('ending_balanced_1'), 0.035)
         print()
-        type_text("  경고. 모든 가중치 배열이 완벽한 데드락 균형을 이루었습니다.", 0.03)
-        type_text("  시스템이 당신의 성향을 단일 코드로 정의하지 못해 히든 개척자 프로토콜을 개방합니다.", 0.03)
-        type_text("  모든 역할군의 기본 노드가 동시에 교차 활성화됩니다.", 0.03)
-        type_text("  당신은 어느 한 쪽의 논리에도 귀속되지 않는 유일한 존재입니다.", 0.03)
+        type_text(t('ending_balanced_2'), 0.03)
+        type_text(t('ending_balanced_3'), 0.03)
+        type_text(t('ending_balanced_4'), 0.03)
+        type_text(t('ending_balanced_5'), 0.03)
     elif w_k >= w_s and w_k >= w_c:
-        type_text("  [각성] 컴뱃 포스 (Combat Force) 코드 직결.", 0.035)
+        type_text(t('ending_kinetic_1'), 0.035)
         print()
-        type_text("  당신의 육체적 집행 기록이 정량화되었습니다.", 0.03)
-        type_text("  찢어발긴 기계들의 강화 장갑 프로토콜이 신경망 리미터를 영구 해제합니다.", 0.03)
-        type_text("  뼈를 깎는 무력의 집행자 — [컴뱃 포스]가 당신의 척수에 직결됩니다.", 0.03)
-        type_text("  강한 자가 살아남는다. 당신은 이제 데드존의 법칙 그 자체입니다.", 0.03)
+        type_text(t('ending_kinetic_2'), 0.03)
+        type_text(t('ending_kinetic_3'), 0.03)
+        type_text(t('ending_kinetic_4'), 0.03)
+        type_text(t('ending_kinetic_5'), 0.03)
     elif w_s >= w_k and w_s >= w_c:
-        type_text("  [각성] 메카니컬 테크 (Mechanical Tech) 인덱스 전이.", 0.035)
+        type_text(t('ending_scrap_1'), 0.035)
         print()
-        type_text("  그리드 화면에 고철 분해 및 유물 제어 시퀀스가 파싱됩니다.", 0.03)
-        type_text("  녹슨 발전기가 복구되자, 고대 설계도가 당신을 장인으로 인정합니다.", 0.03)
-        type_text("  고철의 연금술사 — [메카니컬 테크] 자격이 부여됩니다.", 0.03)
-        type_text("  폐철 하나도 낭비하지 않는다. 당신의 손 끝에서 데드존이 재건됩니다.", 0.03)
+        type_text(t('ending_scrap_2'), 0.03)
+        type_text(t('ending_scrap_3'), 0.03)
+        type_text(t('ending_scrap_4'), 0.03)
+        type_text(t('ending_scrap_5'), 0.03)
     else:
-        type_text("  [각성] 넷 포스 (Net Force) 아나키스트 패킷 주입.", 0.035)
+        type_text(t('ending_cyber_1'), 0.035)
         print()
-        type_text("  마스터 AI 감시망 '그리드'에 당신이 새겨넣은 유령 백도어가 고정 노드로 승인됩니다.", 0.03)
-        type_text("  가상현실 프로토콜을 왜곡하는 아나키스트 — [넷 포스]의 코드가 주입됩니다.", 0.03)
-        type_text("  코드는 현실보다 강하다. 당신은 시스템의 균열을 타고 흐릅니다.", 0.03)
-        type_text("  총괄국 AI가 당신을 단 한 번도 예측하지 못했습니다.", 0.03)
+        type_text(t('ending_cyber_2'), 0.03)
+        type_text(t('ending_cyber_3'), 0.03)
+        type_text(t('ending_cyber_4'), 0.03)
+        type_text(t('ending_cyber_5'), 0.03)
     print_divider()
 
     print()
@@ -2052,49 +2012,49 @@ def run_ending(player):
 
     # 플레이 통계
     print_divider()
-    print("  [ 1막 클리어 통계 ]")
+    print(t('ending_stats_header'))
     print_divider()
     tier_final = player.get_highest_tier()
-    tier_names = {4: "급조 (T4)", 3: "규격 (T3)", 2: "정제 (T2)", 1: "기업제 (T1)", 0: "유물 (T0)"}
-    diff_label = {"easy": "이지", "normal": "노멀", "hard": "하드"}.get(player.difficulty, player.difficulty)
+    tier_name = {4: t('tier_4'), 3: t('tier_3'), 2: t('tier_2'), 1: t('tier_1'), 0: t('tier_0')}.get(tier_final, 'N/A')
+    diff_label = {"easy": t('diff_label_easy'), "normal": t('diff_label_normal'), "hard": t('diff_label_hard')}.get(player.difficulty, player.difficulty)
     threat_final = get_turn_scale_multiplier(player)
 
-    print(f"  난이도           : {diff_label}")
-    print(f"  총 진행 턴       : {player.turn_count}턴")
-    print(f"  최종 위협 배율   : x{threat_final:.2f}")
-    print(f"  제압한 적        : {player.enemies_defeated}기")
-    print(f"  잔여 HP          : {player.hp:,} / {player.max_hp:,}")
-    print(f"  잔여 고철        : {player.materials}개")
-    print(f"  보유 장비 수     : {len(player.inventory)}종")
-    print(f"  최고 장비 등급   : {tier_names.get(tier_final, 'N/A')}")
+    print(t('ending_stat_diff', val=diff_label))
+    print(t('ending_stat_turns', val=player.turn_count))
+    print(t('ending_stat_threat', val=threat_final))
+    print(t('ending_stat_enemies', val=player.enemies_defeated))
+    print(t('ending_stat_hp', hp=player.hp, maxhp=player.max_hp))
+    print(t('ending_stat_scrap', val=player.materials))
+    print(t('ending_stat_items', val=len(player.inventory)))
+    print(t('ending_stat_tier', val=tier_name))
 
     total_consumables = sum(player.consumables.values())
-    print(f"  잔여 소모품      : {total_consumables}개")
+    print(t('ending_stat_consumables', val=total_consumables))
     print_divider()
     time.sleep(1)
 
     print()
     time.sleep(1.2)
-    type_text("  [SYSTEM]: 개척자 프로토콜 (Pioneer Protocol) 전면 승인.", 0.04)
-    type_text("  [PROCESS]: 초기 스탯 환급 및 각성 클래스 스케일링 가동 대기.", 0.04)
+    type_text(t('ending_epilogue_1'), 0.04)
+    type_text(t('ending_epilogue_2'), 0.04)
     print()
     time.sleep(0.8)
-    type_text("  \"당신은 마침내 시스템의 구역에 확고한 첫 영토를 개척해 냈습니다.\"", 0.04)
+    type_text(t('ending_epilogue_3'), 0.04)
     print()
-    type_text("  벙커 외부로 가이거 계수기의 비명음과 방사능 폭풍 소리가 아스라이 멀어집니다.", 0.03)
-    type_text("  방공호의 비상등이 켜집니다. 이것은 끝이 아닙니다.", 0.03)
-    type_text("  마스터 AI의 그리드는 아직 살아있고 — 당신의 낙인은 이제 시작입니다.", 0.03)
+    type_text(t('ending_epilogue_4'), 0.03)
+    type_text(t('ending_epilogue_5'), 0.03)
+    type_text(t('ending_epilogue_6'), 0.03)
     print()
     time.sleep(1.2)
-    type_text("  그리고 —", 0.04)
+    type_text(t('ending_epilogue_7'), 0.04)
     time.sleep(0.6)
-    type_text("  데드존 어딘가에서 발신되던 그 정체불명의 신호.", 0.03)
-    type_text("  아직도 규칙적으로 송신되고 있다.", 0.03)
-    type_text("  누군가 당신을 기다리고 있다.", 0.035)
+    type_text(t('ending_epilogue_8'), 0.03)
+    type_text(t('ending_epilogue_9'), 0.03)
+    type_text(t('ending_epilogue_10'), 0.035)
     print()
     time.sleep(1.0)
     print(Fore.GREEN + Style.BRIGHT + "  ╔" + "═" * 74 + "╗")
-    print(Fore.GREEN + Style.BRIGHT + "  ║  " + ea_rpad("1막 [낙인] 클리어 — DEMO END", 72) + "║")
+    print(Fore.GREEN + Style.BRIGHT + "  ║  " + ea_rpad(t('ending_clear_banner'), 72) + "║")
     print(Fore.GREEN + Style.BRIGHT + "  ╚" + "═" * 74 + "╝")
     wait_for_keypress()
 
