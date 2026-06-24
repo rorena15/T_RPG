@@ -46,6 +46,7 @@ jobs:
             --add-data "database.json;." `
             --add-data "master_formulas.json;." `
             --add-data "..\assets;assets" `
+            --add-data "locales;locales" `
             Main.py
 
       - name: GitHub Release 생성
