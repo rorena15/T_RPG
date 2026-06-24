@@ -8,6 +8,7 @@ import time
 import random
 from colorama import Fore, Back, Style
 import constants
+from i18n import t
 from sys_log import sys_log, track, log_error
 
 def flush_input():
@@ -31,7 +32,7 @@ def safe_input(prompt):
 def wait_for_keypress():
     """엔터 입력 불필요 아무 키나 누르는 즉시 화면 템포가 연출 모드로 진행"""
     flush_input()
-    print("\n[아무 키나 누르면 진행됩니다...]")
+    print("\n" + t('wait_any_key'))
     if os.name == 'nt':
         import msvcrt
         msvcrt.getch()
@@ -139,9 +140,9 @@ def show_diary(player):
     entries = player.diary
     if not entries:
         clear_screen()
-        print_header("항법 일지 — N-404 행동 코드 누적 로그")
+        print_header(t('diary_header'))
         print()
-        print("  기록 없음. 아직 어떤 선택도 누적되지 않았습니다.")
+        print(t('diary_empty'))
         print()
         wait_for_keypress()
         return
@@ -153,7 +154,7 @@ def show_diary(player):
 
     while True:
         clear_screen()
-        print_header(f"항법 일지 — N-404 행동 코드 누적 로그  [{page + 1} / {pages}]")
+        print_header(t('diary_header_paged', page=page + 1, pages=pages))
         start = page * page_size
         end = min(start + page_size, total)
         for e in entries[start:end]:
@@ -162,10 +163,10 @@ def show_diary(player):
         print_divider()
         nav = []
         if page > 0:
-            nav.append("P: 이전")
+            nav.append(t('diary_nav_prev'))
         if page < pages - 1:
-            nav.append("N: 다음")
-        nav.append("0: 복귀")
+            nav.append(t('diary_nav_next'))
+        nav.append(t('diary_nav_back'))
         print(f"  {' | '.join(nav)}")
         cmd = read_key()
         if cmd == "0":

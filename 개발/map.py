@@ -1,6 +1,8 @@
 # map.py — GameMap 클래스
 # 의존성: 없음 (순수 데이터 클래스)
 
+from i18n import t
+
 class GameMap:
     def __init__(self):
         self.size = 5
@@ -26,7 +28,7 @@ class GameMap:
         self.escaped_enemy_type = data.get("escaped_enemy_type", None)
 
     def draw(self):
-        print(" [ 데드존 섹터 그리드 스캐너 ]")
+        print(t('map_header'))
         for y in range(self.size - 1, -1, -1):
             row_str = "    "
             for x in range(self.size):
@@ -37,5 +39,5 @@ class GameMap:
                 else:
                     row_str += "[ . ] "
             print(row_str)
-        print("  (P: 현재 위치 | B: 방공호 목표 |)\n")
+        print(t('map_legend'))
 

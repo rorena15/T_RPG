@@ -8,6 +8,7 @@ import sqlite3
 import time
 import db_init
 import constants
+from i18n import t
 from sys_log import sys_log, track, log_error
 
 _eq_cache: dict = {}
@@ -84,7 +85,7 @@ def get_equipment_data(item_id):
         return result
     db_path = "stigma_data.db"
     if not os.path.exists(db_path):
-        result = {"name": "손상된 고철", "power": 5, "type": "kinetic", "tier": 4, "desc": "DB 파일 누락."}
+        result = {"name": t('equip_damaged_scrap'), "power": 5, "type": "kinetic", "tier": 4, "desc": "DB 파일 누락."}
         _eq_cache[item_id] = result
         return result
 
@@ -98,7 +99,7 @@ def get_equipment_data(item_id):
         result = {"name": row[0], "power": row[1], "type": row[2], "tier": row[3],
                   "slot": row[4], "slot_weight": row[5], "desc": row[6]}
     else:
-        result = {"name": "미식별 고철", "power": 5, "type": "kinetic", "tier": 4,
+        result = {"name": t('equip_unidentified_scrap'), "power": 5, "type": "kinetic", "tier": 4,
                   "slot": "main_weapon", "slot_weight": 1.5, "desc": "DB 미등록 부품."}
     _eq_cache[item_id] = result
     return result
@@ -110,7 +111,7 @@ def save_data(player, grid):
     try:
         with open(get_save_path(), "w", encoding="utf-8") as f:
             json.dump(save_file, f, ensure_ascii=False, indent=4)
-        print("\n[SYSTEM] 현재 동기화 로그가 로컬 환경에 안전하게 백업되었습니다.")
+        print(t('save_success'))
     except Exception as e:
-        print(f"\n[SYSTEM ERR] 백업 실패: {e}")
+        print(t('save_fail', e=e))
     wait_for_keypress()

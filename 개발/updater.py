@@ -9,6 +9,7 @@ import json
 import urllib.request
 import tempfile
 import subprocess
+from i18n import t
 
 GITHUB_API = "https://api.github.com/repos/rorena15/t_rpg/releases/latest"
 REQUEST_TIMEOUT = 5  # 네트워크 느린 환경 고려
@@ -115,19 +116,19 @@ def check_and_prompt_update(current_version: str, console=None):
     if not asset:
         return  # 다운로드할 exe 없음
 
-    output(f"\n[bold cyan][ 업데이트 ][/bold cyan]  현재 [yellow]{current_version}[/yellow]  →  최신 [green]{latest_version}[/green]")
-    output(f"  릴리즈 노트: {release.get('html_url', '')}\n")
-    output("  지금 업데이트 하시겠습니까? (Y=예 / 다른 키=건너뜀)")
+    output(t('update_avail', current=current_version, latest=latest_version))
+    output(t('update_release_note', url=release.get('html_url', '')))
+    output(t('update_prompt'))
 
     from ui import read_key, flush_input
     flush_input()
     choice = read_key()
     if choice.upper() != "Y":
-        output("  업데이트를 건너뜁니다.\n")
+        output(t('update_skip'))
         flush_input()
         return
 
-    output("  다운로드 중...")
+    output(t('update_downloading'))
 
     tmp_path = os.path.join(tempfile.gettempdir(), "_PROTOCOL_STIGMA_new.exe")
 
@@ -140,8 +141,8 @@ def check_and_prompt_update(current_version: str, console=None):
         _download_file(asset["browser_download_url"], tmp_path, on_progress=show_progress)
         print()
     except Exception as e:
-        output(f"  [red]다운로드 실패: {e}[/red]")
+        output(t('update_fail', e=e))
         return
 
-    output("  설치 중... 게임이 재시작됩니다.")
+    output(t('update_installing'))
     _replace_exe_windows(tmp_path)
