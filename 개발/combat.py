@@ -8,7 +8,7 @@ import time
 import constants
 from colorama import Fore, Style
 from core import get_equipment_data
-from i18n import t
+from i18n import t, db_t
 from ui import (clear_screen, print_header, print_divider, type_text,
                 wait_for_keypress, read_key, log_diary,
                 _log_color, roll_medkit, roll_food, roll_water,
@@ -463,7 +463,7 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
             if loot_res == "MEDKIT":
                 it = roll_medkit()
                 player.consumables[it] += 1
-                print(t('combat_loot_medkit', name=constants.CONSUMABLES_DB[it]['name']))
+                print(t('combat_loot_medkit', name=db_t(constants.CONSUMABLES_DB[it], 'name')))
             elif loot_res == "MATERIAL":
                 player.materials += 15
                 advance_quest(player, "scrap", 15)
@@ -476,11 +476,11 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
             elif loot_res == "WATER":
                 it = roll_water()
                 player.consumables[it] += 1
-                print(t('combat_loot_water', name=constants.CONSUMABLES_DB[it]['name']))
+                print(t('combat_loot_water', name=db_t(constants.CONSUMABLES_DB[it], 'name')))
             elif loot_res == "FOOD":
                 it = roll_food()
                 player.consumables[it] += 1
-                print(t('combat_loot_food', name=constants.CONSUMABLES_DB[it]['name']))
+                print(t('combat_loot_food', name=db_t(constants.CONSUMABLES_DB[it], 'name')))
 
         log_diary(player, t('combat_log_escape_diary', name=name))
         _neoarc_decay(player, sub_wpn_used)
@@ -500,15 +500,15 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
         if drop_roll < 0.25:
             it = roll_food()
             player.consumables[it] += 1
-            print(t('combat_farm_food', name=constants.CONSUMABLES_DB[it]['name']))
+            print(t('combat_farm_food', name=db_t(constants.CONSUMABLES_DB[it], 'name')))
         elif drop_roll < 0.50:
             it = roll_water()
             player.consumables[it] += 1
-            print(t('combat_farm_water', name=constants.CONSUMABLES_DB[it]['name']))
+            print(t('combat_farm_water', name=db_t(constants.CONSUMABLES_DB[it], 'name')))
         elif drop_roll < 0.60:
             it = roll_medkit()
             player.consumables[it] += 1
-            print(t('combat_farm_medkit', name=constants.CONSUMABLES_DB[it]['name']))
+            print(t('combat_farm_medkit', name=db_t(constants.CONSUMABLES_DB[it], 'name')))
         else:
             player.materials += 20
             advance_quest(player, "scrap", 20)

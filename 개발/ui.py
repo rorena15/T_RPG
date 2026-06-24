@@ -201,8 +201,12 @@ def show_diary(player):
             page -= 1
 
 def print_ambient_lore():
-    if constants.AMBIENT_LORE:
-        lore = random.choice(constants.AMBIENT_LORE)
+    import i18n as _i18n
+    lore_list = (constants.AMBIENT_LORE_EN
+                 if _i18n.LANG == 'en' and constants.AMBIENT_LORE_EN
+                 else constants.AMBIENT_LORE)
+    if lore_list:
+        lore = random.choice(lore_list)
         print()
         print("  " + "─" * 70)
         type_text(f"  {lore}", 0.018)

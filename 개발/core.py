@@ -62,11 +62,12 @@ def init_and_load_db():
     try:
         with open(json_file_path, "r", encoding="utf-8") as f:
             db_data = json.load(f)
-            constants.AMBIENT_LORE   = db_data.get("AMBIENT_LORE", [])
-            constants.CONSUMABLES_DB = db_data.get("CONSUMABLES_DB", {})
-            constants.SESSIONS_DB    = db_data.get("SESSIONS_DB", [])
-            constants.RANDOM_EVENTS  = db_data.get("RANDOM_EVENTS", [])
-            constants.TRADER_ITEMS   = db_data.get("TRADER_ITEMS", [])
+            constants.AMBIENT_LORE    = db_data.get("AMBIENT_LORE", [])
+            constants.AMBIENT_LORE_EN = db_data.get("AMBIENT_LORE_EN", [])
+            constants.CONSUMABLES_DB  = db_data.get("CONSUMABLES_DB", {})
+            constants.SESSIONS_DB     = db_data.get("SESSIONS_DB", [])
+            constants.RANDOM_EVENTS   = db_data.get("RANDOM_EVENTS", [])
+            constants.TRADER_ITEMS    = db_data.get("TRADER_ITEMS", [])
         sys_log(" [SYSTEM LOG] 서사 및 생체 소모품 데이터 구조화 파싱 완료.", level="INFO")
         time.sleep(0.6)
     except Exception as e:

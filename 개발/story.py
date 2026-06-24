@@ -10,18 +10,18 @@ from ui import (clear_screen, print_header, print_divider, type_text,
                 ea_rpad, ea_center)
 from combat import combat_loop, get_turn_scale_multiplier
 from quest import advance_quest
-from i18n import t
+from i18n import t, db_t
 import sound
 import skills
 
 def handle_session(player, session):
     clear_screen()
     sound.play_typing_bgm()
-    print_header(session['title'])
-    type_text(session['text'], 0.02)
+    print_header(db_t(session, 'title'))
+    type_text(db_t(session, 'text'), 0.02)
     print()
     for i, choice in enumerate(session['choices']):
-        print(f"  [{i+1}] {choice['text']}")
+        print(f"  [{i+1}] {db_t(choice, 'text')}")
     time.sleep(1)
     while True:
         ans = read_key()
@@ -46,7 +46,7 @@ def handle_session(player, session):
                 key = choice_data["consumable"]
                 if key in player.consumables:
                     player.consumables[key] += 1
-                    print(t('session_consumable_gain', name=constants.CONSUMABLES_DB.get(key, {}).get('name', key)))
+                    print(t('session_consumable_gain', name=db_t(constants.CONSUMABLES_DB.get(key, {}), 'name') or key))
 
             raw_mat = choice_data.get("materials", 0)
             if raw_mat != 0 and not choice_data.get("reward") == "SCRAP_MAT":
@@ -69,7 +69,7 @@ def handle_session(player, session):
                 print(t('session_ram_gain', val=choice_data['ram_bonus']))
 
             time.sleep(0.6)
-            type_text(f"\n  {choice_data['log']}", 0.025)
+            type_text(f"\n  {db_t(choice_data, 'log')}", 0.025)
 
             _w_label_map = {
                 "kinetic": t('weight_label_kinetic'),
@@ -85,7 +85,7 @@ def handle_session(player, session):
                 _reward_note = t('session_log_reward_scrap', val=choice_data.get('materials', 30))
             if choice_data.get("ram_bonus"):
                 _reward_note += t('session_log_reward_ram', val=choice_data['ram_bonus'])
-            log_diary(player, t('session_log_diary', title=session['title'], label=_w_label, note=_reward_note))
+            log_diary(player, t('session_log_diary', title=db_t(session, 'title'), label=_w_label, note=_reward_note))
 
             if choice_weight and player.weights[choice_weight] >= 3:
                 _wcb = {

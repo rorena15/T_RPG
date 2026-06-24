@@ -9,6 +9,7 @@ CREDITS_GITHUB = "https://github.com/rorena15/T_RPG"
 CREDITS_ITCH   = ""  # itch.io 배포 후 URL 삽입
 
 AMBIENT_LORE = []
+AMBIENT_LORE_EN = []
 CONSUMABLES_DB = {}
 SESSIONS_DB = []
 RANDOM_EVENTS = []

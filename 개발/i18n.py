@@ -33,3 +33,12 @@ def t(key: str, **kw) -> str:
         except Exception:
             pass
     return val
+
+
+def db_t(obj: dict, field: str) -> str:
+    """database.json 객체에서 현재 언어에 맞는 필드를 반환."""
+    if LANG == 'en':
+        val = obj.get(f'{field}_en')
+        if val is not None:
+            return val
+    return obj.get(field, '')

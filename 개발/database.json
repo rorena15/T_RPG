@@ -26,81 +26,276 @@
     "저 멀리서 인간과 기계 중 어느 쪽인지 알 수 없는 비명 소리가 울렸다가 갑자기 끊어집니다.",
     "의체의 내부 온도 조절 시스템이 과부하 경고를 보냅니다. 이 구역의 환경 방사능이 기준치를 넘습니다."
   ],
+  "AMBIENT_LORE_EN": [
+    "The grinding screech of massive machinery echoes in the distance. The Dead Zone's predators are prowling.",
+    "Crumbling motherboards of a bygone era turn to dust underfoot. Humanity's legacy is garbage now.",
+    "The sky is veiled in dense mercury fog — the sun's position is unknown. Radiation levels pulse faintly.",
+    "Beyond the horizon, the massive walls of Neo Arc — the virtual city of the top 5% — are faintly visible. There's no going back.",
+    "A trail of blood leads into a pool of rotten coolant. The fate of scavengers is always grim.",
+    "A broken radio transmits fragments of the Master AI's mechanical hymnal, stuttering in and out.",
+    "Chassis parts of unknown origin, torn away by mechanical beasts, hang from rusted steel frames and sway in the wind.",
+    "A wave of acrid exhaust fumes and burned lubricant oil rolls in on the wind. This is a complete lawless zone.",
+    "Someone scratched a message into the ruins wall with their fingers. 'No hope in the Dead Zone. Live anyway.'",
+    "With a faint beep, a Bureau surveillance drone circles slowly in the distance. It hasn't spotted you yet.",
+    "Something vibrates heavily beneath the ground. A pressure explosion in the underground pipeline — or the footsteps of something enormous. Impossible to tell.",
+    "A worn doll sits atop a pile of scrap in the corner. Evidence that children once lived in the Dead Zone too.",
+    "A drop or two of contaminated rain falls from the sky. Acid rain. Your skin stings and a faint corrosion warning appears on the chassis exterior.",
+    "Explosions ring out in succession from afar. Looks like a skirmish between the Scrap Coalition and the Bureau. Doesn't matter who wins.",
+    "A broken surveillance camera rotates aimlessly toward the sky. Nothing is being recorded — but it feels like something is watching.",
+    "Mechanical smoke carried on the contaminated wind stings your eyes. Radiation levels are slowly climbing.",
+    "A gunshot echoes from the distance. Drone being shot down, scavengers clashing, or a battle between two factions — impossible to say.",
+    "The ground underfoot vibrates roughly. A pressure explosion in the underground pipeline — or the footsteps of a massive machine.",
+    "A mechanical announcement from the Bureau repeats on a broken speaker. 'Unauthorized codes are subject to immediate retrieval.'",
+    "An unnamed weed pushes through lead-gray concrete in the ruins' crevice. Finding life in the Dead Zone is remarkable.",
+    "A large Bureau monitoring drone flies low overhead. Whether it detected you is unknown.",
+    "Metal expansion sounds come from the rusted steel frame structure. A sign of a radioactive heat source nearby.",
+    "Spray-painted words on an old container wall. 'Neo Arc is a lie. Free humanity.'",
+    "From far away, a scream — whether human or machine is unclear — rings out and suddenly cuts off.",
+    "The chassis' internal temperature regulation system sends an overload warning. Environmental radiation in this sector exceeds baseline."
+  ],
   "CONSUMABLES_DB": {
-    "MED_PER_10": {"name": "소형 반창고 팩", "type": "hp", "val": 0.1, "is_percent": true},
-    "MED_PER_50": {"name": "응급 지혈대", "type": "hp", "val": 0.5, "is_percent": true},
-    "MED_PER_100": {"name": "나노 스팀팩", "type": "hp", "val": 1.0, "is_percent": true},
-    "MED_FIX_100": {"name": "구형 진통제", "type": "hp", "val": 100, "is_percent": false},
-    "MED_FIX_300": {"name": "군용 지혈제", "type": "hp", "val": 300, "is_percent": false},
-    "MED_FIX_500": {"name": "합성 바이오 젤", "type": "hp", "val": 500, "is_percent": false},
-    "MED_FIX_1000": {"name": "초고밀도 회복 앰플", "type": "hp", "val": 1000, "is_percent": false},
-    "FOOD_ONLY": {"name": "건조 단백질 블록", "type": "food", "hunger": 30, "thirst": 0},
-    "FOOD_BOTH": {"name": "수분 함유 전투식량", "type": "food", "hunger": 40, "thirst": 20},
-    "WATER_ONLY": {"name": "탁한 정수 팩", "type": "water", "hunger": 0, "thirst": 30},
-    "WATER_BOTH": {"name": "미네랄 보충수", "type": "water", "hunger": 20, "thirst": 40}
+    "MED_PER_10":  {"name": "소형 반창고 팩",      "name_en": "Small Bandage Pack",          "type": "hp", "val": 0.1,  "is_percent": true},
+    "MED_PER_50":  {"name": "응급 지혈대",          "name_en": "Emergency Tourniquet",        "type": "hp", "val": 0.5,  "is_percent": true},
+    "MED_PER_100": {"name": "나노 스팀팩",          "name_en": "Nano Stimpack",               "type": "hp", "val": 1.0,  "is_percent": true},
+    "MED_FIX_100": {"name": "구형 진통제",          "name_en": "Outdated Analgesic",          "type": "hp", "val": 100,  "is_percent": false},
+    "MED_FIX_300": {"name": "군용 지혈제",          "name_en": "Military Hemostatic",         "type": "hp", "val": 300,  "is_percent": false},
+    "MED_FIX_500": {"name": "합성 바이오 젤",       "name_en": "Synthetic Bio-Gel",           "type": "hp", "val": 500,  "is_percent": false},
+    "MED_FIX_1000":{"name": "초고밀도 회복 앰플",   "name_en": "Ultra-Dense Recovery Ampule", "type": "hp", "val": 1000, "is_percent": false},
+    "FOOD_ONLY":   {"name": "건조 단백질 블록",     "name_en": "Dry Protein Block",           "type": "food",  "hunger": 30, "thirst": 0},
+    "FOOD_BOTH":   {"name": "수분 함유 전투식량",   "name_en": "Hydrated Combat Ration",      "type": "food",  "hunger": 40, "thirst": 20},
+    "WATER_ONLY":  {"name": "탁한 정수 팩",         "name_en": "Murky Purified Pack",         "type": "water", "hunger": 0,  "thirst": 30},
+    "WATER_BOTH":  {"name": "미네랄 보충수",        "name_en": "Mineral Supplement Water",    "type": "water", "hunger": 20, "thirst": 40}
   },
   "SESSIONS_DB": [
     {
       "title": "녹슨 잔해 더미의 조우",
+      "title_en": "Encounter at the Rusted Debris Pile",
       "text": "무너진 거대 정찰 드론의 장갑판 아래에서 미세한 전력 반응이 감지됩니다.\n잔해 밑에 무언가 쓸만해 보이는 부품이 짓눌려 있습니다.",
+      "text_en": "A faint power signature is detected beneath the armor plating of a collapsed recon drone.\nSomething useful lies crushed under the wreckage.",
       "choices": [
-        {"text": "장갑판을 완력으로 밀어내고 파이프를 뽑아낸다.", "weight": "kinetic", "reward": "WEAPON_STD_01", "log": "[처리] 거친 강철 비명소리와 함께 무기를 적출했습니다.\n  — 처음으로 무언가를 손에 쥔다. 이 무게감이 살아있다는 증거처럼 느껴진다."},
-        {"text": "구리 와이어와 방열판 배선을 정밀하게 해체한다.", "weight": "scrap", "reward": "PART_SCRAP_01", "log": "[처리] 손끝에 기름때와 스파크가 튑니다. 유용한 부품을 얻었습니다.\n  — 분해하는 행위가 이상하리만치 자연스럽다. 이 손끝이 내 것인지 아직 모르겠다."},
-        {"text": "사이버덱을 패널에 연결해 백도어를 주입한다.", "weight": "cyber", "reward": "PART_SCRAP_02", "log": "[처리] 네온빛 데이터 스트림이 흐릅니다. RAM 가용량을 확보하며 부품을 복제합니다.\n  — 코드가 신경망을 타고 흐를 때, 잠시 폐기된 사실을 잊는다."}
+        {
+          "text": "장갑판을 완력으로 밀어내고 파이프를 뽑아낸다.",
+          "text_en": "Force the armor plate aside and wrench out the pipe.",
+          "weight": "kinetic",
+          "reward": "WEAPON_STD_01",
+          "log": "[처리] 거친 강철 비명소리와 함께 무기를 적출했습니다.\n  — 처음으로 무언가를 손에 쥔다. 이 무게감이 살아있다는 증거처럼 느껴진다.",
+          "log_en": "[PROCESS] With a screech of tearing steel, the weapon is extracted.\n  — Something in my hand for the first time. The weight feels like proof I'm alive."
+        },
+        {
+          "text": "구리 와이어와 방열판 배선을 정밀하게 해체한다.",
+          "text_en": "Carefully dismantle the copper wiring and heat sink routing.",
+          "weight": "scrap",
+          "reward": "PART_SCRAP_01",
+          "log": "[처리] 손끝에 기름때와 스파크가 튑니다. 유용한 부품을 얻었습니다.\n  — 분해하는 행위가 이상하리만치 자연스럽다. 이 손끝이 내 것인지 아직 모르겠다.",
+          "log_en": "[PROCESS] Sparks and grease on your fingertips. Useful components secured.\n  — The act of disassembly feels strangely natural. I'm still not sure if these hands are mine."
+        },
+        {
+          "text": "사이버덱을 패널에 연결해 백도어를 주입한다.",
+          "text_en": "Connect the cyberdeck to the panel and inject a backdoor.",
+          "weight": "cyber",
+          "reward": "PART_SCRAP_02",
+          "log": "[처리] 네온빛 데이터 스트림이 흐릅니다. RAM 가용량을 확보하며 부품을 복제합니다.\n  — 코드가 신경망을 타고 흐를 때, 잠시 폐기된 사실을 잊는다.",
+          "log_en": "[PROCESS] A neon data stream flows through. RAM capacity secured as components are cloned.\n  — When the code runs through my neural network, I briefly forget I was discarded."
+        }
       ]
     },
     {
       "title": "오염된 오아시스 필터링",
+      "title_en": "Filtering a Contaminated Oasis",
       "text": "터진 냉각수 파이프 아래 화학 웅덩이를 발견했습니다.\n독성이 강하지만 갈증을 해결할 수단이 될지 모릅니다.",
+      "text_en": "You've discovered a chemical pool beneath a burst coolant pipe.\nHighly toxic, but it might be a means to quench your thirst.",
       "choices": [
-        {"text": "방사능 저항을 믿고 필터 없이 무식하게 들이켠다.", "weight": "kinetic", "reward": null, "thirst": 40, "hp_loss": 100, "log": "[처리] 식도가 타들어 가는 통증이 점차 사그라 들며 신체 유기체의 내구력이 증가합니다.\n  — 고통 속에서 오히려 의식이 선명해진다. N-404는 생각보다 질긴 모양이다."},
-        {"text": "고철 캔과 필터 유닛을 결합해 정제 펌프를 급조한다.", "weight": "scrap", "reward": "NECK_STD_01", "thirst": 30, "hp_loss": 0, "log": "[처리] 탁한 폐액이 에메랄드빛 연료로 안전하게 정제됩니다.\n  — 하잖은 고철 하나로 독을 물로 만들었다. 이 세계에선 기술이 힘이다."},
-        {"text": "제어 노드를 해킹해 상층부의 순수 보충수를 방출시킨다.", "weight": "cyber", "reward": null, "thirst": 50, "hp_loss": 0, "ram_bonus": 1, "log": "[처리] 시스템 보안을 해제하자 깨끗한 물이 쏟아집니다. 시스템 제어력이 상승합니다.\n  — 총괄국이 잠궈놓은 것들이 열릴 때마다 작은 복수 같다는 생각이 든다."}
+        {
+          "text": "방사능 저항을 믿고 필터 없이 무식하게 들이켠다.",
+          "text_en": "Trust your radiation resistance and drink it raw.",
+          "weight": "kinetic",
+          "reward": null,
+          "thirst": 40,
+          "hp_loss": 100,
+          "log": "[처리] 식도가 타들어 가는 통증이 점차 사그라 들며 신체 유기체의 내구력이 증가합니다.\n  — 고통 속에서 오히려 의식이 선명해진다. N-404는 생각보다 질긴 모양이다.",
+          "log_en": "[PROCESS] The burning sensation in your throat fades as the body's organic endurance increases.\n  — Pain sharpens the mind somehow. N-404 is tougher than expected."
+        },
+        {
+          "text": "고철 캔과 필터 유닛을 결합해 정제 펌프를 급조한다.",
+          "text_en": "Rig a purification pump from a scrap can and filter unit.",
+          "weight": "scrap",
+          "reward": "NECK_STD_01",
+          "thirst": 30,
+          "hp_loss": 0,
+          "log": "[처리] 탁한 폐액이 에메랄드빛 연료로 안전하게 정제됩니다.\n  — 하잖은 고철 하나로 독을 물로 만들었다. 이 세계에선 기술이 힘이다.",
+          "log_en": "[PROCESS] The murky waste is safely refined into emerald-green fuel.\n  — Turned poison into water with a piece of junk. In this world, skill is power."
+        },
+        {
+          "text": "제어 노드를 해킹해 상층부의 순수 보충수를 방출시킨다.",
+          "text_en": "Hack the control node to release the pure reserve water from the upper tank.",
+          "weight": "cyber",
+          "reward": null,
+          "thirst": 50,
+          "hp_loss": 0,
+          "ram_bonus": 1,
+          "log": "[처리] 시스템 보안을 해제하자 깨끗한 물이 쏟아집니다. 시스템 제어력이 상승합니다.\n  — 총괄국이 잠궈놓은 것들이 열릴 때마다 작은 복수 같다는 생각이 든다.",
+          "log_en": "[PROCESS] Security bypassed — clean water pours out. System control rating rises.\n  — Every time I unlock something the Bureau sealed shut, it feels like a small act of revenge."
+        }
       ]
     },
     {
       "title": "스캐브 드론 사체의 독식",
+      "title_en": "Scavenging a Fallen Scav Drone",
       "text": "방금 전 과열로 추락한 총괄국의 '스캐브 드론'을 발견했습니다.\n내부 코어는 아직 살아있으며 값어치 있는 부품을 품고 있습니다.",
+      "text_en": "A Bureau 'Scav Drone' that just crashed from overheating has been found.\nThe core is still active and holds valuable components.",
       "choices": [
-        {"text": "둔기로 중추 회로를 박살 내고 장갑판을 찢어발긴다.", "weight": "kinetic", "reward": "TOP_SCRAP_09", "log": "[처리] 파괴적인 충격음과 함께 고밀도 방어 자산을 무력으로 적출했습니다.\n  — 또 주먹이 먼저 나갔다. 몸이 이 세계의 문법을 빠르게 외우고 있다."},
-        {"text": "렌즈 유닛과 서보 모터 축을 상하지 않게 정밀 분해한다.", "weight": "scrap", "reward": "PART_SCRAP_03", "log": "[처리] 복잡한 서보 모터가 완벽한 부품 형태로 손에 쥐어집니다.\n  — 정밀하게. 서두르지 않고. 이 손끝의 감각이 N-404 자신의 것인지 아직 모르겠다."},
-        {"text": "안테나 포트에 패킷을 주입해 맵 데이터를 흡수한다.", "weight": "cyber", "reward": "DECK_STD_01", "log": "[처리] 안개 속에 가려진 유령 노드들의 데이터가 사이버덱을 가득 채웁니다.\n  — 세계가 데이터로 보이기 시작한다. 두렵기도 하고, 자연스럽기도 하다."}
+        {
+          "text": "둔기로 중추 회로를 박살 내고 장갑판을 찢어발긴다.",
+          "text_en": "Smash the central circuit with a blunt object and tear apart the armor.",
+          "weight": "kinetic",
+          "reward": "TOP_SCRAP_09",
+          "log": "[처리] 파괴적인 충격음과 함께 고밀도 방어 자산을 무력으로 적출했습니다.\n  — 또 주먹이 먼저 나갔다. 몸이 이 세계의 문법을 빠르게 외우고 있다.",
+          "log_en": "[PROCESS] A destructive impact sound — high-density defensive assets extracted by force.\n  — My fist moved first again. The body is memorizing this world's grammar fast."
+        },
+        {
+          "text": "렌즈 유닛과 서보 모터 축을 상하지 않게 정밀 분해한다.",
+          "text_en": "Carefully disassemble the lens unit and servo motor shaft without damage.",
+          "weight": "scrap",
+          "reward": "PART_SCRAP_03",
+          "log": "[처리] 복잡한 서보 모터가 완벽한 부품 형태로 손에 쥐어집니다.\n  — 정밀하게. 서두르지 않고. 이 손끝의 감각이 N-404 자신의 것인지 아직 모르겠다.",
+          "log_en": "[PROCESS] A complex servo motor comes apart cleanly into your hands.\n  — Precise. Unhurried. I'm still not sure if these fingertips belong to N-404."
+        },
+        {
+          "text": "안테나 포트에 패킷을 주입해 맵 데이터를 흡수한다.",
+          "text_en": "Inject a packet via the antenna port to absorb map data.",
+          "weight": "cyber",
+          "reward": "DECK_STD_01",
+          "log": "[처리] 안개 속에 가려진 유령 노드들의 데이터가 사이버덱을 가득 채웁니다.\n  — 세계가 데이터로 보이기 시작한다. 두렵기도 하고, 자연스럽기도 하다.",
+          "log_en": "[PROCESS] Data from hidden ghost nodes fills the cyberdeck.\n  — The world is starting to look like data. Frightening, and somehow natural."
+        }
       ]
     },
     {
       "title": "쓰러진 선행 생존자의 민낯",
+      "title_en": "A Fallen Survivor's True Face",
       "text": "하반신이 가시철사에 짓눌린 스캐벤저 생존자가 보입니다.\n그의 허리춤에는 자원이 가득 든 고철 배낭이 단단히 묶여 있습니다.",
+      "text_en": "A scavenger survivor lies pinned beneath barbed wire, their lower body crushed.\nA scrap backpack full of resources is strapped tightly to their waist.",
       "choices": [
-        {"text": "머리를 내리쳐 숨통을 끊고 자원을 강탈한다.", "weight": "kinetic", "reward": "SCRAP_MAT", "log": "[처리] 자비는 없습니다. 동족의 육체에서 흘러나온 연료가 의체로 흡수됩니다.\n  — 차갑다. 하지만 이것이 데드존이다. 감정은 나중에 느끼기로 한다."},
-        {"text": "철사를 끊어 구출해주고 자원을 분배받는다.", "weight": "scrap", "reward": "BACK_SCRAP_03", "log": "[처리] 피 묻은 배낭을 건네받습니다. 메마른 데드존에 아날로그적 신뢰가 미세하게 싹틉니다.\n  — 그의 눈에 감사가 스쳤다. 이 세계에서 그런 표정을 보는 것이 낯설다."},
-        {"text": "소켓에 웜을 심어 마비시키고 보안 코드를 가로챈다.", "weight": "cyber", "reward": "RING_SCRAP_07", "log": "[처리] 그가 잠든 사이, 데이터의 소유권이 당신의 덱으로 조용히 복사됩니다.\n  — 그는 아무것도 모른다. 나도 내가 왜 이러는지 모른다. 데드존엔 답이 없다."}
+        {
+          "text": "머리를 내리쳐 숨통을 끊고 자원을 강탈한다.",
+          "text_en": "Strike the head to finish them off and take the resources.",
+          "weight": "kinetic",
+          "reward": "SCRAP_MAT",
+          "log": "[처리] 자비는 없습니다. 동족의 육체에서 흘러나온 연료가 의체로 흡수됩니다.\n  — 차갑다. 하지만 이것이 데드존이다. 감정은 나중에 느끼기로 한다.",
+          "log_en": "[PROCESS] No mercy. The fuel that flows from a fellow human is absorbed into the chassis.\n  — Cold. But this is the Dead Zone. Feelings come later."
+        },
+        {
+          "text": "철사를 끊어 구출해주고 자원을 분배받는다.",
+          "text_en": "Cut the wire to free them and receive a share of the resources.",
+          "weight": "scrap",
+          "reward": "BACK_SCRAP_03",
+          "log": "[처리] 피 묻은 배낭을 건네받습니다. 메마른 데드존에 아날로그적 신뢰가 미세하게 싹틉니다.\n  — 그의 눈에 감사가 스쳤다. 이 세계에서 그런 표정을 보는 것이 낯설다.",
+          "log_en": "[PROCESS] A bloodstained backpack is handed over. A small analog trust sprouts in the wasteland.\n  — Gratitude flickered in their eyes. Strange to see that expression here."
+        },
+        {
+          "text": "소켓에 웜을 심어 마비시키고 보안 코드를 가로챈다.",
+          "text_en": "Plant a worm in their socket to paralyze them and steal the security code.",
+          "weight": "cyber",
+          "reward": "RING_SCRAP_07",
+          "log": "[처리] 그가 잠든 사이, 데이터의 소유권이 당신의 덱으로 조용히 복사됩니다.\n  — 그는 아무것도 모른다. 나도 내가 왜 이러는지 모른다. 데드존엔 답이 없다.",
+          "log_en": "[PROCESS] While they sleep, data ownership quietly transfers to your deck.\n  — They know nothing. I don't know why I do this either. The Dead Zone has no answers."
+        }
       ]
     },
     {
       "title": "방사능 폭풍 경보 — 폐기물 피신처",
+      "title_en": "Radiation Storm Warning — Waste Shelter",
       "text": "하늘이 불길한 황색으로 물들며 가이거 계수기가 비명을 지릅니다.\n데드존의 공포 — 방사능 폭풍이 밀려오고 있습니다.\n주변 폐건물 잔해 더미에 스캐벤저 둘이 먼저 자리를 잡고 있습니다. 공간이 좁습니다.",
+      "text_en": "The sky turns an ominous yellow and the Geiger counter screams.\nThe Dead Zone's terror — a radiation storm is approaching.\nTwo scavengers have already claimed the nearby ruins. Space is limited.",
       "choices": [
-        {"text": "두 스캐벤저를 완력으로 밀어내고 피신처를 독점한다.", "weight": "kinetic", "reward": "SCRAP_MAT", "materials": 30, "log": "[처리] 그들이 바람 속으로 쫓겨납니다. 남은 그들의 짐에서 고철을 회수했습니다.\n  — 두 명이 폭풍 속으로 사라졌다. N-404는 이것을 생존이라 부르기로 한다."},
-        {"text": "잔해 부품으로 급조 차폐막을 세워 셋이서 함께 버틴다.", "weight": "scrap", "consumable": "MED_FIX_100", "reward": null, "log": "[처리] 폭풍이 지나갔습니다. 생존자들이 구급약을 감사의 표시로 건넵니다.\n  — 함께 버텼다. 폐허에서도 그런 선택이 가능하다는 것이 이상하게 힘이 된다."},
-        {"text": "사이버덱으로 기상 데이터를 해킹해 폭풍 경로를 예측하고 우회한다.", "weight": "cyber", "reward": null, "ram_bonus": 1, "log": "[처리] 폭풍의 궤적을 읽어냈습니다. 최소한의 피해로 폭풍을 완전히 우회했습니다.\n  — 데드존도 결국 분석 가능한 패턴이다. 두려운 것이 하나씩 사라지고 있다."}
+        {
+          "text": "두 스캐벤저를 완력으로 밀어내고 피신처를 독점한다.",
+          "text_en": "Shove both scavengers out by force and claim the shelter alone.",
+          "weight": "kinetic",
+          "reward": "SCRAP_MAT",
+          "materials": 30,
+          "log": "[처리] 그들이 바람 속으로 쫓겨납니다. 남은 그들의 짐에서 고철을 회수했습니다.\n  — 두 명이 폭풍 속으로 사라졌다. N-404는 이것을 생존이라 부르기로 한다.",
+          "log_en": "[PROCESS] They're driven into the wind. Their leftover gear yields scrap.\n  — Two people disappeared into the storm. N-404 calls this survival."
+        },
+        {
+          "text": "잔해 부품으로 급조 차폐막을 세워 셋이서 함께 버틴다.",
+          "text_en": "Build a makeshift barrier with debris parts and endure together.",
+          "weight": "scrap",
+          "consumable": "MED_FIX_100",
+          "reward": null,
+          "log": "[처리] 폭풍이 지나갔습니다. 생존자들이 구급약을 감사의 표시로 건넵니다.\n  — 함께 버텼다. 폐허에서도 그런 선택이 가능하다는 것이 이상하게 힘이 된다.",
+          "log_en": "[PROCESS] The storm passes. The survivors hand over a medkit as thanks.\n  — We endured together. Somehow it's empowering to know that's still possible here."
+        },
+        {
+          "text": "사이버덱으로 기상 데이터를 해킹해 폭풍 경로를 예측하고 우회한다.",
+          "text_en": "Hack weather data via the cyberdeck to predict the storm's path and evade it.",
+          "weight": "cyber",
+          "reward": null,
+          "ram_bonus": 1,
+          "log": "[처리] 폭풍의 궤적을 읽어냈습니다. 최소한의 피해로 폭풍을 완전히 우회했습니다.\n  — 데드존도 결국 분석 가능한 패턴이다. 두려운 것이 하나씩 사라지고 있다.",
+          "log_en": "[PROCESS] The storm's trajectory is read. Evaded with minimal damage.\n  — Even the Dead Zone is an analyzable pattern. One more fear is fading."
+        }
       ]
     },
     {
       "title": "낙인의 기억 — 실험 기록 단말기",
+      "title_en": "Stigma Memory — Experiment Log Terminal",
       "text": "먼지와 녹으로 뒤덮인 구형 단말기가 희미하게 깜박이고 있습니다.\n화면에는 당신의 일련번호 'N-404'가 표시되어 있습니다.\n이것은 당신이 어디서 왔는지, 왜 버려졌는지에 대한 기록입니다.\n[경고] 기억 접근 시 신경망 부하 발생 가능. 파일 접근 제한 중.",
+      "text_en": "An ancient terminal covered in dust and rust flickers faintly.\nThe screen displays your serial number: 'N-404'.\nThis is a record of where you came from and why you were discarded.\n[WARNING] Memory access may cause neural network overload. File access restricted.",
       "choices": [
-        {"text": "단말기를 박살 내버린다. 과거 따위는 필요 없다.", "weight": "kinetic", "reward": "SCRAP_MAT", "materials": 25, "log": "[처리] 화면이 산산조각 납니다. 분노 속에서 잔해 부품만을 챙깁니다. 과거는 이제 없습니다.\n  — 부수는 순간, 화면이 'N-404'를 마지막으로 깜박였다. 못 본 척한다. 과거는 필요 없다."},
-        {"text": "단말기 내부 칩을 정밀 적출해 부품으로 활용한다.", "weight": "scrap", "reward": "SHOES_SCRAP_01", "log": "[처리] 단말기가 해체됩니다. 고밀도 칩셋을 의체 보조 장치로 전환했습니다.\n  — 칩을 적출하는 순간, 화면에 스친 텍스트 — 'N-404. 원인: 예측 불가능.' 이 칩에 내 과거가 담겨 있었을까."},
-        {"text": "암호화 레이어를 해킹해 전체 실험 기록을 내려받는다.", "weight": "cyber", "reward": null, "ram_bonus": 2, "log": "[처리] 파일이 덱으로 스트리밍됩니다.\n  [LOG] 분류: N-404. 판정: 행동 패턴 미분류. 원인: 예측 불가능한 가중치 배열.\n  [LOG] 시스템은 당신을 정의할 수 없었기에 폐기했습니다.\n  — 예측 불가능. 그것이 나를 쓰레기로 만든 이유였구나.\n  — 그렇다면 — 계속 예측 불가능하면 된다.\n  뇌가 최초 설계 이상으로 확장되며 RAM이 증가합니다."}
+        {
+          "text": "단말기를 박살 내버린다. 과거 따위는 필요 없다.",
+          "text_en": "Smash the terminal. The past is irrelevant.",
+          "weight": "kinetic",
+          "reward": "SCRAP_MAT",
+          "materials": 25,
+          "log": "[처리] 화면이 산산조각 납니다. 분노 속에서 잔해 부품만을 챙깁니다. 과거는 이제 없습니다.\n  — 부수는 순간, 화면이 'N-404'를 마지막으로 깜박였다. 못 본 척한다. 과거는 필요 없다.",
+          "log_en": "[PROCESS] The screen shatters. In anger, only the debris components are taken. The past is gone.\n  — The screen blinked 'N-404' one last time as I broke it. I looked away. The past is unnecessary."
+        },
+        {
+          "text": "단말기 내부 칩을 정밀 적출해 부품으로 활용한다.",
+          "text_en": "Precisely extract the internal chip and repurpose it as a component.",
+          "weight": "scrap",
+          "reward": "SHOES_SCRAP_01",
+          "log": "[처리] 단말기가 해체됩니다. 고밀도 칩셋을 의체 보조 장치로 전환했습니다.\n  — 칩을 적출하는 순간, 화면에 스친 텍스트 — 'N-404. 원인: 예측 불가능.' 이 칩에 내 과거가 담겨 있었을까.",
+          "log_en": "[PROCESS] The terminal disassembles. The high-density chipset is converted to a chassis supplement.\n  — As the chip was extracted, text flashed on screen — 'N-404. Reason: Unpredictable.' Did this chip hold my past?"
+        },
+        {
+          "text": "암호화 레이어를 해킹해 전체 실험 기록을 내려받는다.",
+          "text_en": "Hack the encryption layer and download the full experiment records.",
+          "weight": "cyber",
+          "reward": null,
+          "ram_bonus": 2,
+          "log": "[처리] 파일이 덱으로 스트리밍됩니다.\n  [LOG] 분류: N-404. 판정: 행동 패턴 미분류. 원인: 예측 불가능한 가중치 배열.\n  [LOG] 시스템은 당신을 정의할 수 없었기에 폐기했습니다.\n  — 예측 불가능. 그것이 나를 쓰레기로 만든 이유였구나.\n  — 그렇다면 — 계속 예측 불가능하면 된다.\n  뇌가 최초 설계 이상으로 확장되며 RAM이 증가합니다.",
+          "log_en": "[PROCESS] The files stream into the deck.\n  [LOG] Classification: N-404. Verdict: Behavioral pattern unclassified. Reason: Unpredictable weight distribution.\n  [LOG] The system could not define you, so it discarded you.\n  — Unpredictable. That was the reason I was made into trash.\n  — Then — I just need to stay unpredictable.\n  The brain expands beyond its original design. RAM increases."
+        }
       ]
     },
     {
       "title": "녹슨 방전 벙커의 문",
+      "title_en": "The Gate of the Rusted Discharge Bunker",
       "text": "쓰레기 바다 지하 깊숙한 곳, 푸른 전류가 흐르는 구시대 군용 벙커를 발견했습니다.\n이곳을 장악하면 최초의 은신처를 선언할 수 있습니다.",
+      "text_en": "Deep beneath a sea of scrap, an ancient military bunker crackling with blue current is found.\nSeizing this place means claiming your first shelter.",
       "choices": [
-        {"text": "철근을 지렛대 삼아 완력으로 문을 뜯어발긴다.", "reward": "CYBER_STD_01", "log": "[처리] 강철 문이 굉음과 함께 찢겨 나갑니다. 육체의 무력이 강철의 질서를 압도합니다.\n  — 문 너머의 냄새. 먼지와 오래된 금속. 이제 내 것이다."},
-        {"text": "배선 패널을 열고 구리 와이어로 회로를 쇼트시킨다.", "log": "[처리] 스파크가 튀며 타버린 논리 회로가 비명을 지르며 당신에게 굴복합니다.\n  — 회로가 항복하는 소리. 이 벙커도 결국 부품과 배선으로 이루어진 퍼즐이었다."},
-        {"text": "사이버덱을 직결하여 방화벽 취약 노드에 백도어를 주입한다.", "log": "[처리] 냉정한 데이터 스트림이 벙커의 낡은 방화벽 프로토콜을 무력화합니다.\n  — 시스템이 붕괴하는 순간의 정적. 코드는 강철보다 조용하고, 더 완전하게 무너뜨린다."}
+        {
+          "text": "철근을 지렛대 삼아 완력으로 문을 뜯어발긴다.",
+          "text_en": "Use rebar as a lever and pry the door open by force.",
+          "reward": "CYBER_STD_01",
+          "log": "[처리] 강철 문이 굉음과 함께 찢겨 나갑니다. 육체의 무력이 강철의 질서를 압도합니다.\n  — 문 너머의 냄새. 먼지와 오래된 금속. 이제 내 것이다.",
+          "log_en": "[PROCESS] The steel door tears open with a thunderous sound. Physical force overcomes steel's order.\n  — The smell beyond the door. Dust and old metal. Mine now."
+        },
+        {
+          "text": "배선 패널을 열고 구리 와이어로 회로를 쇼트시킨다.",
+          "text_en": "Open the wiring panel and short-circuit the board with copper wire.",
+          "log": "[처리] 스파크가 튀며 타버린 논리 회로가 비명을 지르며 당신에게 굴복합니다.\n  — 회로가 항복하는 소리. 이 벙커도 결국 부품과 배선으로 이루어진 퍼즐이었다.",
+          "log_en": "[PROCESS] Sparks fly as the burned logic board screams and yields.\n  — The sound of a circuit surrendering. This bunker was just another puzzle of parts and wiring."
+        },
+        {
+          "text": "사이버덱을 직결하여 방화벽 취약 노드에 백도어를 주입한다.",
+          "text_en": "Direct-connect the cyberdeck and inject a backdoor into the firewall's weak node.",
+          "log": "[처리] 냉정한 데이터 스트림이 벙커의 낡은 방화벽 프로토콜을 무력화합니다.\n  — 시스템이 붕괴하는 순간의 정적. 코드는 강철보다 조용하고, 더 완전하게 무너뜨린다.",
+          "log_en": "[PROCESS] A cold data stream neutralizes the bunker's aging firewall protocol.\n  — The silence when a system collapses. Code is quieter than steel, and dismantles more completely."
+        }
       ]
     }
   ],
@@ -108,10 +303,13 @@
     {
       "id": "ABANDONED_MEDKIT",
       "title": "방치된 비상 보급 상자",
+      "title_en": "Abandoned Emergency Supply Box",
       "text": "녹슨 철제 컨테이너 벽면에 반쯤 묻힌 비상 보급 상자가 보입니다.\n봉인은 뜯겨 있지만 내용물이 남아있을지도 모릅니다.",
+      "text_en": "An emergency supply box lies half-buried in a rusted metal container wall.\nThe seal is torn but the contents may still be there.",
       "type": "simple",
       "result": {
         "log": "[수집] 상자 안에서 손상된 의료용품을 발견했습니다.",
+        "log_en": "[COLLECT] Found damaged medical supplies inside the box.",
         "consumable": "MED_FIX_100",
         "hp_loss": 0,
         "materials": 0,
@@ -122,10 +320,13 @@
     {
       "id": "VENDING_MACHINE",
       "title": "고장난 자동 판매기",
+      "title_en": "Broken Vending Machine",
       "text": "기적처럼 외벽이 온전히 남아있는 구시대 자동 판매기를 발견했습니다.\n전원은 나가있지만 내부 슬롯이 비어있지 않습니다.",
+      "text_en": "A pre-era vending machine with its exterior miraculously intact.\nPower is out but the internal slots are not empty.",
       "type": "simple",
       "result": {
         "log": "[수집] 걸려있던 식량 꾸러미가 바닥으로 툭 떨어집니다.",
+        "log_en": "[COLLECT] A food package wedged inside drops to the floor.",
         "consumable": "FOOD_BOTH",
         "hp_loss": 0,
         "materials": 0,
@@ -136,10 +337,13 @@
     {
       "id": "SOLDIER_SKELETON",
       "title": "구시대 병사의 유골",
+      "title_en": "Skeleton of a Pre-Era Soldier",
       "text": "완전 무장 상태로 쓰러진 채 굳어버린 병사의 유골이 보입니다.\n총괄국 창설 이전 시대의 군번줄이 바람에 흔들립니다.",
+      "text_en": "A soldier's skeleton lies fallen in full combat gear.\nA dog tag from before the Bureau's founding sways in the wind.",
       "type": "simple",
       "result": {
         "log": "[수집] 유골 곁의 구급낭에서 아직 쓸 수 있는 약품을 회수했습니다.",
+        "log_en": "[COLLECT] Recovered still-usable medication from the first aid pouch near the skeleton.",
         "consumable": "MED_PER_50",
         "hp_loss": 0,
         "materials": 0,
@@ -150,10 +354,13 @@
     {
       "id": "AI_BROADCAST",
       "title": "마스터 AI 정기 방송 수신",
+      "title_en": "Master AI Periodic Broadcast",
       "text": "고장난 스피커에서 마스터 AI의 기계음이 흘러나옵니다.\n'데드존 구역 내 불법 의체 코드 — 회수 또는 소거.' 당신을 지칭하는 것이 분명합니다.",
+      "text_en": "A mechanical voice from a broken speaker drones on.\n'Unauthorized chassis code detected in Dead Zone — retrieval or elimination.' Clearly referring to you.",
       "type": "simple",
       "result": {
         "log": "[경보] 마스터 AI가 당신의 존재를 감지하고 있습니다. 경계 수위가 높아집니다.",
+        "log_en": "[ALERT] The Master AI has detected your presence. Threat level rises.",
         "consumable": null,
         "hp_loss": 0,
         "materials": 0,
@@ -164,10 +371,13 @@
     {
       "id": "ACID_RAIN",
       "title": "산성 빗방울",
+      "title_en": "Acid Rainfall",
       "text": "하늘에서 노란 빗방울이 후두둑 쏟아집니다. 방사성 산성비입니다.\n의체 외장이 따갑게 반응하며 경고 알림이 뜹니다.",
+      "text_en": "Yellow droplets begin falling from the sky. Radioactive acid rain.\nYour chassis exterior reacts with pain as a warning alert triggers.",
       "type": "simple",
       "result": {
         "log": "[피해] 산성비에 의체 외장이 부식되었습니다. 생체 신호가 저하됩니다.",
+        "log_en": "[DAMAGE] Acid rain corrodes the chassis exterior. Bio-signal degrading.",
         "consumable": null,
         "hp_loss": 80,
         "materials": 0,
@@ -178,13 +388,17 @@
     {
       "id": "WOUNDED_SCAVENGER",
       "title": "부상당한 스캐벤저",
+      "title_en": "Wounded Scavenger",
       "text": "기계 괴수에게 팔 한쪽을 뜯긴 스캐벤저가 폐허 그늘에 쓰러져 있습니다.\n눈이 마주치자 그는 손을 떨며 소형 의료 키트를 내밉니다. 거래를 원하는 듯합니다.",
+      "text_en": "A scavenger with one arm torn off by a mechanical beast lies collapsed in the shadow of ruins.\nThey meet your eyes and shakily hold out a small medkit. They want to trade.",
       "type": "choice",
       "choices": [
         {
           "text": "의료 키트를 받고 남은 소지품도 전부 빼앗는다.",
+          "text_en": "Take the medkit and strip all their remaining possessions.",
           "weight": "kinetic",
           "log": "[처리] 생존은 냉혹합니다. 그의 고통은 당신의 자원이 됩니다.",
+          "log_en": "[PROCESS] Survival is ruthless. Their suffering becomes your resources.",
           "consumable": "MED_FIX_300",
           "materials": 25,
           "hp_loss": 0,
@@ -193,8 +407,10 @@
         },
         {
           "text": "나머지 의료 키트를 남겨두고 고철로 식량을 구매한다.",
+          "text_en": "Leave the remaining medkit and buy food with scrap.",
           "weight": "scrap",
           "log": "[처리] 짧은 거래가 성사됩니다. 데드존에서의 신뢰는 이처럼 작고 소중합니다.",
+          "log_en": "[PROCESS] A brief trade is made. Trust in the Dead Zone is small and precious.",
           "consumable": "FOOD_BOTH",
           "materials": -15,
           "hp_loss": 0,
@@ -203,8 +419,10 @@
         },
         {
           "text": "그의 사이버 임플란트 포트에 액세스해 잔여 캐시 데이터를 복사한다.",
+          "text_en": "Access their cyber implant port and copy the remaining cache data.",
           "weight": "cyber",
           "log": "[처리] 그는 아무것도 모릅니다. 데이터 소유권이 조용히 이전됩니다.",
+          "log_en": "[PROCESS] They know nothing. Data ownership quietly transfers.",
           "consumable": null,
           "materials": 40,
           "hp_loss": 0,
@@ -216,13 +434,17 @@
     {
       "id": "AUTO_TURRET",
       "title": "반쯤 작동하는 자동 포탑",
+      "title_en": "Half-Operational Auto Turret",
       "text": "폐건물 모퉁이에 총괄국의 구형 자동 포탑이 불규칙하게 회전하고 있습니다.\n전원이 불안정해 표적을 제대로 잡지 못하는 상태입니다. 처리하지 않으면 언제 발포할지 모릅니다.",
+      "text_en": "A Bureau model auto turret rotates erratically at the corner of a ruined building.\nThe power is unstable — it can't lock on properly. But it could fire at any moment.",
       "type": "choice",
       "choices": [
         {
           "text": "정면으로 달려들어 포신을 물리적으로 꺾어버린다.",
+          "text_en": "Rush in head-on and physically bend the barrel.",
           "weight": "kinetic",
           "log": "[처리] 포탑이 굉음과 함께 뒤틀립니다. 의체에 약간의 충격이 전해졌지만 위협은 제거됐습니다.",
+          "log_en": "[PROCESS] The turret twists with a crash. Some impact on the chassis but the threat is neutralized.",
           "consumable": null,
           "materials": 10,
           "hp_loss": 60,
@@ -231,8 +453,10 @@
         },
         {
           "text": "배면 패널을 열어 서보 모터 배선을 정밀 차단한다.",
+          "text_en": "Open the back panel and precisely sever the servo motor wiring.",
           "weight": "scrap",
           "log": "[처리] 포탑이 조용히 멈춥니다. 회수한 서보 부품이 쏠쏠합니다.",
+          "log_en": "[PROCESS] The turret goes silent. The recovered servo parts are worthwhile.",
           "consumable": null,
           "materials": 35,
           "hp_loss": 0,
@@ -241,8 +465,10 @@
         },
         {
           "text": "사이버덱으로 포탑의 표적 식별 알고리즘을 덮어쓴다.",
+          "text_en": "Use the cyberdeck to overwrite the turret's target identification algorithm.",
           "weight": "cyber",
           "log": "[처리] 포탑이 당신을 아군으로 인식합니다. 데이터 구조를 파악하며 RAM도 소폭 충전됩니다.",
+          "log_en": "[PROCESS] The turret recognizes you as friendly. Analyzing its data structure, RAM slightly recharged.",
           "consumable": null,
           "materials": 0,
           "hp_loss": 0,
@@ -255,13 +481,17 @@
     {
       "id": "DATA_TERMINAL",
       "title": "먼지 쌓인 데이터 단말기",
+      "title_en": "Dust-Covered Data Terminal",
       "text": "잔해 속에서 구시대 데이터 단말기가 희미하게 깜박이고 있습니다.\n총괄국 창설 이전의 구형 프로토콜로 암호화되어 있습니다.",
+      "text_en": "An ancient data terminal flickers faintly in the debris.\nEncrypted with a pre-Bureau era legacy protocol.",
       "type": "choice",
       "choices": [
         {
           "text": "단말기를 박살 내고 내부 저장 칩만 뽑아낸다.",
+          "text_en": "Smash the terminal and pull out the internal storage chip.",
           "weight": "kinetic",
           "log": "[처리] 단말기가 산산조각 납니다. 저장 칩을 팔면 고철로 변환할 수 있습니다.",
+          "log_en": "[PROCESS] The terminal shatters. The storage chip can be converted to scrap.",
           "consumable": null,
           "materials": 30,
           "hp_loss": 0,
@@ -270,8 +500,10 @@
         },
         {
           "text": "구형 암호화 키를 역산해 내부 데이터를 읽어낸다.",
+          "text_en": "Reverse-engineer the legacy encryption key to read the internal data.",
           "weight": "cyber",
           "log": "[처리] 데드존의 구조도와 숨겨진 캐시 좌표가 덱에 기록됩니다.",
+          "log_en": "[PROCESS] Dead Zone maps and hidden cache coordinates are recorded in the deck.",
           "consumable": null,
           "materials": 50,
           "hp_loss": 0,
@@ -281,8 +513,10 @@
         },
         {
           "text": "단말기를 그냥 지나친다. 시간 낭비일 수 있다.",
+          "text_en": "Walk past it. Could be a waste of time.",
           "weight": null,
           "log": "[무시] 단말기를 뒤로하고 발걸음을 옮깁니다. 현명한 선택일 수도, 아닐 수도 있습니다.",
+          "log_en": "[IGNORE] You leave the terminal behind. Might have been wise. Might not have.",
           "consumable": null,
           "materials": 0,
           "hp_loss": 0,
@@ -294,13 +528,17 @@
     {
       "id": "CARGO_CONTAINER",
       "title": "표류하는 화물 컨테이너",
+      "title_en": "Drifting Cargo Container",
       "text": "반쯤 쓰러진 대형 화물 컨테이너가 보입니다. 봉인 씰이 붙어있지만 주인은 없습니다.\n내부에서 희미한 보존 처리된 물품의 냄새가 납니다.",
+      "text_en": "A large half-toppled cargo container with its seal intact but no owner in sight.\nA faint smell of preserved goods drifts from inside.",
       "type": "choice",
       "choices": [
         {
           "text": "문을 억지로 뜯어 강제 개방한다.",
+          "text_en": "Force the door open.",
           "weight": "kinetic",
           "log": "[처리] 경첩이 찢겨나가며 문이 열립니다. 안에는 식량 보급 상자들이 가득합니다.",
+          "log_en": "[PROCESS] The hinges tear off as the door flies open. Food supply boxes packed inside.",
           "consumable": "FOOD_BOTH",
           "materials": 0,
           "hp_loss": 30,
@@ -309,8 +547,10 @@
         },
         {
           "text": "전동 절단 도구로 경첩 볼트를 제거해 조심스럽게 연다.",
+          "text_en": "Remove the hinge bolts with a power cutting tool and open it carefully.",
           "weight": "scrap",
           "log": "[처리] 문이 조용히 열립니다. 손상 없이 내용물을 온전히 회수했습니다.",
+          "log_en": "[PROCESS] The door swings open quietly. Contents recovered intact.",
           "consumable": "WATER_BOTH",
           "materials": 20,
           "hp_loss": 0,
@@ -319,8 +559,10 @@
         },
         {
           "text": "봉인 씰의 RFID 태그를 해킹해 원격 개방 코드를 전송한다.",
+          "text_en": "Hack the RFID tag on the seal and transmit a remote unlock code.",
           "weight": "cyber",
           "log": "[처리] 클릭 소리와 함께 잠금이 해제됩니다. 추적 코드도 동시에 삭제했습니다.",
+          "log_en": "[PROCESS] A click as the lock releases. The tracking code deleted simultaneously.",
           "consumable": "MED_FIX_300",
           "materials": 10,
           "hp_loss": 0,
@@ -332,13 +574,17 @@
     {
       "id": "DRONE_WRECK_PILE",
       "title": "전투 드론 잔해 더미",
+      "title_en": "Combat Drone Wreckage Pile",
       "text": "스크랩 연합과 총괄국의 교전 현장으로 보이는 구역입니다.\n파괴된 전투 드론 잔해들이 즐비하게 쓰러져 있습니다. 아직 가치 있는 부품들이 남아있습니다.",
+      "text_en": "An area that looks like a firefight between the Scrap Coalition and the Bureau.\nDestroyed combat drone wrecks lie scattered around. Valuable parts remain.",
       "type": "choice",
       "choices": [
         {
           "text": "가장 온전해 보이는 드론의 장갑판을 힘으로 뜯어낸다.",
+          "text_en": "Rip the armor plate off the most intact drone by force.",
           "weight": "kinetic",
           "log": "[처리] 고밀도 합금 장갑판을 힘으로 뜯어냈습니다. 재료로 쓸 수 있습니다.",
+          "log_en": "[PROCESS] High-density alloy armor plate torn off by force. Usable as material.",
           "consumable": null,
           "materials": 45,
           "hp_loss": 0,
@@ -347,8 +593,10 @@
         },
         {
           "text": "정밀 공구로 핵심 부품만 선별하여 해체한다.",
+          "text_en": "Selectively disassemble only the key components with precision tools.",
           "weight": "scrap",
           "log": "[처리] 서보, 렌즈, 코어 칩까지 — 가치 있는 부품을 깔끔하게 수거했습니다.",
+          "log_en": "[PROCESS] Servos, lenses, core chips — all valuable parts cleanly recovered.",
           "consumable": "MED_FIX_100",
           "materials": 30,
           "hp_loss": 0,
@@ -357,8 +605,10 @@
         },
         {
           "text": "아직 가동 중인 드론을 원격 제어로 하이재킹해 정찰시킨다.",
+          "text_en": "Hijack a still-active drone via remote control and use it for recon.",
           "weight": "cyber",
           "log": "[처리] 드론이 당신의 덱 신호를 수신합니다. 주변 지형 데이터가 스캔됩니다.",
+          "log_en": "[PROCESS] The drone receives your deck signal. Surrounding terrain data scanned.",
           "consumable": null,
           "materials": 20,
           "hp_loss": 0,
@@ -371,10 +621,13 @@
     {
       "id": "ENCRYPTED_RADIO",
       "title": "암호화된 라디오 주파수",
+      "title_en": "Encrypted Radio Frequency",
       "text": "잡음 속에서 규칙적인 비트 패턴이 반복됩니다.\n총괄국도 스크랩 연합도 아닌 제3의 신호입니다.\n당신 외에도 이 황무지에서 무언가를 찾고 있는 자가 있다는 증거입니다.",
+      "text_en": "A regular bit pattern repeats amid the static.\nNeither the Bureau nor the Scrap Coalition — a third-party signal.\nProof that someone else is searching for something in this wasteland.",
       "type": "simple",
       "result": {
         "log": "[수신] 신호가 덱에 기록됩니다. 데드존 어딘가에 미지의 존재가 숨어 있습니다.",
+        "log_en": "[RECEIVED] The signal is recorded in the deck. An unknown entity is hiding somewhere in the Dead Zone.",
         "consumable": null,
         "hp_loss": 0,
         "materials": 0,
@@ -385,10 +638,13 @@
     {
       "id": "FALLEN_WATCHTOWER",
       "title": "무너진 구시대 감시탑",
+      "title_en": "Fallen Pre-Era Watchtower",
       "text": "거대한 감시탑이 절반쯤 무너진 채 쓰레기 바다에 박혀 있습니다.\n총괄국이 데드존을 감시하기 위해 세웠다가 버려진 유물입니다.\n구조물 내부에 아직 사용 가능한 금속 자재가 남아있습니다.",
+      "text_en": "A massive watchtower, half-collapsed, is embedded in the sea of junk.\nA relic abandoned by the Bureau after it was built to monitor the Dead Zone.\nUsable metal materials remain inside the structure.",
       "type": "simple",
       "result": {
         "log": "[수집] 감시탑의 잔해에서 고품질 금속 자재를 회수했습니다.",
+        "log_en": "[COLLECT] Recovered high-quality metal materials from the watchtower wreckage.",
         "consumable": null,
         "hp_loss": 0,
         "materials": 35,
@@ -399,10 +655,13 @@
     {
       "id": "TOXIC_WASTE_POOL",
       "title": "방사성 독성 웅덩이",
+      "title_en": "Radioactive Toxic Pool",
       "text": "형광빛 녹색으로 오염된 거대한 웅덩이에 발을 잘못 디뎠습니다.\n의체 외장 경보가 즉각 울립니다. 빠져나오는 데 성공했지만 손상이 있습니다.",
+      "text_en": "You've accidentally stepped into a massive pool contaminated with fluorescent green toxins.\nThe chassis exterior alarm triggers immediately. You escaped but took damage.",
       "type": "simple",
       "result": {
         "log": "[피해] 독성 물질이 의체 외장에 스며들었습니다. 바이오 신호가 불안정해집니다.",
+        "log_en": "[DAMAGE] Toxic material has seeped into the chassis exterior. Bio-signal destabilized.",
         "consumable": null,
         "hp_loss": 120,
         "materials": 0,
@@ -413,13 +672,17 @@
     {
       "id": "EXPLOSIVE_TRAP",
       "title": "대인 지뢰 함정",
+      "title_en": "Anti-Personnel Mine Trap",
       "text": "발 아래에서 경고음이 납니다. 구형 대인 지뢰입니다.\n데드존 스캐벤저가 영역 표시용으로 매설한 듯합니다.\n무게가 실린 채 움직이면 폭발합니다.",
+      "text_en": "A warning beep sounds beneath your foot. An old anti-personnel mine.\nProbably buried by a Dead Zone scavenger to mark territory.\nMove with weight on it and it detonates.",
       "type": "choice",
       "choices": [
         {
           "text": "체중을 실은 채 폭발을 감수하고 전력으로 튀어나온다.",
+          "text_en": "Bear the weight and sprint out at full speed, accepting the blast.",
           "weight": "kinetic",
           "log": "[처리] 폭발음과 함께 날아갑니다. 의체가 충격을 받았지만 살아있습니다.",
+          "log_en": "[PROCESS] Thrown by the explosion. Chassis took impact but you're alive.",
           "consumable": null,
           "materials": 0,
           "hp_loss": 200,
@@ -428,8 +691,10 @@
         },
         {
           "text": "주변 금속 파편으로 지뢰 압력판 구조를 정밀 분석해 해제한다.",
+          "text_en": "Precisely analyze the mine's pressure plate structure using nearby metal fragments.",
           "weight": "scrap",
           "log": "[처리] 클릭음과 함께 압력이 풀립니다. 회수한 지뢰 금속이 쓸만합니다.",
+          "log_en": "[PROCESS] A click as pressure releases. The recovered mine metal is useful.",
           "consumable": null,
           "materials": 20,
           "hp_loss": 0,
@@ -438,8 +703,10 @@
         },
         {
           "text": "사이버덱으로 지뢰 기폭 신호를 원격 재프로그래밍해 무력화한다.",
+          "text_en": "Use the cyberdeck to remotely reprogram the mine's detonation signal and neutralize it.",
           "weight": "cyber",
           "log": "[처리] 기폭 신호가 차단됩니다. 지뢰가 무해한 금속 덩어리로 전환됩니다.",
+          "log_en": "[PROCESS] The detonation signal is cut. The mine becomes a harmless chunk of metal.",
           "consumable": null,
           "materials": 25,
           "hp_loss": 0,
@@ -451,13 +718,17 @@
     {
       "id": "ABANDONED_CAMP",
       "title": "버려진 스캐벤저 야영지",
+      "title_en": "Abandoned Scavenger Camp",
       "text": "성급히 버려진 야영지의 흔적이 남아있습니다.\n모닥불 잿더미가 아직 식지 않은 걸 보니 얼마 전까지는 누군가 있었습니다.\n짐 일부가 너무 급히 도망쳤는지 그대로 남겨져 있습니다.",
+      "text_en": "Traces of a hastily abandoned camp remain.\nThe campfire ash is still warm — someone was here not long ago.\nSome gear was left behind in the rush to flee.",
       "type": "choice",
       "choices": [
         {
           "text": "짐을 전부 쓸어담고 빠르게 이 자리를 벗어난다.",
+          "text_en": "Sweep up everything and get out fast.",
           "weight": "kinetic",
           "log": "[처리] 남겨진 짐에서 쓸만한 것들을 챙겼습니다. 그들이 왜 도망쳤는지는 묻지 않습니다.",
+          "log_en": "[PROCESS] Took what was useful from the abandoned gear. Not asking why they ran.",
           "consumable": "FOOD_BOTH",
           "materials": 20,
           "hp_loss": 0,
@@ -466,8 +737,10 @@
         },
         {
           "text": "흔적을 꼼꼼히 살펴 안전한 루트와 자원 위치를 파악한다.",
+          "text_en": "Examine the traces carefully to identify safe routes and resource locations.",
           "weight": "scrap",
           "log": "[처리] 야영지 흔적이 이 구역의 지형 정보를 알려줍니다. 자원도 소량 회수했습니다.",
+          "log_en": "[PROCESS] The camp traces reveal terrain info about this area. Minor resources recovered.",
           "consumable": "WATER_BOTH",
           "materials": 10,
           "hp_loss": 0,
@@ -476,8 +749,10 @@
         },
         {
           "text": "통신 장비에 접속해 그들이 마지막으로 주고받은 메시지를 복구한다.",
+          "text_en": "Access the communications gear and recover their last messages.",
           "weight": "cyber",
           "log": "[처리] 단편적인 신호가 복구됩니다. 데드존 어딘가에 안전 루트가 있다는 좌표가 기록됩니다.",
+          "log_en": "[PROCESS] Fragments of signal recovered. Coordinates for a safe route somewhere in the Dead Zone recorded.",
           "consumable": null,
           "materials": 35,
           "hp_loss": 0,
@@ -489,13 +764,17 @@
     {
       "id": "ACTIVE_CAMERA",
       "title": "작동 중인 보안 카메라",
+      "title_en": "Active Security Camera",
       "text": "총괄국 마크가 찍힌 보안 카메라가 아직 돌아가고 있습니다.\n렌즈가 느리게 당신 쪽을 향해 돌기 시작합니다. 발각되기 전에 처리해야 합니다.",
+      "text_en": "A security camera with a Bureau mark is still running.\nThe lens begins slowly turning in your direction. Deal with it before you're spotted.",
       "type": "choice",
       "choices": [
         {
           "text": "돌멩이를 던져 렌즈를 박살 낸다.",
+          "text_en": "Throw a rock to shatter the lens.",
           "weight": "kinetic",
           "log": "[처리] 카메라가 불꽃을 튀기며 멈춥니다. 잔해에서 부품을 추출했습니다.",
+          "log_en": "[PROCESS] The camera sparks and stops. Components extracted from the wreckage.",
           "consumable": null,
           "materials": 15,
           "hp_loss": 0,
@@ -504,8 +783,10 @@
         },
         {
           "text": "전원 케이블을 추적해 물리적으로 차단한다.",
+          "text_en": "Trace the power cable and physically cut it.",
           "weight": "scrap",
           "log": "[처리] 카메라가 조용히 꺼집니다. 회수한 배선이 쓸만합니다.",
+          "log_en": "[PROCESS] The camera goes dark quietly. Recovered wiring is useful.",
           "consumable": null,
           "materials": 20,
           "hp_loss": 0,
@@ -514,8 +795,10 @@
         },
         {
           "text": "카메라의 네트워크 프로토콜에 침투해 당신의 존재를 지운다.",
+          "text_en": "Infiltrate the camera's network protocol and erase your presence.",
           "weight": "cyber",
           "log": "[처리] 감시 기록에서 당신의 데이터가 삭제됩니다. 총괄국 AI가 당신을 놓쳤습니다.",
+          "log_en": "[PROCESS] Your data is deleted from the surveillance record. The Bureau AI missed you.",
           "consumable": null,
           "materials": 0,
           "hp_loss": 0,
@@ -528,13 +811,17 @@
     {
       "id": "RUSTED_GENERATOR",
       "title": "녹슨 발전기",
+      "title_en": "Rusted Generator",
       "text": "폐공장 구석에 대형 발전기가 기울어진 채 방치되어 있습니다.\n내부에 여전히 연료가 남아있는 것 같고, 부품도 값어치 있어 보입니다.",
+      "text_en": "A large generator sits tilted and abandoned in the corner of a ruined factory.\nIt seems fuel still remains inside and the parts look valuable.",
       "type": "choice",
       "choices": [
         {
           "text": "발전기를 주먹으로 쳐서 연료 탱크를 강제로 터뜨린다.",
+          "text_en": "Punch the generator to forcibly rupture the fuel tank.",
           "weight": "kinetic",
           "log": "[처리] 연료가 폭발적으로 분출됩니다. 화상 위험이 있었지만 재료는 챙겼습니다.",
+          "log_en": "[PROCESS] Fuel erupts explosively. Burn risk was real but the materials are secured.",
           "consumable": null,
           "materials": 40,
           "hp_loss": 50,
@@ -543,8 +830,10 @@
         },
         {
           "text": "연료 드레인 밸브를 찾아 조심스럽게 분리한다.",
+          "text_en": "Find the fuel drain valve and carefully separate it.",
           "weight": "scrap",
           "log": "[처리] 연료와 발전기 부품 일부를 안전하게 회수했습니다.",
+          "log_en": "[PROCESS] Safely recovered fuel and some generator components.",
           "consumable": "MED_FIX_100",
           "materials": 25,
           "hp_loss": 0,
@@ -553,8 +842,10 @@
         },
         {
           "text": "제어 패널을 해킹해 잔여 전력을 사이버덱 배터리로 전환한다.",
+          "text_en": "Hack the control panel to redirect residual power into the cyberdeck battery.",
           "weight": "cyber",
           "log": "[처리] 사이버덱에 전력이 충전됩니다. RAM 가용량이 확장됩니다.",
+          "log_en": "[PROCESS] The cyberdeck charges. RAM capacity expanded.",
           "consumable": null,
           "materials": 10,
           "hp_loss": 0,
@@ -567,10 +858,13 @@
     {
       "id": "WALL_INSCRIPTION",
       "title": "생존자들의 낙서",
+      "title_en": "Survivors' Graffiti",
       "text": "폐허의 콘크리트 벽면에 수십 개의 이름과 짧은 메시지들이 빼곡하게 새겨져 있습니다.\n'살아있다', '돌아올게', '사랑해'. 그리고 가장 아래에—\n'데드존엔 희망이 없다. 그래도 살아라.'",
+      "text_en": "Dozens of names and short messages are carved densely into a concrete wall of the ruins.\n'I'm alive', 'I'll come back', 'I love you'. And at the very bottom—\n'No hope in the Dead Zone. Live anyway.'",
       "type": "simple",
       "result": {
         "log": "[로그] 이름들을 눈으로 훑습니다. 이곳엔 당신 이전에도 사람이 있었습니다.",
+        "log_en": "[LOG] You scan the names with your eyes. There were people here before you.",
         "consumable": null,
         "hp_loss": 0,
         "materials": 0,
@@ -581,10 +875,13 @@
     {
       "id": "STRANGE_SIGNAL",
       "title": "정체불명의 신호",
+      "title_en": "Unidentified Signal",
       "text": "사이버덱이 예상치 못한 신호를 수신합니다. 총괄국도, 스크랩 연합도 아닌 제3의 주파수입니다.\n수신 범위를 좁혀보니 신호는 데드존 깊은 곳에서 규칙적으로 발신되고 있습니다.\n누군가가 당신을 찾고 있는지, 아니면 당신을 유인하고 있는지 알 수 없습니다.",
+      "text_en": "The cyberdeck receives an unexpected signal. A third frequency — neither Bureau nor Scrap Coalition.\nNarrowing the range reveals the signal is broadcasting regularly from deep in the Dead Zone.\nUnknown whether someone is looking for you — or luring you.",
       "type": "simple",
       "result": {
         "log": "[수신] 신호 좌표가 덱에 기록됩니다. 데드존 어딘가에 미지의 존재가 있습니다.",
+        "log_en": "[RECEIVED] Signal coordinates recorded in the deck. An unknown entity is somewhere out there.",
         "consumable": null,
         "hp_loss": 0,
         "materials": 0,
@@ -595,25 +892,30 @@
     {
       "id": "HALF_DRONE",
       "title": "반쯤 파괴된 드론 잔해",
+      "title_en": "Half-Destroyed Drone Wreckage",
       "text": "전투 중 파괴된 것으로 보이는 드론의 하반신만 남아있습니다.\n누군가 이미 상반신을 뜯어간 모양이지만 남은 부분도 충분히 가치가 있습니다.",
+      "text_en": "Only the lower half of what appears to be a drone destroyed in combat remains.\nSomeone already stripped the upper half, but what's left still has value.",
       "type": "simple",
       "result": {
         "log": "[수집] 남은 드론 잔해에서 쓸만한 고철 부품들을 회수했습니다.",
+        "log_en": "[COLLECT] Recovered useful scrap components from the remaining drone wreckage.",
         "consumable": null,
         "hp_loss": 0,
         "materials": 28,
         "hunger": 0,
         "thirst": 0
       }
-    }
-  ,
+    },
     {
       "id": "DEAD_AI_WEAPON",
       "title": "죽은 네오 아크 AI의 잔해",
+      "title_en": "Remains of a Dead Neo Arc AI",
       "text": "폐허 더미 아래 반쯤 묻힌 금속 실루엣이 눈에 걸립니다.\n가까이 다가서자 총괄국 마크가 각인된 AI 셸이 보입니다. 이미 사망한 네오 아크 경비 AI입니다.\n손에 쥔 채로 굳어버린 기업제 화기가 아직 손상되지 않았습니다.",
+      "text_en": "A half-buried metal silhouette catches your eye beneath a pile of ruins.\nUp close, you see a Bureau-marked AI shell. A Neo Arc security AI, already dead.\nA corporate-grade firearm clasped in its hardened grip is undamaged.",
       "type": "weapon_item",
       "result": {
         "log": "[회수] 죽은 AI의 서비스 화기를 인벤토리에 확보했습니다. 과부하 사격 2전투 후 열손상 파기됩니다.",
+        "log_en": "[RECOVERED] The dead AI's service weapon secured in inventory. Overload firing — destroyed by heat damage after 2 combats.",
         "weapon_id": "NEOARC_AI_WPN",
         "weapon_uses": 2,
         "hp_loss": 0,
@@ -622,13 +924,13 @@
     }
   ],
   "TRADER_ITEMS": [
-    {"id": "MED_PER_10",  "name": "소형 반창고 팩",     "cost": 15},
-    {"id": "MED_FIX_100", "name": "구형 진통제",         "cost": 20},
-    {"id": "MED_FIX_300", "name": "군용 지혈제",         "cost": 60},
-    {"id": "FOOD_ONLY",   "name": "건조 단백질 블록",     "cost": 12},
-    {"id": "FOOD_BOTH",   "name": "수분 함유 전투식량",   "cost": 25},
-    {"id": "WATER_ONLY",  "name": "탁한 정수 팩",        "cost": 12},
-    {"id": "WATER_BOTH",  "name": "미네랄 보충수",        "cost": 22},
-    {"id": "MED_PER_50",  "name": "응급 지혈대",         "cost": 45}
+    {"id": "MED_PER_10",  "name": "소형 반창고 팩",     "name_en": "Small Bandage Pack",        "cost": 15},
+    {"id": "MED_FIX_100", "name": "구형 진통제",         "name_en": "Outdated Analgesic",        "cost": 20},
+    {"id": "MED_FIX_300", "name": "군용 지혈제",         "name_en": "Military Hemostatic",       "cost": 60},
+    {"id": "FOOD_ONLY",   "name": "건조 단백질 블록",     "name_en": "Dry Protein Block",         "cost": 12},
+    {"id": "FOOD_BOTH",   "name": "수분 함유 전투식량",   "name_en": "Hydrated Combat Ration",    "cost": 25},
+    {"id": "WATER_ONLY",  "name": "탁한 정수 팩",        "name_en": "Murky Purified Pack",       "cost": 12},
+    {"id": "WATER_BOTH",  "name": "미네랄 보충수",        "name_en": "Mineral Supplement Water",  "cost": 22},
+    {"id": "MED_PER_50",  "name": "응급 지혈대",         "name_en": "Emergency Tourniquet",      "cost": 45}
   ]
 }

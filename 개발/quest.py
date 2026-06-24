@@ -5,7 +5,7 @@ import random
 import time
 import constants
 from colorama import Fore, Style
-from i18n import t
+from i18n import t, db_t
 from ui import (clear_screen, print_header, print_divider, type_text,
                 wait_for_keypress, read_key, log_diary)
 
@@ -55,7 +55,7 @@ def _complete_quest(player):
     if rtype == "consumable":
         rid = q["reward_id"]
         player.consumables[rid] = player.consumables.get(rid, 0) + 1
-        print(t('quest_consumable_added', name=constants.CONSUMABLES_DB.get(rid, {}).get('name', rid)))
+        print(t('quest_consumable_added', name=db_t(constants.CONSUMABLES_DB.get(rid, {}), 'name') or rid))
     elif rtype == "materials":
         amt = q.get("reward_amount", 30)
         player.materials += amt
@@ -83,14 +83,14 @@ def advance_quest(player, qtype, amount=1):
 def handle_random_event(player, event):
     """constants.RANDOM_EVENTS DB에서 뽑힌 미니 이벤트를 처리합니다."""
     clear_screen()
-    print_header(t('event_header', title=event['title']))
-    type_text(event["text"], 0.02)
+    print_header(t('event_header', title=db_t(event, 'title')))
+    type_text(db_t(event, 'text'), 0.02)
     print()
 
     if event["type"] == "simple":
         result = event["result"]
         time.sleep(0.5)
-        type_text(result["log"], 0.02)
+        type_text(db_t(result, 'log'), 0.02)
         if result.get("hp_loss", 0) > 0:
             player.hp = max(1, player.hp - result["hp_loss"])
             print(t('event_hp_loss', val=result['hp_loss']))
@@ -108,8 +108,8 @@ def handle_random_event(player, event):
             key = result["consumable"]
             if key in player.consumables:
                 player.consumables[key] += 1
-                print(t('event_item_gain', name=constants.CONSUMABLES_DB[key]['name']))
-        log_diary(player, t('event_log_simple', title=event['title']))
+                print(t('event_item_gain', name=db_t(constants.CONSUMABLES_DB[key], 'name')))
+        log_diary(player, t('event_log_simple', title=db_t(event, 'title')))
         wait_for_keypress()
 
     elif event["type"] == "weapon_item":
@@ -117,7 +117,7 @@ def handle_random_event(player, event):
         time.sleep(0.5)
         wid = result["weapon_id"]
         uses = result.get("weapon_uses", 2)
-        type_text(result["log"], 0.02)
+        type_text(db_t(result, 'log'), 0.02)
         if result.get("hp_loss", 0) > 0:
             player.hp = max(1, player.hp - result["hp_loss"])
         if result.get("materials", 0) != 0:
@@ -128,13 +128,13 @@ def handle_random_event(player, event):
             print(f"\n  {Fore.MAGENTA + Style.BRIGHT}" + t('event_weapon_gain', uses=uses) + Style.RESET_ALL)
         else:
             print("\n  " + t('event_weapon_dup'))
-        log_diary(player, t('event_log_weapon', title=event['title']))
+        log_diary(player, t('event_log_weapon', title=db_t(event, 'title')))
         wait_for_keypress()
 
     elif event["type"] == "choice":
         choices = event["choices"]
         for i, c in enumerate(choices):
-            print(f"  [{i+1}] {c['text']}")
+            print(f"  [{i+1}] {db_t(c, 'text')}")
         time.sleep(0.5)
         while True:
             ans = read_key()
@@ -146,7 +146,7 @@ def handle_random_event(player, event):
             player.weights[c["weight"]] += 1
 
         print()
-        type_text(c["log"], 0.02)
+        type_text(db_t(c, 'log'), 0.02)
         time.sleep(0.5)
 
         if c.get("hp_loss", 0) > 0:
@@ -170,13 +170,13 @@ def handle_random_event(player, event):
             key = c["consumable"]
             if key in player.consumables:
                 player.consumables[key] += 1
-                print(t('event_item_gain', name=constants.CONSUMABLES_DB[key]['name']))
+                print(t('event_item_gain', name=db_t(constants.CONSUMABLES_DB[key], 'name')))
         _ew_label = {
             "kinetic": t('weight_label_kinetic'),
             "scrap":   t('weight_label_scrap'),
             "cyber":   t('weight_label_cyber'),
         }.get(c.get("weight"), t('weight_label_default'))
-        log_diary(player, t('event_log_choice', title=event['title'], label=_ew_label))
+        log_diary(player, t('event_log_choice', title=db_t(event, 'title'), label=_ew_label))
         wait_for_keypress()
 
 
@@ -195,7 +195,7 @@ def handle_trader(player):
         for i, item in enumerate(constants.TRADER_ITEMS):
             stock_key = item["id"]
             owned = player.consumables.get(stock_key, 0)
-            print(t('trader_item_line', idx=i+1, name=f"{item['name']:<20}", cost=item['cost'], owned=owned))
+            print(t('trader_item_line', idx=i+1, name=f"{db_t(item, 'name'):<20}", cost=item['cost'], owned=owned))
         print_divider()
         print(t('trader_exit'))
 
@@ -212,8 +212,8 @@ def handle_trader(player):
                 player.materials -= chosen["cost"]
                 key = chosen["id"]
                 player.consumables[key] += 1
-                print(t('trader_bought', name=chosen['name'], scrap=player.materials))
-                log_diary(player, t('trader_log_bought', name=chosen['name'], cost=chosen['cost']))
+                print(t('trader_bought', name=db_t(chosen, 'name'), scrap=player.materials))
+                log_diary(player, t('trader_log_bought', name=db_t(chosen, 'name'), cost=chosen['cost']))
                 time.sleep(1)
             else:
                 print(t('trader_no_scrap', owned=player.materials, cost=chosen['cost']))

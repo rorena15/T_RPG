@@ -8,7 +8,7 @@ import sound
 from sys_log import track, setup_global_exception_hook
 from colorama import Fore, Style, init as colorama_init
 from rich.console import Console
-from i18n import t, set_lang
+from i18n import t, set_lang, db_t
 from updater import check_and_prompt_update
 
 from core import init_and_load_db, get_save_path, save_data
@@ -247,15 +247,15 @@ def run_game():
                     if random.random() < 0.5:
                         it = roll_food()
                         player.consumables[it] += 1
-                        print(t('farm_food', name=constants.CONSUMABLES_DB[it]['name']))
+                        print(t('farm_food', name=db_t(constants.CONSUMABLES_DB[it], 'name')))
                     else:
                         it = roll_water()
                         player.consumables[it] += 1
-                        print(t('farm_water', name=constants.CONSUMABLES_DB[it]['name']))
+                        print(t('farm_water', name=db_t(constants.CONSUMABLES_DB[it], 'name')))
                 else:
                     it = roll_medkit()
                     player.consumables[it] += 1
-                    print(t('farm_medkit', name=constants.CONSUMABLES_DB[it]['name']))
+                    print(t('farm_medkit', name=db_t(constants.CONSUMABLES_DB[it], 'name')))
                 wait_for_keypress()
             # 탐색 퀘스트 진행 및 돌발 퀘스트 (전투 미조우 시)
             if not (0.08 <= roll < 0.08 + encounter_chance):
