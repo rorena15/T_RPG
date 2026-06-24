@@ -12,6 +12,7 @@ from colorama import Fore, Back, Style, init as colorama_init
 from rich.console import Console
 from i18n import t, set_lang
 import sound
+import skills
 from updater import check_and_prompt_update
 
 _console = Console(highlight=False)
@@ -440,15 +441,24 @@ def roll_water():
 # ====================================================================
 class Player:
     def __init__(self):
-        self.hp = 1500
-        self.max_hp = 1500
+        self.vit   = constants.STAT_DEFAULT_VIT
+        self.int_s = constants.STAT_DEFAULT_INT
+        self.dex   = constants.STAT_DEFAULT_DEX
+        self.lv    = constants.STAT_DEFAULT_LV
+
+        self.max_hp  = self.calc_max_hp()
+        self.hp      = self.max_hp
+        self.max_ram = self.calc_max_ram()
         self.hunger = 100
         self.thirst = 100
-        self.max_ram = 4
-        self.dex = 10  
+        self.alert_level = 0
+        self.temp_weapon_uses: dict = {}
+        self.job_class: str = ""
+        self.skill_slots: list = []
+        self.active_buffs: dict = {}
         self.materials = 0
         self.reputation = 0 # 정식 공식 적용을 위한 밸런스 인자 기본 동기화
-        
+
         self.consumables = {k: 0 for k in CONSUMABLES_DB.keys()}
         if "FOOD_ONLY" in self.consumables: self.consumables["FOOD_ONLY"] = 2
         if "WATER_ONLY" in self.consumables: self.consumables["WATER_ONLY"] = 2
@@ -473,14 +483,40 @@ class Player:
         self.diary = []
         self.active_quest = None
 
+    def calc_max_hp(self):
+        return (constants.STAT_HP_BASE
+                + (self.lv * constants.STAT_HP_LV)
+                + (self.vit * constants.STAT_HP_VIT)
+                + math.floor(constants.f_A(self.vit) * constants.STAT_HP_fVIT))
+
+    def calc_max_ram(self):
+        return 4 + math.floor(self.int_s * constants.STAT_RAM_INT)
+
+    def calc_eva_rate(self):
+        return min(0.50, (self.dex * 0.01) / (1 + self.dex * 0.01))
+
+    def calc_crt_rate(self):
+        return min(0.75, (self.dex * 0.015) / (1 + self.dex * 0.015))
+
+    def calc_def_base(self):
+        return ((self.lv * constants.STAT_DEF_LV)
+                + (self.vit * constants.STAT_DEF_VIT)
+                + math.floor(constants.f_A(self.vit) * constants.STAT_DEF_fVIT))
+
+    def calc_hunger_decay_rate(self):
+        return min(0.60, (self.vit * 0.01) / (1 + self.vit * 0.01))
+
     def get_highest_tier(self):
         item_data = get_equipment_data(self.equipment["main_weapon"])
         return item_data.get("tier", 4)
 
     def to_dict(self):
         return {
-            "hp": self.hp, "hunger": self.hunger, "thirst": self.thirst,
-            "max_ram": self.max_ram, "dex": self.dex, "materials": self.materials,
+            "hp": self.hp, "max_hp": self.max_hp, "hunger": self.hunger, "thirst": self.thirst,
+            "alert_level": self.alert_level, "temp_weapon_uses": self.temp_weapon_uses,
+            "job_class": self.job_class, "skill_slots": self.skill_slots, "active_buffs": self.active_buffs,
+            "vit": self.vit, "int_s": self.int_s, "dex": self.dex, "lv": self.lv,
+            "max_ram": self.max_ram, "materials": self.materials,
             "consumables": self.consumables, "weights": self.weights,
             "inventory": self.inventory, "equipment": self.equipment, "reputation": self.reputation,
             "turn_count": self.turn_count, "difficulty": self.difficulty,
@@ -489,11 +525,20 @@ class Player:
         }
 
     def from_dict(self, data):
-        self.hp = data.get("hp", 1500)
+        self.vit   = data.get("vit",   constants.STAT_DEFAULT_VIT)
+        self.int_s = data.get("int_s", constants.STAT_DEFAULT_INT)
+        self.dex   = data.get("dex",   constants.STAT_DEFAULT_DEX)
+        self.lv    = data.get("lv",    constants.STAT_DEFAULT_LV)
+        self.max_hp  = data.get("max_hp",  self.calc_max_hp())
+        self.max_ram = data.get("max_ram", self.calc_max_ram())
+        self.hp = data.get("hp", self.max_hp)
         self.hunger = data.get("hunger", 100)
         self.thirst = data.get("thirst", 100)
-        self.max_ram = data.get("max_ram", 4)
-        self.dex = data.get("dex", 10)
+        self.alert_level = data.get("alert_level", 0)
+        self.temp_weapon_uses = data.get("temp_weapon_uses", {})
+        self.job_class   = data.get("job_class", "")
+        self.skill_slots = data.get("skill_slots", [])
+        self.active_buffs = data.get("active_buffs", {})
         self.materials = data.get("materials", 0)
         self.reputation = data.get("reputation", 0)
         self.consumables = data.get("consumables", {k: 0 for k in CONSUMABLES_DB.keys()})
@@ -562,9 +607,10 @@ class Player:
     @track
     def consume_resources(self):
         self.turn_count += 1
-        self.hunger = max(0, self.hunger - 5)
-        self.thirst = max(0, self.thirst - 6)
-        
+        r_decay = self.calc_hunger_decay_rate()
+        self.hunger = max(0, self.hunger - max(1, round(5 * (1 - r_decay))))
+        self.thirst = max(0, self.thirst - max(1, round(6 * (1 - r_decay))))
+        sound.check_survival_alert(self.hunger, self.thirst)
         if self.hunger == 0 or self.thirst == 0:
             self.hp -= 50
             print(f"\n{Fore.YELLOW + Style.BRIGHT}{t('resource_depleted')}")
@@ -607,6 +653,25 @@ class Player:
         threat_mult = get_turn_scale_multiplier(self)
         diff_label = {"easy": t('diff_label_easy'), "normal": t('diff_label_normal'), "hard": t('diff_label_hard')}.get(self.difficulty, self.difficulty)
         print(t('status_turn_line', turn=self.turn_count, diff=diff_label, mult=threat_mult))
+
+        eva  = self.calc_eva_rate()
+        crt  = self.calc_crt_rate()
+        def_ = self.calc_def_base()
+        print(t('status_stats_line', vit=self.vit, int_s=self.int_s, dex=self.dex,
+                def_val=def_, eva=eva * 100, crt=crt * 100))
+
+        al = max(0, min(100, self.alert_level))
+        al_filled = al // 5
+        al_bar = "█" * al_filled + "░" * (20 - al_filled)
+        if al >= 80:
+            al_col = Fore.RED + Style.BRIGHT
+        elif al >= 50:
+            al_col = Fore.YELLOW + Style.BRIGHT
+        else:
+            al_col = Fore.GREEN
+        al_label = t('alert_danger') if al >= 80 else (t('alert_caution') if al >= 50 else t('alert_safe'))
+        print(t('alert_level_prefix') + f"{al_col}{al_bar}{Style.RESET_ALL}  {al:3d} / 100  [{al_label}]"
+              f"  {Fore.WHITE + Style.DIM}{t('alert_2nd_act')}{Style.RESET_ALL}")
         print_divider()
 
         food_cnt = sum(v for k,v in self.consumables.items() if CONSUMABLES_DB.get(k, {}).get("type")=="food")
@@ -621,7 +686,6 @@ class Player:
             print(t('status_quest_line', title=q['title'], progress=q['progress'], target=q['target'], turns=turns_left))
         print_divider()
         print()
-        sound.check_survival_alert(self.hunger, self.thirst)
 
     def manage_inventory(self):
         slot_keys = list(SLOT_DISPLAY.keys())
@@ -933,6 +997,7 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
     consecutive_attacks = 0
     escaped = False
     escape_log = ""
+    combat_ctx: dict = {}
     action_logs = [t('combat_encounter_alert', name=name)]
 
     hp_bonus, def_bonus = player.get_armor_bonus()
@@ -998,12 +1063,15 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
         action_logs.clear()
 
         has_consumable = any(v > 0 for v in player.consumables.values())
+        has_skill = bool(player.skill_slots)
         print(t('combat_options_1'))
         print(t('combat_options_2'))
         print(t('combat_options_3'))
         print(t('combat_options_4'))
         if has_consumable:
             print(t('combat_options_5'))
+        if has_skill:
+            print(t('combat_options_6'))
 
         cmd = read_key()
 
@@ -1011,17 +1079,33 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
             consecutive_attacks += 1
             if consecutive_attacks >= 2 and is_boss:
                 e_gain = max(0, 3 - e_suppress)
-                learning_index += e_gain
-                if e_suppress > 0:
-                    action_logs.append(t('combat_repeat_cyberdeck', gain=e_gain))
+                if skills.is_learning_blocked(player):
+                    action_logs.append(t('combat_learning_blocked'))
                 else:
-                    action_logs.append(t('combat_repeat_learning', gain=e_gain))
+                    learning_index += e_gain
+                    if e_suppress > 0:
+                        action_logs.append(t('combat_repeat_cyberdeck', gain=e_gain))
+                    else:
+                        action_logs.append(t('combat_repeat_learning', gain=e_gain))
 
             penalty = max(0.5, 1.0 - (learning_index - 10) * 0.05) if learning_index > 10 else 1.0
             f_multiplier = 1.0 + (player.reputation / 2000) * 1
             effective_power = player.get_attack_power() + gear_atk
 
-            dmg = max(100, math.floor(effective_power * f_multiplier * penalty * 100) - e_def + random.randint(-50, 50))
+            atk_mult = skills.get_atk_mult(player)
+            crush_mult, def_pierce = skills.consume_hydraulic_crush(player, action_logs)
+            effective_e_def = max(0, int(e_def * (1 - def_pierce)))
+            forced_crit, sig_crt_mult = skills.apply_signal_trace(player, combat_ctx, action_logs)
+            ghost_crt = player.active_buffs.pop("ghost_crt", 0.0)
+            crt_rate = min(0.75, player.calc_crt_rate() + ghost_crt)
+            natural_crit = (not forced_crit) and (random.random() < crt_rate)
+            crt_mult = sig_crt_mult if forced_crit else (1.5 if natural_crit else 1.0)
+            if natural_crit:
+                action_logs.append(t('combat_crit_log'))
+
+            base_dmg = math.floor(effective_power * f_multiplier * penalty * 100)
+            dmg = max(100, int(base_dmg * atk_mult * crush_mult * crt_mult) - effective_e_def + random.randint(-50, 50))
+            dmg = skills.apply_outgoing_buffs(player, dmg, action_logs)
             disp_dmg, _, _ = apply_dynamic_scaling(dmg, 0, tier)
 
             print(f"\n  {Fore.GREEN + Style.BRIGHT}" + t('combat_attack_hit', dmg=f"{disp_dmg:,}"))
@@ -1031,6 +1115,7 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
             print(t('combat_enemy_hp', name=name, hp=f"{disp_ehp_new:,}"))
             time.sleep(1)
             action_logs.append(t('combat_attack_log', dmg=f"{disp_dmg:,}"))
+            skills.on_attack_used(player, action_logs, dmg_dealt=dmg)
             time.sleep(1)
 
         elif cmd == "2":
@@ -1064,6 +1149,10 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
                 action_logs.append(t('combat_escape_boss_log'))
                 time.sleep(1)
             else:
+                if player.active_buffs.pop("void_shift", 0):
+                    escaped = True
+                    escape_log = t('combat_escape_safe')
+                    break
                 dex_bonus = max(0, player.dex - 10) * 2
                 weights = [60 + dex_bonus, max(0, 20 - dex_bonus/2), max(0, 10 - dex_bonus/4), max(0, 5 - dex_bonus/4), 5 + dex_bonus/2]
                 res = random.choices(["SAFE", "NORMAL", "1.5X", "2.0X", "LUCKY"], weights=weights, k=1)[0]
@@ -1119,30 +1208,77 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
             else:
                 action_logs.append(t('combat_cancel_log'))
 
+        elif cmd == "S" and has_skill:
+            consecutive_attacks = 0
+            if len(player.skill_slots) == 1:
+                sid = player.skill_slots[0]
+                sk_name = skills.SKILL_DEFS[sid]['name']
+                ok = skills.execute(player, sid, combat_ctx)
+                if ok:
+                    s_dmg = combat_ctx.pop("aux_skill_dmg", 0)
+                    if s_dmg:
+                        hp = max(0, hp - s_dmg)
+                        _, disp_sdmg, _ = apply_dynamic_scaling(s_dmg, 0, tier)
+                        print(f"\n  {Fore.CYAN + Style.BRIGHT}" + t('combat_skill_dmg_msg', dmg=f"{disp_sdmg:,}"))
+                        time.sleep(1)
+                        action_logs.append(t('combat_skill_dmg_log', dmg=f"{disp_sdmg:,}"))
+                    if combat_ctx.pop("pulse_e_drain", False):
+                        learning_index = max(0, learning_index - 3)
+                    action_logs.append(f"[스킬] {sk_name}")
+                time.sleep(1)
+            else:
+                print(t('combat_skill_select'))
+                sc = read_key()
+                target_sid = None
+                if sc == "1" and len(player.skill_slots) >= 1:
+                    target_sid = player.skill_slots[0]
+                elif sc == "2" and len(player.skill_slots) >= 2:
+                    target_sid = player.skill_slots[1]
+                if target_sid:
+                    sk_name = skills.SKILL_DEFS[target_sid]['name']
+                    ok = skills.execute(player, target_sid, combat_ctx)
+                    if ok:
+                        s_dmg = combat_ctx.pop("aux_skill_dmg", 0)
+                        if s_dmg:
+                            hp = max(0, hp - s_dmg)
+                            _, disp_sdmg, _ = apply_dynamic_scaling(s_dmg, 0, tier)
+                            print(f"\n  {Fore.CYAN + Style.BRIGHT}" + t('combat_skill_dmg_msg', dmg=f"{disp_sdmg:,}"))
+                            time.sleep(1)
+                            action_logs.append(t('combat_skill_dmg_log', dmg=f"{disp_sdmg:,}"))
+                        if combat_ctx.pop("pulse_e_drain", False):
+                            learning_index = max(0, learning_index - 3)
+                        action_logs.append(f"[스킬] {sk_name}")
+                    time.sleep(1)
+                else:
+                    action_logs.append(t('combat_skill_cancel'))
+
         else:
             print(t('combat_invalid_cmd'))
             time.sleep(1)
             action_logs.append(t('combat_invalid_log'))
 
         # --- 적의 반격 ---
-        if hp > 0 and not escaped:
-            # 페이즈 2 전환 후 방어가 풀리지 않도록 atk 재복구
+        skip_atk = combat_ctx.pop("skip_enemy_attack", False)
+        if hp > 0 and not escaped and not skip_atk:
             if cmd == "2":
                 atk = int(base_atk * (1.6 if phase2_triggered else 1.0))
+            enemy_atk_mult = skills.get_enemy_atk_mult(player)
+            raw_dmg_taken = max(1, int(atk * enemy_atk_mult) - def_bonus)
+            dmg_taken = skills.apply_incoming_buffs(player, raw_dmg_taken, action_logs, combat_ctx)
+            if dmg_taken > 0:
+                print(f"\n  {Fore.RED + Style.BRIGHT}" + t('combat_enemy_attack', name=name, dmg=f"{dmg_taken:,}"))
+                time.sleep(1)
+                player.hp -= dmg_taken
+                if cyber_regen > 0 and player.hp > 0:
+                    player.hp = min(player.max_hp, player.hp + cyber_regen)
+                _, disp_php_new, _ = apply_dynamic_scaling(0, max(0, player.hp), tier)
+                print(t('combat_player_hp_full', hp=f"{disp_php_new:,}", maxhp=f"{disp_pmaxhp:,}"))
+                time.sleep(1)
+                def_note = t('combat_def_note', val=def_bonus) if def_bonus > 0 else ""
+                action_logs.append(t('combat_damage_log', dmg=f"{dmg_taken:,}", def_note=def_note))
+                time.sleep(1)
 
-            dmg_taken = max(1, atk - def_bonus)
-            print(f"\n  {Fore.RED + Style.BRIGHT}" + t('combat_enemy_attack', name=name, dmg=f"{dmg_taken:,}"))
-            time.sleep(1)
-            player.hp -= dmg_taken
-            if cyber_regen > 0 and player.hp > 0:
-                player.hp = min(player.max_hp, player.hp + cyber_regen)
-            _, disp_php_new, _ = apply_dynamic_scaling(0, max(0, player.hp), tier)
-            print(t('combat_player_hp_full', hp=f"{disp_php_new:,}", maxhp=f"{disp_pmaxhp:,}"))
-            time.sleep(1)
-            def_note = t('combat_def_note', val=def_bonus) if def_bonus > 0 else ""
-            action_logs.append(t('combat_damage_log', dmg=f"{dmg_taken:,}", def_note=def_note))
-            time.sleep(1)
-
+        skills.end_of_turn_tick(player, action_logs)
         turn += 1
 
     if player.hp <= 0:
@@ -1980,6 +2116,19 @@ def run_boss_core_choice(player):
             break
 
     time.sleep(1.5)
+    print()
+    print_divider()
+    job, granted = skills.grant_awakening_skill(player)
+    job_label = skills.JOB_LABEL.get(job, job)
+    print(t('ending_skill_header', job_label=job_label))
+    print_divider()
+    if granted:
+        skill_names = ", ".join(skills.SKILL_DEFS[sid]['name'] for sid in granted)
+        print(t('ending_skill_slots', max_col=2, count=len(player.skill_slots)))
+        print(f"  {skill_names}")
+        print(t('ending_skill_notice'))
+        print(t('ending_skill_usage'))
+        log_diary(player, t('ending_skill_log', job_label=job_label, skills=skill_names))
     wait_for_keypress()
 
 
@@ -2065,6 +2214,13 @@ def run_ending(player):
 
     total_consumables = sum(player.consumables.values())
     print(t('ending_stat_consumables', val=total_consumables))
+    if player.skill_slots:
+        end_job_label = skills.JOB_LABEL.get(player.job_class, player.job_class)
+        end_skill_names = ", ".join(skills.SKILL_DEFS.get(sid, {}).get('name', sid) for sid in player.skill_slots)
+        print_divider()
+        print(t('ending_skill_header', job_label=end_job_label))
+        print(t('ending_skill_slots', max_col=2, count=len(player.skill_slots)))
+        print(f"  {end_skill_names}")
     print_divider()
     time.sleep(1)
 
