@@ -6,6 +6,7 @@ import os
 import json
 import sqlite3
 import db_init
+import constants
 from sys_log import sys_log, track, track_event
 from colorama import Fore, Back, Style, init as colorama_init
 from i18n import t, set_lang
@@ -1232,24 +1233,7 @@ def run_game():
     os.system('color 0B')
     colorama_init(autoreset=True)
 
-    # ── 언어 선택 ─────────────────────────────────────────────────────
-    set_lang("ko")  # 기본값 로드
-    while True:
-        clear_screen()
-        print()
-        print_divider()
-        print(f"  {t('lang_header')}")
-        print_divider()
-        print(f"  1. {t('lang_ko')}")
-        print(f"  2. {t('lang_en')}")
-        print_divider()
-        lk = read_key()
-        if lk == "1":
-            set_lang("ko")
-            break
-        elif lk == "2":
-            set_lang("en")
-            break
+    set_lang("ko")  # 기본값
 
     player = Player()
     grid = GameMap()
@@ -1257,6 +1241,8 @@ def run_game():
     while True:  # 타이틀 ~ 설정 루프
         clear_screen()
         print()
+        ver_str = f"v{constants.GAME_VERSION}"
+        ver_pad = " " * (74 - len(ver_str))
         print(Fore.WHITE + Style.BRIGHT + "  ╔" + "═" * 74 + "╗")
         print(Fore.WHITE + Style.BRIGHT + "  ║" + " " * 74 + "║")
         print(Fore.WHITE + Style.BRIGHT + "  ║" + ea_center("P  R  O  T  O  C  O  L  :  S  T  I  G  M  A", 74) + "║")
@@ -1268,6 +1254,7 @@ def run_game():
         print(Fore.CYAN  + "  ║" + ea_center(t("title_quote1"), 74) + "║")
         print(Fore.CYAN  + "  ║" + ea_center(t("title_quote2"), 74) + "║")
         print(Fore.WHITE + Style.BRIGHT + "  ║" + " " * 74 + "║")
+        print(Fore.WHITE + Style.DIM    + "  ║" + ver_pad + ver_str + "║")
         print(Fore.WHITE + Style.BRIGHT + "  ╚" + "═" * 74 + "╝")
         print()
 
@@ -1276,7 +1263,9 @@ def run_game():
         print(f"  1. {t('menu_new_game')}")
         if has_save:
             print(f"  2. {t('menu_load_game')}")
-        exit_key = "3" if has_save else "2"
+        opt_key = "3" if has_save else "2"
+        exit_key = "4" if has_save else "3"
+        print(f"  {opt_key}. {t('menu_options')}")
         print(f"  {exit_key}. {t('menu_exit')}")
         print_divider()
 
@@ -1288,6 +1277,30 @@ def run_game():
             type_text(f"  {t('exit_msg')}", 0.025)
             time.sleep(0.5)
             sys.exit()
+
+        # ── 옵션 (언어 선택) ──────────────────────────────────────────────
+        if ans == opt_key:
+            while True:
+                clear_screen()
+                print_header(t('menu_options'))
+                print_divider()
+                print(f"  {t('lang_header')}")
+                print_divider()
+                print(f"  1. {t('lang_ko')}")
+                print(f"  2. {t('lang_en')}")
+                print_divider()
+                print(f"  0. {t('diff_back')}")
+                print_divider()
+                lk = read_key()
+                if lk == "1":
+                    set_lang("ko")
+                    break
+                elif lk == "2":
+                    set_lang("en")
+                    break
+                elif lk == "0":
+                    break
+            continue
 
         # ── 세이브 로드 ───────────────────────────────────────────────────
         if ans == "2" and has_save:
