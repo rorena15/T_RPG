@@ -105,7 +105,15 @@
   "consumable_used_food": "\n[CONSUMED] '{name}' ingested. Bio-fuel replenished.",
 
   "map_header": " [ DEAD ZONE SECTOR GRID SCANNER ]",
-  "map_legend": "  (P: Current Position | B: Bunker Target |)\n",
+  "map_legend": "  (P: Current Position | B: Bunker Target)\n",
+
+  "tile_exhausted": [
+    "Fingers rake through the scrap heap. Nothing left to find.",
+    "Already picked clean. Dead end.",
+    "The rubble yields nothing. Dust and debris.",
+    "Checked every crevice. Empty.",
+    "Nothing left here. Time to move."
+  ],
 
   "save_success": "\n[SYSTEM] Current sync log safely backed up to local environment.",
   "save_fail": "\n[SYSTEM ERR] Backup failed: {e}",

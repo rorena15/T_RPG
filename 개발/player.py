@@ -223,6 +223,8 @@ class Player:
     @track
     def consume_resources(self):
         self.turn_count += 1
+        # 경보 레벨: 전투 없이 이동/탐색 시 매 턴 -3 감소 (잠행 효과)
+        self.alert_level = max(0, self.alert_level - 3)
         # VIT 기반 허기/갈증 감쇄율 적용 (기획서 R_decay 공식)
         r_decay = self.calc_hunger_decay_rate()
         self.hunger = max(0, self.hunger - max(1, round(5 * (1 - r_decay))))
@@ -280,15 +282,14 @@ class Player:
         al = max(0, min(100, self.alert_level))
         al_filled = al // 5
         al_bar = "█" * al_filled + "░" * (20 - al_filled)
-        if al >= 80:
+        if al >= 70:
             al_col = Fore.RED + Style.BRIGHT
-        elif al >= 50:
+        elif al >= 40:
             al_col = Fore.YELLOW + Style.BRIGHT
         else:
             al_col = Fore.GREEN
-        al_label = t('alert_danger') if al >= 80 else (t('alert_caution') if al >= 50 else t('alert_safe'))
-        print(t('alert_level_prefix') + f"{al_col}{al_bar}{Style.RESET_ALL}  {al:3d} / 100  [{al_label}]"
-              f"  {Fore.WHITE + Style.DIM}{t('alert_2nd_act')}{Style.RESET_ALL}")
+        al_label = t('alert_danger') if al >= 70 else (t('alert_caution') if al >= 40 else t('alert_safe'))
+        print(t('alert_level_prefix') + f"{al_col}{al_bar}{Style.RESET_ALL}  {al:3d} / 100  [{al_label}]")
         print_divider()
 
         food_cnt = sum(v for k,v in self.consumables.items() if constants.CONSUMABLES_DB.get(k, {}).get("type")=="food")

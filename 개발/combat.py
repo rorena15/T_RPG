@@ -68,7 +68,7 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
         hp = int(hp * scale_mult)
         boss_max_hp = hp
         atk = base_atk
-        player.alert_level = min(100, player.alert_level + 60)
+        player.alert_level = min(100, player.alert_level + 40)
     elif enemy_type == "bio_hound":
         e_def, base_atk = 15, 250
         art = constants.ENEMY_ART["BIOHOUND"]
@@ -82,7 +82,7 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
             name         = t('enemy_bio_name')
             header_title = t('enemy_bio_header')
         atk = base_atk
-        player.alert_level = min(100, player.alert_level + 30)
+        player.alert_level = min(100, player.alert_level + 20)
     else:
         e_def, base_atk = 5, 200
         art = constants.ENEMY_ART["NORMAL"]
@@ -96,7 +96,7 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
             name         = t('enemy_drone_name')
             header_title = t('enemy_drone_header')
         atk = base_atk
-        player.alert_level = min(100, player.alert_level + 15)
+        player.alert_level = min(100, player.alert_level + 10)
 
     # ── 보조 화기 — 네오 아크 AI 폐기 화기 전용 ─────────────────────────
     _NAIWPN = "NEOARC_AI_WPN"
@@ -520,6 +520,7 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
 # [6] 메인 구동 루프 망 명세
 # ====================================================================
 def get_encounter_chance(player):
-    hp_ratio = player.hp / player.max_hp
-    base_chance = 0.10
-    return base_chance + (0.25 * hp_ratio)
+    hp_ratio   = player.hp / player.max_hp if player.max_hp > 0 else 1.0
+    alert_frac = max(0, min(100, player.alert_level)) / 100
+    # 기본 10% + HP 비례 최대 +20% + 경보 레벨 비례 최대 +20%
+    return 0.10 + (0.20 * hp_ratio) + (0.20 * alert_frac)

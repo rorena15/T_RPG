@@ -170,7 +170,7 @@ def run_game():
             player.active_quest = None
             time.sleep(1.5)
             clear_screen()
-        grid.draw()
+        grid.draw(player.turn_count)
         player.show_status()
 
         print(f" {t('cmd_header')}")
@@ -195,7 +195,14 @@ def run_game():
             continue
 
         if move == "F":
+            _can_srch, _ = grid.can_search(player.turn_count)
+            if not _can_srch:
+                print(f"\n  {random.choice(t('tile_exhausted'))}")
+                wait_for_keypress()
+                continue
+
             player.consume_resources()
+            grid.use_search(player.turn_count)
             print(t('search_start'))
             time.sleep(0.5)
 
