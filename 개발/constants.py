@@ -3,7 +3,7 @@
 # 런타임 전역(AMBIENT_LORE 등)은 core.init_and_load_db()가
 # import constants 후 constants.XXX = ... 로 직접 갱신한다.
 
-GAME_VERSION = "1.6.0"
+GAME_VERSION = "1.7.7"
 
 AMBIENT_LORE = []
 CONSUMABLES_DB = {}
