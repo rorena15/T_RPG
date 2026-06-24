@@ -15,6 +15,7 @@ from colorama import Fore, Back, Style
 from combat import apply_dynamic_scaling, get_turn_scale_multiplier
 from quest import advance_quest
 from sys_log import sys_log, track, log_error
+from i18n import t
 import sound
 
 class Player:
@@ -39,12 +40,12 @@ class Player:
         self.active_buffs: dict = {}      # 활성 버프 {skill_id: 잔여량}
         self.materials = 0
         self.reputation = 0 # 정식 공식 적용을 위한 밸런스 인자 기본 동기화
-        
+
         self.consumables = {k: 0 for k in constants.CONSUMABLES_DB.keys()}
         if "FOOD_ONLY" in self.consumables: self.consumables["FOOD_ONLY"] = 2
         if "WATER_ONLY" in self.consumables: self.consumables["WATER_ONLY"] = 2
         if "MED_FIX_100" in self.consumables: self.consumables["MED_FIX_100"] = 1
-        
+
         self.weights = {"kinetic": 0, "scrap": 0, "cyber": 0}
         self.enemies_defeated = 0
 
@@ -231,10 +232,10 @@ class Player:
         sound.check_survival_alert(self.hunger, self.thirst)
         if self.hunger == 0 or self.thirst == 0:
             self.hp -= 50
-            print(f"\n{Fore.YELLOW + Style.BRIGHT}[SYSTEM WARN]{Style.RESET_ALL} 신체 연료 고갈. 바이오 조직 괴사가 시작됩니다. (HP -50)")
+            print(f"\n{Fore.YELLOW + Style.BRIGHT}" + t('resource_depleted') + Style.RESET_ALL)
             wait_for_keypress()
             if self.hp <= 0:
-                print(f"\n{Fore.RED + Style.BRIGHT}[SYSTEM FATAL] 신체 손상 100%. 불량 코드가 완전히 소거되었습니다.")
+                print(f"\n{Fore.RED + Style.BRIGHT}" + t('resource_fatal'))
                 sys.exit()
 
     def show_status(self):
@@ -243,39 +244,40 @@ class Player:
         _, display_max_hp, _ = apply_dynamic_scaling(0, self.max_hp, tier)
 
         print("  ╔" + "═" * 74 + "╗")
-        print("  ║  " + ea_rpad("[ 내 의체 시스템 상태창 ]", 72) + "║")
+        print("  ║  " + ea_rpad(t('status_header'), 72) + "║")
         print("  ╚" + "═" * 74 + "╝")
         if scale_log:
             print(f"  {scale_log}")
             print_divider()
-        
+
         hp_ratio = self.hp / self.max_hp if self.max_hp > 0 else 1.0
         hp_col = (Fore.GREEN + Style.BRIGHT) if hp_ratio > 0.6 else ((Fore.YELLOW + Style.BRIGHT) if hp_ratio > 0.3 else (Fore.RED + Style.BRIGHT))
-        print(f"  [생명력] {hp_col}{display_hp:,}{Style.RESET_ALL} / {display_max_hp:,}    [허기] {self.hunger:3d} / 100      [갈증] {self.thirst:3d} / 100")
-        
+        hp_colored = f"{hp_col}{display_hp:,}{Style.RESET_ALL}"
+        print(t('status_hp', hp=hp_colored, maxhp=f"{display_max_hp:,}", hunger=self.hunger, thirst=self.thirst))
+
         item_data = get_equipment_data(self.equipment['main_weapon'])
         wpn_name = item_data['name']
         wpn_pwr = self.get_attack_power()
         gear_atk = self.get_gear_atk_bonus()
         hp_b, def_b = self.get_armor_bonus()
 
-        print(f"  [장착 무기] {wpn_name:<15} (T={tier} 위력: {wpn_pwr:<3d})        [가용 평판] {self.reputation:+d}")
+        print(t('status_weapon', name=wpn_name, tier=tier, power=wpn_pwr, rep=self.reputation))
         if gear_atk > 0 or hp_b > 0 or def_b > 0:
             bonus_parts = []
-            if gear_atk > 0: bonus_parts.append(f"공격력 +{gear_atk}")
-            if hp_b   > 0: bonus_parts.append(f"HP +{hp_b}")
-            if def_b  > 0: bonus_parts.append(f"방어 -{def_b}")
-            print(f"  [장비 보너스] {' | '.join(bonus_parts)}")
+            if gear_atk > 0: bonus_parts.append(t('status_atk_bonus', val=gear_atk))
+            if hp_b   > 0: bonus_parts.append(t('status_hp_bonus', val=hp_b))
+            if def_b  > 0: bonus_parts.append(t('status_def_bonus', val=def_b))
+            print(t('status_gear_bonus', bonus=' | '.join(bonus_parts)))
 
         threat_mult = get_turn_scale_multiplier(self)
-        diff_label = {"easy": "이지", "normal": "노멀", "hard": "하드"}.get(self.difficulty, self.difficulty)
-        print(f"  [진행 턴] {self.turn_count:>4d}   [난이도] {diff_label}   [적 위협 배율] x{threat_mult:.2f}")
-        # 기초 스탯 및 파생 지표 표시
+        diff_label = t(f'diff_label_{self.difficulty}') if self.difficulty in ('easy', 'normal', 'hard') else self.difficulty
+        print(t('status_turn_line', turn=self.turn_count, diff=diff_label, mult=threat_mult))
+
         eva  = self.calc_eva_rate()
         crt  = self.calc_crt_rate()
         def_ = self.calc_def_base()
-        print(f"  [VIT] {self.vit:3d}  [INT] {self.int_s:3d}  [DEX] {self.dex:3d}   "
-              f"[방어] {def_:3d}  [회피] {eva*100:4.1f}%  [치명] {crt*100:4.1f}%")
+        print(t('status_stats_line', vit=self.vit, int_s=self.int_s, dex=self.dex,
+                def_val=def_, eva=eva * 100, crt=crt * 100))
 
         al = max(0, min(100, self.alert_level))
         al_filled = al // 5
@@ -286,21 +288,21 @@ class Player:
             al_col = Fore.YELLOW + Style.BRIGHT
         else:
             al_col = Fore.GREEN
-        al_label = "위험" if al >= 80 else ("경계" if al >= 50 else "안전")
+        al_label = t('alert_danger') if al >= 80 else (t('alert_caution') if al >= 50 else t('alert_safe'))
         print(f"  [경보 레벨] {al_col}{al_bar}{Style.RESET_ALL}  {al:3d} / 100  [{al_label}]"
-              f"  {Fore.WHITE + Style.DIM}(본편 2막 활성){Style.RESET_ALL}")
+              f"  {Fore.WHITE + Style.DIM}{t('alert_2nd_act')}{Style.RESET_ALL}")
         print_divider()
-        
+
         food_cnt = sum(v for k,v in self.consumables.items() if constants.CONSUMABLES_DB.get(k, {}).get("type")=="food")
         water_cnt = sum(v for k,v in self.consumables.items() if constants.CONSUMABLES_DB.get(k, {}).get("type")=="water")
         med_cnt = sum(v for k,v in self.consumables.items() if constants.CONSUMABLES_DB.get(k, {}).get("type")=="hp")
-        
-        print(f"  [소지품] 회복약: {med_cnt} | 식량: {food_cnt} | 식수: {water_cnt} | 고철 자산: {self.materials}")
+
+        print(t('status_items_line', med=med_cnt, food=food_cnt, water=water_cnt, scrap=self.materials))
         if self.active_quest:
             q = self.active_quest
             turns_left = max(0, q["deadline"] - self.turn_count)
             print_divider()
-            print(f"  [돌발 퀘스트] {q['title']}  ─  진행: {q['progress']}/{q['target']}  남은 기한: {turns_left}턴")
+            print(t('status_quest_line', title=q['title'], progress=q['progress'], target=q['target'], turns=turns_left))
         print_divider()
         print()
 
@@ -309,10 +311,9 @@ class Player:
 
         while True:
             clear_screen()
-            print_header("시스템 인벤토리 및 정비")
+            print_header(t('inv_header'))
 
-            # ── 장착 슬롯 현황 패널 ───────────────────────────────────────────
-            print("  ▌ 장착 슬롯 현황")
+            print(t('inv_slot_header'))
             print_divider()
             for si, sk in enumerate(slot_keys, 1):
                 label = ea_rpad(constants.SLOT_DISPLAY[sk], 8)
@@ -322,14 +323,13 @@ class Player:
                     tag = constants.TIER_TAGS.get(d.get("tier", 4), "T?    ")
                     print(f"   [{si:2d}] {label}  │  ★  {d['name'][:22]}    {tag}  위력:{d['power']:>4}")
                 else:
-                    print(f"   [{si:2d}] {label}  │  ─  미장착")
+                    print(f"   [{si:2d}] {label}  │  " + t('inv_not_equipped'))
             print()
 
-            # ── 보유 장비 목록 (슬롯별 그룹) ────────────────────────────────────
-            print(f"  ▌ 보유 장비 목록  (총 {len(self.inventory)}종  /  고철: {self.materials}개)")
+            print(t('inv_items_header', count=len(self.inventory), scrap=self.materials))
             print_divider()
             if not self.inventory:
-                print("  데이터 없음 (인벤토리가 비어있습니다)")
+                print(t('inv_empty'))
             else:
                 groups = {sk: [] for sk in slot_keys}
                 groups["기타"] = []
@@ -356,19 +356,17 @@ class Player:
                         print(f"   [{n:2d}] {mark}  {d['name'][:26]:<26}  {tag}  위력:{d['power']:>4}  W:{w:.1f}")
             print_divider()
 
-            # ── 명령 ────────────────────────────────────────────────────────────
-            print("  [ 명령 ]")
-            print("   E <번호>     : 장착 (슬롯 자동 인식)     U <슬롯번호>  : 슬롯 해제")
-            print("   C            : 소모품 사용                D <번호>      : 분해 (고철 추출)")
-            print("   0            : 탐색망으로 복귀")
+            print(t('inv_cmd_header'))
+            print(t('inv_cmd_line1'))
+            print(t('inv_cmd_line2'))
+            print(t('inv_cmd_line3'))
             print_divider()
             try:
-                cmd = safe_input("\n  명령어 입력: ").strip().upper()
+                cmd = safe_input(t('inv_prompt')).strip().upper()
             except Exception as _e:
                 log_error(_e, "manage_inventory/DEV_GRANT_LEGACY")
                 sys.exit()
 
-            # 장착: E <번호>
             if cmd.startswith("E "):
                 parts = cmd.split()
                 if len(parts) == 2 and parts[1].isdigit():
@@ -379,17 +377,16 @@ class Player:
                         sk = d.get("slot", "main_weapon")
                         prev = self.equipment.get(sk)
                         self.equipment[sk] = item_id
-                        print(f"\n  [결속] '{d['name']}' → {constants.SLOT_DISPLAY.get(sk, sk)} 슬롯에 장착되었습니다.")
+                        print(t('inv_equipped', name=d['name'], slot=constants.SLOT_DISPLAY.get(sk, sk)))
                         if prev and prev != "WEAPON_NONE":
                             pd = get_equipment_data(prev)
-                            print(f"  [교체] 기존 '{pd['name']}' 해제 — 인벤토리에 보관됩니다.")
+                            print(t('inv_replaced', name=pd['name']))
                     else:
-                        print("\n  [오류] 유효하지 않은 번호입니다.")
+                        print(t('inv_invalid_number'))
                 else:
-                    print("\n  [오류] 사용법: E <번호>  예) E 2")
+                    print(t('inv_equip_usage'))
                 wait_for_keypress()
 
-            # 해제: U <슬롯번호>
             elif cmd.startswith("U "):
                 parts = cmd.split()
                 if len(parts) == 2 and parts[1].isdigit():
@@ -400,20 +397,18 @@ class Player:
                         if eid and eid != "WEAPON_NONE":
                             d = get_equipment_data(eid)
                             self.equipment[sk] = constants.SLOT_DEFAULTS[sk]
-                            print(f"\n  [해제] '{d['name']}' — {constants.SLOT_DISPLAY[sk]} 슬롯 결속 해제되었습니다.")
+                            print(t('inv_unequipped', name=d['name'], slot=constants.SLOT_DISPLAY[sk]))
                         else:
-                            print(f"\n  [알림] {constants.SLOT_DISPLAY[sk]} 슬롯은 이미 비어 있습니다.")
+                            print(t('inv_slot_empty', slot=constants.SLOT_DISPLAY[sk]))
                     else:
-                        print(f"\n  [오류] 슬롯 번호는 1~{len(slot_keys)} 범위입니다.")
+                        print(t('inv_slot_range', max=len(slot_keys)))
                 else:
-                    print("\n  [오류] 사용법: U <슬롯번호>  예) U 1 = 주무기 해제")
+                    print(t('inv_unequip_usage'))
                 wait_for_keypress()
 
-            # 소모품
             elif cmd == "C":
                 self.use_consumable_menu()
 
-            # 분해: D <번호>
             elif cmd.startswith("D "):
                 parts = cmd.split()
                 if len(parts) == 2 and parts[1].isdigit():
@@ -421,24 +416,23 @@ class Player:
                     if 1 <= n <= len(self.inventory):
                         item_id = self.inventory[n - 1]
                         if any(v == item_id for v in self.equipment.values()):
-                            print("\n  [거부] 장착 중인 장비는 분해할 수 없습니다. 먼저 슬롯에서 해제하십시오.")
+                            print(t('inv_dismantle_equipped'))
                         else:
                             self.inventory.pop(n - 1)
                             gained = random.randint(15, 30)
                             self.materials += gained
                             advance_quest(self, "scrap", gained)
                             d = get_equipment_data(item_id)
-                            print(f"\n  [처리] '{d['name']}' 분쇄 완료 — 일반 고철 {gained}개 추출했습니다.")
+                            print(t('inv_dismantled', name=d['name'], gained=gained))
                     else:
-                        print("\n  [오류] 유효하지 않은 번호입니다.")
+                        print(t('inv_invalid_number'))
                 else:
-                    print("\n  [오류] 사용법: D <번호>  예) D 3")
+                    print(t('inv_dismantle_usage'))
                 wait_for_keypress()
 
             elif cmd == "0":
                 break
 
-            # DEV 히든 커맨드 — 메뉴에 노출 안 됨
             elif cmd == "DEV_GRANT_LEGACY":
                 conn = sqlite3.connect("stigma_data.db")
                 cursor = conn.cursor()
@@ -451,16 +445,16 @@ class Player:
                         self.inventory.append(iid)
                         granted += 1
                 sys_log(f"[DEV] 히든 커맨드 사용: 유물 장비 {granted}종 지급", level="DEV")
-                print(f"\n  [DEV MODE] 0등급 유물 장비 {granted}종을 인벤토리에 지급했습니다.")
+                print(t('inv_dev_grant', granted=granted))
                 wait_for_keypress()
 
     def use_consumable_menu(self):
         clear_screen()
-        print_header("소모품 시스템 관리")
-        
+        print_header(t('consumable_header'))
+
         avail = [k for k, v in self.consumables.items() if v > 0]
         if not avail:
-            print("[알림] 현재 사용 가능한 소모품이 인벤토리에 없습니다.")
+            print(t('consumable_empty'))
             wait_for_keypress()
             return
 
@@ -468,31 +462,30 @@ class Player:
             item = constants.CONSUMABLES_DB[key]
             desc = ""
             if item["type"] == "hp":
-                if item["is_percent"]: desc = f"HP {int(item['val']*100)}% 회복"
-                else: desc = f"HP {item['val']} 고정 회복"
+                if item["is_percent"]: desc = t('consumable_hp_percent', pct=int(item['val'] * 100))
+                else: desc = t('consumable_hp_fixed', val=item['val'])
             elif item["type"] in ["food", "water"]:
-                h_val = f"허기 +{item['hunger']} " if item['hunger'] > 0 else ""
-                t_val = f"갈증 +{item['thirst']}" if item['thirst'] > 0 else ""
-                desc = h_val + t_val
-            
+                hunger_str = t('consumable_hunger', val=item['hunger']) if item['hunger'] > 0 else ""
+                thirst_str = t('consumable_thirst', val=item['thirst']) if item['thirst'] > 0 else ""
+                desc = hunger_str + thirst_str
+
             print(f"  [{i+1}] {item['name']} (보유: {self.consumables[key]}개) - [{desc}]")
-        
+
         print_divider()
-        print("  [0] 이전 메뉴로 복귀")
+        print(t('consumable_back'))
         cmd = read_key()
-        
+
         if cmd.isdigit() and 0 < int(cmd) <= len(avail):
             key = avail[int(cmd)-1]
             item = constants.CONSUMABLES_DB[key]
             self.consumables[key] -= 1
-            
+
             if item["type"] == "hp":
                 heal_amt = int(self.max_hp * item["val"]) if item["is_percent"] else item["val"]
                 self.hp = min(self.max_hp, self.hp + heal_amt)
-                print(f"\n[치료] '{item['name']}' 주입 완료. 생체 신호가 안정화됩니다. (HP +{heal_amt})")
+                print(t('consumable_used_hp', name=item['name'], amt=heal_amt))
             else:
                 self.hunger = min(100, self.hunger + item["hunger"])
                 self.thirst = min(100, self.thirst + item["thirst"])
-                print(f"\n[섭취] '{item['name']}' 섭취 완료. 바이오 연료가 보충되었습니다.")
+                print(t('consumable_used_food', name=item['name']))
             wait_for_keypress()
-
