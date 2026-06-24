@@ -2084,13 +2084,26 @@ def run_boss_core_choice(player):
     type_text(t('boss_core_warn_2'), 0.03)
     print()
     print_divider()
-    print(t('boss_core_opt1'))
+    wk, ws, wc = player.weights["kinetic"], player.weights["scrap"], player.weights["cyber"]
+
+    def _balance_hint(pre_k, pre_s, pre_c):
+        if pre_k + 3 == pre_s == pre_c: return "1"
+        if pre_s + 3 == pre_k == pre_c: return "2"
+        if pre_c + 3 == pre_k == pre_s: return "3"
+        return None
+
+    _hint_key = _balance_hint(wk, ws, wc)
+    _h1 = f"  {Style.DIM}…{Style.RESET_ALL}" if _hint_key == "1" else ""
+    _h2 = f"  {Style.DIM}…{Style.RESET_ALL}" if _hint_key == "2" else ""
+    _h3 = f"  {Style.DIM}…{Style.RESET_ALL}" if _hint_key == "3" else ""
+
+    print(t('boss_core_opt1') + _h1)
     print(t('boss_core_opt1_sub'))
     print()
-    print(t('boss_core_opt2'))
+    print(t('boss_core_opt2') + _h2)
     print(t('boss_core_opt2_sub'))
     print()
-    print(t('boss_core_opt3'))
+    print(t('boss_core_opt3') + _h3)
     print(t('boss_core_opt3_sub'))
     print_divider()
 
@@ -2129,6 +2142,33 @@ def run_boss_core_choice(player):
         print(t('ending_skill_notice'))
         print(t('ending_skill_usage'))
         log_diary(player, t('ending_skill_log', job_label=job_label, skills=skill_names))
+    wait_for_keypress()
+    run_perimeter_encounter(player)
+
+
+def run_perimeter_encounter(player):
+    clear_screen()
+    print_header(t('perimeter_header'))
+    type_text(t('perimeter_alert_1'), 0.025)
+    type_text(t('perimeter_alert_2'), 0.025)
+    print()
+    print_divider()
+    print(t('perimeter_opt1'))
+    print(t('perimeter_opt2'))
+    print_divider()
+
+    ans = read_key()
+    if ans == "1":
+        low_hp = int(8000 * get_turn_scale_multiplier(player) * 0.30)
+        sound.play_combat_bgm()
+        combat_loop(player, is_boss=False, current_hp=low_hp, enemy_type="drone")
+        sound.stop_all()
+        print()
+        type_text(t('perimeter_win'), 0.025)
+    else:
+        print()
+        type_text(t('perimeter_skip'), 0.025)
+    time.sleep(0.8)
     wait_for_keypress()
 
 
