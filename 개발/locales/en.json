@@ -579,6 +579,12 @@
   "act2_title_act2":      "Act 2: Gilded Livestock and Savage Liberators",
   "act2_title_thanks":    "  Thank you for playing the demo. Your choices continue in the full release.",
 
+  "credits_header":    "PROTOCOL: STIGMA — Thank You for Playing",
+  "credits_line1":     "  This is a solo development project.",
+  "credits_line2":     "  Your feedback and GitHub Stars fuel Act 2 development.",
+  "credits_itch_soon": "(coming soon)",
+  "credits_star_note": "  Star the GitHub repository to get notified when Act 2 releases.",
+
   "tier_4": "Makeshift (T4)",
   "tier_3": "Standard (T3)",
   "tier_2": "Refined (T2)",

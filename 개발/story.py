@@ -537,3 +537,45 @@ def run_act2_teaser(player):
     print()
     time.sleep(0.5)
     type_text(t('act2_title_thanks'), 0.025)
+    time.sleep(1.2)
+    run_credits()
+
+
+def run_credits():
+    """엔딩 후 크레딧 화면 — 감사 메시지 + 링크."""
+    clear_screen()
+    print()
+    time.sleep(0.4)
+
+    print(Fore.WHITE + Style.BRIGHT + "  ╔" + "═" * 74 + "╗")
+    print(Fore.WHITE + Style.BRIGHT + "  ║  " + ea_rpad(t('credits_header'), 72) + "║")
+    print(Fore.WHITE + Style.BRIGHT + "  ╚" + "═" * 74 + "╝")
+    print()
+    time.sleep(0.3)
+
+    type_text(t('credits_line1'), 0.022)
+    type_text(t('credits_line2'), 0.022)
+    print()
+    time.sleep(0.5)
+
+    print_divider()
+    print()
+
+    github_url = constants.CREDITS_GITHUB
+    itch_url   = constants.CREDITS_ITCH
+
+    print(f"  {Fore.CYAN + Style.BRIGHT}{'GitHub':<12}{Style.RESET_ALL}  {github_url}")
+    if itch_url:
+        print(f"  {Fore.GREEN + Style.BRIGHT}{'itch.io':<12}{Style.RESET_ALL}  {itch_url}")
+    else:
+        print(f"  {Fore.WHITE + Style.DIM}{'itch.io':<12}  {t('credits_itch_soon')}{Style.RESET_ALL}")
+
+    print()
+    print_divider()
+    print()
+    type_text(Fore.YELLOW + Style.DIM + t('credits_star_note') + Style.RESET_ALL, 0.018)
+    print()
+    time.sleep(0.4)
+    print_divider()
+
+    wait_for_keypress()

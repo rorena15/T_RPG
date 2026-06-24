@@ -8,7 +8,7 @@ import sys
 import constants
 from core import get_equipment_data
 from ui import (clear_screen, print_header, print_divider,
-                safe_input, wait_for_keypress, read_key, ea_rpad)
+                safe_input, wait_for_keypress, read_key, ea_rpad, glitch_str)
 from colorama import Fore, Style
 from combat import apply_dynamic_scaling, get_turn_scale_multiplier
 from quest import advance_quest
@@ -289,7 +289,8 @@ class Player:
         else:
             al_col = Fore.GREEN
         al_label = t('alert_danger') if al >= 70 else (t('alert_caution') if al >= 40 else t('alert_safe'))
-        print(t('alert_level_prefix') + f"{al_col}{al_bar}{Style.RESET_ALL}  {al:3d} / 100  [{al_label}]")
+        _bar_display = glitch_str(al_bar, 0.12) if al >= 70 and random.random() < 0.45 else al_bar
+        print(t('alert_level_prefix') + f"{al_col}{_bar_display}{Style.RESET_ALL}  {al:3d} / 100  [{al_label}]")
         print_divider()
 
         food_cnt = sum(v for k,v in self.consumables.items() if constants.CONSUMABLES_DB.get(k, {}).get("type")=="food")

@@ -579,6 +579,12 @@
   "act2_title_act2":      "2막: 화려한 가축과 야만적 해방자",
   "act2_title_thanks":    "  데모 플레이에 감사합니다. 당신의 선택이 본편에서 이어집니다.",
 
+  "credits_header":    "PROTOCOL: STIGMA — 플레이해 주셔서 감사합니다",
+  "credits_line1":     "  이 게임은 1인 개발 프로젝트입니다.",
+  "credits_line2":     "  피드백과 GitHub Star는 2막 개발의 원동력이 됩니다.",
+  "credits_itch_soon": "(준비 중)",
+  "credits_star_note": "  릴리즈 알림을 받으려면 GitHub 저장소에 Star를 눌러주세요.",
+
   "tier_4": "급조 (T4)",
   "tier_3": "규격 (T3)",
   "tier_2": "정제 (T2)",

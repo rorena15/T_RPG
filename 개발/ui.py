@@ -77,6 +77,30 @@ def read_key():
 def clear_screen():
     os.system('cls' if os.name == 'nt' else 'clear')
 
+_GLITCH_CHARS = "░▒▓█▄▀▌▐■□▪▫◆◇╳╱╲"
+
+def glitch_str(text, intensity=0.18):
+    """문자열 일부를 글리치 문자로 무작위 치환."""
+    return ''.join(
+        random.choice(_GLITCH_CHARS) if ch not in (' ', '\n') and random.random() < intensity else ch
+        for ch in text
+    )
+
+def glitch_flash(lines, color=None, cycles=3, delay=0.06):
+    """텍스트 블록에 글리치 플래시 후 정상 복원. Windows Terminal 기준."""
+    col = (color or Fore.RED) + Style.BRIGHT
+    n = len(lines)
+    for _ in range(cycles):
+        for line in lines:
+            sys.stdout.write(col + glitch_str(line, 0.25) + Style.RESET_ALL + '\n')
+        sys.stdout.flush()
+        time.sleep(delay)
+        sys.stdout.write(f'\033[{n}A\033[0J')
+        sys.stdout.flush()
+    for line in lines:
+        sys.stdout.write(line + '\n')
+    sys.stdout.flush()
+
 def type_text(text, speed=0.015):
     for char in text:
         sys.stdout.write(char)

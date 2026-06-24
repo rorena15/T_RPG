@@ -11,7 +11,8 @@ from core import get_equipment_data
 from i18n import t
 from ui import (clear_screen, print_header, print_divider, type_text,
                 wait_for_keypress, read_key, log_diary,
-                _log_color, roll_medkit, roll_food, roll_water)
+                _log_color, roll_medkit, roll_food, roll_water,
+                glitch_flash)
 import skills as _skills
 from quest import advance_quest
 from sys_log import track
@@ -71,7 +72,7 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
         player.alert_level = min(100, player.alert_level + constants.ALERT_INC_BOSS)
     elif enemy_type == "bio_hound":
         e_def, base_atk = constants.BIO_DEF, constants.BIO_BASE_ATK
-        art = constants.ENEMY_ART["BIOHOUND"]
+        art = random.choice(constants.ENEMY_ART["BIOHOUND"])
         base_atk = int(base_atk * scale_mult)
         if current_hp is not None:
             hp           = current_hp
@@ -85,7 +86,7 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
         player.alert_level = min(100, player.alert_level + constants.ALERT_INC_BIO)
     else:
         e_def, base_atk = constants.DRONE_DEF, constants.DRONE_BASE_ATK
-        art = constants.ENEMY_ART["NORMAL"]
+        art = random.choice(constants.ENEMY_ART["NORMAL"])
         base_atk = int(base_atk * scale_mult)
         if current_hp is not None:
             hp           = current_hp
@@ -138,6 +139,11 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
             atk = int(base_atk * constants.BOSS_PHASE2_ATK_MULT)
             learning_index += constants.BOSS_PHASE2_LI_BONUS
             clear_screen()
+            glitch_flash([
+                t('combat_phase2_header'),
+                t('combat_phase2_warn1'),
+                t('combat_phase2_warn2'),
+            ], cycles=4, delay=0.05)
             print_header(t('combat_phase2_header'))
             type_text(Fore.RED + Style.BRIGHT + t('combat_phase2_warn1'), 0.03)
             type_text(Fore.RED + Style.BRIGHT + t('combat_phase2_warn2'), 0.03)
