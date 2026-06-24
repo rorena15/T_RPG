@@ -39,15 +39,18 @@ jobs:
       - name: EXE 빌드
         shell: pwsh
         run: |
-          cd 개발
           pyinstaller --onefile `
+            --collect-all pygame `
             --name="PROTOCOL_STIGMA" `
-            --icon="Protocol_Stigma_1.ico" `
-            --add-data "database.json;." `
-            --add-data "master_formulas.json;." `
-            --add-data "..\assets;assets" `
-            --add-data "locales;locales" `
-            Main.py
+            --distpath="개발/dist" `
+            --workpath="개발/build" `
+            --specpath="개발" `
+            --icon="개발/Protocol_Stigma_1.ico" `
+            --add-data "개발/database.json;." `
+            --add-data "개발/master_formulas.json;." `
+            --add-data "개발/locales;locales" `
+            --add-data "assets;assets" `
+            개발/Main.py
 
       - name: GitHub Release 생성
         uses: softprops/action-gh-release@v2
