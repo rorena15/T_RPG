@@ -182,11 +182,11 @@ class Player:
             eid = self.equipment.get(slot)
             if eid:
                 d = get_equipment_data(eid)
-                hp_b  += d.get("power", 0) * 8
-                def_b += d.get("power", 0) // 8
+                hp_b  += d.get("power", 0) * constants.ARMOR_HP_MULT
+                def_b += d.get("power", 0) // constants.ARMOR_DEF_DIV
             else:
-                hp_b  += 80  # T4 기본 장비 가상값
-                def_b += 1   # T4 기본 장비 가상값
+                hp_b  += constants.DEFAULT_ARMOR_HP
+                def_b += constants.DEFAULT_ARMOR_DEF
         return hp_b, def_b
 
     def get_gear_atk_bonus(self):
@@ -199,9 +199,9 @@ class Player:
             eid = self.equipment.get(sl)
             if eid:
                 d = get_equipment_data(eid)
-                bonus += d.get("power", 0) * 0.4
+                bonus += d.get("power", 0) * constants.GEAR_ATK_MULT
             else:
-                bonus += 5  # T4 기본 장비 가상값
+                bonus += constants.DEFAULT_GEAR_ATK
         return int(bonus)
 
     def get_cyberdeck_e_suppress(self):

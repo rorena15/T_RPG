@@ -36,9 +36,9 @@ def apply_dynamic_scaling(raw_dmg, raw_hp, highest_equip_tier):
     if highest_equip_tier >= 4:
         return int(raw_dmg), int(raw_hp), ""
     elif highest_equip_tier in [2, 3]:
-        return int(raw_dmg * 100), int(raw_hp * 10), t('scale_log_t23')
+        return int(raw_dmg * constants.SCALE_MULT_T23_DMG), int(raw_hp * constants.SCALE_MULT_T23_HP), t('scale_log_t23')
     else:
-        return int(raw_dmg * 100000), int(raw_hp * 100), t('scale_log_t01')
+        return int(raw_dmg * constants.SCALE_MULT_T01_DMG), int(raw_hp * constants.SCALE_MULT_T01_HP), t('scale_log_t01')
 
 
 def get_turn_scale_multiplier(player):
@@ -62,15 +62,15 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
     if is_boss:
         name        = t('enemy_boss_name')
         header_title = t('enemy_boss_header')
-        e_def, base_atk, hp = 45, 400, 35000
+        e_def, base_atk, hp = constants.BOSS_DEF, constants.BOSS_BASE_ATK, constants.BOSS_HP
         art = constants.ENEMY_ART["BOSS"]
         base_atk = int(base_atk * scale_mult)
         hp = int(hp * scale_mult)
         boss_max_hp = hp
         atk = base_atk
-        player.alert_level = min(100, player.alert_level + 40)
+        player.alert_level = min(100, player.alert_level + constants.ALERT_INC_BOSS)
     elif enemy_type == "bio_hound":
-        e_def, base_atk = 15, 250
+        e_def, base_atk = constants.BIO_DEF, constants.BIO_BASE_ATK
         art = constants.ENEMY_ART["BIOHOUND"]
         base_atk = int(base_atk * scale_mult)
         if current_hp is not None:
@@ -78,13 +78,13 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
             name         = t('enemy_bio_name_wounded')
             header_title = t('enemy_bio_header_wounded')
         else:
-            hp           = int(random.randint(12000, 22000) * scale_mult)
+            hp           = int(random.randint(constants.BIO_HP_MIN, constants.BIO_HP_MAX) * scale_mult)
             name         = t('enemy_bio_name')
             header_title = t('enemy_bio_header')
         atk = base_atk
-        player.alert_level = min(100, player.alert_level + 20)
+        player.alert_level = min(100, player.alert_level + constants.ALERT_INC_BIO)
     else:
-        e_def, base_atk = 5, 200
+        e_def, base_atk = constants.DRONE_DEF, constants.DRONE_BASE_ATK
         art = constants.ENEMY_ART["NORMAL"]
         base_atk = int(base_atk * scale_mult)
         if current_hp is not None:
@@ -92,15 +92,15 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
             name         = t('enemy_drone_name_wounded')
             header_title = t('enemy_drone_header_wounded')
         else:
-            hp           = int(random.randint(8000, 16000) * scale_mult)
+            hp           = int(random.randint(constants.DRONE_HP_MIN, constants.DRONE_HP_MAX) * scale_mult)
             name         = t('enemy_drone_name')
             header_title = t('enemy_drone_header')
         atk = base_atk
-        player.alert_level = min(100, player.alert_level + 10)
+        player.alert_level = min(100, player.alert_level + constants.ALERT_INC_DRONE)
 
     # ── 보조 화기 — 네오 아크 AI 폐기 화기 전용 ─────────────────────────
     _NAIWPN = "NEOARC_AI_WPN"
-    sub_wpn_power = 100
+    sub_wpn_power = constants.SUB_WPN_POWER
     sub_wpn_name  = t('sub_wpn_name')
     sub_charges    = 2 if _NAIWPN in player.inventory else 0
     sub_wpn_used   = False
@@ -127,16 +127,16 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
         player.hp = min(player.hp + hp_bonus, player.max_hp)
 
     while hp > 0 and player.hp > 0:
-        if is_boss and turn > 15:
+        if is_boss and turn > constants.BOSS_TURN_LIMIT:
             clear_screen()
             type_text(Fore.RED + Style.BRIGHT + t('combat_timeout'))
             sys.exit()
 
         # 보스 페이즈 2 전환 (HP 50% 이하)
-        if is_boss and not phase2_triggered and hp <= boss_max_hp * 0.5:
+        if is_boss and not phase2_triggered and hp <= boss_max_hp * constants.BOSS_PHASE2_RATIO:
             phase2_triggered = True
-            atk = int(base_atk * 1.6)
-            learning_index += 5
+            atk = int(base_atk * constants.BOSS_PHASE2_ATK_MULT)
+            learning_index += constants.BOSS_PHASE2_LI_BONUS
             clear_screen()
             print_header(t('combat_phase2_header'))
             type_text(Fore.RED + Style.BRIGHT + t('combat_phase2_warn1'), 0.03)
@@ -280,12 +280,13 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
                 time.sleep(1)
             else:
                 eva_bonus = stat_eva * 100
+                _ew = constants.ESCAPE_WEIGHTS
                 weights = [
-                    60 + eva_bonus,
-                    max(5, 20 - eva_bonus * 0.5),
-                    max(2, 10 - eva_bonus * 0.25),
-                    max(1, 5  - eva_bonus * 0.25),
-                    5  + eva_bonus * 0.5
+                    _ew[0] + eva_bonus,
+                    max(5, _ew[1] - eva_bonus * 0.5),
+                    max(2, _ew[2] - eva_bonus * 0.25),
+                    max(1, _ew[3] - eva_bonus * 0.25),
+                    _ew[4] + eva_bonus * 0.5
                 ]
                 if player.active_buffs.pop("void_shift", 0):
                     res = "SAFE"

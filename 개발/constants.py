@@ -131,6 +131,44 @@ ENEMY_ART = {
 
 DIFFICULTY_SCALING_RATE = {"easy": 0.01, "normal": 0.02, "hard": 0.035}
 
+# ── 전투 균형 상수 ────────────────────────────────────────────────────────────
+BOSS_DEF             = 45
+BOSS_BASE_ATK        = 400
+BOSS_HP              = 35000
+BOSS_TURN_LIMIT      = 15
+BOSS_PHASE2_RATIO    = 0.5    # HP 이 비율 이하 → Phase 2 전환
+BOSS_PHASE2_ATK_MULT = 1.6
+BOSS_PHASE2_LI_BONUS = 5
+ALERT_INC_BOSS       = 40
+ALERT_INC_BIO        = 20
+ALERT_INC_DRONE      = 10
+
+BIO_DEF              = 15
+BIO_BASE_ATK         = 250
+BIO_HP_MIN           = 12000
+BIO_HP_MAX           = 22000
+
+DRONE_DEF            = 5
+DRONE_BASE_ATK       = 200
+DRONE_HP_MIN         = 8000
+DRONE_HP_MAX         = 16000
+
+SUB_WPN_POWER        = 100
+ESCAPE_WEIGHTS       = (60, 20, 10, 5, 5)  # SAFE / NORMAL / 1.5X / 2.0X / LUCKY
+
+SCALE_MULT_T23_DMG   = 100
+SCALE_MULT_T23_HP    = 10
+SCALE_MULT_T01_DMG   = 100000
+SCALE_MULT_T01_HP    = 100
+
+# ── 장비 계산 상수 ────────────────────────────────────────────────────────────
+ARMOR_HP_MULT        = 8      # 방어구 power × N → HP 보너스
+ARMOR_DEF_DIV        = 8      # 방어구 power // N → DEF 보너스
+GEAR_ATK_MULT        = 0.4    # 기어 power × N → ATK 보너스
+DEFAULT_ARMOR_HP     = 80     # 미장착 방어구 슬롯 가상 HP 보정
+DEFAULT_ARMOR_DEF    = 1      # 미장착 방어구 슬롯 가상 DEF 보정
+DEFAULT_GEAR_ATK     = 5      # 미장착 기어 슬롯 가상 ATK 보정
+
 # 전투 시작 시점 플레이어 체력 비율이 이 값 미만이면, '위험 상태 완화'가 적용되어
 # 그 전투에 한해 턴수 증가분의 절반만 반영한다. 장비가 좋아졌다고 적이 강해지는
 # 역설계가 아니라, 순수하게 플레이어가 죽기 직전인 상황을 구제하는 안전핀이다.
