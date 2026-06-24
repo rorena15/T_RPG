@@ -16,7 +16,7 @@ from quest import advance_quest
 from sys_log import sys_log, log_error
 from i18n import t
 import sound
-import skills as _skills
+import skills
 
 def handle_session(player, session):
     clear_screen()
@@ -198,7 +198,6 @@ def run_prologue():
 def run_boss_core_choice(player):
     """보스 격파 후 코어 처분 선택 — 최종 직업 가중치에 영향을 미칩니다."""
     clear_screen()
-    sound.play_typing_bgm()
     print_header(t('boss_core_header'))
     type_text(t('boss_core_kneel_1'), 0.03)
     type_text(t('boss_core_kneel_2'), 0.03)
@@ -209,13 +208,26 @@ def run_boss_core_choice(player):
     type_text(t('boss_core_warn_2'), 0.03)
     print()
     print_divider()
-    print(t('boss_core_opt1'))
+    wk, ws, wc = player.weights["kinetic"], player.weights["scrap"], player.weights["cyber"]
+
+    def _balance_hint(pre_k, pre_s, pre_c):
+        if pre_k + 3 == pre_s == pre_c: return "1"
+        if pre_s + 3 == pre_k == pre_c: return "2"
+        if pre_c + 3 == pre_k == pre_s: return "3"
+        return None
+
+    _hint_key = _balance_hint(wk, ws, wc)
+    _h1 = f"  {Style.DIM}…{Style.RESET_ALL}" if _hint_key == "1" else ""
+    _h2 = f"  {Style.DIM}…{Style.RESET_ALL}" if _hint_key == "2" else ""
+    _h3 = f"  {Style.DIM}…{Style.RESET_ALL}" if _hint_key == "3" else ""
+
+    print(t('boss_core_opt1') + _h1)
     print(t('boss_core_opt1_sub'))
     print()
-    print(t('boss_core_opt2'))
+    print(t('boss_core_opt2') + _h2)
     print(t('boss_core_opt2_sub'))
     print()
-    print(t('boss_core_opt3'))
+    print(t('boss_core_opt3') + _h3)
     print(t('boss_core_opt3_sub'))
     print_divider()
 
@@ -241,12 +253,53 @@ def run_boss_core_choice(player):
             break
 
     time.sleep(1.5)
+    print()
+    print_divider()
+    job, granted = skills.grant_awakening_skill(player)
+    job_label = skills.JOB_LABEL.get(job, job)
+    print(t('ending_skill_header', job_label=job_label))
+    print_divider()
+    if granted:
+        skill_names = ", ".join(skills.SKILL_DEFS[sid]['name'] for sid in granted)
+        print(t('ending_skill_slots', max_col=2, count=len(player.skill_slots)))
+        print(f"  {skill_names}")
+        print(t('ending_skill_notice'))
+        print(t('ending_skill_usage'))
+        log_diary(player, t('ending_skill_log', job_label=job_label, skills=skill_names))
+    wait_for_keypress()
+    run_perimeter_encounter(player)
+
+
+def run_perimeter_encounter(player):
+    clear_screen()
+    print_header(t('perimeter_header'))
+    type_text(t('perimeter_alert_1'), 0.025)
+    type_text(t('perimeter_alert_2'), 0.025)
+    print()
+    print_divider()
+    print(t('perimeter_opt1'))
+    print(t('perimeter_opt2'))
+    print_divider()
+
+    ans = read_key()
+    if ans == "1":
+        low_hp = int(8000 * get_turn_scale_multiplier(player) * 0.30)
+        sound.play_combat_bgm()
+        combat_loop(player, is_boss=False, current_hp=low_hp, enemy_type="drone")
+        sound.stop_all()
+        print()
+        type_text(t('perimeter_win'), 0.025)
+    else:
+        print()
+        type_text(t('perimeter_skip'), 0.025)
+    time.sleep(0.8)
     wait_for_keypress()
 
 
 def run_ending(player):
     clear_screen()
-    print_header(t('ending_header'))
+    sound.stop_all()
+    print_header("PIONEER PROTOCOL: NORMALIZATION EXECUTION")
     type_text(t('ending_core_1'), 0.03)
     type_text(t('ending_core_2'), 0.03)
     type_text(t('ending_core_3'), 0.03)
@@ -301,25 +354,6 @@ def run_ending(player):
         type_text(t('ending_cyber_4'), 0.03)
         type_text(t('ending_cyber_5'), 0.03)
     print_divider()
-    time.sleep(0.8)
-
-    # ── 각성 스킬 지급 ─────────────────────────────────────────────────
-    job, unlocked = _skills.grant_awakening_skill(player)
-    job_label = _skills.JOB_LABEL.get(job, job)
-    if unlocked:
-        print()
-        print(Fore.YELLOW + Style.BRIGHT + t('ending_skill_header', job_label=job_label) + Style.RESET_ALL)
-        max_col = Fore.CYAN + "2개" + Style.RESET_ALL
-        print(t('ending_skill_slots', max_col=max_col, count=len(unlocked)))
-        print_divider()
-        for i, sid in enumerate(unlocked):
-            sk = _skills.SKILL_DEFS[sid]
-            print(f"  [S{'12'[i]}] {Fore.GREEN + Style.BRIGHT}{sk['name']}{Style.RESET_ALL}")
-            print(f"       {sk['desc']}")
-        print_divider()
-        print(f"  {Fore.CYAN}" + t('ending_skill_notice_tag') + f"{Style.RESET_ALL}" + t('ending_skill_notice'))
-        log_diary(player, t('ending_skill_log', job_label=job_label, skills=', '.join(unlocked)))
-        type_text(t('ending_skill_usage'), 0.022)
 
     print()
     time.sleep(1)
@@ -329,8 +363,8 @@ def run_ending(player):
     print(t('ending_stats_header'))
     print_divider()
     tier_final = player.get_highest_tier()
-    tier_name = t(f'tier_{tier_final}') if tier_final in (0, 1, 2, 3, 4) else 'N/A'
-    diff_label = t(f'diff_label_{player.difficulty}') if player.difficulty in ('easy', 'normal', 'hard') else player.difficulty
+    tier_name = {4: t('tier_4'), 3: t('tier_3'), 2: t('tier_2'), 1: t('tier_1'), 0: t('tier_0')}.get(tier_final, 'N/A')
+    diff_label = {"easy": t('diff_label_easy'), "normal": t('diff_label_normal'), "hard": t('diff_label_hard')}.get(player.difficulty, player.difficulty)
     threat_final = get_turn_scale_multiplier(player)
 
     print(t('ending_stat_diff',        val=diff_label))
@@ -343,6 +377,13 @@ def run_ending(player):
     print(t('ending_stat_tier',        val=tier_name))
     total_consumables = sum(player.consumables.values())
     print(t('ending_stat_consumables', val=total_consumables))
+    if player.skill_slots:
+        end_job_label = skills.JOB_LABEL.get(player.job_class, player.job_class)
+        end_skill_names = ", ".join(skills.SKILL_DEFS.get(sid, {}).get('name', sid) for sid in player.skill_slots)
+        print_divider()
+        print(t('ending_skill_header', job_label=end_job_label))
+        print(t('ending_skill_slots', max_col=2, count=len(player.skill_slots)))
+        print(f"  {end_skill_names}")
     print_divider()
     time.sleep(1)
 
@@ -371,8 +412,6 @@ def run_ending(player):
     print(Fore.GREEN + Style.BRIGHT + "  ╚" + "═" * 74 + "╝")
     wait_for_keypress()
     run_act2_teaser(player)
-    sound.stop_all()
-    wait_for_keypress()
 
 
 def run_act2_teaser(player):
