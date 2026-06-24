@@ -32,7 +32,7 @@ def init():
         pygame.mixer.init()
         pygame.mixer.set_num_channels(8)
         _hb_channel = pygame.mixer.Channel(7)
-        p = _asset("심장박동4.wav")
+        p = _asset("heartbeat4.wav")
         if os.path.exists(p):
             _hb_sound = pygame.mixer.Sound(p)
             _hb_sound.set_volume(0.90)
