@@ -418,7 +418,7 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
                 atk = int(base_atk * (1.6 if phase2_triggered else 1.0))
 
             curr_atk = int(atk * _skills.get_enemy_atk_mult(player))
-            dmg_taken = max(1, curr_atk - def_bonus - stat_def)
+            dmg_taken = max(1, curr_atk - total_def)
             dmg_taken = _skills.apply_incoming_buffs(player, dmg_taken, action_logs, combat_ctx)
             disp_dmg_taken, _, _ = apply_dynamic_scaling(dmg_taken, 0, tier)
             print(Fore.RED + Style.BRIGHT + t('combat_enemy_attack', name=name, dmg=f"{disp_dmg_taken:,}"))
