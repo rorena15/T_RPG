@@ -594,5 +594,23 @@
   "update_skip":        "  업데이트를 건너뜁니다.\n",
   "update_downloading": "  다운로드 중...",
   "update_fail":        "  [red]다운로드 실패: {e}[/red]",
-  "update_installing":  "  설치 중... 게임이 재시작됩니다."
+  "update_installing":  "  설치 중... 게임이 재시작됩니다.",
+
+  "combat_cancel_item":       "  [0] 취소",
+  "combat_log_escape_diary":  "[전투] {name} — 전술적 후퇴",
+  "combat_log_win_diary":     "[전투] {name} — 제압 완료 (총 {count}기)",
+
+  "alert_level_prefix":       "  [경보 레벨] ",
+  "consumable_item_line":     "  [{idx}] {name} (보유: {owned}개) - [{desc}]",
+
+  "ending_skill_notice_tag":  "[안내]",
+
+  "trader_item_line":         "  [{idx}] {name} — {cost:>3}개  (보유: {owned}개)",
+
+  "equip_desc_db_missing":    "DB 파일 누락.",
+  "equip_desc_unregistered":  "DB 미등록 부품.",
+
+  "game_log_start":   "[시작] 생존 프로토콜 개시 — N-404, 데드존 투입",
+  "quest_fail_diary": "[퀘스트 실패] {title}",
+  "boss_log_prep":    "[보스] 스캐브 컬렉터 추적 확인 — 최종 전투 준비"
 }
