@@ -9,7 +9,7 @@ import time
 import db_init
 import constants
 from i18n import t
-from sys_log import sys_log, track, log_error
+from sys_log import sys_log, track
 
 _eq_cache: dict = {}
 

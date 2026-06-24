@@ -2,18 +2,14 @@
 # 의존성: constants, core, ui, combat, quest, sys_log
 
 import time
-import random
-import os
-import sys
 import constants
-from colorama import Fore, Back, Style
+from colorama import Fore, Style
 from core import get_equipment_data
 from ui import (clear_screen, print_header, print_divider, type_text,
-                wait_for_keypress, safe_input, read_key, log_diary,
-                show_diary, ea_rpad, ea_center)
+                wait_for_keypress, read_key, log_diary,
+                ea_rpad, ea_center)
 from combat import combat_loop, get_turn_scale_multiplier
 from quest import advance_quest
-from sys_log import sys_log, log_error
 from i18n import t
 import sound
 import skills

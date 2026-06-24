@@ -1,4 +1,3 @@
-import math
 import random
 import sys
 import time
@@ -6,10 +5,8 @@ import os
 import json
 import constants
 import sound
-import skills
-import db_init
-from sys_log import sys_log, track, track_event, log_error, setup_global_exception_hook
-from colorama import Fore, Back, Style, init as colorama_init
+from sys_log import track, setup_global_exception_hook
+from colorama import Fore, Style, init as colorama_init
 from rich.console import Console
 from i18n import t, set_lang
 from updater import check_and_prompt_update

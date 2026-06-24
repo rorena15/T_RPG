@@ -6,15 +6,15 @@ import random
 import sys
 import time
 import constants
-from colorama import Fore, Back, Style
+from colorama import Fore, Style
 from core import get_equipment_data
 from i18n import t
 from ui import (clear_screen, print_header, print_divider, type_text,
-                wait_for_keypress, safe_input, read_key, log_diary,
+                wait_for_keypress, read_key, log_diary,
                 _log_color, roll_medkit, roll_food, roll_water)
 import skills as _skills
 from quest import advance_quest
-from sys_log import sys_log, track, log_error
+from sys_log import track
 
 _NAIWPN_ID = "NEOARC_AI_WPN"
 
