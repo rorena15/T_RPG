@@ -7,10 +7,14 @@ import json
 import sqlite3
 import db_init
 import constants
-from sys_log import sys_log, track, track_event
+from sys_log import sys_log, track, track_event, log_error, setup_global_exception_hook
 from colorama import Fore, Back, Style, init as colorama_init
+from rich.console import Console
 from i18n import t, set_lang
 import sound
+from updater import check_and_prompt_update
+
+_console = Console(highlight=False)
 
 # ====================================================================
 # [0] 경로
@@ -1233,6 +1237,7 @@ def run_game():
     os.system('color 0B')
     colorama_init(autoreset=True)
 
+    check_and_prompt_update(constants.GAME_VERSION, console=_console)
     set_lang("ko")  # 기본값
 
     player = Player()
@@ -1562,6 +1567,7 @@ def run_game():
 
 def handle_session(player, session):
     clear_screen()
+    sound.play_typing_bgm()
     print_header(session['title'])
     type_text(session['text'], 0.02)
     print()
@@ -1856,6 +1862,7 @@ def run_prologue():
         return
 
     clear_screen()
+    sound.play_typing_bgm()
 
     # ── 단계 1: 부팅 시퀀스 ──────────────────────────────────────────────
     boot_log = [
@@ -1977,6 +1984,7 @@ def run_boss_core_choice(player):
 
 def run_ending(player):
     clear_screen()
+    sound.stop_all()
     print_header("PIONEER PROTOCOL: NORMALIZATION EXECUTION")
     type_text(t('ending_core_1'), 0.03)
     type_text(t('ending_core_2'), 0.03)
@@ -2085,5 +2093,6 @@ def run_ending(player):
     wait_for_keypress()
 
 if __name__ == "__main__":
+    setup_global_exception_hook()
     sound.init()
     run_game()
