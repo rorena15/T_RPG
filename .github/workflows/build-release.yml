@@ -44,7 +44,6 @@ jobs:
             --name="PROTOCOL_STIGMA" `
             --distpath="개발/dist" `
             --workpath="개발/build" `
-            --specpath="개발" `
             --icon="개발/Protocol_Stigma_1.ico" `
             --add-data "개발/database.json;." `
             --add-data "개발/master_formulas.json;." `
