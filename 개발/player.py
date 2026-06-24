@@ -434,7 +434,7 @@ class Player:
             elif cmd == "DEV_GRANT_LEGACY":
                 conn = sqlite3.connect("stigma_data.db")
                 cursor = conn.cursor()
-                cursor.execute("SELECT item_id, name FROM equipment WHERE tier = 0")
+                cursor.execute("SELECT item_id, name FROM equipment WHERE item_id IN ('WEAPON_LEGACY_01','DECK_LEGACY_01')")
                 legacy_items = cursor.fetchall()
                 conn.close()
                 granted = 0
