@@ -10,6 +10,7 @@
   "menu_new_game": "새로운 게임 (New Game)",
   "menu_load_game": "동기화 복구 (Load Game)",
   "menu_exit": "시스템 종료 (Exit)",
+  "menu_options": "옵션",
 
   "diff_header": "난이도 선택 (DIFFICULTY PROTOCOL)",
   "diff_desc1": "진행 턴이 누적될수록 적의 체력과 공격력이 함께 상승합니다.",
