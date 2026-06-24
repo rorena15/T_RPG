@@ -158,7 +158,7 @@ def get_equipment_data(item_id):
         return _eq_cache[item_id]
     db_path = "stigma_data.db"
     if not os.path.exists(db_path):
-        result = {"name": "손상된 고철", "power": 5, "type": "kinetic", "tier": 4, "desc": "DB 파일 누락."}
+        result = {"name": t('equip_damaged_scrap'), "power": 5, "type": "kinetic", "tier": 4, "desc": t('equip_desc_db_missing')}
         _eq_cache[item_id] = result
         return result
 
@@ -172,8 +172,8 @@ def get_equipment_data(item_id):
         result = {"name": row[0], "power": row[1], "type": row[2], "tier": row[3],
                   "slot": row[4], "slot_weight": row[5], "desc": row[6]}
     else:
-        result = {"name": "미식별 고철", "power": 5, "type": "kinetic", "tier": 4,
-                  "slot": "main_weapon", "slot_weight": 1.5, "desc": "DB 미등록 부품."}
+        result = {"name": t('equip_unidentified_scrap'), "power": 5, "type": "kinetic", "tier": 4,
+                  "slot": "main_weapon", "slot_weight": 1.5, "desc": t('equip_desc_unregistered')}
     _eq_cache[item_id] = result
     return result
 
@@ -581,7 +581,8 @@ class Player:
 
         hp_ratio = self.hp / self.max_hp if self.max_hp > 0 else 1.0
         hp_col = (Fore.GREEN + Style.BRIGHT) if hp_ratio > 0.6 else ((Fore.YELLOW + Style.BRIGHT) if hp_ratio > 0.3 else (Fore.RED + Style.BRIGHT))
-        print(f"  [생명력] {hp_col}{display_hp:,}{Style.RESET_ALL} / {display_max_hp:,}    [허기] {self.hunger:3d} / 100      [갈증] {self.thirst:3d} / 100")
+        hp_colored = f"{hp_col}{display_hp:,}{Style.RESET_ALL}"
+        print(t('status_hp', hp=hp_colored, maxhp=f"{display_max_hp:,}", hunger=self.hunger, thirst=self.thirst))
 
         item_data = get_equipment_data(self.equipment['main_weapon'])
         wpn_name = item_data['name']
@@ -785,7 +786,7 @@ class Player:
                 thirst_str = t('consumable_thirst', val=item['thirst']) if item['thirst'] > 0 else ""
                 desc = h_val + thirst_str
 
-            print(f"  [{i+1}] {item['name']} (보유: {self.consumables[key]}개) - [{desc}]")
+            print(t('consumable_item_line', idx=i+1, name=item['name'], owned=self.consumables[key], desc=desc))
 
         print_divider()
         print(t('consumable_back'))
@@ -891,31 +892,31 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
     phase2_triggered = False
 
     if is_boss:
-        name, e_def, base_atk, hp = "스캐브 컬렉터 [BOSS]", 45, 180, 35000
-        art, header_title = ENEMY_ART["BOSS"], "SYSTEM ALERT: 숙청 시퀀스 가동"
+        name, e_def, base_atk, hp = t('enemy_boss_name'), 45, 180, 35000
+        art, header_title = ENEMY_ART["BOSS"], t('enemy_boss_header')
         base_atk = int(base_atk * scale_mult)
         hp = int(hp * scale_mult)
         boss_max_hp = hp
         atk = base_atk
     elif enemy_type == "bio_hound":
-        name, e_def, base_atk, hp = "바이오 하운드 [변이체]", 15, 110, 10000
-        art, header_title = ENEMY_ART["BIOHOUND"], "ENCOUNTER: 생물형 기계 괴수"
+        name, e_def, base_atk, hp = t('enemy_bio_name'), 15, 110, 10000
+        art, header_title = ENEMY_ART["BIOHOUND"], t('enemy_bio_header')
         base_atk = int(base_atk * scale_mult)
         if current_hp is not None:
             hp = current_hp
-            name = "상처입은 바이오 하운드"
-            header_title = "ENCOUNTER: 추적된 변이체"
+            name = t('enemy_bio_name_wounded')
+            header_title = t('enemy_bio_header_wounded')
         else:
             hp = int(hp * scale_mult)
         atk = base_atk
     else:
-        name, e_def, base_atk, hp = "오염된 스캐브 드론", 5, 80, 8000
-        art, header_title = ENEMY_ART["NORMAL"], "ENCOUNTER: 포식자 조우"
+        name, e_def, base_atk, hp = t('enemy_drone_name'), 5, 80, 8000
+        art, header_title = ENEMY_ART["NORMAL"], t('enemy_drone_header')
         base_atk = int(base_atk * scale_mult)
         if current_hp is not None:
             hp = current_hp
-            name = "상처입은 스캐브 드론"
-            header_title = "ENCOUNTER: 추적된 개체"
+            name = t('enemy_drone_name_wounded')
+            header_title = t('enemy_drone_header_wounded')
         else:
             hp = int(hp * scale_mult)
         atk = base_atk
@@ -925,7 +926,7 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
     consecutive_attacks = 0
     escaped = False
     escape_log = ""
-    action_logs = [f"[경보] 안개 속에서 {name}이(가) 나타났습니다!"]
+    action_logs = [t('combat_encounter_alert', name=name)]
 
     hp_bonus, def_bonus = player.get_armor_bonus()
     gear_atk     = player.get_gear_atk_bonus()
@@ -1093,7 +1094,7 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
                     thirst_str = t('consumable_thirst', val=item['thirst']) if item['thirst'] > 0 else ""
                     desc = h_val + thirst_str
                 print(f"  [{i+1}] {item['name']} x{player.consumables[key]} — {desc}")
-            print("  [0] 취소")
+            print(t('combat_cancel_item'))
             item_cmd = read_key()
             if item_cmd.isdigit() and 0 < int(item_cmd) <= len(avail):
                 key = avail[int(item_cmd) - 1]
@@ -1175,7 +1176,7 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
                 player.consumables[it] += 1
                 print(t('combat_loot_food', name=CONSUMABLES_DB[it]['name']))
 
-        log_diary(player, f"[전투] {name} — 전술적 후퇴")
+        log_diary(player, t('combat_log_escape_diary', name=name))
         wait_for_keypress()
         if hp_bonus > 0:
             player.max_hp -= hp_bonus
@@ -1207,7 +1208,7 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
             print(t('combat_farm_scrap'))
 
     advance_quest(player, "combat")
-    log_diary(player, f"[전투] {name} — 제압 완료 (총 {player.enemies_defeated}기)")
+    log_diary(player, t('combat_log_win_diary', name=name, count=player.enemies_defeated))
     wait_for_keypress()
     if hp_bonus > 0:
         player.max_hp -= hp_bonus
@@ -1330,7 +1331,7 @@ def run_game():
                 if diff_ans in diff_map:
                     player.difficulty = diff_map[diff_ans]
                     run_prologue()
-                    log_diary(player, "[시작] 생존 프로토콜 개시 — N-404, 데드존 투입")
+                    log_diary(player, t('game_log_start'))
                     break
 
                 print(f"\n  {t('diff_invalid')}")
@@ -1347,7 +1348,7 @@ def run_game():
         if player.active_quest and player.turn_count > player.active_quest["deadline"]:
             q = player.active_quest
             print(t('quest_failed', title=q['title']))
-            log_diary(player, f"[퀘스트 실패] {q['title']}")
+            log_diary(player, t('quest_fail_diary', title=q['title']))
             player.active_quest = None
             time.sleep(1.5)
             clear_screen()
@@ -1479,7 +1480,7 @@ def run_game():
                 if SESSIONS_DB and len(SESSIONS_DB) > 6:
                     handle_session(player, SESSIONS_DB[6])
                 # 보스전 준비 화면
-                log_diary(player, "[보스] 스캐브 컬렉터 추적 확인 — 최종 전투 준비")
+                log_diary(player, t('boss_log_prep'))
                 clear_screen()
                 print_header(t('boss_alert_header'))
                 type_text(t('boss_approach_1'), 0.025)
@@ -1602,12 +1603,12 @@ def handle_session(player, session):
             _reward_note = ""
             if choice_data.get("reward") and choice_data["reward"] != "SCRAP_MAT":
                 _rd = get_equipment_data(choice_data["reward"])
-                _reward_note = f" → {_rd['name']} 획득"
+                _reward_note = t('session_log_reward_item', name=_rd['name'])
             elif choice_data.get("reward") == "SCRAP_MAT":
-                _reward_note = f" → 고철 +{choice_data.get('materials', 30)}"
+                _reward_note = t('session_log_reward_scrap', val=choice_data.get('materials', 30))
             if choice_data.get("ram_bonus"):
-                _reward_note += f" (RAM +{choice_data['ram_bonus']})"
-            log_diary(player, f"[세션] {session['title']} — {_w_label}{_reward_note}")
+                _reward_note += t('session_log_reward_ram', val=choice_data['ram_bonus'])
+            log_diary(player, t('session_log_diary', title=session['title'], label=_w_label, note=_reward_note))
 
             if choice_weight and player.weights[choice_weight] >= 3:
                 _wcb = {
@@ -1650,7 +1651,7 @@ def trigger_sudden_quest(player):
     print(t('quest_deadline_label', turns=tpl['turns'], current=player.turn_count, deadline=deadline))
     print(t('quest_reward_label', reward=tpl['reward_desc']))
     print()
-    log_diary(player, f"[퀘스트] {tpl['title']} 발생 (기한: {deadline}턴)")
+    log_diary(player, t('quest_log_start', title=tpl['title'], deadline=deadline))
     wait_for_keypress()
 
 
@@ -1677,7 +1678,7 @@ def _complete_quest(player):
         player.max_ram += amt
         print(t('quest_ram_remaining', val=player.max_ram))
     print()
-    log_diary(player, f"[퀘스트 완료] {q['title']} → {q['reward_desc']}")
+    log_diary(player, t('quest_log_complete', title=q['title'], reward=q['reward_desc']))
     player.active_quest = None
     wait_for_keypress()
 
@@ -1695,7 +1696,7 @@ def advance_quest(player, qtype, amount=1):
 def handle_random_event(player, event):
     """RANDOM_EVENTS DB에서 뽑힌 미니 이벤트를 처리합니다."""
     clear_screen()
-    print_header(f"[탐색 이벤트] {event['title']}")
+    print_header(t('event_header', title=event['title']))
     type_text(event["text"], 0.02)
     print()
 
@@ -1721,7 +1722,7 @@ def handle_random_event(player, event):
             if key in player.consumables:
                 player.consumables[key] += 1
                 print(t('event_item_gain', name=CONSUMABLES_DB[key]['name']))
-        log_diary(player, f"[이벤트] {event['title']}")
+        log_diary(player, t('event_log_simple', title=event['title']))
         wait_for_keypress()
 
     elif event["type"] == "choice":
@@ -1764,8 +1765,12 @@ def handle_random_event(player, event):
             if key in player.consumables:
                 player.consumables[key] += 1
                 print(t('event_item_gain', name=CONSUMABLES_DB[key]['name']))
-        _ew_label = {"kinetic": "완력", "scrap": "해체", "cyber": "해킹"}.get(c.get("weight"), "선택")
-        log_diary(player, f"[이벤트] {event['title']} — {_ew_label}")
+        _ew_label = {
+            "kinetic": t('weight_label_kinetic'),
+            "scrap":   t('weight_label_scrap'),
+            "cyber":   t('weight_label_cyber'),
+        }.get(c.get("weight"), t('weight_label_default'))
+        log_diary(player, t('event_log_choice', title=event['title'], label=_ew_label))
         wait_for_keypress()
 
 
@@ -1784,7 +1789,7 @@ def handle_trader(player):
         for i, item in enumerate(TRADER_ITEMS):
             stock_key = item["id"]
             owned = player.consumables.get(stock_key, 0)
-            print(f"  [{i+1}] {item['name']:<20} — {item['cost']:>3}개  (보유: {owned}개)")
+            print(t('trader_item_line', idx=i+1, name=f"{item['name']:<20}", cost=item['cost'], owned=owned))
         print_divider()
         print(t('trader_exit'))
 
@@ -1802,7 +1807,7 @@ def handle_trader(player):
                 key = chosen["id"]
                 player.consumables[key] += 1
                 print(t('trader_bought', name=chosen['name'], scrap=player.materials))
-                log_diary(player, f"[거래] {chosen['name']} 구매 (-{chosen['cost']} 고철)")
+                log_diary(player, t('trader_log_bought', name=chosen['name'], cost=chosen['cost']))
                 time.sleep(1)
             else:
                 print(t('trader_no_scrap', owned=player.materials, cost=chosen['cost']))

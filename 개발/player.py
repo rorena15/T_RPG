@@ -289,7 +289,7 @@ class Player:
         else:
             al_col = Fore.GREEN
         al_label = t('alert_danger') if al >= 80 else (t('alert_caution') if al >= 50 else t('alert_safe'))
-        print(f"  [경보 레벨] {al_col}{al_bar}{Style.RESET_ALL}  {al:3d} / 100  [{al_label}]"
+        print(t('alert_level_prefix') + f"{al_col}{al_bar}{Style.RESET_ALL}  {al:3d} / 100  [{al_label}]"
               f"  {Fore.WHITE + Style.DIM}{t('alert_2nd_act')}{Style.RESET_ALL}")
         print_divider()
 
@@ -469,7 +469,7 @@ class Player:
                 thirst_str = t('consumable_thirst', val=item['thirst']) if item['thirst'] > 0 else ""
                 desc = hunger_str + thirst_str
 
-            print(f"  [{i+1}] {item['name']} (보유: {self.consumables[key]}개) - [{desc}]")
+            print(t('consumable_item_line', idx=i+1, name=item['name'], owned=self.consumables[key], desc=desc))
 
         print_divider()
         print(t('consumable_back'))

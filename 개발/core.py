@@ -85,7 +85,7 @@ def get_equipment_data(item_id):
         return result
     db_path = "stigma_data.db"
     if not os.path.exists(db_path):
-        result = {"name": t('equip_damaged_scrap'), "power": 5, "type": "kinetic", "tier": 4, "desc": "DB 파일 누락."}
+        result = {"name": t('equip_damaged_scrap'), "power": 5, "type": "kinetic", "tier": 4, "desc": t('equip_desc_db_missing')}
         _eq_cache[item_id] = result
         return result
 
@@ -100,7 +100,7 @@ def get_equipment_data(item_id):
                   "slot": row[4], "slot_weight": row[5], "desc": row[6]}
     else:
         result = {"name": t('equip_unidentified_scrap'), "power": 5, "type": "kinetic", "tier": 4,
-                  "slot": "main_weapon", "slot_weight": 1.5, "desc": "DB 미등록 부품."}
+                  "slot": "main_weapon", "slot_weight": 1.5, "desc": t('equip_desc_unregistered')}
     _eq_cache[item_id] = result
     return result
 

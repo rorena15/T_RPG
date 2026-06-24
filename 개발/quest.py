@@ -197,7 +197,7 @@ def handle_trader(player):
         for i, item in enumerate(constants.TRADER_ITEMS):
             stock_key = item["id"]
             owned = player.consumables.get(stock_key, 0)
-            print(f"  [{i+1}] {item['name']:<20} — {item['cost']:>3}개  (보유: {owned}개)")
+            print(t('trader_item_line', idx=i+1, name=f"{item['name']:<20}", cost=item['cost'], owned=owned))
         print_divider()
         print(t('trader_exit'))
 

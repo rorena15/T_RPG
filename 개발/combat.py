@@ -326,7 +326,7 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
                     thirst_str = t('consumable_thirst', val=item['thirst']) if item['thirst'] > 0 else ""
                     desc = h_val + thirst_str
                 print(f"  [{i+1}] {item['name']} x{player.consumables[key]} — {desc}")
-            print("  [0] 취소")
+            print(t('combat_cancel_item'))
             item_cmd = read_key()
             if item_cmd.isdigit() and 0 < int(item_cmd) <= len(avail):
                 key = avail[int(item_cmd) - 1]
@@ -475,7 +475,7 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
                 player.consumables[it] += 1
                 print(t('combat_loot_food', name=constants.CONSUMABLES_DB[it]['name']))
 
-        log_diary(player, f"[전투] {name} — 전술적 후퇴")
+        log_diary(player, t('combat_log_escape_diary', name=name))
         _neoarc_decay(player, sub_wpn_used)
         wait_for_keypress()
         if hp_bonus > 0:
@@ -508,7 +508,7 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
             print(t('combat_farm_scrap'))
 
     advance_quest(player, "combat")
-    log_diary(player, f"[전투] {name} — 제압 완료 (총 {player.enemies_defeated}기)")
+    log_diary(player, t('combat_log_win_diary', name=name, count=player.enemies_defeated))
     _neoarc_decay(player, sub_wpn_used)
     wait_for_keypress()
     if hp_bonus > 0:
