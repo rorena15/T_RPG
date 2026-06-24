@@ -1647,6 +1647,7 @@ def handle_session(player, session):
                 type_text(_wcb[choice_weight], 0.022)
 
             wait_for_keypress()
+            sound.resume_map_ambient()
             break
 
 def trigger_sudden_quest(player):
