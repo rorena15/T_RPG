@@ -956,6 +956,21 @@ def get_turn_scale_multiplier(player):
     return 1.0 + growth
 
 
+def _neoarc_decay(player, used: bool):
+    """네오 아크 AI 화기 내구도 감소. 사용 시에만 차감, 0 도달 시 파기."""
+    _ID = "NEOARC_AI_WPN"
+    if not used or _ID not in player.inventory:
+        return
+    player.temp_weapon_uses[_ID] = player.temp_weapon_uses.get(_ID, 2) - 1
+    remaining = player.temp_weapon_uses[_ID]
+    if remaining <= 0:
+        player.inventory.remove(_ID)
+        del player.temp_weapon_uses[_ID]
+        print(Fore.RED + Style.BRIGHT + t('neoarc_destroyed') + Style.RESET_ALL)
+    else:
+        print(Fore.YELLOW + t('neoarc_status', remaining=remaining) + Style.RESET_ALL)
+
+
 @track
 def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
     scale_mult = get_turn_scale_multiplier(player)
@@ -991,6 +1006,13 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
         else:
             hp = int(hp * scale_mult)
         atk = base_atk
+
+    # ── 보조 화기 — 네오 아크 AI 폐기 화기 ─────────────────────────────
+    _NAIWPN = "NEOARC_AI_WPN"
+    sub_wpn_power  = 100
+    sub_wpn_name   = t('sub_wpn_name')
+    sub_charges    = 2 if _NAIWPN in player.inventory else 0
+    sub_wpn_used   = False
 
     turn = 1
     learning_index = 0
@@ -1070,6 +1092,8 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
         print(t('combat_options_4'))
         if has_consumable:
             print(t('combat_options_5'))
+        if sub_charges > 0:
+            print(f"  {Fore.MAGENTA + Style.BRIGHT}{t('combat_sub_wpn_option', name=sub_wpn_name, charges=sub_charges)}{Style.RESET_ALL}")
         if has_skill:
             print(t('combat_options_6'))
 
@@ -1208,6 +1232,43 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
             else:
                 action_logs.append(t('combat_cancel_log'))
 
+        elif cmd == "6" and sub_charges > 0:
+            if player.max_ram >= 2:
+                consecutive_attacks += 1
+                if consecutive_attacks >= 2 and is_boss:
+                    e_gain = max(0, 3 - e_suppress)
+                    learning_index += e_gain
+                sub_charges -= 1
+                sub_wpn_used = True
+                player.max_ram -= 2
+
+                f_multiplier = 1.0 + (player.reputation / 2000)
+                penalty = max(0.5, 1.0 - (learning_index - 10) * 0.05) if learning_index > 10 else 1.0
+                sub_dmg = max(75, math.floor((sub_wpn_power + gear_atk) * f_multiplier * penalty * 70) - e_def + random.randint(-25, 50))
+                sub_dmg = skills.apply_outgoing_buffs(player, sub_dmg, action_logs)
+
+                stat_crt = player.calc_crt_rate()
+                is_crit = random.random() < stat_crt
+                if is_crit:
+                    sub_dmg = math.floor(sub_dmg * 1.5)
+                    action_logs.append(t('combat_sub_crit'))
+
+                disp_sub_dmg, _, _ = apply_dynamic_scaling(sub_dmg, 0, tier)
+                crit_tag = Fore.YELLOW + Style.BRIGHT + " [CRITICAL!]" + Style.RESET_ALL if is_crit else ""
+                charges_tag = t('combat_sub_ammo_remaining', charges=sub_charges) if sub_charges > 0 else t('combat_sub_ammo_empty')
+                print(Fore.MAGENTA + Style.BRIGHT + t('combat_sub_wpn_hit', name=sub_wpn_name, dmg=f"{disp_sub_dmg:,}") + crit_tag)
+                time.sleep(1)
+                hp = max(0, hp - sub_dmg)
+                _, disp_ehp_new, _ = apply_dynamic_scaling(0, hp, tier)
+                print(t('combat_enemy_hp', name=name, hp=f"{disp_ehp_new:,}"))
+                time.sleep(1)
+                action_logs.append(t('combat_sub_wpn_log', name=sub_wpn_name, dmg=f"{disp_sub_dmg:,}", charges_tag=charges_tag))
+                time.sleep(1)
+            else:
+                print(t('combat_sub_no_ram_msg'))
+                time.sleep(0.5)
+                action_logs.append(t('combat_sub_no_ram_log'))
+
         elif cmd == "S" and has_skill:
             consecutive_attacks = 0
             if len(player.skill_slots) == 1:
@@ -1320,6 +1381,7 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
                 print(t('combat_loot_food', name=CONSUMABLES_DB[it]['name']))
 
         log_diary(player, t('combat_log_escape_diary', name=name))
+        _neoarc_decay(player, sub_wpn_used)
         wait_for_keypress()
         if hp_bonus > 0:
             player.max_hp -= hp_bonus
@@ -1352,6 +1414,7 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
 
     advance_quest(player, "combat")
     log_diary(player, t('combat_log_win_diary', name=name, count=player.enemies_defeated))
+    _neoarc_decay(player, sub_wpn_used)
     wait_for_keypress()
     if hp_bonus > 0:
         player.max_hp -= hp_bonus
@@ -2288,6 +2351,137 @@ def run_ending(player):
     print(Fore.GREEN + Style.BRIGHT + "  ║  " + ea_rpad(t('ending_clear_banner'), 72) + "║")
     print(Fore.GREEN + Style.BRIGHT + "  ╚" + "═" * 74 + "╝")
     wait_for_keypress()
+    run_act2_teaser(player)
+
+
+def run_act2_teaser(player):
+    """1막 클리어 후 2막 예고 시퀀스 — 직업 스킬 미리보기 + 두 진영 신호."""
+    w_k = player.weights['kinetic']
+    w_s = player.weights['scrap']
+    w_c = player.weights['cyber']
+
+    if w_k == w_s == w_c:
+        job_key = "balanced"
+    elif w_k >= w_s and w_k >= w_c:
+        job_key = "kinetic"
+    elif w_s >= w_k and w_s >= w_c:
+        job_key = "scrap"
+    else:
+        job_key = "cyber"
+
+    job_tag   = t(f'act2_tease_{job_key}_job')
+    act2_skills = t(f'act2_skills_{job_key}')
+
+    # ── 스크린 1: 직업 스킬 예고 ────────────────────────────────────────
+    clear_screen()
+    print_header(t('act2_tease_skill_header', job=job_tag))
+    print()
+    type_text(t('act2_tease_skill_intro_1', job=job_tag), 0.028)
+    type_text(t('act2_tease_skill_intro_2'), 0.025)
+    print()
+    print_divider()
+    print(t('act2_tease_unlock_header'))
+    print_divider()
+    time.sleep(0.4)
+    for sname, sdesc in act2_skills:
+        print(f"\n  {Fore.CYAN + Style.BRIGHT}▶  {sname}{Style.RESET_ALL}")
+        type_text(f"     {sdesc}", 0.018)
+        time.sleep(0.2)
+    print()
+    wait_for_keypress()
+
+    # ── 스크린 2: 두 진영의 신호 수신 ───────────────────────────────────
+    clear_screen()
+    print_header(t('act2_signal_header'))
+    print()
+    time.sleep(0.6)
+    type_text(t('act2_signal_intro'), 0.025)
+    print()
+    time.sleep(0.5)
+
+    print_divider()
+    type_text(Fore.CYAN + Style.BRIGHT + t('act2_signal_a_header') + Style.RESET_ALL, 0.02)
+    time.sleep(0.3)
+    print()
+    type_text(t('act2_signal_a_1'), 0.03)
+    type_text(t('act2_signal_a_2'), 0.03)
+    type_text(t('act2_signal_a_3'), 0.03)
+    print()
+    print(Fore.CYAN + Style.BRIGHT + t('act2_signal_a_tag') + Style.RESET_ALL)
+    time.sleep(0.8)
+
+    print_divider()
+    type_text(Fore.YELLOW + Style.BRIGHT + t('act2_signal_b_header') + Style.RESET_ALL, 0.02)
+    time.sleep(0.3)
+    print()
+    type_text(t('act2_signal_b_1'), 0.03)
+    type_text(t('act2_signal_b_2'), 0.03)
+    type_text(t('act2_signal_b_3'), 0.03)
+    print()
+    print(Fore.YELLOW + Style.BRIGHT + t('act2_signal_b_tag') + Style.RESET_ALL)
+    print_divider()
+    time.sleep(0.5)
+    print()
+    type_text(t('act2_signal_footer_1'), 0.028)
+    type_text(t('act2_signal_footer_2'), 0.028)
+    print()
+    time.sleep(0.6)
+    print_divider()
+    print(t('act2_signal_prompt'))
+    print()
+    print(f"  {Fore.CYAN + Style.BRIGHT}[1]{Style.RESET_ALL} " + t('act2_signal_opt1'))
+    print(f"  {Fore.YELLOW + Style.BRIGHT}[2]{Style.RESET_ALL} " + t('act2_signal_opt2'))
+    print(f"  {Fore.WHITE}[3]{Style.RESET_ALL} " + t('act2_signal_opt3'))
+    print_divider()
+    print(Fore.WHITE + Style.DIM + t('act2_signal_later') + Style.RESET_ALL)
+
+    while True:
+        ans = read_key()
+        if ans in ["1", "2", "3"]:
+            break
+
+    print()
+    if ans == "1":
+        type_text(t('act2_reply_a_send'), 0.03)
+        time.sleep(0.5)
+        type_text(Fore.CYAN + Style.BRIGHT + t('act2_reply_a_recv') + Style.RESET_ALL, 0.03)
+        log_diary(player, t('act2_diary_a'))
+    elif ans == "2":
+        type_text(t('act2_reply_b_send'), 0.03)
+        time.sleep(0.5)
+        type_text(Fore.YELLOW + Style.BRIGHT + t('act2_reply_b_recv') + Style.RESET_ALL, 0.03)
+        log_diary(player, t('act2_diary_b'))
+    else:
+        type_text(t('act2_reply_none'), 0.03)
+        log_diary(player, t('act2_diary_none'))
+
+    time.sleep(0.8)
+    wait_for_keypress()
+
+    # ── 스크린 3: 2막 타이틀 카드 ───────────────────────────────────────
+    clear_screen()
+    print()
+    time.sleep(1.0)
+    type_text(t('act2_title_1'), 0.032)
+    print()
+    time.sleep(0.6)
+    type_text(t('act2_title_2'), 0.025)
+    print()
+    time.sleep(0.8)
+    print_divider()
+    print()
+    print(Fore.WHITE + Style.BRIGHT + "  ╔" + "═" * 74 + "╗")
+    print(Fore.WHITE + Style.BRIGHT + "  ║" + " " * 74 + "║")
+    print(Fore.CYAN  + Style.BRIGHT + "  ║" + ea_center("P  R  O  T  O  C  O  L  :  S  T  I  G  M  A", 74) + "║")
+    print(Fore.WHITE + Style.BRIGHT + "  ║" + ea_center(t('act2_title_act2'), 74) + "║")
+    print(Fore.WHITE + Style.BRIGHT + "  ║" + " " * 74 + "║")
+    print(Fore.YELLOW + Style.BRIGHT + "  ║" + ea_center("— COMING SOON —", 74) + "║")
+    print(Fore.WHITE + Style.BRIGHT + "  ║" + " " * 74 + "║")
+    print(Fore.WHITE + Style.BRIGHT + "  ╚" + "═" * 74 + "╝")
+    print()
+    time.sleep(0.5)
+    type_text(t('act2_title_thanks'), 0.025)
+
 
 if __name__ == "__main__":
     setup_global_exception_hook()
