@@ -616,5 +616,13 @@
 
   "game_log_start":   "[시작] 생존 프로토콜 개시 — N-404, 데드존 투입",
   "quest_fail_diary": "[퀘스트 실패] {title}",
-  "boss_log_prep":    "[보스] 스캐브 컬렉터 추적 확인 — 최종 전투 준비"
+  "boss_log_prep":    "[보스] 스캐브 컬렉터 추적 확인 — 최종 전투 준비",
+
+  "perimeter_header":  "[ 외부 경계 경보 ]",
+  "perimeter_alert_1": "[시스템] 외부 정찰 유닛 감지 — 벙커 퍼리미터 접근 중.",
+  "perimeter_alert_2": "각성의 잔열이 아직 손끝에 남아 있다.",
+  "perimeter_opt1":    "  1. 직접 격퇴 — 각성한 힘으로 막아낸다",
+  "perimeter_opt2":    "  2. 회피 침투 — 우회 경로로 내부로",
+  "perimeter_win":     "정찰 유닛 무력화. 퍼리미터 클리어.",
+  "perimeter_skip":    "우회 성공. 적의 시야를 벗어났다."
 }

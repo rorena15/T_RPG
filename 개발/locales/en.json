@@ -616,5 +616,13 @@
 
   "game_log_start":   "[시작] 생존 프로토콜 개시 — N-404, 데드존 투입",
   "quest_fail_diary": "[퀘스트 실패] {title}",
-  "boss_log_prep":    "[보스] 스캐브 컬렉터 추적 확인 — 최종 전투 준비"
+  "boss_log_prep":    "[보스] 스캐브 컬렉터 추적 확인 — 최종 전투 준비",
+
+  "perimeter_header":  "[ PERIMETER ALERT ]",
+  "perimeter_alert_1": "[SYSTEM] External patrol unit detected — approaching bunker perimeter.",
+  "perimeter_alert_2": "The residual heat of awakening still lingers at your fingertips.",
+  "perimeter_opt1":    "  1. Engage — repel them with your awakened power",
+  "perimeter_opt2":    "  2. Evade — slip through the side corridor",
+  "perimeter_win":     "Patrol unit neutralized. Perimeter clear.",
+  "perimeter_skip":    "Evasion successful. Out of enemy detection range."
 }
