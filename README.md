@@ -24,7 +24,7 @@ pip install colorama pygame-ce
 ## 설치 및 실행
 
 **EXE 실행 (권장)**
-1. [릴리즈 페이지](../../releases/latest)에서 `Protocol_Stigma_vX.X.X.zip` 다운로드
+1. [릴리즈 페이지](../../releases/latest)에서 `Protocol_Stigma.exe` 다운로드
 2. 압축 해제 후 `Protocol_Stigma.exe` 실행
 3. Windows Defender 경고 시 → `추가 정보` → `실행` 선택
 
