@@ -9,6 +9,7 @@ import db_init
 from sys_log import sys_log, track, track_event
 from colorama import Fore, Back, Style, init as colorama_init
 from i18n import t, set_lang
+import sound
 
 # ====================================================================
 # [0] 경로
@@ -615,6 +616,7 @@ class Player:
             print(t('status_quest_line', title=q['title'], progress=q['progress'], target=q['target'], turns=turns_left))
         print_divider()
         print()
+        sound.check_survival_alert(self.hunger, self.thirst)
 
     def manage_inventory(self):
         slot_keys = list(SLOT_DISPLAY.keys())
@@ -1343,6 +1345,7 @@ def run_game():
 
         # 잘못된 입력 → 타이틀 재표시
 
+    sound.play_map_ambient()
     while True:
         clear_screen()
         if player.active_quest and player.turn_count > player.active_quest["deadline"]:
@@ -1396,9 +1399,11 @@ def run_game():
                     etype = grid.escaped_enemy_type or "drone"
                 else:
                     etype = "bio_hound" if random.random() < 0.20 else "drone"
+                sound.play_combat_bgm()
                 result_hp, result_type = combat_loop(player, is_boss=False, current_hp=grid.escaped_enemy_hp, enemy_type=etype)
                 grid.escaped_enemy_hp = result_hp
                 grid.escaped_enemy_type = result_type
+                sound.resume_map_ambient()
             elif roll < 0.08 + encounter_chance + 0.20 and RANDOM_EVENTS:
                 # 랜덤 서사 이벤트 (20%)
                 event = random.choice(RANDOM_EVENTS)
@@ -1508,6 +1513,7 @@ def run_game():
                         save_data(player, grid)
                     elif prep_cmd == "3":
                         break
+                sound.play_combat_bgm()
                 combat_loop(player, is_boss=True)
                 run_boss_core_choice(player)
                 run_ending(player)
@@ -1532,9 +1538,11 @@ def run_game():
                             etype = grid.escaped_enemy_type or "drone"
                         else:
                             etype = "bio_hound" if random.random() < 0.20 else "drone"
+                        sound.play_combat_bgm()
                         result_hp, result_type = combat_loop(player, is_boss=False, current_hp=grid.escaped_enemy_hp, enemy_type=etype)
                         grid.escaped_enemy_hp = result_hp
                         grid.escaped_enemy_type = result_type
+                        sound.resume_map_ambient()
                     else:
                         if random.random() < 0.2:
                             print_ambient_lore()
@@ -2064,4 +2072,5 @@ def run_ending(player):
     wait_for_keypress()
 
 if __name__ == "__main__":
+    sound.init()
     run_game()
