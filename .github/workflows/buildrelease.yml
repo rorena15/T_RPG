@@ -1,48 +1,128 @@
-name: Build Windows EXE
+name: Build & Release Windows EXE
 
 on:
   workflow_dispatch:
     inputs:
+
+      # ── 버전 / 릴리즈 ──────────────────────────────────────────────────────
       version:
-        description: '릴리즈 버전'
+        description: '릴리즈 버전 태그 (예: v1.0.1)'
         required: true
         default: 'v1.0.0'
+
+      release_title:
+        description: '릴리즈 제목 (비우면 기본값 사용)'
+        required: false
+        default: ''
+
       notes:
-        description: '업데이트 내용'
+        description: '업데이트 내용 (릴리즈 노트 본문)'
         required: true
         default: '버그 수정'
+
+      release_mode:
+        description: |
+          릴리즈 모드
+            latest   → 새 태그로 최신 릴리즈 생성
+            rerelease → 기존 태그를 덮어쓰기 (같은 버전 재배포)
+            draft    → 초안으로 저장 (게시 안 함)
+            prerelease → 사전 릴리즈(베타) 표시
+        required: true
+        default: 'latest'
+        type: choice
+        options:
+          - latest
+          - rerelease
+          - draft
+          - prerelease
+
+      # ── 빌드 옵션 ─────────────────────────────────────────────────────────
+      python_version:
+        description: 'Python 버전'
+        required: true
+        default: '3.11'
+        type: choice
+        options:
+          - '3.11'
+          - '3.12'
+          - '3.10'
+
+      exe_name:
+        description: 'EXE 파일명 (확장자 제외)'
+        required: true
+        default: 'PROTOCOL_STIGMA'
+
+      inject_version:
+        description: 'constants.py 에 버전 자동 주입'
+        required: true
+        default: 'true'
+        type: boolean
+
+      onefile:
+        description: '--onefile (단일 exe) / false 이면 --onedir'
+        required: true
+        default: 'true'
+        type: boolean
+
+      noconsole:
+        description: '--noconsole (콘솔 창 숨김)'
+        required: true
+        default: 'true'
+        type: boolean
+
+      extra_pyinstaller_args:
+        description: '추가 PyInstaller 옵션 (공백 구분, 예: --debug all)'
+        required: false
+        default: ''
 
 jobs:
   build-windows:
     runs-on: windows-latest
     permissions:
       contents: write
+
     steps:
       - uses: actions/checkout@v4
 
+      # ── Python 설정 ─────────────────────────────────────────────────────────
       - name: Python 설정
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: ${{ github.event.inputs.python_version }}
 
       - name: 의존성 설치
         run: pip install rich colorama pyinstaller pygame-ce
 
+      # ── 버전 주입 ───────────────────────────────────────────────────────────
       - name: 버전 주입
+        if: ${{ github.event.inputs.inject_version == 'true' }}
         shell: pwsh
         run: |
           $version = "${{ github.event.inputs.version }}".TrimStart("v")
           (Get-Content 개발/constants.py -Encoding UTF8) `
             -replace 'GAME_VERSION\s*=\s*"[^"]*"', "GAME_VERSION = `"$version`"" `
             | Set-Content 개발/constants.py -Encoding UTF8
+          Write-Host "버전 주입 완료: $version"
 
+      # ── EXE 빌드 ────────────────────────────────────────────────────────────
       - name: EXE 빌드
         shell: pwsh
         run: |
-          pyinstaller --onefile `
-            --noconsole `
+          $args = @()
+          if ("${{ github.event.inputs.onefile }}" -eq "true") {
+            $args += "--onefile"
+          } else {
+            $args += "--onedir"
+          }
+          if ("${{ github.event.inputs.noconsole }}" -eq "true") {
+            $args += "--noconsole"
+          }
+          $extra = "${{ github.event.inputs.extra_pyinstaller_args }}".Trim()
+          if ($extra -ne "") { $args += $extra.Split(" ") }
+
+          pyinstaller @args `
             --collect-all pygame `
-            --name="PROTOCOL_STIGMA" `
+            --name="${{ github.event.inputs.exe_name }}" `
             --distpath="개발/dist" `
             --workpath="개발/build" `
             --icon="개발/Protocol_Stigma_1.ico" `
@@ -52,15 +132,81 @@ jobs:
             --add-data "assets;assets" `
             개발/Main.py
 
-      - name: GitHub Release 생성
+      # ── 릴리즈 제목 결정 ────────────────────────────────────────────────────
+      - name: 릴리즈 제목 결정
+        id: title
+        shell: pwsh
+        run: |
+          $custom = "${{ github.event.inputs.release_title }}".Trim()
+          if ($custom -ne "") {
+            $t = $custom
+          } else {
+            $t = "PROTOCOL: STIGMA ${{ github.event.inputs.version }} - 1막: 낙인"
+          }
+          echo "value=$t" >> $env:GITHUB_OUTPUT
+
+      # ── GitHub Release 생성 ─────────────────────────────────────────────────
+      - name: GitHub Release 생성 (latest)
+        if: ${{ github.event.inputs.release_mode == 'latest' }}
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.event.inputs.version }}
-          name: "PROTOCOL: STIGMA ${{ github.event.inputs.version }} - 1막: 낙인"
+          name: ${{ steps.title.outputs.value }}
           body: |
             ${{ github.event.inputs.notes }}
 
             Windows 64비트 실행 파일입니다.
             다운로드 후 바로 실행 가능합니다. (Python 설치 불필요)
-          files: 개발/dist/PROTOCOL_STIGMA.exe
+          files: 개발/dist/${{ github.event.inputs.exe_name }}.exe
           draft: false
+          prerelease: false
+
+      - name: GitHub Release 생성 (rerelease — 기존 태그 덮어쓰기)
+        if: ${{ github.event.inputs.release_mode == 'rerelease' }}
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.version }}
+          name: ${{ steps.title.outputs.value }}
+          body: |
+            ${{ github.event.inputs.notes }}
+
+            Windows 64비트 실행 파일입니다.
+            다운로드 후 바로 실행 가능합니다. (Python 설치 불필요)
+          files: 개발/dist/${{ github.event.inputs.exe_name }}.exe
+          draft: false
+          prerelease: false
+          make_latest: true
+          # 같은 태그가 이미 존재하면 파일만 교체
+          fail_on_unmatched_files: false
+
+      - name: GitHub Release 생성 (draft)
+        if: ${{ github.event.inputs.release_mode == 'draft' }}
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.version }}
+          name: ${{ steps.title.outputs.value }}
+          body: |
+            ${{ github.event.inputs.notes }}
+
+            Windows 64비트 실행 파일입니다.
+            다운로드 후 바로 실행 가능합니다. (Python 설치 불필요)
+          files: 개발/dist/${{ github.event.inputs.exe_name }}.exe
+          draft: true
+          prerelease: false
+
+      - name: GitHub Release 생성 (prerelease)
+        if: ${{ github.event.inputs.release_mode == 'prerelease' }}
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.version }}
+          name: "[BETA] ${{ steps.title.outputs.value }}"
+          body: |
+            ⚠️ 사전 릴리즈(베타) 버전입니다.
+
+            ${{ github.event.inputs.notes }}
+
+            Windows 64비트 실행 파일입니다.
+            다운로드 후 바로 실행 가능합니다. (Python 설치 불필요)
+          files: 개발/dist/${{ github.event.inputs.exe_name }}.exe
+          draft: false
+          prerelease: true
