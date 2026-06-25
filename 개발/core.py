@@ -29,7 +29,7 @@ def get_save_path():
 @track
 def init_and_load_db():
     """게임 부팅 시 DB 및 master_formulas.json 무결성을 검증하고 메모리에 로드합니다."""
-    sys_log(" [SYSTEM BOOT] 마스터 공급원 및 메모리 무결성 검증 중...", level="INFO")
+    sys_log(" [SYSTEM BOOT] Starting SSOT, memory integrity check...", level="INFO")
     time.sleep(0.4)
 
     formula_real_path = resource_path("master_formulas.json")
@@ -37,9 +37,9 @@ def init_and_load_db():
         try:
             with open(formula_real_path, "r", encoding="utf-8") as f:
                 constants.MASTER_FORMULAS = json.load(f)
-            sys_log(" [SYSTEM LOG] 단일 진실 공급원(master_formulas.json) 동기화 완료.", level="INFO")
+            sys_log(" [SYSTEM LOG] Synchronization complete. Integrity check passed.", level="INFO")
         except Exception as e:
-            sys_log(f" [SYSTEM WARN] 마스터 수식 로드 실패, 폴백 엔진 가동 ({e})", level="WARN")
+            sys_log(f" [SYSTEM WARN] Failed to load SSOT. Activating fallback engine ({e})", level="WARN")
 
     if not constants.MASTER_FORMULAS:
         constants.MASTER_FORMULAS = {
@@ -50,13 +50,13 @@ def init_and_load_db():
         }
 
     if db_init.init_database():
-        sys_log(" [SYSTEM LOG] 하드웨어 장비 연산 데이터베이스(SQLite) 구축 완료.", level="INFO")
+        sys_log(" [SYSTEM LOG] Hardware device computation database setup complete.", level="INFO")
     else:
-        sys_log(" [SYSTEM LOG] 로컬 장비 데이터베이스 무결성 확인 완료.", level="INFO", show=False)
+        sys_log(" [SYSTEM LOG] Local device database integrity check complete.", level="INFO", show=False)
 
     json_file_path = resource_path("database.json")
     if not os.path.exists(json_file_path):
-        sys_log(f" [SYSTEM FATAL] 서사 파일 '{json_file_path}' 누락. 엔트리를 시작할 수 없습니다.", level="FATAL")
+        sys_log(f" [SYSTEM FATAL] Narrative file '{json_file_path}' is missing. Cannot start entry.", level="FATAL")
         sys.exit()
 
     try:
@@ -68,10 +68,10 @@ def init_and_load_db():
             constants.SESSIONS_DB     = db_data.get("SESSIONS_DB", [])
             constants.RANDOM_EVENTS   = db_data.get("RANDOM_EVENTS", [])
             constants.TRADER_ITEMS    = db_data.get("TRADER_ITEMS", [])
-        sys_log(" [SYSTEM LOG] 서사 및 생체 소모품 데이터 구조화 파싱 완료.", level="INFO")
+        sys_log(" [SYSTEM LOG] Parsing completed for structured narrative and biometric consumables data.", level="INFO")
         time.sleep(0.6)
     except Exception as e:
-        sys_log(f" [SYSTEM FATAL] JSON 데이터베이스 파싱 오류: {e}", level="FATAL")
+        sys_log(f" [SYSTEM FATAL] Failed to parse JSON database: {e}", level="FATAL")
         sys.exit()
 
 
