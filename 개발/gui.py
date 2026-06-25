@@ -87,19 +87,23 @@ class PygameTerminal:
         pygame.display.init()
         pygame.font.init()
 
-        self.font     = self._load_font(18, _FONT_CANDIDATES)
-        self.font_box = self._load_font(18, _FONT_BOX_CANDIDATES)
-        self._cw, self._ch = self.font.size("W")
-        self._unit_w  = self._cw                # 기준 단위 너비 = 'W' 너비 (공백은 가변폭 폰트에서 좁음)
-        self._box_cache:  dict = {}              # (char, color) → pre-scaled Surface
-        self._char_cache: dict = {}              # (char, color) → per-char scaled Surface
+        self._title      = title
+        self._font_size  = 18
+        self._box_cache:  dict = {}
+        self._char_cache: dict = {}
+        self._buf: list[list[tuple[str, tuple]]] = [[]]
+        self._fg     = _DEFAULT_COLOR
+        self._bright = False
+        self._dim    = False
 
-        w = self._cw * self.COLS + self.PAD_X * 2
-        h = self._ch * self.ROWS + self.PAD_Y * 2
+        self._load_fonts(self._font_size)
+
+        w = self._unit_w * self.COLS + self.PAD_X * 2
+        h = self._ch     * self.ROWS + self.PAD_Y * 2
         self.screen = pygame.display.set_mode((w, h), pygame.RESIZABLE)
         pygame.display.set_caption(title)
 
-        # 창 아이콘 — exe 빌드에 쓰는 .ico 공유
+        # 창 아이콘 — assets/icon.ico 공유
         _ico = self._find_ico()
         if _ico:
             try:
@@ -107,13 +111,19 @@ class PygameTerminal:
             except Exception:
                 pass
 
-        # 버퍼: 줄 목록, 각 줄은 (텍스트 세그먼트, RGB 색상) 튜플 목록
-        self._buf: list[list[tuple[str, tuple]]] = [[]]
-        self._fg     = _DEFAULT_COLOR
-        self._bright = False
-        self._dim    = False
-
         self._render()
+
+    def _load_fonts(self, size: int):
+        """폰트를 (재)로드하고 컬럼 너비 측정값을 갱신합니다. 창 리사이즈 시 재호출."""
+        self.font     = self._load_font(size, _FONT_CANDIDATES)
+        self.font_box = self._load_font(size, _FONT_BOX_CANDIDATES)
+        self._cw, self._ch = self.font.size("W")
+        # 1컬럼 기준 너비: 한글 1자=2컬럼이므로 한글 자연 너비÷2 (한글 폰트는 2:1 설계)
+        _kor_w = self.font.size('가')[0]
+        self._unit_w = _kor_w // 2 if _kor_w >= 8 else self._cw
+        # 캐시 무효화 (폰트가 바뀌면 이전 Surface 사용 불가)
+        self._box_cache  = {}
+        self._char_cache = {}
 
     @staticmethod
     def _find_ico() -> str | None:
@@ -299,6 +309,22 @@ class PygameTerminal:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 sys.exit()
+            elif event.type == pygame.VIDEORESIZE:
+                self._on_resize(event.w, event.h)
+
+    def _on_resize(self, new_w: int, new_h: int):
+        """창 크기 변경 시 폰트를 재계산해 COLS×ROWS가 꽉 차도록 맞춥니다."""
+        # 새 창 크기에서 1컬럼이 차지할 수 있는 최대 픽셀 너비/높이 역산
+        col_px = (new_w - self.PAD_X * 2) / self.COLS
+        row_px = (new_h - self.PAD_Y * 2) / self.ROWS
+        # 폰트 크기 추정: unit_w ≈ font_size * 0.55 (경험치), ch ≈ font_size * 1.3
+        size_from_w = max(8, int(col_px / 0.55))
+        size_from_h = max(8, int(row_px / 1.30))
+        new_size = min(size_from_w, size_from_h)
+        if abs(new_size - self._font_size) < 1:
+            return  # 변화 없으면 재로드 스킵
+        self._font_size = new_size
+        self._load_fonts(new_size)
 
     # ── 화면 제어 ─────────────────────────────────────────────────────────────
     def clear(self):
