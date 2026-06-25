@@ -91,12 +91,21 @@ class PygameTerminal:
         self.font_box = self._load_font(18, _FONT_BOX_CANDIDATES)
         self._cw, self._ch = self.font.size("W")
         self._unit_w  = self.font.size(' ')[0]   # 기준 단위 너비 (공백 1칸)
-        self._box_cache: dict = {}               # (char, color) → pre-scaled Surface
+        self._box_cache:  dict = {}              # (char, color) → pre-scaled Surface
+        self._char_cache: dict = {}              # (char, color) → per-char scaled Surface
 
         w = self._cw * self.COLS + self.PAD_X * 2
         h = self._ch * self.ROWS + self.PAD_Y * 2
         self.screen = pygame.display.set_mode((w, h), pygame.RESIZABLE)
         pygame.display.set_caption(title)
+
+        # 창 아이콘 — exe 빌드에 쓰는 .ico 공유
+        _ico = self._find_ico()
+        if _ico:
+            try:
+                pygame.display.set_icon(pygame.image.load(_ico))
+            except Exception:
+                pass
 
         # 버퍼: 줄 목록, 각 줄은 (텍스트 세그먼트, RGB 색상) 튜플 목록
         self._buf: list[list[tuple[str, tuple]]] = [[]]
@@ -105,6 +114,21 @@ class PygameTerminal:
         self._dim    = False
 
         self._render()
+
+    @staticmethod
+    def _find_ico() -> str | None:
+        """Protocol_Stigma_1.ico 경로를 탐색 (소스 실행 / PyInstaller 모두 대응)."""
+        candidates = []
+        # PyInstaller --onefile: sys._MEIPASS
+        if getattr(sys, 'frozen', False):
+            candidates.append(os.path.join(sys._MEIPASS, 'Protocol_Stigma_1.ico'))
+        # 소스 실행: gui.py 와 같은 디렉터리 (개발/)
+        candidates.append(os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                       'Protocol_Stigma_1.ico'))
+        for p in candidates:
+            if os.path.exists(p):
+                return p
+        return None
 
     # ── 폰트 로딩 ────────────────────────────────────────────────────────────
     @staticmethod
@@ -123,8 +147,18 @@ class PygameTerminal:
         cp = ord(c)
         return any(lo <= cp <= hi for lo, hi in _BOX_RANGES)
 
+    @staticmethod
+    def _is_wide_char(c: str) -> bool:
+        """CJK 등 2칸 너비 문자 여부."""
+        cp = ord(c)
+        return (0x1100 <= cp <= 0x115F or 0x2E80 <= cp <= 0xA4CF or
+                0xA960 <= cp <= 0xA97F or 0xAC00 <= cp <= 0xD7FF or
+                0xF900 <= cp <= 0xFAFF or 0xFE10 <= cp <= 0xFE1F or
+                0xFE30 <= cp <= 0xFE6F or 0xFF00 <= cp <= 0xFF60 or
+                0xFFE0 <= cp <= 0xFFE6)
+
     def _get_box_surf(self, c: str, color: tuple) -> pygame.Surface:
-        """박스 문자를 메인 폰트 공백 너비(_unit_w)에 맞게 스케일한 Surface를 반환 (캐시)."""
+        """박스 문자를 _unit_w 너비로 스케일한 Surface (캐시)."""
         key = (c, color)
         if key not in self._box_cache:
             raw = self.font_box.render(c, True, color)
@@ -132,6 +166,17 @@ class PygameTerminal:
                 raw = pygame.transform.scale(raw, (self._unit_w, self._ch))
             self._box_cache[key] = raw
         return self._box_cache[key]
+
+    def _get_char_surf(self, c: str, color: tuple) -> pygame.Surface:
+        """일반 문자를 컬럼 너비(ASCII=_unit_w, CJK=2*_unit_w)로 스케일한 Surface (캐시)."""
+        key = (c, color)
+        if key not in self._char_cache:
+            target_w = self._unit_w * (2 if self._is_wide_char(c) else 1)
+            raw = self.font.render(c, True, color)
+            if raw.get_width() != target_w or raw.get_height() != self._ch:
+                raw = pygame.transform.scale(raw, (target_w, self._ch))
+            self._char_cache[key] = raw
+        return self._char_cache[key]
 
     # ── sys.stdout 프로토콜 ───────────────────────────────────────────────────
     def write(self, text: str) -> int:
@@ -222,26 +267,15 @@ class PygameTerminal:
 
     # ── 렌더링 ────────────────────────────────────────────────────────────────
     def _render_seg(self, seg: str, color: tuple, x: int, y: int) -> int:
-        """세그먼트를 박스/일반 문자 경계에서 분리해 렌더링합니다.
-        박스 문자는 _unit_w 너비로 강제 정렬해 좌우 테두리가 맞도록 합니다."""
-        i = 0
-        while i < len(seg):
-            is_box = self._is_box_char(seg[i])
-            j = i + 1
-            while j < len(seg) and self._is_box_char(seg[j]) == is_box:
-                j += 1
-            subseg = seg[i:j]
-            if is_box:
-                # 박스 문자는 1자씩 _unit_w 단위로 렌더 (너비 정렬 보장)
-                for c in subseg:
-                    surf = self._get_box_surf(c, color)
-                    self.screen.blit(surf, (x, y))
-                    x += self._unit_w
+        """세그먼트를 1자씩 정확한 컬럼 너비로 렌더링합니다.
+        박스=_unit_w, ASCII=_unit_w, CJK=2*_unit_w 로 강제 스케일해 정렬을 보장합니다."""
+        for c in seg:
+            if self._is_box_char(c):
+                surf = self._get_box_surf(c, color)
             else:
-                surf = self.font.render(subseg, True, color)
-                self.screen.blit(surf, (x, y))
-                x += surf.get_width()
-            i = j
+                surf = self._get_char_surf(c, color)
+            self.screen.blit(surf, (x, y))
+            x += surf.get_width()
         return x
 
     def _render(self):
@@ -267,11 +301,12 @@ class PygameTerminal:
 
     # ── 화면 제어 ─────────────────────────────────────────────────────────────
     def clear(self):
-        self._buf       = [[]]
-        self._fg        = _DEFAULT_COLOR
-        self._bright    = False
-        self._dim       = False
-        self._box_cache = {}
+        self._buf        = [[]]
+        self._fg         = _DEFAULT_COLOR
+        self._bright     = False
+        self._dim        = False
+        self._box_cache  = {}
+        self._char_cache = {}
         self._render()
 
     # ── 입력 ──────────────────────────────────────────────────────────────────
