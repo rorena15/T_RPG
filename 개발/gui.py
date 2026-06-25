@@ -90,7 +90,7 @@ class PygameTerminal:
         self.font     = self._load_font(18, _FONT_CANDIDATES)
         self.font_box = self._load_font(18, _FONT_BOX_CANDIDATES)
         self._cw, self._ch = self.font.size("W")
-        self._unit_w  = self.font.size(' ')[0]   # 기준 단위 너비 (공백 1칸)
+        self._unit_w  = self._cw                # 기준 단위 너비 = 'W' 너비 (공백은 가변폭 폰트에서 좁음)
         self._box_cache:  dict = {}              # (char, color) → pre-scaled Surface
         self._char_cache: dict = {}              # (char, color) → per-char scaled Surface
 
@@ -117,15 +117,16 @@ class PygameTerminal:
 
     @staticmethod
     def _find_ico() -> str | None:
-        """Protocol_Stigma_1.ico 경로를 탐색 (소스 실행 / PyInstaller 모두 대응)."""
+        """assets/icon.ico 경로를 탐색 (소스 실행 / PyInstaller 모두 대응)."""
+        base_dev = os.path.dirname(os.path.abspath(__file__))
         candidates = []
-        # PyInstaller --onefile: sys._MEIPASS
         if getattr(sys, 'frozen', False):
-            candidates.append(os.path.join(sys._MEIPASS, 'Protocol_Stigma_1.ico'))
-        # 소스 실행: gui.py 와 같은 디렉터리 (개발/)
-        candidates.append(os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                       'Protocol_Stigma_1.ico'))
+            # PyInstaller --onefile: sys._MEIPASS 루트에 번들된 assets/
+            candidates.append(os.path.join(sys._MEIPASS, 'assets', 'icon.ico'))
+        # 소스 실행: 개발/ 의 상위 디렉터리에 assets/ 폴더
+        candidates.append(os.path.join(base_dev, '..', 'assets', 'icon.ico'))
         for p in candidates:
+            p = os.path.normpath(p)
             if os.path.exists(p):
                 return p
         return None
