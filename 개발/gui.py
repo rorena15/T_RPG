@@ -89,12 +89,12 @@ class PygameTerminal:
     # ── 폰트 로딩 ────────────────────────────────────────────────────────────
     def _load_font(self, size: int) -> pygame.font.Font:
         for name in _FONT_CANDIDATES:
-            try:
-                f = pygame.font.SysFont(name, size)
-                if f:
-                    return f
-            except Exception:
-                pass
+            path = pygame.font.match_font(name)
+            if path:
+                try:
+                    return pygame.font.Font(path, size)
+                except Exception:
+                    pass
         return pygame.font.Font(None, size + 4)
 
     # ── sys.stdout 프로토콜 ───────────────────────────────────────────────────
@@ -112,6 +112,9 @@ class PygameTerminal:
     @property
     def errors(self):
         return 'replace'
+
+    def isatty(self) -> bool:
+        return False
 
     # ── ANSI 파서 ─────────────────────────────────────────────────────────────
     def _parse(self, text: str):
