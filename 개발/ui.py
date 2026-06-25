@@ -29,6 +29,9 @@ def flush_input():
 @track
 def safe_input(prompt):
     """버퍼 청소 후 명령코드를 온전히 입력받는 래퍼"""
+    term = get_terminal()
+    if term:
+        return term.input_text(prompt)
     time.sleep(0.05)
     flush_input()
     return input(prompt)

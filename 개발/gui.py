@@ -290,6 +290,46 @@ class PygameTerminal:
                         return '\r'
             pygame.time.wait(10)
 
+    def input_text(self, prompt: str = "") -> str:
+        """pygame 이벤트 루프 기반 한 줄 텍스트 입력. input() 대체."""
+        if prompt:
+            self._parse(prompt, auto_render=False)
+        buf = ""
+        cursor_visible = True
+        cursor_timer = 0
+        self._render()
+        while True:
+            dt = pygame.time.Clock().tick(30)
+            cursor_timer += dt
+            if cursor_timer >= 500:
+                cursor_visible = not cursor_visible
+                cursor_timer = 0
+                # 현재 입력 줄 재렌더
+                if self._buf[-1]:
+                    # 커서 표시를 위해 임시 세그먼트 추가 후 렌더
+                    pass
+                self._render()
+
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    sys.exit()
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_RETURN:
+                        self._parse('\n', auto_render=True)
+                        return buf
+                    elif event.key == pygame.K_ESCAPE:
+                        sys.exit()
+                    elif event.key == pygame.K_BACKSPACE:
+                        if buf:
+                            buf = buf[:-1]
+                            # 현재 줄 재구성
+                            if self._buf[-1]:
+                                self._buf[-1].pop()
+                            self._render()
+                    elif event.unicode and event.unicode.isprintable():
+                        buf += event.unicode
+                        self._parse(event.unicode, auto_render=True)
+
     def wait_keypress_silent(self):
         """메시지 없이 아무 키나 대기."""
         self._render()
