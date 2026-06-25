@@ -1,0 +1,66 @@
+name: Build Windows EXE
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: '릴리즈 버전'
+        required: true
+        default: 'v1.0.0'
+      notes:
+        description: '업데이트 내용'
+        required: true
+        default: '버그 수정'
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Python 설정
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 의존성 설치
+        run: pip install rich colorama pyinstaller pygame-ce
+
+      - name: 버전 주입
+        shell: pwsh
+        run: |
+          $version = "${{ github.event.inputs.version }}".TrimStart("v")
+          (Get-Content 개발/constants.py -Encoding UTF8) `
+            -replace 'GAME_VERSION\s*=\s*"[^"]*"', "GAME_VERSION = `"$version`"" `
+            | Set-Content 개발/constants.py -Encoding UTF8
+
+      - name: EXE 빌드
+        shell: pwsh
+        run: |
+          pyinstaller --onefile `
+            --noconsole `
+            --collect-all pygame `
+            --name="PROTOCOL_STIGMA" `
+            --distpath="개발/dist" `
+            --workpath="개발/build" `
+            --icon="개발/Protocol_Stigma_1.ico" `
+            --add-data "개발/database.json;." `
+            --add-data "개발/master_formulas.json;." `
+            --add-data "개발/locales;locales" `
+            --add-data "assets;assets" `
+            개발/Main.py
+
+      - name: GitHub Release 생성
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.version }}
+          name: "PROTOCOL: STIGMA ${{ github.event.inputs.version }} - 1막: 낙인"
+          body: |
+            ${{ github.event.inputs.notes }}
+
+            Windows 64비트 실행 파일입니다.
+            다운로드 후 바로 실행 가능합니다. (Python 설치 불필요)
+          files: 개발/dist/PROTOCOL_STIGMA.exe
+          draft: false
