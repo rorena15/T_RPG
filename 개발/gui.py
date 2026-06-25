@@ -57,6 +57,23 @@ _FONT_CANDIDATES = [
     "monospace",
 ]
 
+# 박스 그리기 문자 전용 폰트 후보 (한글 폰트가 지원 못하는 경우 폴백)
+_FONT_BOX_CANDIDATES = [
+    "D2Coding",
+    "나눔고딕코딩",
+    "Consolas",
+    "Courier New",
+    "Lucida Console",
+    "DejaVu Sans Mono",
+]
+
+# 박스/블록 그리기 유니코드 범위
+_BOX_RANGES = (
+    (0x2500, 0x257F),  # Box Drawing (─ │ ┤ ╡ ╢ … ╔ ═ ╗ ╚ ╝ ╣ ╠ ╦ ╩ ╬)
+    (0x2580, 0x259F),  # Block Elements (▀ ▄ █ ░ ▒ ▓)
+    (0x25A0, 0x25FF),  # Geometric Shapes (■ □ ▪ ▫ ◆ ◇)
+)
+
 
 class PygameTerminal:
     """pygame 창에 텍스트를 렌더링하는 터미널 에뮬레이터."""
@@ -70,8 +87,11 @@ class PygameTerminal:
         pygame.display.init()
         pygame.font.init()
 
-        self.font   = self._load_font(18)
+        self.font     = self._load_font(18, _FONT_CANDIDATES)
+        self.font_box = self._load_font(18, _FONT_BOX_CANDIDATES)
         self._cw, self._ch = self.font.size("W")
+        self._unit_w  = self.font.size(' ')[0]   # 기준 단위 너비 (공백 1칸)
+        self._box_cache: dict = {}               # (char, color) → pre-scaled Surface
 
         w = self._cw * self.COLS + self.PAD_X * 2
         h = self._ch * self.ROWS + self.PAD_Y * 2
@@ -87,8 +107,9 @@ class PygameTerminal:
         self._render()
 
     # ── 폰트 로딩 ────────────────────────────────────────────────────────────
-    def _load_font(self, size: int) -> pygame.font.Font:
-        for name in _FONT_CANDIDATES:
+    @staticmethod
+    def _load_font(size: int, candidates: list) -> pygame.font.Font:
+        for name in candidates:
             path = pygame.font.match_font(name)
             if path:
                 try:
@@ -96,6 +117,21 @@ class PygameTerminal:
                 except Exception:
                     pass
         return pygame.font.Font(None, size + 4)
+
+    @staticmethod
+    def _is_box_char(c: str) -> bool:
+        cp = ord(c)
+        return any(lo <= cp <= hi for lo, hi in _BOX_RANGES)
+
+    def _get_box_surf(self, c: str, color: tuple) -> pygame.Surface:
+        """박스 문자를 메인 폰트 공백 너비(_unit_w)에 맞게 스케일한 Surface를 반환 (캐시)."""
+        key = (c, color)
+        if key not in self._box_cache:
+            raw = self.font_box.render(c, True, color)
+            if raw.get_width() != self._unit_w or raw.get_height() != self._ch:
+                raw = pygame.transform.scale(raw, (self._unit_w, self._ch))
+            self._box_cache[key] = raw
+        return self._box_cache[key]
 
     # ── sys.stdout 프로토콜 ───────────────────────────────────────────────────
     def write(self, text: str) -> int:
@@ -185,6 +221,29 @@ class PygameTerminal:
                 self._fg = base
 
     # ── 렌더링 ────────────────────────────────────────────────────────────────
+    def _render_seg(self, seg: str, color: tuple, x: int, y: int) -> int:
+        """세그먼트를 박스/일반 문자 경계에서 분리해 렌더링합니다.
+        박스 문자는 _unit_w 너비로 강제 정렬해 좌우 테두리가 맞도록 합니다."""
+        i = 0
+        while i < len(seg):
+            is_box = self._is_box_char(seg[i])
+            j = i + 1
+            while j < len(seg) and self._is_box_char(seg[j]) == is_box:
+                j += 1
+            subseg = seg[i:j]
+            if is_box:
+                # 박스 문자는 1자씩 _unit_w 단위로 렌더 (너비 정렬 보장)
+                for c in subseg:
+                    surf = self._get_box_surf(c, color)
+                    self.screen.blit(surf, (x, y))
+                    x += self._unit_w
+            else:
+                surf = self.font.render(subseg, True, color)
+                self.screen.blit(surf, (x, y))
+                x += surf.get_width()
+            i = j
+        return x
+
     def _render(self):
         self._pump()
         self.screen.fill(_BG_COLOR)
@@ -195,9 +254,7 @@ class PygameTerminal:
         for line in self._buf[start:]:
             x = self.PAD_X
             for seg, color in line:
-                surf = self.font.render(seg, True, color)
-                self.screen.blit(surf, (x, y))
-                x += surf.get_width()
+                x = self._render_seg(seg, color, x, y)
             y += self._ch
             if y > h - self.PAD_Y:
                 break
@@ -210,10 +267,11 @@ class PygameTerminal:
 
     # ── 화면 제어 ─────────────────────────────────────────────────────────────
     def clear(self):
-        self._buf    = [[]]
-        self._fg     = _DEFAULT_COLOR
-        self._bright = False
-        self._dim    = False
+        self._buf       = [[]]
+        self._fg        = _DEFAULT_COLOR
+        self._bright    = False
+        self._dim       = False
+        self._box_cache = {}
         self._render()
 
     # ── 입력 ──────────────────────────────────────────────────────────────────
