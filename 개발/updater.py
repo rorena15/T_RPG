@@ -82,16 +82,17 @@ del "%~f0"
     sys.exit(0)
 
 
-def check_and_prompt_update(current_version: str, console=None):
+def check_and_prompt_update(current_version: str, console=None, force: bool = False):
     """
     최신 릴리즈를 확인하고 업데이트 여부를 사용자에게 묻는다.
-    - exe 모드가 아니면 (python Main.py) 아무것도 하지 않는다.
+    - exe 모드가 아니면 (python Main.py) 아무것도 하지 않는다 (force=True 제외).
     - 네트워크 오류 시 조용히 무시한다.
     - DB 파일은 절대 건드리지 않는다.
 
     console: Rich Console 인스턴스 (없으면 print 사용)
+    force:   메뉴에서 직접 호출 시 True — exe 여부 무관하게 체크
     """
-    if not _is_frozen():
+    if not _is_frozen() and not force:
         return  # 소스 실행 시 스킵
 
     def output(msg):
@@ -100,16 +101,20 @@ def check_and_prompt_update(current_version: str, console=None):
         else:
             print(msg)
 
+    output(t('update_checking'))
     try:
         release = _fetch_latest_release()
     except Exception:
-        return  # 네트워크 없으면 조용히 통과
+        output(t('update_network_fail'))
+        return
 
     latest_version = release.get("tag_name", "")
     if not latest_version:
+        output(t('update_network_fail'))
         return
 
     if _version_tuple(latest_version) <= _version_tuple(current_version):
+        output(t('update_latest', current=current_version))
         return  # 최신 버전
 
     asset = _find_exe_asset(release)

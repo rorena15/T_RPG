@@ -39,7 +39,7 @@ def run_game():
         colorama_init(strip=False, convert=False, autoreset=False)
 
     set_lang("ko")  # 기본값
-    check_and_prompt_update(constants.GAME_VERSION, console=_console)
+    check_and_prompt_update(constants.GAME_VERSION, console=None)
 
     player = Player()
     grid = GameMap()
@@ -69,9 +69,11 @@ def run_game():
         print(f"  1. {t('menu_new_game')}")
         if has_save:
             print(f"  2. {t('menu_load_game')}")
-        opt_key = "3" if has_save else "2"
-        exit_key = "4" if has_save else "3"
+        opt_key    = "3" if has_save else "2"
+        upd_key    = "4" if has_save else "3"
+        exit_key   = "5" if has_save else "4"
         print(f"  {opt_key}. {t('menu_options')}")
+        print(f"  {upd_key}. {t('menu_update')}")
         print(f"  {exit_key}. {t('menu_exit')}")
         print_divider()
 
@@ -83,6 +85,14 @@ def run_game():
             type_text(f"  {t('exit_msg')}", 0.025)
             time.sleep(0.5)
             sys.exit()
+
+        # ── 업데이트 확인 ─────────────────────────────────────────────────
+        if ans == upd_key:
+            clear_screen()
+            print_header(t('menu_update'))
+            check_and_prompt_update(constants.GAME_VERSION, console=None, force=True)
+            wait_for_keypress()
+            continue
 
         # ── 옵션 (언어 선택) ──────────────────────────────────────────────
         if ans == opt_key:
@@ -376,6 +386,12 @@ def run_game():
 
 if __name__ == "__main__":
     setup_global_exception_hook()
+    # CMD 창 숨김 (Windows, pygame GUI 모드)
+    if os.name == 'nt':
+        import ctypes
+        hwnd = ctypes.windll.kernel32.GetConsoleWindow()
+        if hwnd:
+            ctypes.windll.user32.ShowWindow(hwnd, 0)
     from gui import PygameTerminal, set_terminal
     _term = PygameTerminal()
     set_terminal(_term)

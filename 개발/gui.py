@@ -99,7 +99,8 @@ class PygameTerminal:
 
     # ── sys.stdout 프로토콜 ───────────────────────────────────────────────────
     def write(self, text: str) -> int:
-        self._parse(text)
+        # 렌더는 flush() 에서 일괄 처리 — print() 의 write+write('\n') 2회 호출 최적화
+        self._parse(text, auto_render=False)
         return len(text)
 
     def flush(self):
@@ -117,7 +118,7 @@ class PygameTerminal:
         return False
 
     # ── ANSI 파서 ─────────────────────────────────────────────────────────────
-    def _parse(self, text: str):
+    def _parse(self, text: str, auto_render: bool = True):
         i = 0
         n = len(text)
         while i < n:
@@ -143,6 +144,8 @@ class PygameTerminal:
                 i += 1
 
             elif c == '\r':
+                # 현재 줄 내용 삭제 → 같은 줄 처음부터 덮어쓰기 (progress bar 지원)
+                self._buf[-1] = []
                 i += 1
 
             else:
@@ -157,7 +160,8 @@ class PygameTerminal:
                 self._buf[-1].append((seg, color))
                 i = j
 
-        self._render()
+        if auto_render:
+            self._render()
 
     def _apply_sgr(self, param: str):
         codes = param.split(';') if param else ['0']
@@ -243,10 +247,10 @@ class PygameTerminal:
     def type_text_animated(self, text: str, speed: float = 0.015):
         delay_ms = max(1, int(speed * 1000))
         for char in text:
-            self._parse(char)
+            self._parse(char, auto_render=True)
             if speed > 0:
                 pygame.time.delay(delay_ms)
-        self._parse('\n')
+        self._parse('\n', auto_render=True)
 
     # ── 배너 이미지 ───────────────────────────────────────────────────────────
     def show_banner(self, path: str):
