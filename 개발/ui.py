@@ -10,9 +10,13 @@ from colorama import Fore, Style
 import constants
 from i18n import t
 from sys_log import track
+from gui import get_terminal
+
 
 def flush_input():
-    """타이핑 연출 중 유저가 미리 입력한 키를 강제로 날려 무차별 오작동을 차단합니다."""
+    term = get_terminal()
+    if term:
+        return
     if os.name == 'nt':
         import msvcrt
         while msvcrt.kbhit():
@@ -21,6 +25,7 @@ def flush_input():
         import termios
         termios.tcflush(sys.stdin, termios.TCIOFLUSH)
 
+
 @track
 def safe_input(prompt):
     """버퍼 청소 후 명령코드를 온전히 입력받는 래퍼"""
@@ -28,11 +33,16 @@ def safe_input(prompt):
     flush_input()
     return input(prompt)
 
+
 @track
 def wait_for_keypress():
     """엔터 입력 불필요 아무 키나 누르는 즉시 화면 템포가 연출 모드로 진행"""
-    flush_input()
+    term = get_terminal()
     print("\n" + t('wait_any_key'))
+    if term:
+        term.wait_keypress_silent()
+        return
+    flush_input()
     if os.name == 'nt':
         import msvcrt
         msvcrt.getch()
@@ -46,8 +56,12 @@ def wait_for_keypress():
         finally:
             termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
 
+
 def read_key():
     """엔터 없이 단일 키를 즉시 감지해 대문자 문자열로 반환합니다."""
+    term = get_terminal()
+    if term:
+        return term.read_key()
     flush_input()
     if os.name == 'nt':
         import msvcrt
@@ -74,7 +88,12 @@ def read_key():
         finally:
             termios.tcsetattr(fd, termios.TCSADRAIN, old)
 
+
 def clear_screen():
+    term = get_terminal()
+    if term:
+        term.clear()
+        return
     os.system('cls' if os.name == 'nt' else 'clear')
 
 _GLITCH_CHARS = "░▒▓█▄▀▌▐■□▪▫◆◇╳╱╲"
@@ -87,7 +106,19 @@ def glitch_str(text, intensity=0.18):
     )
 
 def glitch_flash(lines, color=None, cycles=3, delay=0.06):
-    """텍스트 블록에 글리치 플래시 후 정상 복원. Windows Terminal 기준."""
+    """텍스트 블록에 글리치 플래시 후 정상 복원."""
+    term = get_terminal()
+    if term:
+        # pygame 모드: 글리치 사이클 후 원본 출력
+        col = (color or Fore.RED) + Style.BRIGHT
+        for _ in range(cycles):
+            for line in lines:
+                print(col + glitch_str(line, 0.25) + Style.RESET_ALL)
+            time.sleep(delay)
+            term.clear()
+        for line in lines:
+            print(line)
+        return
     col = (color or Fore.RED) + Style.BRIGHT
     n = len(lines)
     for _ in range(cycles):
@@ -101,7 +132,12 @@ def glitch_flash(lines, color=None, cycles=3, delay=0.06):
         sys.stdout.write(line + '\n')
     sys.stdout.flush()
 
+
 def type_text(text, speed=0.015):
+    term = get_terminal()
+    if term:
+        term.type_text_animated(text, speed)
+        return
     for char in text:
         sys.stdout.write(char)
         sys.stdout.flush()

@@ -29,10 +29,14 @@ init_and_load_db()
 
 @track
 def run_game():
-    os.system('title PROTOCOL: STIGMA — 1막: 낙인')
-    os.system('mode con: cols=90 lines=40')
-    os.system('color 0B')
-    colorama_init(autoreset=True)
+    from gui import get_terminal
+    if not get_terminal():
+        os.system('title PROTOCOL: STIGMA — 1막: 낙인')
+        os.system('mode con: cols=90 lines=40')
+        os.system('color 0B')
+        colorama_init(autoreset=True)
+    else:
+        colorama_init(strip=False, convert=False, autoreset=False)
 
     set_lang("ko")  # 기본값
     check_and_prompt_update(constants.GAME_VERSION, console=_console)
@@ -372,5 +376,9 @@ def run_game():
 
 if __name__ == "__main__":
     setup_global_exception_hook()
+    from gui import PygameTerminal, set_terminal
+    _term = PygameTerminal()
+    set_terminal(_term)
+    sys.stdout = _term
     sound.init()
     run_game()
