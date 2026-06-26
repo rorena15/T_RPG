@@ -47,25 +47,28 @@ _BG_COLOR      = (4,   4,   12)
 _BRIGHT_BOOST  = 1.35
 _DIM_FACTOR    = 0.55
 
-_FONT_CANDIDATES = [
+# ASCII/박스 전용 — 신뢰할 수 있는 영문 모노스페이스 (글리프 정확도 우선)
+_FONT_ASCII_CANDIDATES = [
     "D2Coding",
+    "NanumGothicCoding",
+    "나눔고딕코딩",
+    "Consolas",
+    "Lucida Console",
+    "Courier New",
+]
+
+# 한글 전용 — 한글 지원 폰트
+_FONT_KOR_CANDIDATES = [
+    "D2Coding",
+    "NanumGothicCoding",
     "나눔고딕코딩",
     "Malgun Gothic",
     "Gulim",
-    "Consolas",
-    "Courier New",
-    "monospace",
+    "Batang",
 ]
 
-# 박스 그리기 문자 전용 폰트 후보 (한글 폰트가 지원 못하는 경우 폴백)
-_FONT_BOX_CANDIDATES = [
-    "D2Coding",
-    "나눔고딕코딩",
-    "Consolas",
-    "Courier New",
-    "Lucida Console",
-    "DejaVu Sans Mono",
-]
+# assets/ 번들 폰트 (여기 놓으면 자동 최우선)
+_BUNDLED_FONT_NAMES = ["D2Coding.ttf", "NanumGothicCoding.ttf", "font.ttf"]
 
 # 박스/블록 그리기 유니코드 범위
 _BOX_RANGES = (
@@ -88,7 +91,7 @@ class PygameTerminal:
         pygame.font.init()
 
         self._title      = title
-        self._font_size  = 18
+        self._font_size  = 20
         self._box_cache:  dict = {}
         self._char_cache: dict = {}
         self._buf: list[list[tuple[str, tuple]]] = [[]]
@@ -114,14 +117,31 @@ class PygameTerminal:
         self._render()
 
     def _load_fonts(self, size: int):
-        """폰트를 (재)로드하고 컬럼 너비 측정값을 갱신합니다. 창 리사이즈 시 재호출."""
-        self.font     = self._load_font(size, _FONT_CANDIDATES)
-        self.font_box = self._load_font(size, _FONT_BOX_CANDIDATES)
-        self._cw, self._ch = self.font.size("W")
-        # 1컬럼 기준 너비: 한글 1자=2컬럼이므로 한글 자연 너비÷2 (한글 폰트는 2:1 설계)
-        _kor_w = self.font.size('가')[0]
-        self._unit_w = _kor_w // 2 if _kor_w >= 8 else self._cw
-        # 캐시 무효화 (폰트가 바뀌면 이전 Surface 사용 불가)
+        """폰트를 (재)로드하고 컬럼 너비 측정값을 갱신합니다. 창 리사이즈 시 재호출.
+
+        ASCII/박스 문자는 font_ascii(Consolas 계열)로 렌더링해 글리프 정확도를 보장하고,
+        한글은 font_kor(Malgun Gothic 계열)로 분리 렌더링합니다.
+        """
+        bundled = self._find_bundled_font()
+        if bundled:
+            # 번들 폰트가 있으면 모든 용도에 사용
+            self.font_ascii = pygame.font.Font(bundled, size)
+            self.font_kor   = self.font_ascii
+            self.font_box   = self.font_ascii
+        else:
+            self.font_ascii = self._load_font(size, _FONT_ASCII_CANDIDATES)
+            self.font_kor   = self._load_font(size, _FONT_KOR_CANDIDATES)
+            self.font_box   = self.font_ascii  # 박스 문자도 ASCII 폰트로
+
+        # 하위 호환: self.font → ASCII 폰트
+        self.font = self.font_ascii
+
+        self._cw, self._ch = self.font_ascii.size("W")
+
+        # 1컬럼 = ASCII 폰트의 고정폭 기준 (Consolas는 모노스페이스 → 모든 ASCII 동일 폭)
+        self._unit_w = self.font_ascii.size('A')[0]
+
+        # 캐시 무효화
         self._box_cache  = {}
         self._char_cache = {}
 
@@ -143,7 +163,28 @@ class PygameTerminal:
 
     # ── 폰트 로딩 ────────────────────────────────────────────────────────────
     @staticmethod
+    def _find_bundled_font() -> str | None:
+        """assets/ 폴더에 번들된 폰트 파일을 탐색합니다."""
+        base = os.path.dirname(os.path.abspath(__file__))
+        if getattr(sys, 'frozen', False):
+            assets_dir = os.path.join(sys._MEIPASS, 'assets')
+        else:
+            assets_dir = os.path.normpath(os.path.join(base, '..', 'assets'))
+        for name in _BUNDLED_FONT_NAMES:
+            p = os.path.join(assets_dir, name)
+            if os.path.exists(p):
+                return p
+        return None
+
+    @staticmethod
     def _load_font(size: int, candidates: list) -> pygame.font.Font:
+        # 번들 폰트 우선
+        bundled = PygameTerminal._find_bundled_font()
+        if bundled:
+            try:
+                return pygame.font.Font(bundled, size)
+            except Exception:
+                pass
         for name in candidates:
             path = pygame.font.match_font(name)
             if path:
@@ -179,14 +220,11 @@ class PygameTerminal:
         return self._box_cache[key]
 
     def _get_char_surf(self, c: str, color: tuple) -> pygame.Surface:
-        """일반 문자를 컬럼 너비(ASCII=_unit_w, CJK=2*_unit_w)로 스케일한 Surface (캐시)."""
+        """한글은 font_kor, 그 외는 font_ascii로 렌더링 (글리프 정확도 보장)."""
         key = (c, color)
         if key not in self._char_cache:
-            target_w = self._unit_w * (2 if self._is_wide_char(c) else 1)
-            raw = self.font.render(c, True, color)
-            if raw.get_width() != target_w or raw.get_height() != self._ch:
-                raw = pygame.transform.scale(raw, (target_w, self._ch))
-            self._char_cache[key] = raw
+            f = self.font_kor if self._is_wide_char(c) else self.font_ascii
+            self._char_cache[key] = f.render(c, True, color)
         return self._char_cache[key]
 
     # ── sys.stdout 프로토콜 ───────────────────────────────────────────────────
@@ -278,15 +316,18 @@ class PygameTerminal:
 
     # ── 렌더링 ────────────────────────────────────────────────────────────────
     def _render_seg(self, seg: str, color: tuple, x: int, y: int) -> int:
-        """세그먼트를 1자씩 정확한 컬럼 너비로 렌더링합니다.
-        박스=_unit_w, ASCII=_unit_w, CJK=2*_unit_w 로 강제 스케일해 정렬을 보장합니다."""
+        """세그먼트를 1자씩 렌더링합니다.
+        박스 문자는 _unit_w로 스케일, 일반 문자는 자연 크기로 blit 후
+        x는 column 단위(_unit_w × 1 또는 2)로 이동해 정렬을 보장합니다."""
         for c in seg:
             if self._is_box_char(c):
                 surf = self._get_box_surf(c, color)
+                self.screen.blit(surf, (x, y))
+                x += self._unit_w
             else:
                 surf = self._get_char_surf(c, color)
-            self.screen.blit(surf, (x, y))
-            x += surf.get_width()
+                self.screen.blit(surf, (x, y))
+                x += self._unit_w * (2 if self._is_wide_char(c) else 1)
         return x
 
     def _render(self):
@@ -337,6 +378,27 @@ class PygameTerminal:
         self._render()
 
     # ── 입력 ──────────────────────────────────────────────────────────────────
+
+    # 물리 키코드 → ASCII 문자 매핑 (한국어 IME 활성 시 event.unicode 오염 대응)
+    _KEYCODE_MAP: dict = {
+        **{getattr(pygame, f'K_{i}'): str(i) for i in range(10)},
+        **{getattr(pygame, f'K_{chr(c)}'): chr(c).upper()
+           for c in range(ord('a'), ord('z') + 1)},
+        pygame.K_RETURN:    '\r',
+        pygame.K_KP_ENTER:  '\r',
+        pygame.K_SPACE:     ' ',
+    }
+
+    @classmethod
+    def _resolve_key(cls, event) -> str:
+        """IME 간섭 없이 신뢰할 수 있는 키 문자를 반환합니다.
+        event.unicode 가 출력 가능한 ASCII(0x20-0x7E)이면 그대로 사용하고,
+        아니면 물리 키코드(_KEYCODE_MAP)로 폴백합니다."""
+        u = event.unicode
+        if u and len(u) == 1 and 0x20 <= ord(u) <= 0x7E:
+            return u.upper()
+        return cls._KEYCODE_MAP.get(event.key, '')
+
     def read_key(self) -> str:
         self._render()
         while True:
@@ -346,10 +408,9 @@ class PygameTerminal:
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_ESCAPE:
                         sys.exit()
-                    if event.unicode:
-                        return event.unicode.upper()
-                    if event.key == pygame.K_RETURN:
-                        return '\r'
+                    ch = self._resolve_key(event)
+                    if ch:
+                        return ch
             pygame.time.wait(10)
 
     def input_text(self, prompt: str = "") -> str:
@@ -388,7 +449,7 @@ class PygameTerminal:
                             if self._buf[-1]:
                                 self._buf[-1].pop()
                             self._render()
-                    elif event.unicode and event.unicode.isprintable():
+                    elif event.unicode and len(event.unicode) == 1 and 0x20 <= ord(event.unicode) <= 0x7E:
                         buf += event.unicode
                         self._parse(event.unicode, auto_render=True)
 
