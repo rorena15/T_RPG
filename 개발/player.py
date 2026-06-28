@@ -42,7 +42,7 @@ class Player:
         self.consumables = {k: 0 for k in constants.CONSUMABLES_DB.keys()}
         if "FOOD_ONLY" in self.consumables: self.consumables["FOOD_ONLY"] = 2
         if "WATER_ONLY" in self.consumables: self.consumables["WATER_ONLY"] = 2
-        if "MED_FIX_100" in self.consumables: self.consumables["MED_FIX_100"] = 1
+        if "MED_FIX_100" in self.consumables: self.consumables["MED_FIX_100"] = 2
 
         self.weights = {"kinetic": 0, "scrap": 0, "cyber": 0}
         self.enemies_defeated = 0

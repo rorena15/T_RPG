@@ -200,11 +200,11 @@ ALERT_INC_DRONE      = 10
 
 BIO_DEF              = 15
 BIO_BASE_ATK         = 250
-BIO_HP_MIN           = 12000
-BIO_HP_MAX           = 22000
+BIO_HP_MIN           = 8000
+BIO_HP_MAX           = 17000
 
 DRONE_DEF            = 5
-DRONE_BASE_ATK       = 200
+DRONE_BASE_ATK       = 175
 DRONE_HP_MIN         = 8000
 DRONE_HP_MAX         = 16000
 
