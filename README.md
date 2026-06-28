@@ -23,10 +23,20 @@ pip install colorama pygame-ce
 
 ## 설치 및 실행
 
-**EXE 실행 (권장)**
-1. [릴리즈 페이지](../../releases/latest)에서 `Protocol_Stigma.exe` 다운로드
-2. 압축 해제 후 `Protocol_Stigma.exe` 실행
+**Windows EXE (권장)**
+1. [릴리즈 페이지](../../releases/latest)에서 `PROTOCOL_STIGMA.exe` 다운로드
+2. `PROTOCOL_STIGMA.exe` 실행
 3. Windows Defender 경고 시 → `추가 정보` → `실행` 선택
+
+**macOS**
+1. [릴리즈 페이지](../../releases/latest)에서 `PROTOCOL_STIGMA_mac.tar.gz` 다운로드
+2. 터미널에서 압축 해제 후 실행:
+
+```bash
+tar -xzf PROTOCOL_STIGMA_mac.tar.gz
+chmod +x PROTOCOL_STIGMA
+./PROTOCOL_STIGMA
+```
 
 **소스 직접 실행**
 
@@ -233,7 +243,7 @@ python Main.py
 | 항목 | 내용 |
 |---|---|
 | **개발 상태** | 1막 '낙인' 데모 빌드 완성 |
-| **버전** | v1.8.0 |
+| **버전** | v1.9.0 |
 | **플레이 타임** | 1 ~ 2시간 (선택지·난이도별 상이) |
 | **엔딩 종류** | 기본 엔딩 3종 + 히든 엔딩 |
 | **라이센스** | 개인 프로젝트 (Personal Project) |
