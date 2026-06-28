@@ -73,6 +73,17 @@ _FONT_KOR_CANDIDATES = [
 # assets/ 번들 폰트 (여기 놓으면 자동 최우선)
 _BUNDLED_FONT_NAMES = ["D2Coding.ttf", "NanumGothicCoding.ttf", "font.ttf"]
 
+# 이모티콘 전용 번들 폰트
+_BUNDLED_EMOJI_FONT_NAMES = ["NotoEmoji-Regular.ttf"]
+
+# 이모티콘 시스템 폰트 후보 (Windows / macOS)
+_FONT_EMOJI_CANDIDATES = [
+    "Segoe UI Emoji",    # Windows 10+
+    "Segoe UI Symbol",   # Windows (구형 폴백)
+    "Apple Color Emoji", # macOS
+    "Noto Emoji",        # Linux
+]
+
 # 박스/블록 그리기 유니코드 범위
 _BOX_RANGES = (
     (0x2500, 0x257F),  # Box Drawing (─ │ ┤ ╡ ╢ … ╔ ═ ╗ ╚ ╝ ╣ ╠ ╦ ╩ ╬)
@@ -160,9 +171,13 @@ class PygameTerminal:
         # 1컬럼 = ASCII 폰트의 고정폭 기준 (Consolas는 모노스페이스 → 모든 ASCII 동일 폭)
         self._unit_w = self.font_ascii.size('A')[0]
 
+        # 이모티콘 전용 폰트
+        self.font_emoji = self._load_emoji_font(size)
+
         # 캐시 무효화
         self._box_cache  = {}
         self._char_cache = {}
+        self._emoji_cache: dict = {}
 
     @staticmethod
     def _find_ico() -> str | None:
@@ -194,6 +209,42 @@ class PygameTerminal:
             if os.path.exists(p):
                 return p
         return None
+
+    @staticmethod
+    def _find_emoji_font_path() -> str | None:
+        """NotoEmoji-Regular.ttf 번들 탐색 → 없으면 시스템 이모티콘 폰트."""
+        base = os.path.dirname(os.path.abspath(__file__))
+        if getattr(sys, 'frozen', False):
+            assets_dir = os.path.join(sys._MEIPASS, 'assets')
+        else:
+            assets_dir = os.path.normpath(os.path.join(base, '..', 'assets'))
+        for name in _BUNDLED_EMOJI_FONT_NAMES:
+            p = os.path.join(assets_dir, name)
+            if os.path.exists(p):
+                return p
+        for name in _FONT_EMOJI_CANDIDATES:
+            p = pygame.font.match_font(name)
+            if p:
+                return p
+        return None
+
+    @classmethod
+    def _load_emoji_font(cls, size: int) -> pygame.font.Font:
+        path = cls._find_emoji_font_path()
+        if path:
+            try:
+                return pygame.font.Font(path, size)
+            except Exception:
+                pass
+        return pygame.font.Font(None, size)
+
+    @staticmethod
+    def _is_emoji(c: str) -> bool:
+        """이모티콘 유니코드 범위 여부."""
+        cp = ord(c)
+        return (0x1F300 <= cp <= 0x1FAFF or  # 현대 이모티콘 대부분
+                0x2600  <= cp <= 0x26FF  or  # 기타 기호 (⚗ U+2697)
+                0x2700  <= cp <= 0x27BF)     # 딩벳 (✨ U+2728)
 
     @staticmethod
     def _load_font(size: int, candidates: list) -> pygame.font.Font:
@@ -237,6 +288,22 @@ class PygameTerminal:
                 raw = pygame.transform.scale(raw, (self._unit_w, self._ch))
             self._box_cache[key] = raw
         return self._box_cache[key]
+
+    def _get_emoji_surf(self, c: str, color: tuple) -> pygame.Surface:
+        """이모티콘을 2컬럼 너비(_unit_w×2)로 스케일한 Surface (캐시)."""
+        key = (c, color)
+        if key not in self._emoji_cache:
+            try:
+                raw = self.font_emoji.render(c, True, color)
+            except Exception:
+                raw = pygame.Surface((self._unit_w * 2, self._ch), pygame.SRCALPHA)
+            target_w = self._unit_w * 2
+            if raw.get_width() == 0:
+                raw = pygame.Surface((target_w, self._ch), pygame.SRCALPHA)
+            elif raw.get_width() != target_w or raw.get_height() != self._ch:
+                raw = pygame.transform.smoothscale(raw, (target_w, self._ch))
+            self._emoji_cache[key] = raw
+        return self._emoji_cache[key]
 
     def _get_char_surf(self, c: str, color: tuple) -> pygame.Surface:
         """한글은 font_kor, 그 외는 font_ascii로 렌더링 (글리프 정확도 보장)."""
@@ -350,6 +417,10 @@ class PygameTerminal:
                 surf = self._get_box_surf(c, color)
                 self.screen.blit(surf, (x, y))
                 x += self._unit_w
+            elif self._is_emoji(c):
+                surf = self._get_emoji_surf(c, color)
+                self.screen.blit(surf, (x, y))
+                x += self._unit_w * 2
             else:
                 surf = self._get_char_surf(c, color)
                 self.screen.blit(surf, (x, y))
@@ -401,6 +472,7 @@ class PygameTerminal:
         self._dim        = False
         self._box_cache  = {}
         self._char_cache = {}
+        self._emoji_cache = {}
         self._render()
 
     # ── 입력 ──────────────────────────────────────────────────────────────────
