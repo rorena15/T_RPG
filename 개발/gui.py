@@ -57,14 +57,17 @@ _FONT_ASCII_CANDIDATES = [
     "Courier New",
 ]
 
-# 한글 전용 — 한글 지원 폰트
+# 한글 전용 — 한글 지원 폰트 (Windows / Mac / Linux 순)
 _FONT_KOR_CANDIDATES = [
     "D2Coding",
     "NanumGothicCoding",
     "나눔고딕코딩",
-    "Malgun Gothic",
-    "Gulim",
-    "Batang",
+    "Malgun Gothic",       # Windows
+    "Gulim",               # Windows
+    "Batang",              # Windows
+    "Apple SD Gothic Neo", # macOS
+    "AppleGothic",         # macOS (구형)
+    "Noto Sans CJK KR",   # Linux/Mac (noto 설치 시)
 ]
 
 # assets/ 번들 폰트 (여기 놓으면 자동 최우선)

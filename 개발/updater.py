@@ -150,4 +150,7 @@ def check_and_prompt_update(current_version: str, console=None, force: bool = Fa
         return
 
     output(t('update_installing'))
-    _replace_exe_windows(tmp_path)
+    if os.name == 'nt':
+        _replace_exe_windows(tmp_path)
+    else:
+        output(t('update_manual'))
