@@ -54,17 +54,17 @@
     "The chassis' internal temperature regulation system sends an overload warning. Environmental radiation in this sector exceeds baseline."
   ],
   "CONSUMABLES_DB": {
-    "MED_PER_10":  {"name": "소형 반창고 팩",      "name_en": "Small Bandage Pack",          "type": "hp", "val": 0.1,  "is_percent": true},
-    "MED_PER_50":  {"name": "응급 지혈대",          "name_en": "Emergency Tourniquet",        "type": "hp", "val": 0.5,  "is_percent": true},
-    "MED_PER_100": {"name": "나노 스팀팩",          "name_en": "Nano Stimpack",               "type": "hp", "val": 1.0,  "is_percent": true},
-    "MED_FIX_100": {"name": "구형 진통제",          "name_en": "Outdated Analgesic",          "type": "hp", "val": 100,  "is_percent": false},
-    "MED_FIX_300": {"name": "군용 지혈제",          "name_en": "Military Hemostatic",         "type": "hp", "val": 300,  "is_percent": false},
-    "MED_FIX_500": {"name": "합성 바이오 젤",       "name_en": "Synthetic Bio-Gel",           "type": "hp", "val": 500,  "is_percent": false},
-    "MED_FIX_1000":{"name": "초고밀도 회복 앰플",   "name_en": "Ultra-Dense Recovery Ampule", "type": "hp", "val": 1000, "is_percent": false},
-    "FOOD_ONLY":   {"name": "건조 단백질 블록",     "name_en": "Dry Protein Block",           "type": "food",  "hunger": 30, "thirst": 0},
-    "FOOD_BOTH":   {"name": "수분 함유 전투식량",   "name_en": "Hydrated Combat Ration",      "type": "food",  "hunger": 40, "thirst": 20},
-    "WATER_ONLY":  {"name": "탁한 정수 팩",         "name_en": "Murky Purified Pack",         "type": "water", "hunger": 0,  "thirst": 30},
-    "WATER_BOTH":  {"name": "미네랄 보충수",        "name_en": "Mineral Supplement Water",    "type": "water", "hunger": 20, "thirst": 40}
+    "MED_PER_10":  {"icon": "🩹", "name": "소형 반창고 팩",      "name_en": "Small Bandage Pack",          "type": "hp", "val": 0.1,  "is_percent": true},
+    "MED_PER_50":  {"icon": "🩺", "name": "응급 지혈대",          "name_en": "Emergency Tourniquet",        "type": "hp", "val": 0.5,  "is_percent": true},
+    "MED_PER_100": {"icon": "💉", "name": "나노 스팀팩",          "name_en": "Nano Stimpack",               "type": "hp", "val": 1.0,  "is_percent": true},
+    "MED_FIX_100": {"icon": "💊", "name": "구형 진통제",          "name_en": "Outdated Analgesic",          "type": "hp", "val": 100,  "is_percent": false},
+    "MED_FIX_300": {"icon": "🩸", "name": "군용 지혈제",          "name_en": "Military Hemostatic",         "type": "hp", "val": 300,  "is_percent": false},
+    "MED_FIX_500": {"icon": "⚗",  "name": "합성 바이오 젤",       "name_en": "Synthetic Bio-Gel",           "type": "hp", "val": 500,  "is_percent": false},
+    "MED_FIX_1000":{"icon": "✨", "name": "초고밀도 회복 앰플",   "name_en": "Ultra-Dense Recovery Ampule", "type": "hp", "val": 1000, "is_percent": false},
+    "FOOD_ONLY":   {"icon": "🍖", "name": "건조 단백질 블록",     "name_en": "Dry Protein Block",           "type": "food",  "hunger": 30, "thirst": 0},
+    "FOOD_BOTH":   {"icon": "🥫", "name": "수분 함유 전투식량",   "name_en": "Hydrated Combat Ration",      "type": "food",  "hunger": 40, "thirst": 20},
+    "WATER_ONLY":  {"icon": "💧", "name": "탁한 정수 팩",         "name_en": "Murky Purified Pack",         "type": "water", "hunger": 0,  "thirst": 30},
+    "WATER_BOTH":  {"icon": "🫧", "name": "미네랄 보충수",        "name_en": "Mineral Supplement Water",    "type": "water", "hunger": 20, "thirst": 40}
   },
   "SESSIONS_DB": [
     {

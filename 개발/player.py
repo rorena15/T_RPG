@@ -469,7 +469,9 @@ class Player:
                 thirst_str = t('consumable_thirst', val=item['thirst']) if item['thirst'] > 0 else ""
                 desc = hunger_str + thirst_str
 
-            print(t('consumable_item_line', idx=i+1, name=item['name'], owned=self.consumables[key], desc=desc))
+            icon = item.get('icon', '')
+            name_disp = f"{icon} {item['name']}" if icon else item['name']
+            print(t('consumable_item_line', idx=i+1, name=name_disp, owned=self.consumables[key], desc=desc))
 
         print_divider()
         print(t('consumable_back'))

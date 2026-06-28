@@ -3,6 +3,16 @@
   "lang_ko": "한국어",
   "lang_en": "English",
 
+  "opt_volume": "BGM Volume",
+  "opt_mute": "Mute",
+  "opt_text_speed": "Text Speed",
+  "opt_mute_on": "ON",
+  "opt_mute_off": "OFF",
+  "opt_speed_slow": "Slow",
+  "opt_speed_normal": "Normal",
+  "opt_speed_fast": "Fast",
+  "opt_speed_instant": "Instant",
+
   "title_subtitle": "Act 1: Stigma  —  Defective Code Discarded by the System",
   "title_quote1": "\"If the world has rejected you,",
   "title_quote2": "you must learn to breathe outside the world's rules.\"",

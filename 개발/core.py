@@ -26,6 +26,29 @@ def get_save_path():
     return os.path.join(os.path.abspath("."), "stigma_save.json")
 
 
+def get_settings_path():
+    if getattr(sys, 'frozen', False):
+        return os.path.join(os.path.dirname(sys.executable), "settings.json")
+    return os.path.join(os.path.abspath("."), "settings.json")
+
+
+def load_settings() -> dict:
+    defaults = {"bgm_volume": 0.5, "mute": False, "text_speed": 1.0}
+    try:
+        with open(get_settings_path(), encoding="utf-8") as f:
+            return {**defaults, **json.load(f)}
+    except Exception:
+        return defaults
+
+
+def save_settings(d: dict):
+    try:
+        with open(get_settings_path(), "w", encoding="utf-8") as f:
+            json.dump(d, f, ensure_ascii=False, indent=2)
+    except Exception:
+        pass
+
+
 @track
 def init_and_load_db():
     """게임 부팅 시 DB 및 master_formulas.json 무결성을 검증하고 메모리에 로드합니다."""

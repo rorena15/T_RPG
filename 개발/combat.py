@@ -332,7 +332,9 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
                     h_val = t('consumable_hunger', val=item['hunger']) if item['hunger'] > 0 else ""
                     thirst_str = t('consumable_thirst', val=item['thirst']) if item['thirst'] > 0 else ""
                     desc = h_val + thirst_str
-                print(f"  [{i+1}] {item['name']} x{player.consumables[key]} — {desc}")
+                icon = item.get('icon', '')
+                name_disp = f"{icon} {item['name']}" if icon else item['name']
+                print(f"  [{i+1}] {name_disp} x{player.consumables[key]} — {desc}")
             print(t('combat_cancel_item'))
             item_cmd = read_key()
             if item_cmd.isdigit() and 0 < int(item_cmd) <= len(avail):

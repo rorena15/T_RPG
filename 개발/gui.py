@@ -93,14 +93,15 @@ class PygameTerminal:
         pygame.display.init()
         pygame.font.init()
 
-        self._title      = title
-        self._font_size  = 20
+        self._title           = title
+        self._font_size       = 20
         self._box_cache:  dict = {}
         self._char_cache: dict = {}
         self._buf: list[list[tuple[str, tuple]]] = [[]]
-        self._fg     = _DEFAULT_COLOR
-        self._bright = False
-        self._dim    = False
+        self._fg              = _DEFAULT_COLOR
+        self._bright          = False
+        self._dim             = False
+        self._last_render_ms  = 0
 
         self._load_fonts(self._font_size)
 
@@ -118,6 +119,21 @@ class PygameTerminal:
                 pass
 
         self._render()
+
+        # time.sleep → pygame 이벤트 펌핑 버전으로 교체 (끊김 방지)
+        import time as _time_mod
+        _self = self
+        def _gui_sleep(seconds: float):
+            if seconds <= 0:
+                return
+            end_ms = pygame.time.get_ticks() + int(seconds * 1000)
+            while True:
+                remaining = end_ms - pygame.time.get_ticks()
+                if remaining <= 0:
+                    break
+                _self._pump()
+                pygame.time.wait(min(10, max(1, remaining)))
+        _time_mod.sleep = _gui_sleep
 
     def _load_fonts(self, size: int):
         """폰트를 (재)로드하고 컬럼 너비 측정값을 갱신합니다. 창 리사이즈 시 재호출.
@@ -236,8 +252,13 @@ class PygameTerminal:
         self._parse(text, auto_render=False)
         return len(text)
 
+    _FLUSH_INTERVAL_MS = 16  # ~60fps 렌더 스로틀
+
     def flush(self):
-        self._render()
+        now = pygame.time.get_ticks()
+        if now - self._last_render_ms >= self._FLUSH_INTERVAL_MS:
+            self._render()
+            self._last_render_ms = now
 
     @property
     def encoding(self):
@@ -274,6 +295,8 @@ class PygameTerminal:
 
             elif c == '\n':
                 self._buf.append([])
+                if len(self._buf) > 600:
+                    self._buf = self._buf[-600:]
                 i += 1
 
             elif c == '\r':
@@ -470,11 +493,24 @@ class PygameTerminal:
     # ── 타이핑 연출 ───────────────────────────────────────────────────────────
     def type_text_animated(self, text: str, speed: float = 0.015):
         delay_ms = max(1, int(speed * 1000))
+        skipped = False
         for char in text:
+            if skipped:
+                self._parse(char, auto_render=False)
+                continue
             self._parse(char, auto_render=True)
             if speed > 0:
                 pygame.time.delay(delay_ms)
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    sys.exit()
+                if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                    skipped = True
+                    break
+        if skipped:
+            self._render()
         self._parse('\n', auto_render=True)
+        pygame.event.clear()  # 애니메이션 종료 후 잔여 입력 제거
 
     # ── 배너 이미지 ───────────────────────────────────────────────────────────
     def show_banner(self, path: str):

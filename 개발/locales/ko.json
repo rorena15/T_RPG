@@ -3,6 +3,16 @@
   "lang_ko": "한국어",
   "lang_en": "English",
 
+  "opt_volume": "BGM 음량",
+  "opt_mute": "음소거",
+  "opt_text_speed": "텍스트 속도",
+  "opt_mute_on": "ON",
+  "opt_mute_off": "OFF",
+  "opt_speed_slow": "느림",
+  "opt_speed_normal": "보통",
+  "opt_speed_fast": "빠름",
+  "opt_speed_instant": "즉시",
+
   "title_subtitle": "1막: 낙인  —  시스템이 폐기한 불량 코드",
   "title_quote1": "\"세상이 당신을 거부했다면,",
   "title_quote2": "당신은 세상의 규칙 밖에서 숨 쉬는 법을 배워야 한다.\"",

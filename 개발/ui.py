@@ -137,14 +137,16 @@ def glitch_flash(lines, color=None, cycles=3, delay=0.06):
 
 
 def type_text(text, speed=0.015):
+    actual = speed * constants.TEXT_SPEED_MULT
     term = get_terminal()
     if term:
-        term.type_text_animated(text, speed)
+        term.type_text_animated(text, actual)
         return
     for char in text:
         sys.stdout.write(char)
         sys.stdout.flush()
-        time.sleep(speed)
+        if actual > 0:
+            time.sleep(actual)
     print()
 
 

@@ -3,7 +3,9 @@
 # 런타임 전역(AMBIENT_LORE 등)은 core.init_and_load_db()가
 # import constants 후 constants.XXX = ... 로 직접 갱신한다.
 
-GAME_VERSION = "1.7.7"
+GAME_VERSION = "1.9.0"
+
+TEXT_SPEED_MULT = 1.0  # 텍스트 출력 속도 배수 (0=즉시, 0.5=빠름, 1.0=보통, 2.0=느림)
 
 CREDITS_GITHUB = "https://github.com/rorena15/T_RPG"
 CREDITS_ITCH   = ""  # itch.io 배포 후 URL 삽입

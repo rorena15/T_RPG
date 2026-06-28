@@ -14,6 +14,8 @@ except ImportError:
 _hb_channel = None   # 심장박동 전용 채널
 _hb_sound   = None   # 심장박동 Sound 객체
 _current    = None   # 현재 재생 중인 BGM 식별자
+_vol_mult   = 0.5    # 사용자 BGM 음량 (0.0~1.0)
+_muted      = False  # 음소거 상태
 
 
 def _asset(filename):
@@ -40,6 +42,28 @@ def init():
         pass
 
 
+def set_bgm_volume(vol: float):
+    """사용자 BGM 음량 설정 (0.0~1.0). 즉시 반영."""
+    global _vol_mult
+    _vol_mult = max(0.0, min(1.0, vol))
+    if _OK and not _muted:
+        try:
+            pygame.mixer.music.set_volume(_vol_mult)
+        except Exception:
+            pass
+
+
+def set_mute(muted: bool):
+    """음소거 토글. 즉시 반영."""
+    global _muted
+    _muted = muted
+    if _OK:
+        try:
+            pygame.mixer.music.set_volume(0.0 if muted else _vol_mult)
+        except Exception:
+            pass
+
+
 def _play_music(filename, volume=0.45, loops=-1):
     global _current
     if not _OK:
@@ -50,9 +74,11 @@ def _play_music(filename, volume=0.45, loops=-1):
             return
         if _current == filename:
             return
+        effective_vol = 0.0 if _muted else volume * _vol_mult * 2
+        effective_vol = max(0.0, min(1.0, effective_vol))
         pygame.mixer.music.fadeout(600)
         pygame.mixer.music.load(path)
-        pygame.mixer.music.set_volume(volume)
+        pygame.mixer.music.set_volume(effective_vol)
         pygame.mixer.music.play(loops)
         _current = filename
     except Exception:
