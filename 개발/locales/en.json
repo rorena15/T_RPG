@@ -617,6 +617,7 @@
   "update_downloading":  "  Downloading...",
   "update_fail":         "  Download failed: {e}",
   "update_installing":   "  Installing... The game will restart.",
+  "update_manual":       "  Auto-install is not supported on Mac/Linux. Please download the latest version manually from GitHub.",
 
   "combat_cancel_item":       "  [0] Cancel",
   "combat_log_escape_diary":  "[Combat] {name} — Tactical retreat",

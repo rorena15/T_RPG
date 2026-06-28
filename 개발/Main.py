@@ -31,9 +31,10 @@ init_and_load_db()
 def run_game():
     from gui import get_terminal
     if not get_terminal():
-        os.system('title PROTOCOL: STIGMA — 1막: 낙인')
-        os.system('mode con: cols=90 lines=40')
-        os.system('color 0B')
+        if os.name == 'nt':
+            os.system('title PROTOCOL: STIGMA — 1막: 낙인')
+            os.system('mode con: cols=90 lines=40')
+            os.system('color 0B')
         colorama_init(autoreset=True)
     else:
         colorama_init(strip=False, convert=False, autoreset=False)

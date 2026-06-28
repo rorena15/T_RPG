@@ -617,6 +617,7 @@
   "update_downloading":  "  다운로드 중...",
   "update_fail":         "  다운로드 실패: {e}",
   "update_installing":   "  설치 중... 게임이 재시작됩니다.",
+  "update_manual":       "  Mac/Linux에서는 자동 설치가 지원되지 않습니다. GitHub에서 최신 버전을 직접 다운로드해 주세요.",
 
   "combat_cancel_item":       "  [0] 취소",
   "combat_log_escape_diary":  "[전투] {name} — 전술적 후퇴",

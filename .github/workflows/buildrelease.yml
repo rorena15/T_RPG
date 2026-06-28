@@ -210,3 +210,54 @@ jobs:
           files: 개발/dist/${{ github.event.inputs.exe_name }}.exe
           draft: false
           prerelease: true
+
+  # ── Mac 빌드 ────────────────────────────────────────────────────────────────
+  build-mac:
+    needs: build-windows   # Windows가 릴리즈를 먼저 생성한 뒤 파일만 추가
+    runs-on: macos-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Python 설정
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ github.event.inputs.python_version }}
+
+      - name: 의존성 설치
+        run: pip install rich colorama pyinstaller pygame-ce
+
+      - name: 버전 주입
+        if: ${{ github.event.inputs.inject_version == 'true' }}
+        run: |
+          VERSION=$(echo "${{ github.event.inputs.version }}" | sed 's/^v//')
+          sed -i '' "s/GAME_VERSION *= *\"[^\"]*\"/GAME_VERSION = \"$VERSION\"/" 개발/constants.py
+          echo "버전 주입 완료: $VERSION"
+
+      - name: Mac 바이너리 빌드
+        run: |
+          pyinstaller --onefile \
+            --collect-all pygame \
+            --name="${{ github.event.inputs.exe_name }}" \
+            --distpath="개발/dist" \
+            --workpath="개발/build" \
+            --add-data "개발/database.json:." \
+            --add-data "개발/master_formulas.json:." \
+            --add-data "개발/locales:locales" \
+            --add-data "assets:assets" \
+            개발/Main.py
+
+      - name: tar.gz 패키징
+        run: |
+          cd 개발/dist
+          tar -czf ${{ github.event.inputs.exe_name }}_mac.tar.gz \
+              ${{ github.event.inputs.exe_name }}
+
+      - name: Mac 바이너리 릴리즈에 업로드
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.version }}
+          files: 개발/dist/${{ github.event.inputs.exe_name }}_mac.tar.gz
+          fail_on_unmatched_files: false
