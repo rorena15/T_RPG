@@ -16,6 +16,16 @@ from ui import (clear_screen, print_header, print_divider, type_text,
 import skills as _skills
 from quest import advance_quest
 from sys_log import track
+from gui import get_terminal
+
+
+def _sleep(seconds: float):
+    """pygame 모드에서는 화면 갱신을 유지하며 대기, 아니면 일반 sleep."""
+    term = get_terminal()
+    if term:
+        term.sleep_render(seconds)
+    else:
+        time.sleep(seconds)
 
 _NAIWPN_ID = "NEOARC_AI_WPN"
 
@@ -148,7 +158,7 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
             type_text(Fore.RED + Style.BRIGHT + t('combat_phase2_warn1'), 0.03)
             type_text(Fore.RED + Style.BRIGHT + t('combat_phase2_warn2'), 0.03)
             type_text(Fore.YELLOW + Style.BRIGHT + t('combat_phase2_warn3'), 0.03)
-            time.sleep(1.5)
+            _sleep(1.5)
             action_logs.append(t('combat_phase2_log'))
 
         clear_screen()
@@ -245,14 +255,14 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
             crit_tag = Fore.YELLOW + Style.BRIGHT + " [CRITICAL!]" + Style.RESET_ALL if is_crit else ""
 
             print(Fore.GREEN + Style.BRIGHT + t('combat_attack_hit', dmg=f"{disp_dmg:,}") + crit_tag)
-            time.sleep(1)
+            _sleep(1)
             hp = max(0, hp - dmg)
             _, disp_ehp_new, _ = apply_dynamic_scaling(0, hp, tier)
             print(t('combat_enemy_hp', name=name, hp=f"{disp_ehp_new:,}"))
-            time.sleep(1)
+            _sleep(1)
             _skills.on_attack_used(player, action_logs, dmg_dealt=dmg)
             action_logs.append(t('combat_attack_log', dmg=f"{disp_dmg:,}"))
-            time.sleep(1)
+            _sleep(1)
 
         elif cmd == "2":
             consecutive_attacks = 0
@@ -260,9 +270,9 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
             atk = int(atk * 0.5)
 
             print(t('combat_defense_msg'))
-            time.sleep(1)
+            _sleep(1)
             action_logs.append(t('combat_defense_log'))
-            time.sleep(2)
+            _sleep(2)
 
         elif cmd == "3":
             if player.max_ram >= 2:
@@ -271,19 +281,19 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
                 player.max_ram -= 2
 
                 print(t('combat_hack_msg'))
-                time.sleep(1)
+                _sleep(1)
                 action_logs.append(t('combat_hack_log'))
             else:
                 print(t('combat_hack_no_ram'))
-                time.sleep(0.5)
+                _sleep(0.5)
                 action_logs.append(t('combat_hack_no_ram_log'))
 
         elif cmd == "4":
             if is_boss:
                 print(t('combat_escape_boss'))
-                time.sleep(0.5)
+                _sleep(0.5)
                 action_logs.append(t('combat_escape_boss_log'))
-                time.sleep(1)
+                _sleep(1)
             else:
                 eva_bonus = stat_eva * 100
                 _ew = constants.ESCAPE_WEIGHTS
@@ -307,11 +317,11 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
                     dmg_calc = atk if res == "NORMAL" else int(atk * 1.5) if res == "1.5X" else int(atk * 2.0)
                     disp_dmg_calc, _, _ = apply_dynamic_scaling(dmg_calc, 0, tier)
                     print(t('combat_escape_hit', dmg=f"{disp_dmg_calc:,}"))
-                    time.sleep(1)
+                    _sleep(1)
                     player.hp -= dmg_calc
                     _, disp_php_new, _ = apply_dynamic_scaling(0, max(0, player.hp), tier)
                     print(t('combat_player_hp', hp=f"{disp_php_new:,}"))
-                    time.sleep(1)
+                    _sleep(1)
 
                     if res == "NORMAL":   escape_log = t('combat_escape_normal',   dmg=f"{disp_dmg_calc:,}")
                     elif res == "1.5X":  escape_log = t('combat_escape_heavy',    dmg=f"{disp_dmg_calc:,}")
@@ -377,16 +387,16 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
                 crit_tag = Fore.YELLOW + Style.BRIGHT + " [CRITICAL!]" + Style.RESET_ALL if is_crit else ""
                 charges_tag = t('combat_sub_ammo_remaining', charges=sub_charges) if sub_charges > 0 else t('combat_sub_ammo_empty')
                 print(Fore.MAGENTA + Style.BRIGHT + t('combat_sub_wpn_hit', name=sub_wpn_name, dmg=f"{disp_sub_dmg:,}") + crit_tag)
-                time.sleep(1)
+                _sleep(1)
                 hp = max(0, hp - sub_dmg)
                 _, disp_ehp_new, _ = apply_dynamic_scaling(0, hp, tier)
                 print(t('combat_enemy_hp', name=name, hp=f"{disp_ehp_new:,}"))
-                time.sleep(1)
+                _sleep(1)
                 action_logs.append(t('combat_sub_wpn_log', name=sub_wpn_name, dmg=f"{disp_sub_dmg:,}", charges_tag=charges_tag))
-                time.sleep(1)
+                _sleep(1)
             else:
                 print(t('combat_sub_no_ram_msg'))
-                time.sleep(0.5)
+                _sleep(0.5)
                 action_logs.append(t('combat_sub_no_ram_log'))
 
         elif cmd.upper() == "S" and player.skill_slots:
@@ -411,14 +421,14 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
                 print(Fore.YELLOW + Style.BRIGHT + t('combat_skill_dmg_msg', dmg=f"{disp_aux:,}") + Style.RESET_ALL)
                 print(t('combat_enemy_hp', name=name, hp=f"{disp_ehp_aux:,}"))
                 action_logs.append(t('combat_skill_dmg_log', dmg=f"{disp_aux:,}"))
-                time.sleep(0.8)
+                _sleep(0.8)
             if combat_ctx.pop("pulse_e_drain", False) and is_boss:
                 learning_index = max(0, learning_index - 3)
                 action_logs.append(t('combat_pulse_e_drain'))
 
         else:
             print(t('combat_invalid_cmd'))
-            time.sleep(1)
+            _sleep(1)
             action_logs.append(t('combat_invalid_log'))
 
         # --- 적의 반격 ---
@@ -431,16 +441,16 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
             dmg_taken = _skills.apply_incoming_buffs(player, dmg_taken, action_logs, combat_ctx)
             disp_dmg_taken, _, _ = apply_dynamic_scaling(dmg_taken, 0, tier)
             print(Fore.RED + Style.BRIGHT + t('combat_enemy_attack', name=name, dmg=f"{disp_dmg_taken:,}"))
-            time.sleep(1)
+            _sleep(1)
             player.hp -= dmg_taken
             if cyber_regen > 0 and player.hp > 0:
                 player.hp = min(player.max_hp, player.hp + cyber_regen)
             _, disp_php_new, _ = apply_dynamic_scaling(0, max(0, player.hp), tier)
             print(t('combat_player_hp_full', hp=f"{disp_php_new:,}", maxhp=f"{disp_pmaxhp:,}"))
-            time.sleep(1)
+            _sleep(1)
             def_note = t('combat_def_note', val=def_bonus) if def_bonus > 0 else ""
             action_logs.append(t('combat_damage_log', dmg=f"{disp_dmg_taken:,}", def_note=def_note))
-            time.sleep(1)
+            _sleep(1)
 
         combat_ctx["skip_enemy_attack"] = False
         _skills.end_of_turn_tick(player, action_logs)

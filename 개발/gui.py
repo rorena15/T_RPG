@@ -327,6 +327,17 @@ class PygameTerminal:
             self._render()
             self._last_render_ms = now
 
+    def sleep_render(self, seconds: float):
+        """time.sleep() 대용 — 대기 중에도 pygame 이벤트를 처리하고 화면을 갱신합니다."""
+        self._render()
+        end_ms = pygame.time.get_ticks() + int(seconds * 1000)
+        while True:
+            remaining = end_ms - pygame.time.get_ticks()
+            if remaining <= 0:
+                break
+            self._pump()
+            pygame.time.wait(min(remaining, 16))
+
     @property
     def encoding(self):
         return 'utf-8'
