@@ -571,9 +571,7 @@ class PygameTerminal:
                         self._render()
 
     def wait_keypress_silent(self):
-        """메시지 없이 아무 키나 대기."""
-        self._dirty = True
-        self._render()
+        """메시지 없이 아무 키나 대기. 화면을 다시 그리지 않으므로 배너 표시 유지."""
         while True:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
