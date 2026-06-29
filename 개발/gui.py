@@ -24,6 +24,11 @@ def set_terminal(t):
     _terminal = t
 
 
+def get_ui_manager():
+    """PygameTerminal에 연결된 UIManager를 반환. 없으면 None."""
+    return _terminal._ui_manager if _terminal else None
+
+
 # ── ANSI SGR 코드 → RGB ──────────────────────────────────────────────────────
 _ANSI_COLORS = {
     '30': (80,  80,  80),
@@ -495,8 +500,13 @@ class PygameTerminal:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 sys.exit()
-            elif event.type == pygame.KEYDOWN and event.key == pygame.K_F11:
-                self.toggle_fullscreen()
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_F11:
+                    self.toggle_fullscreen()
+                elif self._ui_manager:
+                    u = event.unicode
+                    if u and 0x20 <= ord(u) <= 0x7E:
+                        self._ui_manager._on_keydown(u.upper())
             elif event.type in (pygame.VIDEORESIZE, getattr(pygame, 'WINDOWRESIZED', -1)):
                 self._dirty = True
 
@@ -963,38 +973,52 @@ class ScenePanel(_Panel):
 class LogPanel(_Panel):
     _M = 10
 
+    def __init__(self, rect: pygame.Rect):
+        super().__init__(rect)
+        self._prev_n   = 0
+        self._scroll_y = 0.0   # 양수 = 콘텐츠가 아래로 밀려남 (올라오며 0에 수렴)
+
     def render(self, target: pygame.Surface, term: 'PygameTerminal'):
         self._draw_bg()
-        m  = self._M
-        ch = term._ch
-        uw = term._unit_w
+        m   = self._M
+        ch  = term._ch
+        uw  = term._unit_w
         buf = term._buf
 
         visible = max(1, (self.rect.h - m * 2) // ch)
         n       = len(buf)
-        start   = max(0, n - visible)
-        y       = m + (self.rect.h - m * 2) % ch // 2   # 하단 정렬을 위한 시작 오프셋
 
-        # 실제 표시 줄수 계산 후 상단에서 시작
-        shown = min(visible, n - start)
-        y = m + (self.rect.h - m * 2 - shown * ch) // 2
-        y = max(m, y)
+        # 새 줄 추가 시 스크롤 오프셋 설정 → lerp로 0 수렴
+        if n > self._prev_n:
+            added = min(n - self._prev_n, visible)
+            self._scroll_y = min(float(ch * 2), self._scroll_y + added * ch * 0.75)
+        self._prev_n = n
+        if self._scroll_y > 0.8:
+            self._scroll_y *= 0.80
+        else:
+            self._scroll_y = 0.0
+
+        # 스크롤 여유분만큼 더 위에서 읽기 (상단 공백 방지)
+        extra = int(self._scroll_y) // max(ch, 1) + 1
+        start = max(0, n - visible - extra)
+        y     = m + int(self._scroll_y)
 
         for line in buf[start:]:
             x = m
-            for seg, color in line:
-                for c in seg:
-                    if term._is_box_char(c):
-                        cs = term._get_box_surf(c, color)
-                    elif term._is_emoji(c):
-                        cs = term._get_emoji_surf(c, color)
-                    else:
-                        cs = term._get_char_surf(c, color)
-                    if x + cs.get_width() <= self.rect.w - m:
-                        self._surf.blit(cs, (x, y))
-                    x += uw * (2 if term._is_wide_char(c) else 1)
+            if m <= y < self.rect.h - m:  # 가시 범위 내 줄만 렌더
+                for seg, color in line:
+                    for c in seg:
+                        if term._is_box_char(c):
+                            cs = term._get_box_surf(c, color)
+                        elif term._is_emoji(c):
+                            cs = term._get_emoji_surf(c, color)
+                        else:
+                            cs = term._get_char_surf(c, color)
+                        if x + cs.get_width() <= self.rect.w - m:
+                            self._surf.blit(cs, (x, y))
+                        x += uw * (2 if term._is_wide_char(c) else 1)
             y += ch
-            if y >= self.rect.h - m:
+            if y >= self.rect.h - m + int(self._scroll_y):
                 break
 
         self.blit_to(target)
@@ -1008,10 +1032,24 @@ class ActionPanel(_Panel):
 
     def __init__(self, rect: pygame.Rect):
         super().__init__(rect)
-        self._actions: list = []
+        self._actions:   list = []
+        self._flash_key: str  = ""
+        self._flash_ms:  int  = 0
 
     def set_actions(self, actions: list):
         self._actions = actions
+
+    def flash_key(self, char: str):
+        """입력된 키 문자에 해당하는 배지를 250ms 동안 하이라이트."""
+        self._flash_key = char.upper()
+        self._flash_ms  = pygame.time.get_ticks()
+
+    def _is_flash(self, action_key: str) -> bool:
+        if not self._flash_key:
+            return False
+        if pygame.time.get_ticks() - self._flash_ms > 250:
+            return False
+        return self._flash_key in action_key.upper()
 
     def render(self, target: pygame.Surface, font_ascii, font_kor):
         self._draw_bg()
@@ -1026,29 +1064,31 @@ class ActionPanel(_Panel):
         row_h  = max(20, (self.rect.h - m * 2) // nrows)
 
         for i, (key, label, enabled) in enumerate(self._actions):
-            col = i % ncols
-            row = i // ncols
-            x   = m + col * col_w
-            y   = m + row * row_h
+            col   = i % ncols
+            row   = i // ncols
+            x     = m + col * col_w
+            y     = m + row * row_h
+            flash = self._is_flash(key)
 
-            # 키 배지
-            bc = _THEME.TILE_PLAYER if enabled else _THEME.TEXT_DIM
+            # 키 배지 (플래시 시 흰색으로 강조)
+            bc    = (220, 220, 255) if flash else (_THEME.TILE_PLAYER if enabled else _THEME.TEXT_DIM)
+            alpha = 240 if flash else 200
             badge = pygame.Rect(x, y + 1, 26, 20)
-            bs = pygame.Surface((badge.w, badge.h), pygame.SRCALPHA)
-            pygame.draw.rect(bs, (*bc, 200), bs.get_rect(), border_radius=3)
+            bs    = pygame.Surface((badge.w, badge.h), pygame.SRCALPHA)
+            pygame.draw.rect(bs, (*bc, alpha), bs.get_rect(), border_radius=3)
             self._surf.blit(bs, (badge.x, badge.y))
 
             if font_ascii:
                 short_key = key[:3]
-                ks = font_ascii.render(short_key, True,
-                                       _THEME.PANEL_BG if enabled else (35, 35, 55))
+                fg_key    = (20, 20, 30) if flash or enabled else (35, 35, 55)
+                ks = font_ascii.render(short_key, True, fg_key)
                 kx = badge.x + (badge.w - ks.get_width()) // 2
                 ky = badge.y + (badge.h - ks.get_height()) // 2
                 self._surf.blit(ks, (kx, ky))
 
             # 라벨
-            lc  = _THEME.TEXT_FG if enabled else _THEME.TEXT_DIM
-            f   = font_kor or font_ascii
+            lc = (230, 230, 255) if flash else (_THEME.TEXT_FG if enabled else _THEME.TEXT_DIM)
+            f  = font_kor or font_ascii
             try:
                 ls = f.render(label, True, lc)
             except Exception:
@@ -1068,7 +1108,7 @@ class UIManager:
     _LEFT_W   = 280
     _HEADER_H = 44
     _ACTION_H = 148
-    _SCENE_H  = 0    # Phase 1: 씬 패널 비활성 (로그가 우측 전체 차지)
+    _SCENE_H  = 220   # Phase 2: 씬 패널 높이 (전투 적 아트 + HP 바)
 
     def __init__(self, terminal: 'PygameTerminal', version: str = ""):
         self._term    = terminal
@@ -1093,13 +1133,15 @@ class UIManager:
         lw  = self._LEFT_W
         hh  = self._HEADER_H
         act = self._ACTION_H
+        sc  = self._SCENE_H
         rw  = cw - lw
         half_lh = (ch - hh) // 2
+        log_h   = max(1, ch - hh - sc - act)
 
         self.map_panel    = MapPanel(pygame.Rect(0,        hh,            lw, half_lh))
         self.status_panel = StatusPanel(pygame.Rect(0,     hh + half_lh,  lw, ch - hh - half_lh))
-        self.scene_panel  = ScenePanel(pygame.Rect(lw,     hh,            rw, 0))   # 비활성
-        self.log_panel    = LogPanel(pygame.Rect(lw,       hh,            rw, ch - hh - act))
+        self.scene_panel  = ScenePanel(pygame.Rect(lw,     hh,            rw, sc))
+        self.log_panel    = LogPanel(pygame.Rect(lw,       hh + sc,       rw, log_h))
         self.action_panel = ActionPanel(pygame.Rect(lw,    ch - act,      rw, act))
 
         self._active           = True
@@ -1149,6 +1191,12 @@ class UIManager:
             self.scene_panel.set_idle()
         self._term._dirty = True
 
+    def _on_keydown(self, char: str):
+        """_pump()에서 키 입력 시 호출 — ActionPanel 플래시 트리거."""
+        if self.action_panel:
+            self.action_panel.flash_key(char)
+        self._term._dirty = True
+
     # ── 렌더링 ────────────────────────────────────────────────────────────────
 
     def render(self, canvas: pygame.Surface):
@@ -1166,11 +1214,16 @@ class UIManager:
             self.status_panel.render(canvas, self._player,
                                      self._term.font_ascii, self._term.font_ascii)
 
+        self.scene_panel.render(canvas, self._term.font_ascii, self._term.font_kor)
         self.log_panel.render(canvas, self._term)
         self.action_panel.render(canvas, self._term.font_ascii, self._term.font_kor)
 
-        # 구분선
+        # 구분선 (좌/우 + 씬/로그 경계)
         pygame.draw.line(canvas, _THEME.PANEL_BORDER, (lw, self._HEADER_H), (lw, ch), 1)
+        if self._SCENE_H > 0:
+            sep_y = self._HEADER_H + self._SCENE_H
+            pygame.draw.line(canvas, (*_THEME.PANEL_BORDER, 100),
+                             (lw, sep_y), (cw, sep_y), 1)
 
         self._draw_scanlines(canvas)
 

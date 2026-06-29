@@ -16,7 +16,7 @@ from ui import (clear_screen, print_header, print_divider, type_text,
 import skills as _skills
 from quest import advance_quest
 from sys_log import track
-from gui import get_terminal
+from gui import get_terminal, get_ui_manager
 
 
 def _sleep(seconds: float):
@@ -108,6 +108,12 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
             header_title = t('enemy_drone_header')
         atk = base_atk
         player.alert_level = min(100, player.alert_level + constants.ALERT_INC_DRONE)
+
+    # ── ScenePanel 초기화 ────────────────────────────────────────────────────
+    _ui = get_ui_manager()
+    if _ui:
+        _ui.set_state("combat")
+        _ui.scene_set_enemy(name, hp, hp, art)
 
     # ── 보조 화기 — 네오 아크 AI 폐기 화기 전용 ─────────────────────────
     _NAIWPN = "NEOARC_AI_WPN"
@@ -257,6 +263,7 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
             print(Fore.GREEN + Style.BRIGHT + t('combat_attack_hit', dmg=f"{disp_dmg:,}") + crit_tag)
             _sleep(1)
             hp = max(0, hp - dmg)
+            if _ui: _ui.scene_update_hp(hp)
             _, disp_ehp_new, _ = apply_dynamic_scaling(0, hp, tier)
             print(t('combat_enemy_hp', name=name, hp=f"{disp_ehp_new:,}"))
             _sleep(1)
@@ -389,6 +396,7 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
                 print(Fore.MAGENTA + Style.BRIGHT + t('combat_sub_wpn_hit', name=sub_wpn_name, dmg=f"{disp_sub_dmg:,}") + crit_tag)
                 _sleep(1)
                 hp = max(0, hp - sub_dmg)
+                if _ui: _ui.scene_update_hp(hp)
                 _, disp_ehp_new, _ = apply_dynamic_scaling(0, hp, tier)
                 print(t('combat_enemy_hp', name=name, hp=f"{disp_ehp_new:,}"))
                 _sleep(1)
@@ -416,6 +424,7 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
             aux_dmg = combat_ctx.pop("aux_skill_dmg", 0)
             if aux_dmg > 0 and hp > 0:
                 hp = max(0, hp - aux_dmg)
+                if _ui: _ui.scene_update_hp(hp)
                 disp_aux, _, _ = apply_dynamic_scaling(aux_dmg, 0, tier)
                 _, disp_ehp_aux, _ = apply_dynamic_scaling(0, hp, tier)
                 print(Fore.YELLOW + Style.BRIGHT + t('combat_skill_dmg_msg', dmg=f"{disp_aux:,}") + Style.RESET_ALL)
@@ -500,6 +509,7 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
         if hp_bonus > 0:
             player.max_hp -= hp_bonus
             player.hp = min(player.hp, player.max_hp)
+        if _ui: _ui.scene_set_idle(); _ui.set_state("exploration")
         return hp, enemy_type
 
     clear_screen()
@@ -533,6 +543,7 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
     if hp_bonus > 0:
         player.max_hp -= hp_bonus
         player.hp = min(player.hp, player.max_hp)
+    if _ui: _ui.scene_set_idle(); _ui.set_state("exploration")
     return None, None
 
 # ====================================================================

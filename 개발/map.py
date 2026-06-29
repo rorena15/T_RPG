@@ -18,7 +18,9 @@ class GameMap:
         self.session_index = 0
         self.escaped_enemy_hp = None
         self.escaped_enemy_type = None
-        self.tile_data: dict = {}  # {(x,y): {"remaining": int, "cooldown_until": int}}
+        self.tile_data: dict = {}          # {(x,y): {"remaining": int, "cooldown_until": int}}
+        self.layout:   dict = {}          # {(x,y): str} — "blocked"|"wreck"|"checkpoint"|"market"|""
+        self.landmark_visited: dict = {}  # {landmark_key: True}
 
     # ── 수색 시스템 ─────────────────────────────────────────────────────────
 
@@ -73,6 +75,12 @@ class GameMap:
 
     # ── 직렬화 ──────────────────────────────────────────────────────────────
 
+    def is_blocked(self, pos: list) -> bool:
+        return self.layout.get(tuple(pos), "") == "blocked"
+
+    def tile_type_at(self, pos: list) -> str:
+        return self.layout.get(tuple(pos), "open")
+
     def to_dict(self):
         return {
             "player_pos": self.player_pos,
@@ -81,6 +89,8 @@ class GameMap:
             "escaped_enemy_hp": self.escaped_enemy_hp,
             "escaped_enemy_type": self.escaped_enemy_type,
             "tile_data": {f"{k[0]},{k[1]}": v for k, v in self.tile_data.items()},
+            "layout": {f"{k[0]},{k[1]}": v for k, v in self.layout.items()},
+            "landmark_visited": self.landmark_visited,
         }
 
     def from_dict(self, data):
@@ -94,6 +104,12 @@ class GameMap:
         for key_str, v in raw_td.items():
             x, y = map(int, key_str.split(","))
             self.tile_data[(x, y)] = v
+        raw_lo = data.get("layout", {})
+        self.layout = {}
+        for key_str, v in raw_lo.items():
+            x, y = map(int, key_str.split(","))
+            self.layout[(x, y)] = v
+        self.landmark_visited = data.get("landmark_visited", {})
 
     # ── 맵 렌더링 ────────────────────────────────────────────────────────────
 
