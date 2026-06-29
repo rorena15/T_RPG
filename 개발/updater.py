@@ -61,21 +61,35 @@ def _download_file(url, dest_path, on_progress=None):
                 downloaded += len(chunk)
                 if on_progress and total:
                     on_progress(downloaded, total)
+    # 다운로드 완료 후 파일 크기 검증
+    if total and os.path.getsize(dest_path) != total:
+        raise RuntimeError(f"Download incomplete: {os.path.getsize(dest_path)} / {total} bytes")
 
 
 def _replace_exe_windows(new_exe_path):
     """
     실행 중인 exe는 직접 덮어쓸 수 없으므로
-    배치 스크립트를 만들어 자신이 종료된 후 교체 후 재실행
+    배치 스크립트를 만들어 자신이 종료된 후 교체 후 재실행.
+    작업 디렉터리를 exe 위치로 명시해 Python DLL 로드 오류를 방지한다.
     """
     current = _current_exe()
+    exe_dir = os.path.dirname(os.path.abspath(current))
     bat_path = os.path.join(tempfile.gettempdir(), "_stigma_update.bat")
-    bat_content = f"""@echo off
-ping -n 2 127.0.0.1 > nul
-move /Y "{new_exe_path}" "{current}"
-start "" "{current}"
-del "%~f0"
-"""
+    # ping -n 5: 약 4초 대기 — PyInstaller onefile이 %TEMP% 임시 디렉터리를
+    # 완전히 정리할 시간 확보. /D로 작업 디렉터리를 exe 위치로 지정해
+    # DLL 검색 경로가 깨지지 않도록 한다.
+    bat_content = (
+        "@echo off\r\n"
+        "ping -n 5 127.0.0.1 > nul\r\n"
+        f'move /Y "{new_exe_path}" "{current}"\r\n'
+        "if errorlevel 1 (\r\n"
+        f'    echo [업데이트 오류] 파일 교체 실패. 수동으로 "{new_exe_path}" 를 복사하세요.\r\n'
+        "    pause\r\n"
+        "    goto :eof\r\n"
+        ")\r\n"
+        f'start "" /D "{exe_dir}" "{current}"\r\n'
+        'del "%~f0"\r\n'
+    )
     with open(bat_path, "w", encoding="cp949") as f:
         f.write(bat_content)
     subprocess.Popen(["cmd", "/c", bat_path], creationflags=subprocess.CREATE_NO_WINDOW)
