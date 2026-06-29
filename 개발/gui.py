@@ -7,6 +7,7 @@ ANSI SGR 코드를 파싱해 색상을 적용하며, read_key / input_text 등 �
 pygame 이벤트 루프로 대체합니다.
 """
 
+import math
 import sys
 import os
 import pygame
@@ -129,6 +130,7 @@ class PygameTerminal:
         self._canvas      = pygame.Surface((w, h))   # 논리 서피스 — 항상 고정 크기
         self._canvas_size = (w, h)
         self._fullscreen  = False
+        self._ui_manager  = None   # UIManager 연결 시 패널 렌더링 모드로 전환
         self.screen = pygame.display.set_mode((w, h), pygame.RESIZABLE)
         pygame.display.set_caption(title)
 
@@ -443,31 +445,35 @@ class PygameTerminal:
     # ── 렌더링 ────────────────────────────────────────────────────────────────
     def _render(self):
         self._pump()
-        self._canvas.fill(_BG_COLOR)
-        w, h = self._canvas_size
 
-        # 패널 테두리 (미묘한 프레임)
-        pygame.draw.rect(
-            self._canvas, _FRAME_COLOR,
-            (self.PAD_X - 4, self.PAD_Y - 4,
-             w - (self.PAD_X - 4) * 2,
-             h - (self.PAD_Y - 4) * 2),
-            1
-        )
+        if self._ui_manager and self._ui_manager._active:
+            self._ui_manager.render(self._canvas)
+        else:
+            self._canvas.fill(_BG_COLOR)
+            w, h = self._canvas_size
 
-        visible = (h - self.PAD_Y * 2) // self._ch
-        n_lines = len(self._buf)
-        start   = max(0, n_lines - visible)
-        y = self.PAD_Y
+            # 패널 테두리 (미묘한 프레임)
+            pygame.draw.rect(
+                self._canvas, _FRAME_COLOR,
+                (self.PAD_X - 4, self.PAD_Y - 4,
+                 w - (self.PAD_X - 4) * 2,
+                 h - (self.PAD_Y - 4) * 2),
+                1
+            )
 
-        for i, line in enumerate(self._buf[start:], start=start):
-            is_current = (i == n_lines - 1)
-            if line:
-                surf = self._get_line_surf(line, is_current)
-                self._canvas.blit(surf, (self.PAD_X, y))
-            y += self._ch
-            if y > h - self.PAD_Y:
-                break
+            visible = (h - self.PAD_Y * 2) // self._ch
+            n_lines = len(self._buf)
+            start   = max(0, n_lines - visible)
+            y = self.PAD_Y
+
+            for i, line in enumerate(self._buf[start:], start=start):
+                is_current = (i == n_lines - 1)
+                if line:
+                    surf = self._get_line_surf(line, is_current)
+                    self._canvas.blit(surf, (self.PAD_X, y))
+                y += self._ch
+                if y > h - self.PAD_Y:
+                    break
 
         # canvas → screen letterbox 스케일링
         sw, sh = self.screen.get_size()
@@ -660,3 +666,540 @@ class PygameTerminal:
             pygame.display.flip()
         except Exception:
             pass
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# UIManager 패널 시스템 — Act 1막~이후 확장성 설계
+# ══════════════════════════════════════════════════════════════════════════════
+
+class _ActTheme:
+    """1막 색상 테마. act 번호로 교체 가능하도록 클래스 분리."""
+    BG           = (4,   4,  12)
+    PANEL_BG     = (7,   7,  22)
+    PANEL_BORDER = (0,  130, 170)
+    HEADER_BG    = (8,   8,  26)
+    HEADER_FG    = (0,  210, 228)
+    TEXT_FG      = (175, 175, 198)
+    TEXT_DIM     = (75,  75, 108)
+    TILE_EMPTY   = (16,  16,  40)
+    TILE_VISITED = (22,  44,  76)
+    TILE_PLAYER  = (0,  196, 218)
+    TILE_BUNKER  = (198, 156,  18)
+    HP_COLOR     = (48,  196,  68)
+    HP_MID       = (198, 156,  18)
+    HP_LOW       = (198,  48,  48)
+    HUNGER_COLOR = (208, 148,  28)
+    THIRST_COLOR = (28,  158, 208)
+    ALERT_SAFE   = (48,  196,  68)
+    ALERT_WARN   = (208, 156,  18)
+    ALERT_DANGER = (208,  38,  38)
+    SCANLINE_A   = 12
+
+
+_THEME = _ActTheme()
+
+
+# ── _Panel 기반 클래스 ────────────────────────────────────────────────────────
+
+class _Panel:
+    """모든 UI 패널의 기반. rect는 canvas 좌표계 기준."""
+
+    def __init__(self, rect: pygame.Rect):
+        self.rect  = rect
+        self._surf = pygame.Surface((max(1, rect.w), max(1, rect.h)), pygame.SRCALPHA)
+
+    def _draw_bg(self, border_color=None):
+        bc = border_color or _THEME.PANEL_BORDER
+        self._surf.fill((*_THEME.PANEL_BG, 228))
+        rw, rh = self._surf.get_size()
+        for inset, alpha in ((2, 55), (1, 115), (0, 195)):
+            gr = pygame.Rect(inset, inset, rw - inset * 2, rh - inset * 2)
+            glow = pygame.Surface((rw, rh), pygame.SRCALPHA)
+            pygame.draw.rect(glow, (*bc, alpha), gr, 1)
+            self._surf.blit(glow, (0, 0))
+
+    def blit_to(self, target: pygame.Surface):
+        target.blit(self._surf, (self.rect.x, self.rect.y))
+
+
+# ── MapPanel ──────────────────────────────────────────────────────────────────
+
+class MapPanel(_Panel):
+    _M = 10   # 내부 여백
+
+    def render(self, target: pygame.Surface, grid, player, font):
+        self._draw_bg()
+        m    = self._M
+        size = grid.size
+        avw  = self.rect.w - m * 2
+        avh  = self.rect.h - m * 2 - 26   # 26: 섹션 라벨 높이
+        cell = min(avw // max(size, 1), avh // max(size, 1))
+        ox   = m + (avw - cell * size) // 2
+        oy   = m + 26 + (avh - cell * size) // 2
+        t_ms = pygame.time.get_ticks()
+
+        for gy in range(size - 1, -1, -1):
+            for gx in range(size):
+                sx = ox + gx * cell
+                sy = oy + (size - 1 - gy) * cell
+                cr = pygame.Rect(sx + 1, sy + 1, cell - 3, cell - 3)
+                is_pl = ([gx, gy] == grid.player_pos)
+                is_bk = ([gx, gy] == grid.bunker_pos)
+                is_vi = (gx, gy) in grid.visited_tiles
+
+                if is_pl:
+                    pulse = 0.62 + 0.38 * math.sin(t_ms / 270)
+                    col   = _THEME.TILE_PLAYER
+                    for ex, al in ((7, 18), (5, 38), (3, 75)):
+                        gw = cr.w + ex * 2
+                        gh = cr.h + ex * 2
+                        gs = pygame.Surface((gw, gh), pygame.SRCALPHA)
+                        pygame.draw.rect(gs, (*col, int(al * pulse)),
+                                         gs.get_rect(), border_radius=5)
+                        self._surf.blit(gs, (cr.x - ex, cr.y - ex))
+                    pygame.draw.rect(self._surf, col, cr, border_radius=3)
+
+                elif is_bk:
+                    col = _THEME.TILE_BUNKER
+                    pygame.draw.rect(self._surf, (18, 14, 4), cr, border_radius=2)
+                    for ex, al in ((4, 25), (2, 65)):
+                        gw = cr.w + ex * 2
+                        gh = cr.h + ex * 2
+                        gs = pygame.Surface((gw, gh), pygame.SRCALPHA)
+                        pygame.draw.rect(gs, (*col, al), gs.get_rect(), border_radius=4)
+                        self._surf.blit(gs, (cr.x - ex, cr.y - ex))
+                    pygame.draw.rect(self._surf, col, cr, 2, border_radius=2)
+
+                elif is_vi:
+                    pygame.draw.rect(self._surf, _THEME.TILE_VISITED, cr, border_radius=2)
+                    pygame.draw.rect(self._surf, (*_THEME.PANEL_BORDER, 90), cr, 1, border_radius=2)
+
+                else:
+                    pygame.draw.rect(self._surf, _THEME.TILE_EMPTY, cr, border_radius=2)
+                    pygame.draw.rect(self._surf, (*_THEME.PANEL_BORDER, 35), cr, 1, border_radius=2)
+
+        if font:
+            lbl = font.render("SECTOR MAP", True, _THEME.HEADER_FG)
+            self._surf.blit(lbl, (m, m + 2))
+        self.blit_to(target)
+
+
+# ── StatusPanel ───────────────────────────────────────────────────────────────
+
+class StatusPanel(_Panel):
+    _M      = 12
+    _BAR_H  = 13
+    _LBL_H  = 15
+    _GAP    = 6
+
+    def __init__(self, rect: pygame.Rect):
+        super().__init__(rect)
+        self._disp_hp  = None
+        self._disp_mhp = None
+
+    def _draw_bar(self, y: int, label: str, val: float, max_val: float,
+                  color: tuple, font, bar_w: int, m: int,
+                  ticks: int, pulse: bool = False) -> int:
+        ratio = max(0.0, min(1.0, val / max_val)) if max_val > 0 else 0.0
+        if font:
+            ls = font.render(label, True, _THEME.TEXT_DIM)
+            self._surf.blit(ls, (m, y))
+            val_str = f"{int(val)}/{int(max_val)}" if max_val > 1 else f"{int(val)}"
+            vs = font.render(val_str, True, _THEME.TEXT_FG)
+            self._surf.blit(vs, (m + bar_w - vs.get_width(), y))
+            y += self._LBL_H + 1
+        tr = pygame.Rect(m, y, bar_w, self._BAR_H)
+        pygame.draw.rect(self._surf, (13, 13, 30), tr, border_radius=3)
+        if ratio > 0:
+            fw    = max(3, int(bar_w * ratio))
+            alpha = 255
+            if pulse:
+                alpha = int(148 + 107 * abs(math.sin(ticks / 215)))
+            fs = pygame.Surface((fw, self._BAR_H), pygame.SRCALPHA)
+            r, g, b = color
+            pygame.draw.rect(fs, (r, g, b, alpha), fs.get_rect(), border_radius=3)
+            self._surf.blit(fs, (m, y))
+        pygame.draw.rect(self._surf, (*_THEME.PANEL_BORDER, 65), tr, 1, border_radius=3)
+        return y + self._BAR_H + self._GAP
+
+    def render(self, target: pygame.Surface, player, font_sm, font_lbl):
+        self._draw_bg()
+        m    = self._M
+        y    = m
+        t_ms = pygame.time.get_ticks()
+        bw   = self.rect.w - m * 2
+
+        if font_sm:
+            hs = font_sm.render("STATUS", True, _THEME.HEADER_FG)
+            self._surf.blit(hs, (m, y))
+            y += hs.get_height() + 5
+
+        # HP lerp
+        th, tm = float(player.hp), float(player.max_hp)
+        if self._disp_hp is None:
+            self._disp_hp, self._disp_mhp = th, tm
+        else:
+            self._disp_hp  += (th - self._disp_hp)  * 0.18
+            self._disp_mhp += (tm - self._disp_mhp) * 0.18
+        hr = self._disp_hp / self._disp_mhp if self._disp_mhp > 0 else 0
+        hc = _THEME.HP_COLOR if hr > 0.5 else (_THEME.HP_MID if hr > 0.25 else _THEME.HP_LOW)
+        y  = self._draw_bar(y, "HP", self._disp_hp, self._disp_mhp, hc, font_lbl, bw, m, t_ms)
+
+        y = self._draw_bar(y, "허기", player.hunger, 100,
+                           _THEME.HUNGER_COLOR, font_lbl, bw, m, t_ms)
+        y = self._draw_bar(y, "갈증", player.thirst, 100,
+                           _THEME.THIRST_COLOR, font_lbl, bw, m, t_ms)
+        ar = player.alert_level / 100
+        ac = (_THEME.ALERT_SAFE if ar < 0.4
+              else _THEME.ALERT_WARN if ar < 0.7 else _THEME.ALERT_DANGER)
+        y  = self._draw_bar(y, "경보", player.alert_level, 100, ac, font_lbl,
+                            bw, m, t_ms, pulse=(ar > 0.7))
+
+        y += 5
+        if font_lbl:
+            extras = [
+                (f"고철: {player.materials}",           _THEME.TEXT_FG),
+                (f"평판: {player.reputation:+d}",
+                 _THEME.HP_COLOR if player.reputation >= 0 else _THEME.HP_LOW),
+                (f"턴:   {player.turn_count}",           _THEME.TEXT_DIM),
+            ]
+            for txt, col in extras:
+                if y + self._LBL_H < self.rect.h - m:
+                    s = font_lbl.render(txt, True, col)
+                    self._surf.blit(s, (m, y))
+                    y += self._LBL_H + 3
+
+        self.blit_to(target)
+
+
+# ── ScenePanel ────────────────────────────────────────────────────────────────
+
+class ScenePanel(_Panel):
+    """2단계(Phase 2) 씬 패널 — 몬스터/이벤트/파밍 시각화."""
+    _M = 10
+
+    def __init__(self, rect: pygame.Rect):
+        super().__init__(rect)
+        self._mode   = "idle"    # "idle" | "enemy" | "event"
+        self._title  = ""
+        self._body   = ""
+        self._art    = ""
+        self._hp     = 0
+        self._max_hp = 1
+
+    def set_enemy(self, name: str, hp: int, max_hp: int, art: str = ""):
+        self._mode   = "enemy"
+        self._title  = name
+        self._hp     = float(hp)
+        self._max_hp = float(max_hp)
+        self._art    = art
+
+    def update_enemy_hp(self, hp: int):
+        self._hp = float(hp)
+
+    def set_event(self, title: str, body: str):
+        self._mode  = "event"
+        self._title = title
+        self._body  = body
+
+    def set_idle(self):
+        self._mode = "idle"
+
+    def render(self, target: pygame.Surface, font_ascii, font_kor):
+        self._draw_bg()
+        m    = self._M
+        t_ms = pygame.time.get_ticks()
+
+        if self._mode == "enemy":
+            # 적 HP 바
+            ratio = max(0.0, min(1.0, self._hp / self._max_hp)) if self._max_hp > 0 else 0
+            bw    = self.rect.w - m * 2
+            if font_ascii:
+                ts = font_ascii.render(self._title, True, _THEME.HEADER_FG)
+                self._surf.blit(ts, (m, m))
+                vs = font_ascii.render(f"{int(self._hp)}/{int(self._max_hp)}", True, _THEME.TEXT_FG)
+                self._surf.blit(vs, (m + bw - vs.get_width(), m))
+            tr  = pygame.Rect(m, m + 26, bw, 12)
+            pygame.draw.rect(self._surf, (13, 13, 30), tr, border_radius=3)
+            if ratio > 0:
+                fw   = max(2, int(bw * ratio))
+                ec   = _THEME.ALERT_SAFE if ratio > 0.5 else (
+                       _THEME.ALERT_WARN if ratio > 0.25 else _THEME.ALERT_DANGER)
+                fs   = pygame.Surface((fw, 12), pygame.SRCALPHA)
+                r, g, b = ec
+                pygame.draw.rect(fs, (r, g, b, 220), fs.get_rect(), border_radius=3)
+                self._surf.blit(fs, (m, m + 26))
+            pygame.draw.rect(self._surf, (*_THEME.PANEL_BORDER, 65), tr, 1, border_radius=3)
+
+            # ASCII 아트
+            if self._art and font_ascii:
+                art_y = m + 46
+                for line in self._art.strip('\n').split('\n')[:12]:
+                    # 글리치 효과 (HP 낮을 때)
+                    if ratio < 0.3 and t_ms % 400 < 40:
+                        line = line[:max(0, len(line) - 3)] + "░▒▓"[:3]
+                    s = font_ascii.render(line, True, _THEME.TEXT_FG)
+                    if art_y + s.get_height() < self.rect.h - m:
+                        self._surf.blit(s, (m, art_y))
+                    art_y += s.get_height()
+
+        elif self._mode == "event":
+            if font_ascii:
+                ts = font_ascii.render(self._title, True, _THEME.HEADER_FG)
+                self._surf.blit(ts, (m, m))
+            if font_kor:
+                body_y = m + 28
+                for line in self._body[:200].split('\n')[:8]:
+                    bs = font_kor.render(line, True, _THEME.TEXT_FG)
+                    if body_y + bs.get_height() < self.rect.h - m:
+                        self._surf.blit(bs, (m, body_y))
+                    body_y += bs.get_height() + 2
+
+        self.blit_to(target)
+
+
+# ── LogPanel ──────────────────────────────────────────────────────────────────
+
+class LogPanel(_Panel):
+    _M = 10
+
+    def render(self, target: pygame.Surface, term: 'PygameTerminal'):
+        self._draw_bg()
+        m  = self._M
+        ch = term._ch
+        uw = term._unit_w
+        buf = term._buf
+
+        visible = max(1, (self.rect.h - m * 2) // ch)
+        n       = len(buf)
+        start   = max(0, n - visible)
+        y       = m + (self.rect.h - m * 2) % ch // 2   # 하단 정렬을 위한 시작 오프셋
+
+        # 실제 표시 줄수 계산 후 상단에서 시작
+        shown = min(visible, n - start)
+        y = m + (self.rect.h - m * 2 - shown * ch) // 2
+        y = max(m, y)
+
+        for line in buf[start:]:
+            x = m
+            for seg, color in line:
+                for c in seg:
+                    if term._is_box_char(c):
+                        cs = term._get_box_surf(c, color)
+                    elif term._is_emoji(c):
+                        cs = term._get_emoji_surf(c, color)
+                    else:
+                        cs = term._get_char_surf(c, color)
+                    if x + cs.get_width() <= self.rect.w - m:
+                        self._surf.blit(cs, (x, y))
+                    x += uw * (2 if term._is_wide_char(c) else 1)
+            y += ch
+            if y >= self.rect.h - m:
+                break
+
+        self.blit_to(target)
+
+
+# ── ActionPanel ───────────────────────────────────────────────────────────────
+
+class ActionPanel(_Panel):
+    _M    = 12
+    _COLS = 2
+
+    def __init__(self, rect: pygame.Rect):
+        super().__init__(rect)
+        self._actions: list = []
+
+    def set_actions(self, actions: list):
+        self._actions = actions
+
+    def render(self, target: pygame.Surface, font_ascii, font_kor):
+        self._draw_bg()
+        m = self._M
+        if not self._actions:
+            self.blit_to(target)
+            return
+
+        ncols  = self._COLS
+        nrows  = max(1, (len(self._actions) + ncols - 1) // ncols)
+        col_w  = (self.rect.w - m * 2) // ncols
+        row_h  = max(20, (self.rect.h - m * 2) // nrows)
+
+        for i, (key, label, enabled) in enumerate(self._actions):
+            col = i % ncols
+            row = i // ncols
+            x   = m + col * col_w
+            y   = m + row * row_h
+
+            # 키 배지
+            bc = _THEME.TILE_PLAYER if enabled else _THEME.TEXT_DIM
+            badge = pygame.Rect(x, y + 1, 26, 20)
+            bs = pygame.Surface((badge.w, badge.h), pygame.SRCALPHA)
+            pygame.draw.rect(bs, (*bc, 200), bs.get_rect(), border_radius=3)
+            self._surf.blit(bs, (badge.x, badge.y))
+
+            if font_ascii:
+                short_key = key[:3]
+                ks = font_ascii.render(short_key, True,
+                                       _THEME.PANEL_BG if enabled else (35, 35, 55))
+                kx = badge.x + (badge.w - ks.get_width()) // 2
+                ky = badge.y + (badge.h - ks.get_height()) // 2
+                self._surf.blit(ks, (kx, ky))
+
+            # 라벨
+            lc  = _THEME.TEXT_FG if enabled else _THEME.TEXT_DIM
+            f   = font_kor or font_ascii
+            try:
+                ls = f.render(label, True, lc)
+            except Exception:
+                ls = font_ascii.render(label[:10], True, lc) if font_ascii else None
+            if ls:
+                ly = y + (22 - ls.get_height()) // 2 + 1
+                self._surf.blit(ls, (x + 30, ly))
+
+        self.blit_to(target)
+
+
+# ── UIManager ─────────────────────────────────────────────────────────────────
+
+class UIManager:
+    """패널 기반 UI 조율자. set_state()로 상태 전환, update()로 데이터 갱신."""
+
+    _LEFT_W   = 280
+    _HEADER_H = 44
+    _ACTION_H = 148
+    _SCENE_H  = 0    # Phase 1: 씬 패널 비활성 (로그가 우측 전체 차지)
+
+    def __init__(self, terminal: 'PygameTerminal', version: str = ""):
+        self._term    = terminal
+        self._version = version
+        self._active  = False
+        self._state   = "exploration"
+        self._player  = None
+        self._grid    = None
+
+        # 패널 (activate() 시 초기화)
+        self.map_panel    = None
+        self.status_panel = None
+        self.scene_panel  = None
+        self.log_panel    = None
+        self.action_panel = None
+
+    # ── 초기화 ────────────────────────────────────────────────────────────────
+
+    def activate(self):
+        """UIManager를 활성화하고 터미널에 등록."""
+        cw, ch = self._term._canvas_size
+        lw  = self._LEFT_W
+        hh  = self._HEADER_H
+        act = self._ACTION_H
+        rw  = cw - lw
+        half_lh = (ch - hh) // 2
+
+        self.map_panel    = MapPanel(pygame.Rect(0,        hh,            lw, half_lh))
+        self.status_panel = StatusPanel(pygame.Rect(0,     hh + half_lh,  lw, ch - hh - half_lh))
+        self.scene_panel  = ScenePanel(pygame.Rect(lw,     hh,            rw, 0))   # 비활성
+        self.log_panel    = LogPanel(pygame.Rect(lw,       hh,            rw, ch - hh - act))
+        self.action_panel = ActionPanel(pygame.Rect(lw,    ch - act,      rw, act))
+
+        self._active           = True
+        self._term._ui_manager = self
+        self._term._dirty      = True
+
+    def deactivate(self):
+        self._active           = False
+        self._term._ui_manager = None
+        self._term._dirty      = True
+
+    # ── 상태 갱신 ─────────────────────────────────────────────────────────────
+
+    def set_state(self, state: str):
+        self._state = state
+        self._term._dirty = True
+
+    def update(self, player, grid):
+        self._player      = player
+        self._grid        = grid
+        self._term._dirty = True
+
+    def set_actions(self, actions: list):
+        """actions: [(key, label, enabled), ...]"""
+        if self.action_panel:
+            self.action_panel.set_actions(actions)
+        self._term._dirty = True
+
+    # Phase 2 ScenePanel 연동용 메서드
+    def scene_set_enemy(self, name: str, hp: int, max_hp: int, art: str = ""):
+        if self.scene_panel:
+            self.scene_panel.set_enemy(name, hp, max_hp, art)
+        self._term._dirty = True
+
+    def scene_update_hp(self, hp: int):
+        if self.scene_panel:
+            self.scene_panel.update_enemy_hp(hp)
+        self._term._dirty = True
+
+    def scene_set_event(self, title: str, body: str):
+        if self.scene_panel:
+            self.scene_panel.set_event(title, body)
+        self._term._dirty = True
+
+    def scene_set_idle(self):
+        if self.scene_panel:
+            self.scene_panel.set_idle()
+        self._term._dirty = True
+
+    # ── 렌더링 ────────────────────────────────────────────────────────────────
+
+    def render(self, canvas: pygame.Surface):
+        if not self._active:
+            return
+        cw, ch = canvas.get_size()
+        lw     = self._LEFT_W
+
+        canvas.fill(_THEME.BG)
+        self._draw_header(canvas)
+
+        if self._player and self._grid:
+            self.map_panel.render(canvas, self._grid, self._player,
+                                  self._term.font_ascii)
+            self.status_panel.render(canvas, self._player,
+                                     self._term.font_ascii, self._term.font_ascii)
+
+        self.log_panel.render(canvas, self._term)
+        self.action_panel.render(canvas, self._term.font_ascii, self._term.font_kor)
+
+        # 구분선
+        pygame.draw.line(canvas, _THEME.PANEL_BORDER, (lw, self._HEADER_H), (lw, ch), 1)
+
+        self._draw_scanlines(canvas)
+
+    def _draw_header(self, canvas: pygame.Surface):
+        cw = canvas.get_width()
+        hh = self._HEADER_H
+        hs = pygame.Surface((cw, hh), pygame.SRCALPHA)
+        hs.fill((*_THEME.HEADER_BG, 242))
+        for i, a in enumerate((28, 68, 155)):
+            pygame.draw.line(hs, (*_THEME.PANEL_BORDER, a),
+                             (0, hh - 1 - i), (cw, hh - 1 - i))
+        canvas.blit(hs, (0, 0))
+
+        f = self._term.font_ascii
+        if f:
+            ts = f.render("PROTOCOL : STIGMA", True, _THEME.HEADER_FG)
+            canvas.blit(ts, (14, (hh - ts.get_height()) // 2))
+            if self._player:
+                diff_label = {"easy": "EASY", "normal": "NORMAL", "hard": "HARD"}.get(
+                    getattr(self._player, 'difficulty', 'normal'), 'NORMAL')
+                info = (f"v{self._version}  |  TURN {self._player.turn_count}"
+                        f"  |  {diff_label}")
+                is_ = f.render(info, True, _THEME.TEXT_DIM)
+                canvas.blit(is_, (cw - is_.get_width() - 14,
+                                  (hh - is_.get_height()) // 2))
+
+    def _draw_scanlines(self, canvas: pygame.Surface):
+        cw, ch = canvas.get_size()
+        sl = pygame.Surface((cw, ch), pygame.SRCALPHA)
+        for y in range(0, ch, 3):
+            pygame.draw.line(sl, (0, 0, 0, _THEME.SCANLINE_A), (0, y), (cw, y))
+        canvas.blit(sl, (0, 0))

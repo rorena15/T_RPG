@@ -24,7 +24,7 @@ from map import GameMap
 from combat import combat_loop, get_encounter_chance, apply_dynamic_scaling
 from quest import handle_random_event, handle_trader, advance_quest, trigger_sudden_quest
 from story import handle_session, run_prologue, run_boss_core_choice, run_ending
-from gui import get_terminal
+from gui import get_terminal, UIManager
 
 _console = Console(highlight=False)
 
@@ -220,6 +220,23 @@ def run_game():
         # 잘못된 입력 → 타이틀 재표시
 
     sound.play_map_ambient()
+
+    # UIManager 초기화 — pygame 터미널 모드에서만 활성화
+    _ui_mgr = None
+    _term = get_terminal()
+    if _term:
+        _ui_mgr = UIManager(_term, constants.GAME_VERSION)
+        _ui_mgr.activate()
+
+    _EXPLORE_ACTIONS = [
+        ("WASD", "이동",     True),
+        ("F",    "탐색",     True),
+        ("I",    "인벤토리", True),
+        ("J",    "일지",     True),
+        ("C",    "저장",     True),
+        ("Q",    "종료",     True),
+    ]
+
     while True:
         clear_screen()
         if player.active_quest and player.turn_count > player.active_quest["deadline"]:
@@ -229,17 +246,21 @@ def run_game():
             player.active_quest = None
             time.sleep(1.5)
             clear_screen()
-        grid.draw()
-        player.show_status()
 
-        print(f" {t('cmd_header')}")
-        print(f"  {t('cmd_move')}")
-        print(f"  {t('cmd_search')}")
-        print(f"  {t('cmd_inventory')}")
-        print(f"  {t('cmd_diary')}")
-        print(f"  {t('cmd_save')}")
-        print(f"  {t('cmd_quit')}")
-        print_divider()
+        if _ui_mgr:
+            _ui_mgr.update(player, grid)
+            _ui_mgr.set_actions(_EXPLORE_ACTIONS)
+        else:
+            grid.draw()
+            player.show_status()
+            print(f" {t('cmd_header')}")
+            print(f"  {t('cmd_move')}")
+            print(f"  {t('cmd_search')}")
+            print(f"  {t('cmd_inventory')}")
+            print(f"  {t('cmd_diary')}")
+            print(f"  {t('cmd_save')}")
+            print(f"  {t('cmd_quit')}")
+            print_divider()
 
         move = read_key()
 
