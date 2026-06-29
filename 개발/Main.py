@@ -67,7 +67,7 @@ def run_game():
         _term = get_terminal()
         if _term:
             _term.show_banner(_banner_path())
-            wait_for_keypress()
+            _term.wait_keypress_silent()   # print() 없이 대기 — 배너 덮어쓰기 방지
             clear_screen()
         print()
         ver_str = f"v{constants.GAME_VERSION}"

@@ -308,8 +308,7 @@ def run_ending(player):
     _term = get_terminal()
     if _term:
         _term.show_banner(_banner_path())
-        from ui import wait_for_keypress
-        wait_for_keypress()
+        _term.wait_keypress_silent()   # print() 없이 대기 — 배너 덮어쓰기 방지
         clear_screen()
     print_header("PIONEER PROTOCOL: NORMALIZATION EXECUTION")
     type_text(t('ending_core_1'), 0.03)
