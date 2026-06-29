@@ -11,10 +11,10 @@ import db_init
 from sys_log import sys_log, track, track_event, log_error, setup_global_exception_hook
 from colorama import Fore, Back, Style, init as colorama_init
 from rich.console import Console
-from i18n import t, set_lang
+from i18n import t, set_lang, db_t
 from updater import check_and_prompt_update
 
-from core import init_and_load_db, get_save_path, save_data
+from core import init_and_load_db, get_save_path, save_data, load_settings, save_settings
 from ui import (clear_screen, type_text, print_header, print_divider,
                 print_ambient_lore, read_key, wait_for_keypress,
                 ea_center, ea_rpad, log_diary, show_diary,
@@ -43,12 +43,22 @@ def _banner_path() -> str:
 
 @track
 def run_game():
-    os.system('title PROTOCOL: STIGMA — 1막: 낙인')
-    os.system('mode con: cols=90 lines=40')
-    os.system('color 0B')
-    colorama_init(autoreset=True)
+    if not get_terminal():
+        if os.name == 'nt':
+            os.system('title PROTOCOL: STIGMA — 1막: 낙인')
+            os.system('mode con: cols=90 lines=40')
+            os.system('color 0B')
+        colorama_init(autoreset=True)
+    else:
+        colorama_init(strip=False, convert=False, autoreset=False)
 
     set_lang("ko")  # 기본값
+
+    _settings = load_settings()
+    sound.set_bgm_volume(_settings["bgm_volume"])
+    sound.set_mute(_settings["mute"])
+    constants.TEXT_SPEED_MULT = _settings["text_speed"]
+
     check_and_prompt_update(constants.GAME_VERSION, console=_console)
 
     player = Player()
@@ -99,28 +109,58 @@ def run_game():
             time.sleep(0.5)
             sys.exit()
 
-        # ── 옵션 (언어 선택) ──────────────────────────────────────────────
+        # ── 옵션 ──────────────────────────────────────────────────────────
         if ans == opt_key:
+            _vol_steps  = [0.0, 0.25, 0.5, 0.75, 1.0]
+            _spd_steps  = [("opt_speed_slow", 2.0), ("opt_speed_normal", 1.0),
+                           ("opt_speed_fast", 0.5), ("opt_speed_instant", 0.0)]
             while True:
                 clear_screen()
                 print_header(t('menu_options'))
                 print_divider()
-                print(f"  {t('lang_header')}")
-                print_divider()
-                print(f"  1. {t('lang_ko')}")
-                print(f"  2. {t('lang_en')}")
+                _vol_pct  = int(_settings["bgm_volume"] * 100)
+                _mute_str = t('opt_mute_on') if _settings["mute"] else t('opt_mute_off')
+                _spd_key  = next((k for k, v in _spd_steps if v == _settings["text_speed"]),
+                                 "opt_speed_normal")
+                _spd_str  = t(_spd_key)
+                print(f"  1. {t('lang_header')}")
+                print(f"  2. {t('opt_volume')}  ◀ {_vol_pct}% ▶")
+                print(f"  3. {t('opt_mute')}  [{_mute_str}]")
+                print(f"  4. {t('opt_text_speed')}  [{_spd_str}]")
                 print_divider()
                 print(f"  0. {t('diff_back')}")
                 print_divider()
-                lk = read_key()
-                if lk == "1":
-                    set_lang("ko")
+                ok = read_key()
+                if ok == "0":
                     break
-                elif lk == "2":
-                    set_lang("en")
-                    break
-                elif lk == "0":
-                    break
+                elif ok == "1":
+                    while True:
+                        clear_screen()
+                        print_header(t('lang_header'))
+                        print_divider()
+                        print(f"  1. {t('lang_ko')}")
+                        print(f"  2. {t('lang_en')}")
+                        print_divider()
+                        print(f"  0. {t('diff_back')}")
+                        print_divider()
+                        lk = read_key()
+                        if lk == "1":   set_lang("ko"); break
+                        elif lk == "2": set_lang("en"); break
+                        elif lk == "0": break
+                elif ok == "2":
+                    cur = _vol_steps.index(_settings["bgm_volume"]) if _settings["bgm_volume"] in _vol_steps else 2
+                    _settings["bgm_volume"] = _vol_steps[(cur + 1) % len(_vol_steps)]
+                    sound.set_bgm_volume(_settings["bgm_volume"])
+                    save_settings(_settings)
+                elif ok == "3":
+                    _settings["mute"] = not _settings["mute"]
+                    sound.set_mute(_settings["mute"])
+                    save_settings(_settings)
+                elif ok == "4":
+                    cur = next((i for i, (_, v) in enumerate(_spd_steps) if v == _settings["text_speed"]), 1)
+                    _, _settings["text_speed"] = _spd_steps[(cur + 1) % len(_spd_steps)]
+                    constants.TEXT_SPEED_MULT = _settings["text_speed"]
+                    save_settings(_settings)
             continue
 
         # ── 세이브 로드 ───────────────────────────────────────────────────
@@ -259,15 +299,15 @@ def run_game():
                     if random.random() < 0.5:
                         it = roll_food()
                         player.consumables[it] += 1
-                        print(t('farm_food', name=constants.CONSUMABLES_DB[it]['name']))
+                        print(t('farm_food', name=db_t(constants.CONSUMABLES_DB[it], 'name')))
                     else:
                         it = roll_water()
                         player.consumables[it] += 1
-                        print(t('farm_water', name=constants.CONSUMABLES_DB[it]['name']))
+                        print(t('farm_water', name=db_t(constants.CONSUMABLES_DB[it], 'name')))
                 else:
                     it = roll_medkit()
                     player.consumables[it] += 1
-                    print(t('farm_medkit', name=constants.CONSUMABLES_DB[it]['name']))
+                    print(t('farm_medkit', name=db_t(constants.CONSUMABLES_DB[it], 'name')))
                 wait_for_keypress()
             # 탐색 퀘스트 진행 및 돌발 퀘스트 (전투 미조우 시)
             if not (0.08 <= roll < 0.08 + encounter_chance):
@@ -384,5 +424,14 @@ def run_game():
 
 if __name__ == "__main__":
     setup_global_exception_hook()
+    if os.name == 'nt':
+        import ctypes
+        hwnd = ctypes.windll.kernel32.GetConsoleWindow()
+        if hwnd:
+            ctypes.windll.user32.ShowWindow(hwnd, 0)
+    from gui import PygameTerminal, set_terminal
+    _term = PygameTerminal()
+    set_terminal(_term)
+    sys.stdout = _term
     sound.init()
     run_game()
