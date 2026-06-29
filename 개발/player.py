@@ -253,7 +253,24 @@ class Player:
         hp_ratio = self.hp / self.max_hp if self.max_hp > 0 else 1.0
         hp_col = (Fore.GREEN + Style.BRIGHT) if hp_ratio > 0.6 else ((Fore.YELLOW + Style.BRIGHT) if hp_ratio > 0.3 else (Fore.RED + Style.BRIGHT))
         hp_colored = f"{hp_col}{display_hp:,}{Style.RESET_ALL}"
-        print(t('status_hp', hp=hp_colored, maxhp=f"{display_max_hp:,}", hunger=self.hunger, thirst=self.thirst))
+        hp_filled = round(hp_ratio * 20)
+        hp_bar    = "█" * hp_filled + "░" * (20 - hp_filled)
+
+        hg_ratio  = max(0.0, min(1.0, self.hunger / 100))
+        hg_col    = (Fore.RED + Style.BRIGHT) if self.hunger < 20 else \
+                    ((Fore.YELLOW + Style.BRIGHT) if self.hunger < 40 else Fore.WHITE)
+        hg_filled = round(hg_ratio * 20)
+        hg_bar    = "█" * hg_filled + "░" * (20 - hg_filled)
+
+        th_ratio  = max(0.0, min(1.0, self.thirst / 100))
+        th_col    = (Fore.RED + Style.BRIGHT) if self.thirst < 20 else \
+                    ((Fore.CYAN + Style.BRIGHT) if self.thirst < 40 else Fore.WHITE)
+        th_filled = round(th_ratio * 20)
+        th_bar    = "█" * th_filled + "░" * (20 - th_filled)
+
+        print(f"  [생명력]  {hp_col}{hp_bar}{Style.RESET_ALL}  {hp_colored} / {display_max_hp:,}")
+        print(f"  [허기]    {hg_col}{hg_bar}{Style.RESET_ALL}  {hg_col}{self.hunger:3d}{Style.RESET_ALL} / 100")
+        print(f"  [갈증]    {th_col}{th_bar}{Style.RESET_ALL}  {th_col}{self.thirst:3d}{Style.RESET_ALL} / 100")
 
         item_data = get_equipment_data(self.equipment['main_weapon'])
         wpn_name = item_data['name']

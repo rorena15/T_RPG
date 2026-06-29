@@ -109,6 +109,8 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
         atk = base_atk
         player.alert_level = min(100, player.alert_level + constants.ALERT_INC_DRONE)
 
+    enemy_max_hp = hp  # HP 바 표시용
+
     # ── ScenePanel 초기화 ────────────────────────────────────────────────────
     _ui = get_ui_manager()
     if _ui:
@@ -167,14 +169,11 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
             _sleep(1.5)
             action_logs.append(t('combat_phase2_log'))
 
-        clear_screen()
         tier = player.get_highest_tier()
-
         _, disp_ehp, scale_log = apply_dynamic_scaling(0, hp, tier)
         _, disp_php, _ = apply_dynamic_scaling(0, player.hp, tier)
         _, disp_pmaxhp, _ = apply_dynamic_scaling(0, player.max_hp, tier)
 
-        # 보스 체력바 시각화
         if is_boss:
             hp_pct = hp / boss_max_hp if boss_max_hp > 0 else 0
             bar_len = 40
@@ -183,38 +182,71 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
             bar_col = (Fore.GREEN + Style.BRIGHT) if hp_pct > 0.5 else ((Fore.YELLOW + Style.BRIGHT) if hp_pct > 0.25 else (Fore.RED + Style.BRIGHT))
             hp_bar = f"  {bar_col}[{('█' * filled) + ('░' * (bar_len - filled))}] {hp_pct*100:.1f}%{phase_tag}"
 
-        print_header(header_title)
-        if scale_log:
-            print(f"  {scale_log}")
-            print_divider()
+        if _ui:
+            # ── UIManager 모드: ScenePanel HP 갱신, 중복 출력 생략 ──────────────
+            _ui.scene_update_hp(hp)
+        else:
+            # ── 터미널 모드: 기존 방식 전체 출력 ──────────────────────────────
+            clear_screen()
+            print_header(header_title)
+            if scale_log:
+                print(f"  {scale_log}")
+                print_divider()
+            print(art)
+            if is_boss:
+                print(hp_bar)
+            else:
+                e_hp_pct  = hp / enemy_max_hp if enemy_max_hp > 0 else 0
+                e_filled  = round(e_hp_pct * 30)
+                e_bar_col = (Fore.GREEN + Style.BRIGHT) if e_hp_pct > 0.6 else \
+                            ((Fore.YELLOW + Style.BRIGHT) if e_hp_pct > 0.3 else (Fore.RED + Style.BRIGHT))
+                print(f"  {e_bar_col}[{'█' * e_filled}{'░' * (30 - e_filled)}] {e_hp_pct*100:.0f}%{Style.RESET_ALL}")
+            print(t('combat_status_turn', turn=turn, name=name, hp=f"{disp_ehp:,}"))
+            print(t('combat_status_player', hp=f"{disp_php:,}", maxhp=f"{disp_pmaxhp:,}", ram=player.max_ram))
+            if is_boss:
+                print(t('combat_status_learning', e=learning_index))
 
-        print(art)
-        if is_boss:
-            print(hp_bar)
-        print(t('combat_status_turn', turn=turn, name=name, hp=f"{disp_ehp:,}"))
-        print(t('combat_status_player', hp=f"{disp_php:,}", maxhp=f"{disp_pmaxhp:,}", ram=player.max_ram))
-        if is_boss:
-            print(t('combat_status_learning', e=learning_index))
-
-        print(t('combat_log_header'))
-        for log in action_logs: print(f"    {_log_color(log)}{log}")
-        print_divider()
-        print()
+        # 행동 로그 — 양쪽 모드 모두 출력 (UI 모드에서는 LogPanel로 표시)
+        if action_logs:
+            if not _ui:
+                print(t('combat_log_header'))
+            for log in action_logs:
+                print(f"  {_log_color(log)}{log}")
+            if not _ui:
+                print_divider()
         action_logs.clear()
 
         has_consumable = any(v > 0 for v in player.consumables.values())
-        print(t('combat_options_1'))
-        print(t('combat_options_2'))
-        print(t('combat_options_3'))
-        print(t('combat_options_4'))
-        if has_consumable:
-            print(t('combat_options_5'))
-        if sub_charges > 0:
-            print(f"  {Fore.MAGENTA + Style.BRIGHT}{t('combat_sub_wpn_option', name=sub_wpn_name, charges=sub_charges)}{Style.RESET_ALL}")
-        if player.skill_slots:
+        if _ui:
+            # ActionPanel에 현재 전투 선택지 표시
+            _acts = [
+                ("1", "주무기 타격", True),
+                ("2", "바리케이드",  True),
+                ("3", "패킷 교란",   True),
+                ("4", "후퇴",        True),
+                ("5", "소모품",      has_consumable),
+            ]
+            if sub_charges > 0:
+                _acts.append(("S", f"보조화기x{sub_charges}", True))
             for _i, _sid in enumerate(player.skill_slots):
                 _sk = _skills.SKILL_DEFS.get(_sid, {})
-                print(f"  {Fore.YELLOW + Style.BRIGHT}S{'12'[_i] if len(player.skill_slots) > 1 else ''}. {_sk.get('name','?')} — {_sk.get('desc','')}{Style.RESET_ALL}")
+                _key = f"S{'12'[_i] if len(player.skill_slots) > 1 else ''}"
+                _acts.append((_key, _sk.get('name', '?')[:6], True))
+            _ui.set_actions(_acts)
+        else:
+            print()
+            print(t('combat_options_1'))
+            print(t('combat_options_2'))
+            print(t('combat_options_3'))
+            print(t('combat_options_4'))
+            if has_consumable:
+                print(t('combat_options_5'))
+            if sub_charges > 0:
+                print(f"  {Fore.MAGENTA + Style.BRIGHT}{t('combat_sub_wpn_option', name=sub_wpn_name, charges=sub_charges)}{Style.RESET_ALL}")
+            if player.skill_slots:
+                for _i, _sid in enumerate(player.skill_slots):
+                    _sk = _skills.SKILL_DEFS.get(_sid, {})
+                    print(f"  {Fore.YELLOW + Style.BRIGHT}S{'12'[_i] if len(player.skill_slots) > 1 else ''}. {_sk.get('name','?')} — {_sk.get('desc','')}{Style.RESET_ALL}")
 
         cmd = read_key()
 

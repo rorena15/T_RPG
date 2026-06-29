@@ -24,7 +24,7 @@ from map import GameMap
 from combat import combat_loop, get_encounter_chance, apply_dynamic_scaling
 from quest import handle_random_event, handle_trader, advance_quest, trigger_sudden_quest
 from story import handle_session, run_prologue, run_boss_core_choice, run_ending
-from gui import get_terminal, UIManager
+from gui import get_terminal
 
 _console = Console(highlight=False)
 
@@ -221,12 +221,7 @@ def run_game():
 
     sound.play_map_ambient()
 
-    # UIManager 초기화 — pygame 터미널 모드에서만 활성화
     _ui_mgr = None
-    _term = get_terminal()
-    if _term:
-        _ui_mgr = UIManager(_term, constants.GAME_VERSION)
-        _ui_mgr.activate()
 
     _EXPLORE_ACTIONS = [
         ("WASD", "이동",     True),

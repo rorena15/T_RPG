@@ -113,17 +113,26 @@ class GameMap:
 
     # ── 맵 렌더링 ────────────────────────────────────────────────────────────
 
-    def draw(self, turn_count: int = 0):  # turn_count는 can_search 내부에서만 사용
-        print(t('map_header'))
-        for y in range(self.size - 1, -1, -1):
-            row_str = "    "
-            for x in range(self.size):
-                pos = (x, y)
+    def draw(self, turn_count: int = 0):
+        from colorama import Fore, Style
+        size   = self.size
+        border = "─" * (size * 5 + 2)
+        RST    = Style.RESET_ALL
+
+        print(Fore.CYAN + Style.BRIGHT + f"  {t('map_header')}" + RST)
+        print(Fore.WHITE + f"  ┌{border}┐" + RST)
+        for y in range(size - 1, -1, -1):
+            row = "  │ "
+            for x in range(size):
                 if [x, y] == self.player_pos:
-                    row_str += "[ P ] "
+                    row += Fore.CYAN + Style.BRIGHT + "[ P ]" + RST
                 elif [x, y] == self.bunker_pos:
-                    row_str += "[ B ] "
+                    row += Fore.YELLOW + Style.BRIGHT + "[ B ]" + RST
+                elif (x, y) in self.visited_tiles:
+                    row += Fore.WHITE + Style.DIM + "[ ■ ]" + RST
                 else:
-                    row_str += "[ . ] "
-            print(row_str)
-        print(t('map_legend'))
+                    row += Style.DIM + "[ · ]" + RST
+            row += " │"
+            print(row)
+        print(Fore.WHITE + f"  └{border}┘" + RST)
+        print(Style.DIM + f"  {t('map_legend')}" + RST)
