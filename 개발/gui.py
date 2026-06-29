@@ -126,6 +126,9 @@ class PygameTerminal:
 
         w = self._unit_w * self.COLS + self.PAD_X * 2
         h = self._ch     * self.ROWS + self.PAD_Y * 2
+        self._canvas      = pygame.Surface((w, h))   # 논리 서피스 — 항상 고정 크기
+        self._canvas_size = (w, h)
+        self._fullscreen  = False
         self.screen = pygame.display.set_mode((w, h), pygame.RESIZABLE)
         pygame.display.set_caption(title)
 
@@ -307,7 +310,7 @@ class PygameTerminal:
     # ── 줄 단위 Surface 렌더링 ───────────────────────────────────────────────
     def _render_line_to_surf(self, line: list) -> pygame.Surface:
         """한 줄의 세그먼트를 Surface에 렌더링합니다."""
-        panel_w = self.screen.get_width() - self.PAD_X * 2
+        panel_w = self._canvas.get_width() - self.PAD_X * 2
         surf = pygame.Surface((max(panel_w, 1), self._ch), pygame.SRCALPHA)
         x = 0
         for seg, color in line:
@@ -440,12 +443,12 @@ class PygameTerminal:
     # ── 렌더링 ────────────────────────────────────────────────────────────────
     def _render(self):
         self._pump()
-        self.screen.fill(_BG_COLOR)
-        w, h = self.screen.get_size()
+        self._canvas.fill(_BG_COLOR)
+        w, h = self._canvas_size
 
         # 패널 테두리 (미묘한 프레임)
         pygame.draw.rect(
-            self.screen, _FRAME_COLOR,
+            self._canvas, _FRAME_COLOR,
             (self.PAD_X - 4, self.PAD_Y - 4,
              w - (self.PAD_X - 4) * 2,
              h - (self.PAD_Y - 4) * 2),
@@ -461,10 +464,23 @@ class PygameTerminal:
             is_current = (i == n_lines - 1)
             if line:
                 surf = self._get_line_surf(line, is_current)
-                self.screen.blit(surf, (self.PAD_X, y))
+                self._canvas.blit(surf, (self.PAD_X, y))
             y += self._ch
             if y > h - self.PAD_Y:
                 break
+
+        # canvas → screen letterbox 스케일링
+        sw, sh = self.screen.get_size()
+        cw, ch = self._canvas_size
+        if (sw, sh) == (cw, ch):
+            self.screen.blit(self._canvas, (0, 0))
+        else:
+            scale = min(sw / cw, sh / ch)
+            scaled_w = int(cw * scale)
+            scaled_h = int(ch * scale)
+            scaled = pygame.transform.smoothscale(self._canvas, (scaled_w, scaled_h))
+            self.screen.fill((0, 0, 0))
+            self.screen.blit(scaled, ((sw - scaled_w) // 2, (sh - scaled_h) // 2))
 
         pygame.display.flip()
         self._dirty = False
@@ -473,19 +489,20 @@ class PygameTerminal:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 sys.exit()
-            elif event.type == pygame.VIDEORESIZE:
-                self._on_resize(event.w, event.h)
+            elif event.type == pygame.KEYDOWN and event.key == pygame.K_F11:
+                self.toggle_fullscreen()
+            elif event.type in (pygame.VIDEORESIZE, getattr(pygame, 'WINDOWRESIZED', -1)):
+                self._dirty = True
 
-    def _on_resize(self, new_w: int, new_h: int):
-        col_px = (new_w - self.PAD_X * 2) / self.COLS
-        row_px = (new_h - self.PAD_Y * 2) / self.ROWS
-        size_from_w = max(8, int(col_px / 0.55))
-        size_from_h = max(8, int(row_px / 1.30))
-        new_size = min(size_from_w, size_from_h)
-        if abs(new_size - self._font_size) < 1:
-            return
-        self._font_size = new_size
-        self._load_fonts(new_size)
+    def toggle_fullscreen(self):
+        """F11 전체화면 전환 — canvas는 고정, screen만 교체."""
+        self._fullscreen = not self._fullscreen
+        if self._fullscreen:
+            self.screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+        else:
+            self.screen = pygame.display.set_mode(self._canvas_size, pygame.RESIZABLE)
+        self._dirty = True
+        self._render()
 
     # ── 화면 제어 ─────────────────────────────────────────────────────────────
     def clear(self):
@@ -524,6 +541,9 @@ class PygameTerminal:
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_ESCAPE:
                         sys.exit()
+                    if event.key == pygame.K_F11:
+                        self.toggle_fullscreen()
+                        continue
                     ch = self._resolve_key(event)
                     if ch:
                         return ch
@@ -577,6 +597,9 @@ class PygameTerminal:
                 if event.type == pygame.QUIT:
                     sys.exit()
                 if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_F11:
+                        self.toggle_fullscreen()
+                        continue
                     return
             pygame.time.wait(10)
 
@@ -594,9 +617,12 @@ class PygameTerminal:
                 for event in pygame.event.get():
                     if event.type == pygame.QUIT:
                         sys.exit()
-                    if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-                        skipped = True
-                        break
+                    if event.type == pygame.KEYDOWN:
+                        if event.key == pygame.K_F11:
+                            self.toggle_fullscreen()
+                        elif event.key == pygame.K_ESCAPE:
+                            skipped = True
+                            break
         if skipped:
             self._dirty = True
             self._render()
@@ -607,18 +633,30 @@ class PygameTerminal:
 
     # ── 배너 이미지 ───────────────────────────────────────────────────────────
     def show_banner(self, path: str):
-        """이미지를 화면 전체에 맞게 표시 (타이틀/엔딩용)."""
+        """이미지를 canvas에 맞게 표시 후 screen으로 letterbox 출력."""
         if not os.path.exists(path):
             return
         try:
             img = pygame.image.load(path).convert()
-            sw, sh = self.screen.get_size()
+            cw, ch = self._canvas_size
             iw, ih = img.get_size()
-            scale = min(sw / iw, sh / ih)
+            scale = min(cw / iw, ch / ih)
             nw, nh = int(iw * scale), int(ih * scale)
             img = pygame.transform.smoothscale(img, (nw, nh))
-            self.screen.fill(_BG_COLOR)
-            self.screen.blit(img, ((sw - nw) // 2, (sh - nh) // 2))
+            self._canvas.fill(_BG_COLOR)
+            self._canvas.blit(img, ((cw - nw) // 2, (ch - nh) // 2))
+            # canvas → screen
+            sw, sh = self.screen.get_size()
+            if (sw, sh) == (cw, ch):
+                self.screen.blit(self._canvas, (0, 0))
+            else:
+                s = min(sw / cw, sh / ch)
+                bw, bh = int(cw * s), int(ch * s)
+                self.screen.fill((0, 0, 0))
+                self.screen.blit(
+                    pygame.transform.smoothscale(self._canvas, (bw, bh)),
+                    ((sw - bw) // 2, (sh - bh) // 2)
+                )
             pygame.display.flip()
         except Exception:
             pass
