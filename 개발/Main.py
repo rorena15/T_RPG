@@ -24,6 +24,7 @@ from map import GameMap
 from combat import combat_loop, get_encounter_chance, apply_dynamic_scaling
 from quest import handle_random_event, handle_trader, advance_quest, trigger_sudden_quest
 from story import handle_session, run_prologue, run_boss_core_choice, run_ending
+from gui import get_terminal
 
 _console = Console(highlight=False)
 
