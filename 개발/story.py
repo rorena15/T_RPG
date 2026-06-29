@@ -292,9 +292,25 @@ def run_perimeter_encounter(player):
     wait_for_keypress()
 
 
+def _banner_path() -> str:
+    import sys as _sys, os as _os
+    if getattr(_sys, 'frozen', False):
+        base = _sys._MEIPASS
+    else:
+        base = _os.path.normpath(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), '..'))
+    return _os.path.join(base, 'assets', 'banner.png')
+
+
 def run_ending(player):
     clear_screen()
     sound.stop_all()
+    from gui import get_terminal
+    _term = get_terminal()
+    if _term:
+        _term.show_banner(_banner_path())
+        from ui import wait_for_keypress
+        wait_for_keypress()
+        clear_screen()
     print_header("PIONEER PROTOCOL: NORMALIZATION EXECUTION")
     type_text(t('ending_core_1'), 0.03)
     type_text(t('ending_core_2'), 0.03)

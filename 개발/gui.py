@@ -531,8 +531,11 @@ class PygameTerminal:
 
     def input_text(self, prompt: str = "") -> str:
         """pygame 이벤트 루프 기반 한 줄 텍스트 입력. input() 대체."""
+        # prompt를 현재 줄에 추가하고 입력 시작 위치 기록
         if prompt:
             self._parse(prompt)
+        # 입력 시작 시점의 줄 세그먼트 수 기록 — 백스페이스가 prompt를 침범하지 않도록
+        _input_start_seg = len(self._buf[-1])
         self._dirty = True
         self._render()
         buf = ""
@@ -553,13 +556,17 @@ class PygameTerminal:
                     elif event.key == pygame.K_BACKSPACE:
                         if buf:
                             buf = buf[:-1]
-                            if self._buf[-1]:
-                                self._buf[-1].pop()
+                            # 현재 줄의 입력 세그먼트만 재구성 (prompt 보호)
+                            self._buf[-1] = self._buf[-1][:_input_start_seg]
+                            if buf:
+                                self._buf[-1].append((buf, _DEFAULT_COLOR))
                             self._dirty = True
                             self._render()
                     elif event.unicode and len(event.unicode) == 1 and 0x20 <= ord(event.unicode) <= 0x7E:
                         buf += event.unicode
-                        self._parse(event.unicode)
+                        # 입력 세그먼트를 통째로 교체 (단일 세그먼트로 유지)
+                        self._buf[-1] = self._buf[-1][:_input_start_seg]
+                        self._buf[-1].append((buf, _DEFAULT_COLOR))
                         self._dirty = True
                         self._render()
 

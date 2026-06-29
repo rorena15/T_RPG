@@ -27,6 +27,16 @@ _console = Console(highlight=False)
 init_and_load_db()
 
 
+def _banner_path() -> str:
+    """assets/banner.png 절대 경로 반환 (소스/onefile 모두 대응)."""
+    import sys as _sys
+    if getattr(_sys, 'frozen', False):
+        base = _sys._MEIPASS
+    else:
+        base = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
+    return os.path.join(base, 'assets', 'banner.png')
+
+
 @track
 def run_game():
     from gui import get_terminal
@@ -54,6 +64,11 @@ def run_game():
 
     while True:  # 타이틀 ~ 설정 루프
         clear_screen()
+        _term = get_terminal()
+        if _term:
+            _term.show_banner(_banner_path())
+            wait_for_keypress()
+            clear_screen()
         print()
         ver_str = f"v{constants.GAME_VERSION}"
         ver_pad = " " * (74 - len(ver_str))
