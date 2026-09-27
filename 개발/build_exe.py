@@ -28,6 +28,12 @@ WORK = os.path.join(os.environ.get("TEMP", HERE), "stigma_nuitka_build")
 
 
 def main():
+    # CI(GitHub Actions)의 콘솔은 cp1252라 한글(경로 '개발', 안내문)을 출력하다 빌드 끝에서 실패했다
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8", errors="replace")
+        except Exception:  # noqa: BLE001 - reconfigure가 없는 스트림이면 그대로 둔다
+            pass
     p = argparse.ArgumentParser()
     p.add_argument("--name", default="PROTOCOL_STIGMA")
     p.add_argument("--console", action="store_true", help="콘솔 창을 띄운다 (디버그용)")
