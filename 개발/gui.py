@@ -22,6 +22,13 @@ def get_terminal():
 def set_terminal(t):
     global _terminal
     _terminal = t
+    _install_smooth_sleep()
+
+
+
+def _install_smooth_sleep():
+    """(예전 자리) 대기 중 화면 그리기는 PygameTerminal.__init__의 _gui_sleep이 맡는다 (메인 스레드만)."""
+    return
 
 
 def get_ui_manager():
@@ -136,34 +143,41 @@ class PygameTerminal:
         self._canvas_size = (w, h)
         self._fullscreen  = False
         self._ui_manager  = None   # UIManager 연결 시 패널 렌더링 모드로 전환
+        self._set_window_icon()    # 창을 띄우기 전에 붙여야 작업 표시줄에도 들어간다
         self.screen = pygame.display.set_mode((w, h), pygame.RESIZABLE)
         pygame.display.set_caption(title)
 
-        _ico = self._find_ico()
-        if _ico:
-            try:
-                pygame.display.set_icon(pygame.image.load(_ico))
-            except Exception:
-                pass
-
         self._render()
 
-        # time.sleep → pygame 이벤트 + 렌더 병행 버전으로 교체
+        # time.sleep → 대기 중에도 화면을 그리는 버전으로 교체 (메인 스레드만).
+        # 키 입력은 꺼내지 않고 큐에 남겨 다음 입력 대기에서 받는다 (예전에는 대기 중 누른 키를 버렸다).
+        # 다른 스레드(GM 서버 대기 등)는 원래 sleep: 거기서 pygame 이벤트를 만지면 안 된다 (자동 테스트에서 충돌 확인).
+        import threading as _threading
         import time as _time_mod
+        _orig_sleep = _time_mod.sleep
+        _main = _threading.main_thread()
         _self = self
+
         def _gui_sleep(seconds: float):
             if seconds <= 0:
                 return
-            # 대기 전에 현재 버퍼를 즉시 화면에 표시
+            if _threading.current_thread() is not _main:
+                return _orig_sleep(seconds)
             _self._dirty = True
             _self._render()
-            end_ms = pygame.time.get_ticks() + int(seconds * 1000)
+            end = _time_mod.perf_counter() + seconds
             while True:
-                remaining = end_ms - pygame.time.get_ticks()
-                if remaining <= 0:
+                left = end - _time_mod.perf_counter()
+                if left <= 0:
                     break
-                _self._pump()
-                pygame.time.wait(min(10, max(1, remaining)))
+                pygame.event.pump()
+                mgr = _self._ui_manager
+                if mgr is not None and getattr(mgr, "_active", False):
+                    _self._dirty = True
+                    _self._render()
+                    _orig_sleep(min(left, 1 / 60))
+                else:
+                    _orig_sleep(min(left, 0.01))
         _time_mod.sleep = _gui_sleep
 
     # ── 폰트 로딩 ────────────────────────────────────────────────────────────
@@ -192,16 +206,38 @@ class PygameTerminal:
 
     @staticmethod
     def _find_ico() -> str | None:
+        """창 아이콘 그림. pygame은 PNG로 압축된 .ico를 못 읽어(Unsupported ICO bitmap format) 아이콘이 조용히
+        빠졌었다. 그래서 같은 그림의 icon.png를 먼저 쓴다."""
         base_dev = os.path.dirname(os.path.abspath(__file__))
-        candidates = []
+        dirs = []
         if getattr(sys, 'frozen', False):
-            candidates.append(os.path.join(sys._MEIPASS, 'assets', 'icon.ico'))
-        candidates.append(os.path.join(base_dev, '..', 'assets', 'icon.ico'))
-        for p in candidates:
-            p = os.path.normpath(p)
-            if os.path.exists(p):
-                return p
+            dirs.append(os.path.join(sys._MEIPASS, 'assets'))
+        dirs.append(os.path.join(base_dev, '..', 'assets'))
+        for d in dirs:
+            for name in ('icon.png', 'icon.ico'):
+                p = os.path.normpath(os.path.join(d, name))
+                if os.path.exists(p):
+                    return p
         return None
+
+    def _set_window_icon(self):
+        if sys.platform == 'win32':
+            # 소스로 돌리면 작업 표시줄이 python.exe로 묶여 파이썬 아이콘이 뜬다: 게임 고유 ID로 따로 묶는다
+            try:
+                import ctypes
+                ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID('ProtocolStigma.Game')
+            except Exception:
+                pass
+        ico = self._find_ico()
+        if ico:
+            try:
+                img = pygame.image.load(ico)
+                if img.get_width() > 256:  # 원본 icon.png는 2048px: 창 아이콘은 줄여서 붙인다
+                    img = pygame.transform.smoothscale(img, (256, 256))
+                pygame.display.set_icon(img)
+            except Exception as e:
+                if sys.__stderr__:
+                    print(f"[icon] {e}", file=sys.__stderr__)
 
     @staticmethod
     def _find_bundled_font() -> str | None:
@@ -356,16 +392,22 @@ class PygameTerminal:
             self._render()
 
     def sleep_render(self, seconds: float):
-        """time.sleep() 대용 — 대기 전에 화면을 즉시 갱신하고 이벤트를 처리합니다."""
+        """time.sleep() 대용 — 대기 중에도 화면을 계속 그린다 (그림 화면이면 30fps).
+        예전에는 처음에 한 번만 그려 전투의 공격·반격 사이 1초가 통째로 멈췄다 (렉처럼 끊김)."""
+        import time as _t
         self._dirty = True
         self._render()
-        end_ms = pygame.time.get_ticks() + int(seconds * 1000)
+        end = _t.perf_counter() + seconds
         while True:
-            remaining = end_ms - pygame.time.get_ticks()
-            if remaining <= 0:
+            left = end - _t.perf_counter()
+            if left <= 0:
                 break
             self._pump()
-            pygame.time.wait(min(10, max(1, remaining)))
+            mgr = self._ui_manager
+            if mgr is not None and getattr(mgr, "_active", False):
+                self._dirty = True
+                self._render()
+            pygame.time.wait(int(min(left, 1 / 60) * 1000) or 1)
 
     @property
     def encoding(self):
@@ -484,6 +526,8 @@ class PygameTerminal:
                 if y > h - self.PAD_Y:
                     break
 
+        self._crossfade()
+
         # canvas → screen letterbox 스케일링
         sw, sh = self.screen.get_size()
         cw, ch = self._canvas_size
@@ -501,18 +545,51 @@ class PygameTerminal:
         self._dirty = False
 
     def _pump(self):
-        for event in pygame.event.get():
+        """렌더 중에 창 이벤트만 처리한다. 그림 화면(맵·이벤트)이 떠 있으면 키 입력은 꺼내지 않고 큐에 남긴다:
+        화면을 매 프레임 다시 그리게 바꾼 뒤로, 여기서 키를 꺼내 버리면 누른 키가 가끔 사라졌다."""
+        resize = getattr(pygame, 'WINDOWRESIZED', -1)
+        for event in pygame.event.get([pygame.QUIT, pygame.VIDEORESIZE] + ([resize] if resize != -1 else [])):
             if event.type == pygame.QUIT:
                 sys.exit()
-            elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_F11:
-                    self.toggle_fullscreen()
-                elif self._ui_manager:
-                    u = event.unicode
-                    if u and 0x20 <= ord(u) <= 0x7E:
-                        self._ui_manager._on_keydown(u.upper())
-            elif event.type in (pygame.VIDEORESIZE, getattr(pygame, 'WINDOWRESIZED', -1)):
-                self._dirty = True
+            self._dirty = True
+        mgr = self._ui_manager
+        if mgr is not None and getattr(mgr, "_active", False):
+            return
+        for event in pygame.event.get(pygame.KEYDOWN):  # 터미널 화면에서는 예전처럼 (연출 중 누른 키는 버린다)
+            if event.key == pygame.K_F11:
+                self.toggle_fullscreen()
+            elif mgr is not None and hasattr(mgr, "_on_keydown"):
+                u = event.unicode
+                if u and 0x20 <= ord(u) <= 0x7E:
+                    mgr._on_keydown(u.upper())
+
+    XFADE_MS = 260
+
+    def _crossfade(self):
+        """화면(맵·이벤트·전투·메뉴·카드·장면 그림)이 바뀌면 직전 화면을 잠깐 겹쳐 녹인다.
+        예전에는 한 프레임에 툭 바뀌어서, 새 그림을 읽는 동안 멈췄다가 갑자기 튀는 것처럼 보였다."""
+        mgr = self._ui_manager
+        active = mgr is not None and getattr(mgr, "_active", False)
+        ident = (id(mgr), getattr(mgr, "art_path", None), getattr(mgr, "card", None)) if active else None
+        now = pygame.time.get_ticks()
+        if not hasattr(self, "_xf_prev"):
+            self._xf_prev = pygame.Surface(self._canvas_size, 0, self._canvas)
+            self._xf_src = pygame.Surface(self._canvas_size, 0, self._canvas)
+            self._xf_ident, self._xf_start, self._xf_has_prev = ident, -10**9, False
+        if ident != self._xf_ident:
+            self._xf_ident = ident
+            if self._xf_has_prev:  # 직전 프레임을 페이드 원본으로 (새로 만들지 않고 두 판을 맞바꾼다)
+                self._xf_prev, self._xf_src = self._xf_src, self._xf_prev
+                self._xf_start = now
+        self._xf_prev.blit(self._canvas, (0, 0))
+        self._xf_has_prev = True
+        k = (now - self._xf_start) / self.XFADE_MS
+        if k < 1:
+            a = int(255 * (1 - k) ** 2)  # 처음엔 빨리, 끝은 부드럽게
+            # 알파 255는 pygame이 느린 경로(한 장 18ms)로 그려 딱 그 프레임이 끊겼다: 그땐 그냥 복사한다
+            self._xf_src.set_alpha(None if a >= 250 else a)
+            self._canvas.blit(self._xf_src, (0, 0))
+            self._dirty = True
 
     def toggle_fullscreen(self):
         """F11 전체화면 전환 — canvas는 고정, screen만 교체."""
@@ -557,7 +634,23 @@ class PygameTerminal:
             return u.upper()
         return cls._KEYCODE_MAP.get(event.key, '')
 
+    def _idle_frame(self):
+        """키를 기다리는 동안: 그림 화면(맵·이벤트)이 떠 있으면 계속 다시 그려 연출이 멈추지 않게 한다 (30fps).
+        예전에는 대기 시작에 한 번만 그려서 안개·패럴랙스가 입력이 올 때만 움직였다 (뚝뚝 끊김)."""
+        mgr = self._ui_manager
+        if mgr is not None and getattr(mgr, "_active", False):
+            self._dirty = True
+            self._render()
+            if not hasattr(self, "_idle_clock"):
+                self._idle_clock = pygame.time.Clock()
+            self._idle_clock.tick(60)
+        else:
+            pygame.time.wait(10)
+
     def read_key(self) -> str:
+        # 입력을 받기 시작하기 전에 쌓인 키는 버린다: 연출·대기 중에 누른 키가 다음 행동으로 이어지면
+        # 전투에서 공방이 두 번씩 오갔다. 이제부터 누르는 키만 받는다.
+        pygame.event.clear(pygame.KEYDOWN)
         self._dirty = True
         self._render()
         while True:
@@ -565,15 +658,15 @@ class PygameTerminal:
                 if event.type == pygame.QUIT:
                     sys.exit()
                 if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_ESCAPE:
-                        sys.exit()
+                    if event.key == pygame.K_ESCAPE:  # 예전엔 게임이 바로 꺼졌다. 종료는 창 닫기·메뉴로만
+                        continue
                     if event.key == pygame.K_F11:
                         self.toggle_fullscreen()
                         continue
                     ch = self._resolve_key(event)
                     if ch:
                         return ch
-            pygame.time.wait(10)
+            self._idle_frame()
 
     def input_text(self, prompt: str = "") -> str:
         """pygame 이벤트 루프 기반 한 줄 텍스트 입력. input() 대체."""
@@ -597,8 +690,8 @@ class PygameTerminal:
                         self._dirty = True
                         self._render()
                         return buf
-                    elif event.key == pygame.K_ESCAPE:
-                        sys.exit()
+                    elif event.key == pygame.K_ESCAPE:  # 무시 (예전엔 게임 종료)
+                        continue
                     elif event.key == pygame.K_BACKSPACE:
                         if buf:
                             buf = buf[:-1]
@@ -626,8 +719,10 @@ class PygameTerminal:
                     if event.key == pygame.K_F11:
                         self.toggle_fullscreen()
                         continue
+                    if event.key == pygame.K_ESCAPE:  # ESC는 무시
+                        continue
                     return
-            pygame.time.wait(10)
+            self._idle_frame()
 
     # ── 타이핑 연출 ───────────────────────────────────────────────────────────
     def type_text_animated(self, text: str, speed: float = 0.015):
@@ -646,7 +741,7 @@ class PygameTerminal:
                     if event.type == pygame.KEYDOWN:
                         if event.key == pygame.K_F11:
                             self.toggle_fullscreen()
-                        elif event.key == pygame.K_ESCAPE:
+                        elif event.key in (pygame.K_RETURN, pygame.K_KP_ENTER, pygame.K_SPACE):  # 글자 연출 건너뛰기 (예전엔 ESC)
                             skipped = True
                             break
         if skipped:

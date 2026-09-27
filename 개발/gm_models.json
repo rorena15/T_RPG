@@ -1,0 +1,39 @@
+{
+  "tag": "models-v1",
+  "models": {
+    "full": {
+      "file": "stigma-gm-full.dat",
+      "size": 4920751520,
+      "sha256": "6c8351927bcf8c2fb65b7d3624a0b4c0122b39d2b08c1193c60fc375f90d3c1b",
+      "parts": [
+        {
+          "url": "https://github.com/rorena15/T_RPG/releases/download/models-v1/stigma-gm-full.dat.part1",
+          "size": 1900000000,
+          "sha256": "4017979c2ba6d659530614b47bc1dd5071c9d5bed59ff174801eb325929c3327"
+        },
+        {
+          "url": "https://github.com/rorena15/T_RPG/releases/download/models-v1/stigma-gm-full.dat.part2",
+          "size": 1900000000,
+          "sha256": "3499d16ba2fa45d5fe73ca815d7c7ed884d30b492ca54899102d1ea207d36173"
+        },
+        {
+          "url": "https://github.com/rorena15/T_RPG/releases/download/models-v1/stigma-gm-full.dat.part3",
+          "size": 1120751520,
+          "sha256": "31a7c053ffb02f7a39ba3373c94400cf629ff4c9cbd7a27a5f31d739ba2f25b6"
+        }
+      ]
+    },
+    "lite": {
+      "file": "stigma-gm-lite.dat",
+      "size": 1522782816,
+      "sha256": "1af85e0dc0315568529cd7257f43651baf04b733331a47bff51fd10be3b94428",
+      "parts": [
+        {
+          "url": "https://github.com/rorena15/T_RPG/releases/download/models-v1/stigma-gm-lite.dat.part1",
+          "size": 1522782816,
+          "sha256": "1af85e0dc0315568529cd7257f43651baf04b733331a47bff51fd10be3b94428"
+        }
+      ]
+    }
+  }
+}

@@ -109,10 +109,18 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
         atk = base_atk
         player.alert_level = min(100, player.alert_level + constants.ALERT_INC_DRONE)
 
+    scene = "enemy_collector" if is_boss else ("enemy_hound" if enemy_type == "bio_hound" else "enemy_drones")
+    if current_hp is None:  # 새 교전일 때만 적 그림 카드
+        from event_view import scene_card
+        scene_card(scene, header_title, tag="교전", line=name, player=player)
+
     enemy_max_hp = hp  # HP 바 표시용
 
     # ── ScenePanel 초기화 ────────────────────────────────────────────────────
     _ui = get_ui_manager()
+    if _ui is None and get_terminal():  # 그림 화면 전투 (combat_view.py): 아래 UI 모드 신호를 받아 그린다
+        from combat_view import CombatView
+        _ui = CombatView(get_terminal(), player, scene, is_boss)
     if _ui:
         _ui.set_state("combat")
         _ui.scene_set_enemy(name, hp, hp, art)
@@ -132,6 +140,12 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
     escaped = False
     escape_log = ""
     action_logs = [t('combat_encounter_alert', name=name)]
+
+    def _summary(msg):
+        """방금 화면에 찍은 행동의 요약. 터미널 모드는 화면을 지우고 다음 턴에 요약만 다시 보여 주지만,
+        그림 화면 전투는 기록이 이어져 보이므로 같은 공방이 두 번 오간 것처럼 보였다. 그래서 거기선 뺀다."""
+        if not _ui:
+            action_logs.append(msg)
 
     hp_bonus, def_bonus = player.get_armor_bonus()
     gear_atk     = player.get_gear_atk_bonus()
@@ -300,7 +314,7 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
             print(t('combat_enemy_hp', name=name, hp=f"{disp_ehp_new:,}"))
             _sleep(1)
             _skills.on_attack_used(player, action_logs, dmg_dealt=dmg)
-            action_logs.append(t('combat_attack_log', dmg=f"{disp_dmg:,}"))
+            _summary(t('combat_attack_log', dmg=f"{disp_dmg:,}"))
             _sleep(1)
 
         elif cmd == "2":
@@ -310,7 +324,7 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
 
             print(t('combat_defense_msg'))
             _sleep(1)
-            action_logs.append(t('combat_defense_log'))
+            _summary(t('combat_defense_log'))
             _sleep(2)
 
         elif cmd == "3":
@@ -321,7 +335,7 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
 
                 print(t('combat_hack_msg'))
                 _sleep(1)
-                action_logs.append(t('combat_hack_log'))
+                _summary(t('combat_hack_log'))
             else:
                 print(t('combat_hack_no_ram'))
                 _sleep(0.5)
@@ -432,12 +446,12 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
                 _, disp_ehp_new, _ = apply_dynamic_scaling(0, hp, tier)
                 print(t('combat_enemy_hp', name=name, hp=f"{disp_ehp_new:,}"))
                 _sleep(1)
-                action_logs.append(t('combat_sub_wpn_log', name=sub_wpn_name, dmg=f"{disp_sub_dmg:,}", charges_tag=charges_tag))
+                _summary(t('combat_sub_wpn_log', name=sub_wpn_name, dmg=f"{disp_sub_dmg:,}", charges_tag=charges_tag))
                 _sleep(1)
             else:
                 print(t('combat_sub_no_ram_msg'))
                 _sleep(0.5)
-                action_logs.append(t('combat_sub_no_ram_log'))
+                _summary(t('combat_sub_no_ram_log'))
 
         elif cmd.upper() == "S" and player.skill_slots:
             slots = player.skill_slots
@@ -461,7 +475,7 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
                 _, disp_ehp_aux, _ = apply_dynamic_scaling(0, hp, tier)
                 print(Fore.YELLOW + Style.BRIGHT + t('combat_skill_dmg_msg', dmg=f"{disp_aux:,}") + Style.RESET_ALL)
                 print(t('combat_enemy_hp', name=name, hp=f"{disp_ehp_aux:,}"))
-                action_logs.append(t('combat_skill_dmg_log', dmg=f"{disp_aux:,}"))
+                _summary(t('combat_skill_dmg_log', dmg=f"{disp_aux:,}"))
                 _sleep(0.8)
             if combat_ctx.pop("pulse_e_drain", False) and is_boss:
                 learning_index = max(0, learning_index - 3)
@@ -490,7 +504,7 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
             print(t('combat_player_hp_full', hp=f"{disp_php_new:,}", maxhp=f"{disp_pmaxhp:,}"))
             _sleep(1)
             def_note = t('combat_def_note', val=def_bonus) if def_bonus > 0 else ""
-            action_logs.append(t('combat_damage_log', dmg=f"{disp_dmg_taken:,}", def_note=def_note))
+            _summary(t('combat_damage_log', dmg=f"{disp_dmg_taken:,}", def_note=def_note))
             _sleep(1)
 
         combat_ctx["skip_enemy_attack"] = False

@@ -105,7 +105,42 @@ def _extract_player_context(args, kwargs, result):
     return None, None
 
 
+_event_queue = None
+
+
 def _write_event(record):
+    """이벤트를 큐에 넣고 바로 돌아온다. 백그라운드 스레드가 모아서 한 번에 커밋한다.
+    예전에는 호출마다 SQLite를 열고 커밋해 한 번에 약 24ms가 들었고, 화면이 매 프레임 장비 정보를 부르면
+    프레임이 85ms까지 늘어 연출이 뚝뚝 끊겼다 (2026-09-27 측정)."""
+    global _event_queue
+    if _event_queue is None:
+        import queue
+        import threading
+        _event_queue = queue.Queue()
+        threading.Thread(target=_event_writer, daemon=True).start()
+        import atexit
+        atexit.register(_flush_events)
+    _event_queue.put(record)
+
+
+def _flush_events(timeout=1.5):
+    """종료할 때 남은 기록을 잠깐 기다려 준다."""
+    end = time.perf_counter() + timeout
+    while _event_queue is not None and not _event_queue.empty() and time.perf_counter() < end:
+        time.sleep(0.05)
+
+
+def _event_writer():
+    while True:
+        batch = [_event_queue.get()]
+        time.sleep(0.5)  # 잠깐 모아서 쓴다
+        while not _event_queue.empty() and len(batch) < 500:
+            batch.append(_event_queue.get_nowait())
+        for record in batch:
+            _write_event_now(record)
+
+
+def _write_event_now(record):
     """events 테이블에 1행 적재. DB 쓰기 실패는 게임 흐름에 영향을 주지 않도록 항상 흡수한다."""
     try:
         conn = sqlite3.connect(_DB_PATH, timeout=2.0)

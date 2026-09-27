@@ -1,3 +1,4 @@
+import frozen_compat  # noqa: F401  Nuitka exe에서 PyInstaller 전제 경로를 맞춘다. 반드시 첫 import
 import math
 import random
 import sys
@@ -25,6 +26,7 @@ from combat import combat_loop, get_encounter_chance, apply_dynamic_scaling
 from quest import handle_random_event, handle_trader, advance_quest, trigger_sudden_quest
 from story import handle_session, run_prologue, run_boss_core_choice, run_ending
 from gui import get_terminal
+import gm_bridge
 
 _console = Console(highlight=False)
 
@@ -39,6 +41,21 @@ def _banner_path() -> str:
     else:
         base = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
     return os.path.join(base, 'assets', 'banner.png')
+
+
+def _offer_extra_data(settings, force=False):
+    """동적 서사가 켜져 있는데 추가 데이터(모델)가 없으면 받을지 묻는다. 한국어 모드에서만 (서술이 한국어 전용)."""
+    import i18n as _i18n
+    import download_view
+    term = get_terminal()
+    mode = gm_bridge.get_mode()
+    if term is None or _i18n.LANG != "ko" or (not force and (mode == "off" or gm_bridge.mode_installed(mode))):
+        return
+    got = download_view.offer(term)
+    if got:
+        settings["gm_mode"] = got
+        save_settings(settings)
+        gm_bridge.set_mode(got)
 
 
 @track
@@ -58,8 +75,18 @@ def run_game():
     sound.set_bgm_volume(_settings["bgm_volume"])
     sound.set_mute(_settings["mute"])
     constants.TEXT_SPEED_MULT = _settings["text_speed"]
+    gm_bridge.set_mode(_settings["gm_mode"])
+
+    _title_scenes = ["neo_city", "ruin_city", "scrap_sea", "junkyard", "lm_cathedral"]
+    _intro_title = None
+    if get_terminal():  # 켤 때 오프닝 (intro_view.py). 마지막 장면이 타이틀 메뉴와 같은 화면이라 그대로 이어진다
+        import intro_view
+        from screens import MenuScreen
+        _intro_title = MenuScreen(scene=random.choice(_title_scenes))
+        intro_view.play(get_terminal(), _intro_title.view, "PROTOCOL : STIGMA", t("title_subtitle"))
 
     check_and_prompt_update(constants.GAME_VERSION, console=_console)
+    _offer_extra_data(_settings)
 
     player = Player()
     grid = GameMap()
@@ -67,44 +94,57 @@ def run_game():
     while True:  # 타이틀 ~ 설정 루프
         clear_screen()
         _term = get_terminal()
-        if _term:
-            _term.show_banner(_banner_path())
-            _term.wait_keypress_silent()   # print() 없이 대기 — 배너 덮어쓰기 방지
-            clear_screen()
-        print()
-        ver_str = f"v{constants.GAME_VERSION}"
-        ver_pad = " " * (74 - len(ver_str))
-        print(Fore.WHITE + Style.BRIGHT + "  ╔" + "═" * 74 + "╗")
-        print(Fore.WHITE + Style.BRIGHT + "  ║" + " " * 74 + "║")
-        print(Fore.WHITE + Style.BRIGHT + "  ║" + ea_center("P  R  O  T  O  C  O  L  :  S  T  I  G  M  A", 74) + "║")
-        print(Fore.WHITE + Style.BRIGHT + "  ║" + " " * 74 + "║")
-        print(Fore.CYAN  + Style.BRIGHT + "  ║" + ea_center(t("title_subtitle"), 74) + "║")
-        print(Fore.WHITE + Style.BRIGHT + "  ║" + " " * 74 + "║")
-        print(Fore.WHITE + Style.BRIGHT + "  ╠" + "═" * 74 + "╣")
-        print(Fore.WHITE + Style.BRIGHT + "  ║" + " " * 74 + "║")
-        print(Fore.CYAN  + "  ║" + ea_center(t("title_quote1"), 74) + "║")
-        print(Fore.CYAN  + "  ║" + ea_center(t("title_quote2"), 74) + "║")
-        print(Fore.WHITE + Style.BRIGHT + "  ║" + " " * 74 + "║")
-        print(Fore.WHITE + Style.DIM    + "  ║" + ver_pad + ver_str + "║")
-        print(Fore.WHITE + Style.BRIGHT + "  ╚" + "═" * 74 + "╝")
-        print()
-
         has_save = os.path.exists(get_save_path())
-        print_divider()
-        print(f"  1. {t('menu_new_game')}")
-        if has_save:
-            print(f"  2. {t('menu_load_game')}")
         opt_key = "3" if has_save else "2"
         exit_key = "4" if has_save else "3"
-        print(f"  {opt_key}. {t('menu_options')}")
-        print(f"  {exit_key}. {t('menu_exit')}")
-        print_divider()
+        if _term:  # 그림 화면 타이틀 (screens.MenuScreen)
+            from screens import MenuScreen
+            _title, _intro_title = _intro_title or MenuScreen(scene=random.choice(_title_scenes)), None
+            _items = [("1", t('menu_new_game'))] + ([("2", t('menu_load_game'))] if has_save else []) + \
+                [(opt_key, t('menu_options')), (exit_key, t('menu_exit'))]
+            ans = _title.ask("PROTOCOL : STIGMA", _items, tag=t("title_subtitle"), hero=True,
+                             lines=[t("title_quote1") + " " + t("title_quote2"), f"v{constants.GAME_VERSION}"])
+            _title.close()
+        else:
+            ans = None
+        if ans is None:
+            print()
+            ver_str = f"v{constants.GAME_VERSION}"
+            ver_pad = " " * (74 - len(ver_str))
+            print(Fore.WHITE + Style.BRIGHT + "  ╔" + "═" * 74 + "╗")
+            print(Fore.WHITE + Style.BRIGHT + "  ║" + " " * 74 + "║")
+            print(Fore.WHITE + Style.BRIGHT + "  ║" + ea_center("P  R  O  T  O  C  O  L  :  S  T  I  G  M  A", 74) + "║")
+            print(Fore.WHITE + Style.BRIGHT + "  ║" + " " * 74 + "║")
+            print(Fore.CYAN  + Style.BRIGHT + "  ║" + ea_center(t("title_subtitle"), 74) + "║")
+            print(Fore.WHITE + Style.BRIGHT + "  ║" + " " * 74 + "║")
+            print(Fore.WHITE + Style.BRIGHT + "  ╠" + "═" * 74 + "╣")
+            print(Fore.WHITE + Style.BRIGHT + "  ║" + " " * 74 + "║")
+            print(Fore.CYAN  + "  ║" + ea_center(t("title_quote1"), 74) + "║")
+            print(Fore.CYAN  + "  ║" + ea_center(t("title_quote2"), 74) + "║")
+            print(Fore.WHITE + Style.BRIGHT + "  ║" + " " * 74 + "║")
+            print(Fore.WHITE + Style.DIM    + "  ║" + ver_pad + ver_str + "║")
+            print(Fore.WHITE + Style.BRIGHT + "  ╚" + "═" * 74 + "╝")
+            print()
 
-        ans = read_key()
+            print_divider()
+            print(f"  1. {t('menu_new_game')}")
+            if has_save:
+                print(f"  2. {t('menu_load_game')}")
+            print(f"  {opt_key}. {t('menu_options')}")
+            print(f"  {exit_key}. {t('menu_exit')}")
+            print_divider()
+
+            ans = read_key()
 
         # ── 종료 ──────────────────────────────────────────────────────────
         if ans == exit_key:
             clear_screen()
+            if _term:
+                from screens import MenuScreen
+                _bye = MenuScreen(scene="neo_city")
+                _bye.message("PROTOCOL : STIGMA", [t('exit_msg')], hold_ms=1400)
+                _bye.close()
+                sys.exit()
             type_text(f"  {t('exit_msg')}", 0.025)
             time.sleep(0.5)
             sys.exit()
@@ -114,23 +154,66 @@ def run_game():
             _vol_steps  = [0.0, 0.25, 0.5, 0.75, 1.0]
             _spd_steps  = [("opt_speed_slow", 2.0), ("opt_speed_normal", 1.0),
                            ("opt_speed_fast", 0.5), ("opt_speed_instant", 0.0)]
+            _opt_scr = None
+            if _term:
+                from screens import MenuScreen
+                _opt_scr = MenuScreen(scene="forge")
             while True:
                 clear_screen()
-                print_header(t('menu_options'))
-                print_divider()
-                _vol_pct  = int(_settings["bgm_volume"] * 100)
-                _mute_str = t('opt_mute_on') if _settings["mute"] else t('opt_mute_off')
-                _spd_key  = next((k for k, v in _spd_steps if v == _settings["text_speed"]),
-                                 "opt_speed_normal")
-                _spd_str  = t(_spd_key)
-                print(f"  1. {t('lang_header')}")
-                print(f"  2. {t('opt_volume')}  ◀ {_vol_pct}% ▶")
-                print(f"  3. {t('opt_mute')}  [{_mute_str}]")
-                print(f"  4. {t('opt_text_speed')}  [{_spd_str}]")
-                print_divider()
-                print(f"  0. {t('diff_back')}")
-                print_divider()
-                ok = read_key()
+                if _opt_scr:
+                    _vol_pct = int(_settings["bgm_volume"] * 100)
+                    _spd_key = next((k for k, v in _spd_steps if v == _settings["text_speed"]), "opt_speed_normal")
+                    _gm_mode = gm_bridge.get_mode()
+                    _need_data = _gm_mode != "off" and not gm_bridge.mode_installed(_gm_mode)
+                    _o = [("1", t('lang_header')), ("2", f"{t('opt_volume')}   ◀ {_vol_pct}% ▶"),
+                          ("3", f"{t('opt_mute')}   [{t('opt_mute_on') if _settings['mute'] else t('opt_mute_off')}]"),
+                          ("4", f"{t('opt_text_speed')}   [{t(_spd_key)}]"),
+                          ("5", f"{t('opt_gm')}   [{t('opt_gm_' + _gm_mode)}]")]
+                    if _need_data:
+                        _o.append(("6", t('opt_gm_download')))
+                    _o.append(("0", t('diff_back')))
+                    _cur = getattr(_opt_scr, "last", "1")
+                    ok = _opt_scr.ask(t('menu_options'), _o, lines=[t('opt_gm_desc_' + _gm_mode)], back="0",
+                                      start=next((i for i, (k, _) in enumerate(_o) if k == _cur), 0))
+                    _opt_scr.last = ok
+                    if ok == "1":
+                        _lk = _opt_scr.ask(t('lang_header'), [("1", t('lang_ko')), ("2", t('lang_en')), ("0", t('diff_back'))], back="0")
+                        if _lk == "1":
+                            set_lang("ko")
+                        elif _lk == "2":
+                            set_lang("en")
+                        continue
+                    if ok == "6" and _need_data:
+                        _opt_scr.close()
+                        _offer_extra_data(_settings, force=True)
+                        _opt_scr = MenuScreen(scene="forge")
+                        continue
+                    if ok == "0":
+                        _opt_scr.close()
+                        break
+                else:
+                    print_header(t('menu_options'))
+                    print_divider()
+                    _vol_pct  = int(_settings["bgm_volume"] * 100)
+                    _mute_str = t('opt_mute_on') if _settings["mute"] else t('opt_mute_off')
+                    _spd_key  = next((k for k, v in _spd_steps if v == _settings["text_speed"]),
+                                     "opt_speed_normal")
+                    _spd_str  = t(_spd_key)
+                    print(f"  1. {t('lang_header')}")
+                    print(f"  2. {t('opt_volume')}  ◀ {_vol_pct}% ▶")
+                    print(f"  3. {t('opt_mute')}  [{_mute_str}]")
+                    print(f"  4. {t('opt_text_speed')}  [{_spd_str}]")
+                    _gm_mode = gm_bridge.get_mode()
+                    _gm_note = "" if gm_bridge.mode_installed(_gm_mode) else f"  {t('opt_gm_missing')}"
+                    print(f"  5. {t('opt_gm')}  [{t('opt_gm_' + _gm_mode)}]{_gm_note}")
+                    print(f"     {t('opt_gm_desc_' + _gm_mode)}")
+                    _need_data = _gm_mode != "off" and not gm_bridge.mode_installed(_gm_mode)
+                    if _need_data:
+                        print(f"  6. {t('opt_gm_download')}")
+                    print_divider()
+                    print(f"  0. {t('diff_back')}")
+                    print_divider()
+                    ok = read_key()
                 if ok == "0":
                     break
                 elif ok == "1":
@@ -161,6 +244,13 @@ def run_game():
                     _, _settings["text_speed"] = _spd_steps[(cur + 1) % len(_spd_steps)]
                     constants.TEXT_SPEED_MULT = _settings["text_speed"]
                     save_settings(_settings)
+                elif ok == "5":
+                    modes = gm_bridge.MODES
+                    _settings["gm_mode"] = modes[(modes.index(gm_bridge.get_mode()) + 1) % len(modes)]
+                    gm_bridge.set_mode(_settings["gm_mode"])
+                    save_settings(_settings)
+                elif ok == "6" and _need_data:
+                    _offer_extra_data(_settings, force=True)
             continue
 
         # ── 세이브 로드 ───────────────────────────────────────────────────
@@ -185,8 +275,25 @@ def run_game():
             grid = GameMap()
             go_back = False
 
+            _diff_scr = None
+            if _term:
+                from screens import MenuScreen
+                _diff_scr = MenuScreen(scene="scrap_sea")
             while True:  # 난이도 선택 루프
                 clear_screen()
+                diff_map = {"1": "easy", "2": "normal", "3": "hard"}
+                if _diff_scr:
+                    diff_ans = _diff_scr.ask(t("diff_header"), [("1", t('diff_easy')), ("2", t('diff_normal')),
+                                                                ("3", t('diff_hard')), ("0", t('diff_back'))],
+                                             lines=[t('diff_desc1') + " " + t('diff_desc2')], back="0", start=1)
+                    _diff_scr.close()
+                    if diff_ans == "0":
+                        go_back = True
+                        break
+                    player.difficulty = diff_map[diff_ans]
+                    run_prologue()
+                    log_diary(player, t('game_log_start'))
+                    break
                 print_header(t("diff_header"))
                 print(f"  {t('diff_desc1')}")
                 print(f"  {t('diff_desc2')}\n")
@@ -222,6 +329,13 @@ def run_game():
     sound.play_map_ambient()
 
     _ui_mgr = None
+    if get_terminal():  # 그림 + 이야기 칸 맵 화면 (map_view.py)
+        from map_view import MapView
+        _ui_mgr = MapView(get_terminal(), player, grid)
+
+    def _off():
+        if _ui_mgr:
+            _ui_mgr.deactivate()
 
     _EXPLORE_ACTIONS = [
         ("WASD", "이동",     True),
@@ -245,6 +359,7 @@ def run_game():
         if _ui_mgr:
             _ui_mgr.update(player, grid)
             _ui_mgr.set_actions(_EXPLORE_ACTIONS)
+            _ui_mgr.activate()
         else:
             grid.draw()
             player.show_status()
@@ -260,9 +375,11 @@ def run_game():
         move = read_key()
 
         if move == "I":
+            _off()
             player.manage_inventory()
             continue
         elif move == "J":
+            _off()
             show_diary(player)
             continue
         elif move == "C":
@@ -279,6 +396,7 @@ def run_game():
 
             if roll < 0.08 and constants.TRADER_ITEMS:
                 # 행상인 NPC 조우 (8%)
+                _off()
                 handle_trader(player)
             elif roll < 0.08 + encounter_chance:
                 # 전투 조우 (encounter_chance%)
@@ -289,20 +407,24 @@ def run_game():
                     etype = grid.escaped_enemy_type or "drone"
                 else:
                     etype = "bio_hound" if random.random() < 0.20 else "drone"
+                _off()
                 sound.play_combat_bgm()
                 result_hp, result_type = combat_loop(player, is_boss=False, current_hp=grid.escaped_enemy_hp, enemy_type=etype)
                 grid.escaped_enemy_hp = result_hp
                 grid.escaped_enemy_type = result_type
                 sound.resume_map_ambient()
             elif roll < 0.08 + encounter_chance + 0.20 and constants.RANDOM_EVENTS:
-                # 랜덤 서사 이벤트 (20%)
+                # 랜덤 서사 이벤트 (20%) — 로컬 GM이 판정·서술, GM을 못 쓰면 대본
                 event = random.choice(constants.RANDOM_EVENTS)
-                handle_random_event(player, event)
+                if not gm_bridge.run_event(player, grid, event):
+                    _off()
+                    handle_random_event(player, event)
             elif roll < 0.08 + encounter_chance + 0.20 + 0.30:
-                # 공탐색 — 분위기 로그 (30%)
-                _empty = random.choice(t('empty_search_msgs'))
-                print(f"\n  {_empty}")
-                print_ambient_lore()
+                # 공탐색 (30%) — 로컬 GM이 서술, GM을 못 쓰면 분위기 로그
+                if not gm_bridge.run_search(player, grid):
+                    _empty = random.choice(t('empty_search_msgs'))
+                    print(f"\n  {_empty}")
+                    print_ambient_lore()
             else:
                 # 자원 파밍 (나머지 ~22%)
                 item_roll = random.random()
@@ -332,6 +454,7 @@ def run_game():
                     trigger_sudden_quest(player)
             continue
         elif move == "Q":
+            _off()
             clear_screen()
             print_header(t("quit_header"))
             print()
@@ -373,9 +496,11 @@ def run_game():
 
             if current_loc == tuple(grid.bunker_pos):
                 if constants.SESSIONS_DB and len(constants.SESSIONS_DB) > 6:
+                    _off()
                     handle_session(player, constants.SESSIONS_DB[6])
                 # 보스전 준비 화면
                 log_diary(player, t('boss_log_prep'))
+                _off()
                 clear_screen()
                 print_header(t('boss_alert_header'))
                 type_text(t('boss_approach_1'), 0.025)
@@ -416,6 +541,7 @@ def run_game():
                     if random.random() < _s_prob:
                         print(t('scan_detected'))
                         time.sleep(1.2)
+                        _off()
                         handle_session(player, constants.SESSIONS_DB[grid.session_index])
                         grid.session_index += 1
                         session_triggered = True
@@ -428,6 +554,7 @@ def run_game():
                             etype = grid.escaped_enemy_type or "drone"
                         else:
                             etype = "bio_hound" if random.random() < 0.20 else "drone"
+                        _off()
                         sound.play_combat_bgm()
                         result_hp, result_type = combat_loop(player, is_boss=False, current_hp=grid.escaped_enemy_hp, enemy_type=etype)
                         grid.escaped_enemy_hp = result_hp

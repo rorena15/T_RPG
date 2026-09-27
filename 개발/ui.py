@@ -202,6 +202,10 @@ def log_diary(player, entry):
     player.diary.append(f"[턴 {player.turn_count:>4d}]  {entry}")
 
 def show_diary(player):
+    from gui import get_terminal
+    if get_terminal():  # 그림 화면 일지 (screens.show_diary_view)
+        from screens import show_diary_view
+        return show_diary_view(player)
     entries = player.diary
     if not entries:
         clear_screen()
