@@ -18,17 +18,49 @@ from i18n import t
 import sound
 import skills
 
+# 스토리 세션 -> 장면 그림 (제목 앞부분으로 찾는다)
+SESSION_SCENES = [
+    ("녹슨 잔해", "drones"), ("오염된 오아시스", "toxic"), ("스캐브 드론", "drones"), ("쓰러진 선행", "figure"),
+    ("방사능 폭풍", "basin_storm"), ("낙인의 기억", "ruin_server"), ("녹슨 방전 벙커", "bunker"),
+]
+
+
 def handle_session(player, session):
+    from event_view import scene_card
+    title_ko = session.get("title", "")
+    scene = next((sc for key, sc in SESSION_SCENES if title_ko.startswith(key)), None)
+    if scene:
+        scene_card(scene, session['title'], tag="기록", player=player)
+    from gui import get_terminal
+    term = get_terminal()
+    view = menu = None
+    msgs = []
+
+    def _say(text):  # 그림 화면이면 모았다가 한 번에 보여 주고, 아니면 예전처럼 바로 찍는다
+        if view:
+            msgs.append(" ".join(str(text).split()))
+        else:
+            print(text)
+
     clear_screen()
     sound.play_typing_bgm()
-    print_header(session['title'])
-    type_text(session['text'], 0.02)
-    print()
-    for i, choice in enumerate(session['choices']):
-        print(f"  [{i+1}] {choice['text']}")
-    time.sleep(1)
+    if term:  # 그림 화면 세션 (이벤트 화면과 같은 틀)
+        from event_view import EventView
+        view = EventView(term, player, None, "폐기물 처리장", scene=scene, context=title_ko)
+        view.add("title", tag="기록", title=session['title'])
+        view.add("prose", lines=[" ".join(session['text'].split())])
+        menu = view.add("choices", items=[(str(i + 1), c['text']) for i, c in enumerate(session['choices'])])
+        view.footer = [("↑↓", "선택"), ("Enter", "결정")]
+        view.open()
+    else:
+        print_header(session['title'])
+        type_text(session['text'], 0.02)
+        print()
+        for i, choice in enumerate(session['choices']):
+            print(f"  [{i+1}] {choice['text']}")
+        time.sleep(1)
     while True:
-        ans = read_key()
+        ans = view.choose(menu, len(session['choices'])) if view else read_key()
         if ans in ["1", "2", "3"]:
             choice_data = session['choices'][int(ans) - 1]
             choice_weight = choice_data.get('weight')
@@ -40,40 +72,41 @@ def handle_session(player, session):
                     mat_gain = choice_data.get("materials", 30)
                     player.materials += mat_gain
                     advance_quest(player, "scrap", mat_gain)
-                    print(t('session_scrap_gain', mat=mat_gain))
+                    _say(t('session_scrap_gain', mat=mat_gain))
                 else:
                     player.inventory.append(choice_data["reward"])
                     item_data = get_equipment_data(choice_data["reward"])
-                    print(t('session_item_gain', name=item_data['name']))
+                    _say(t('session_item_gain', name=item_data['name']))
 
             if choice_data.get("consumable"):
                 key = choice_data["consumable"]
                 if key in player.consumables:
                     player.consumables[key] += 1
-                    print(t('session_consumable_gain', name=constants.CONSUMABLES_DB.get(key, {}).get('name', key)))
+                    _say(t('session_consumable_gain', name=constants.CONSUMABLES_DB.get(key, {}).get('name', key)))
 
             raw_mat = choice_data.get("materials", 0)
             if raw_mat != 0 and not choice_data.get("reward") == "SCRAP_MAT":
                 player.materials = max(0, player.materials + raw_mat)
                 if raw_mat > 0:
                     advance_quest(player, "scrap", raw_mat)
-                    print(t('session_scrap_add', val=raw_mat))
+                    _say(t('session_scrap_add', val=raw_mat))
                 else:
-                    print(t('session_scrap_use', val=raw_mat))
+                    _say(t('session_scrap_use', val=raw_mat))
 
             if choice_data.get("hp_loss", 0):
                 player.hp = max(1, player.hp - choice_data["hp_loss"])
-                print(t('session_hp_loss', val=choice_data['hp_loss']))
+                _say(t('session_hp_loss', val=choice_data['hp_loss']))
             if choice_data.get("thirst", 0):
                 player.thirst = min(100, player.thirst + choice_data["thirst"])
             if choice_data.get("hunger", 0):
                 player.hunger = min(100, player.hunger + choice_data["hunger"])
             if choice_data.get("ram_bonus", 0):
                 player.max_ram += choice_data["ram_bonus"]
-                print(t('session_ram_gain', val=choice_data['ram_bonus']))
+                _say(t('session_ram_gain', val=choice_data['ram_bonus']))
 
-            time.sleep(0.6)
-            type_text(f"\n  {choice_data['log']}", 0.025)
+            if not view:
+                time.sleep(0.6)
+                type_text(f"\n  {choice_data['log']}", 0.025)
 
             _w_label_map = {
                 "kinetic": t('weight_label_kinetic'),
@@ -97,16 +130,61 @@ def handle_session(player, session):
                     "scrap":   t('session_pattern_scrap'),
                     "cyber":   t('session_pattern_cyber'),
                 }
-                time.sleep(0.3)
-                type_text(_wcb[choice_weight], 0.022)
+                if view:
+                    _say(_wcb[choice_weight])
+                else:
+                    time.sleep(0.3)
+                    type_text(_wcb[choice_weight], 0.022)
 
             sound.resume_map_ambient()
-            wait_for_keypress()
+            if view:  # 고른 행동 → 결과 서술(타자) → 얻고 잃은 것
+                view.log.remove(menu)
+                view.add("you", text=choice_data['text'])
+                entry = view.add("narr", lines=[" ".join(choice_data['log'].split())])
+                view.type_out(entry)
+                if msgs:
+                    view.pause(150)
+                    view.add("prose", lines=msgs)
+                view.footer = [("Enter", "계속")]
+                view.wait_key({"ENTER", "ESC", " "})
+                view.close()
+            else:
+                wait_for_keypress()
             break
+
+
+def _run_prologue_view():
+    """프롤로그 (그림 화면): 건너뛰기 선택 → 부팅 기록 → 도입 서사 → 세계관 → 조작법. 글은 터미널 판과 같다."""
+    from screens import MenuScreen, story_page
+    sound.play_typing_bgm()
+    ask = MenuScreen(scene="ruin_server")
+    import re as _re
+    _num = lambda x: _re.sub(r"^\s*\d\.\s*", "", x).strip()  # noqa: E731 - 문구 앞의 "1. " 번호는 화면이 붙인다
+    ans = ask.ask(t('prologue_header').strip(" =[]"), [("1", _num(t('prologue_option_play'))),
+                                                       ("0", _num(t('prologue_option_skip')))],
+                  lines=[t('prologue_loaded').strip()], back="0")
+    if ans == "0":
+        ask.message(t('prologue_header').strip(" =[]"), [t('prologue_skipped').strip()], hold_ms=900)
+        ask.close()
+        return
+    ask.close()
+    boot = [t(k).strip() for k in ("prologue_boot_0", "prologue_boot_12", "prologue_boot_45", "prologue_boot_100",
+                                   "prologue_boot_check", "prologue_boot_fail1", "prologue_boot_id",
+                                   "prologue_boot_fail2", "prologue_boot_class", "prologue_boot_action")]
+    story_page("ruin_server", "SYSTEM BOOT", boot, tag="N-404")
+    story_page("junkyard", t('prologue_act1_header').strip(" =[]"), [x for x in t('prologue_narr') if x], tag="데드존")
+    story_page("neo_city", t('prologue_world_header').strip(" =[]"), [x for x in t('prologue_world') if x], tag="네오 아크")
+    guide = [f"[{k}]  {d}" for k, d in t('prologue_guide')]
+    warn = [t(k).strip() for k in ("prologue_warn_1", "prologue_warn_2", "prologue_warn_3", "prologue_nav_1", "prologue_nav_2")]
+    story_page("bunker_stairs", t('prologue_manual_header').strip(" =[]"), guide + warn, tag="조작",
+               location="구시대 지하 방공호", footer_label="게임 시작")
 
 
 def run_prologue():
     """신규 게임 시작 시 전체 프롤로그 시퀀스를 재생합니다."""
+    from gui import get_terminal
+    if get_terminal():
+        return _run_prologue_view()
     clear_screen()
     print_header(t('prologue_header'))
     print()
@@ -147,6 +225,8 @@ def run_prologue():
     clear_screen()
 
     # ── 단계 2: 도입 서사 ────────────────────────────────────────────────
+    from event_view import scene_card
+    scene_card("junkyard", t('prologue_act1_header'), tag="데드존")
     print_header(t('prologue_act1_header'))
     time.sleep(0.5)
 
@@ -159,6 +239,7 @@ def run_prologue():
     clear_screen()
 
     # ── 단계 3: 세계관 브리핑 ────────────────────────────────────────────
+    scene_card("neo_city", t('prologue_world_header'), tag="네오 아크")
     print_header(t('prologue_world_header'))
     for line in t('prologue_world'):
         type_text(f"  {line}", 0.02) if line else print()

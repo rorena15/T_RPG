@@ -324,6 +324,10 @@ class Player:
         print()
 
     def manage_inventory(self):
+        from gui import get_terminal
+        if get_terminal():  # 그림 화면 인벤토리 (방향키, inventory_view.py)
+            from inventory_view import run_inventory
+            return run_inventory(self)
         slot_keys = list(constants.SLOT_DISPLAY.keys())
 
         while True:
@@ -466,6 +470,10 @@ class Player:
                 wait_for_keypress()
 
     def use_consumable_menu(self):
+        from gui import get_terminal
+        if get_terminal():
+            from inventory_view import run_inventory
+            return run_inventory(self, tab="consumables")
         clear_screen()
         print_header(t('consumable_header'))
 

@@ -180,8 +180,48 @@ def handle_random_event(player, event):
         wait_for_keypress()
 
 
+def _trader_view(player):
+    """상인 화면 (이벤트 화면 틀, 방향키). 규칙은 아래 터미널 판과 같다."""
+    from gui import get_terminal
+    from event_view import EventView
+    view = EventView(get_terminal(), player, None, "폐기물 처리장", scene="fig_trader")
+    note = []
+    view.open()
+    try:
+        last = 0
+        while True:
+            view.log = []
+            view.add("title", tag=t('trader_scrap_label', val=player.materials).strip(), title=t('trader_header').strip(" =[]"))
+            view.add("prose", lines=[" ".join((t('trader_intro_1') + " " + t('trader_intro_2')).split())])
+            items = [(str(i + 1), f"{db_t(it, 'name')}   ·   고철 {it['cost']}   ·   보유 {player.consumables.get(it['id'], 0)}")
+                     for i, it in enumerate(constants.TRADER_ITEMS)] + [("0", t('trader_exit').strip())]
+            menu = view.add("choices", items=items, start=last)
+            if note:
+                view.add("narr", lines=note)
+            view.footer = [("↑↓", "선택"), ("Enter", "구매"), ("0", "떠난다")]
+            cmd = view.choose(menu, len(items), extra=("ESC",))
+            last = next(i for i, (k, _) in enumerate(items) if k == cmd) if cmd != "ESC" else last
+            if cmd in ("0", "ESC"):
+                view.log = [view.log[0], {"kind": "narr", "lines": [t('trader_goodbye').strip()]}]
+                view.hold(1200)
+                return
+            chosen = constants.TRADER_ITEMS[int(cmd) - 1]
+            if player.materials >= chosen["cost"]:
+                player.materials -= chosen["cost"]
+                player.consumables[chosen["id"]] += 1
+                note = [" ".join(t('trader_bought', name=db_t(chosen, 'name'), scrap=player.materials).split())]
+                log_diary(player, t('trader_log_bought', name=db_t(chosen, 'name'), cost=chosen['cost']))
+            else:
+                note = [" ".join(t('trader_no_scrap', owned=player.materials, cost=chosen['cost']).split())]
+    finally:
+        view.close()
+
+
 def handle_trader(player):
     """행상인 NPC 조우 — 고철로 소모품을 구매합니다."""
+    from gui import get_terminal
+    if get_terminal():
+        return _trader_view(player)
     clear_screen()
     print_header(t('trader_header'))
     type_text(t('trader_intro_1'), 0.02)

@@ -58,22 +58,22 @@ on:
         default: 'true'
         type: boolean
 
-      onefile:
-        description: '--onefile (단일 exe) / false 이면 --onedir'
-        required: true
-        default: 'true'
-        type: boolean
-
       noconsole:
         description: '--noconsole (콘솔 창 숨김)'
         required: true
         default: 'true'
         type: boolean
 
-      extra_pyinstaller_args:
-        description: '추가 PyInstaller 옵션 (공백 구분, 예: --debug all)'
-        required: false
-        default: ''
+      legacy_exe:
+        description: '예전 업데이터용 단일 exe도 같이 올리기 (폴더 배포로 넘어오는 동안)'
+        required: true
+        default: 'true'
+        type: boolean
+
+      runtime_tag:
+        description: '동적 서사 실행기(패치 빌드 llama-server.exe)를 받을 릴리스 태그'
+        required: true
+        default: 'runtime-v1'
 
 jobs:
   build-windows:
@@ -90,8 +90,26 @@ jobs:
         with:
           python-version: ${{ github.event.inputs.python_version }}
 
+      # Windows는 Nuitka로 빌드한다 (개발/build_exe.py 참고: PyInstaller exe는 소스가 거의 그대로 복원된다)
       - name: 의존성 설치
-        run: pip install rich colorama pyinstaller pygame-ce
+        run: pip install rich colorama nuitka ordered-set zstandard pygame-ce
+
+      # ── 동적 서사 준비 ─────────────────────────────────────────────────────
+      # 실행기는 공개 릴리스 자산에서, 모델 키 절반은 Secret에서 만든다 (공개 저장소에 넣지 않는다).
+      # 둘 중 하나라도 없으면 build_exe.py가 동적 서사 없이 빌드한다.
+      - name: 동적 서사 준비
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          STIGMA_GM_KEY: ${{ secrets.STIGMA_GM_KEY }}
+        run: |
+          New-Item -ItemType Directory -Force 개발/runtime/llama | Out-Null
+          gh release download "${{ github.event.inputs.runtime_tag }}" -R "${{ github.repository }}" -p llama-server.exe -D 개발/runtime/llama
+          if ($env:STIGMA_GM_KEY) {
+            [IO.File]::WriteAllText("개발/gm_key.py", $env:STIGMA_GM_KEY)
+          } else {
+            Write-Host "::warning::STIGMA_GM_KEY Secret 없음 - 동적 서사 없이 빌드"
+          }
 
       # ── 버전 주입 ───────────────────────────────────────────────────────────
       - name: 버전 주입
@@ -108,29 +126,12 @@ jobs:
       - name: EXE 빌드
         shell: pwsh
         run: |
-          $args = @()
-          if ("${{ github.event.inputs.onefile }}" -eq "true") {
-            $args += "--onefile"
-          } else {
-            $args += "--onedir"
-          }
-          if ("${{ github.event.inputs.noconsole }}" -eq "true") {
-            $args += "--noconsole"
-          }
-          $extra = "${{ github.event.inputs.extra_pyinstaller_args }}".Trim()
-          if ($extra -ne "") { $args += $extra.Split(" ") }
-
-          pyinstaller @args `
-            --collect-all pygame `
-            --name="${{ github.event.inputs.exe_name }}" `
-            --distpath="개발/dist" `
-            --workpath="개발/build" `
-            --icon="개발/Protocol_Stigma_1.ico" `
-            --add-data "개발/database.json;." `
-            --add-data "개발/master_formulas.json;." `
-            --add-data "개발/locales;locales" `
-            --add-data "assets;assets" `
-            개발/Main.py
+          $args = @("--name", "${{ github.event.inputs.exe_name }}")
+          if ("${{ github.event.inputs.noconsole }}" -ne "true") { $args += "--console" }
+          # 폴더 배포 (zip). 업데이터는 이 zip을 받아 게임 폴더에 덮어쓴다
+          python 개발/build_exe.py @args
+          # 1.9.x 사용자용 단일 exe (예전 업데이터는 .exe만 찾는다). 폴더 배포로 다 넘어오면 끈다
+          if ("${{ github.event.inputs.legacy_exe }}" -eq "true") { python 개발/build_exe.py @args --onefile }
 
       # ── 릴리즈 제목 결정 ────────────────────────────────────────────────────
       - name: 릴리즈 제목 결정
@@ -155,9 +156,11 @@ jobs:
           body: |
             ${{ github.event.inputs.notes }}
 
-            Windows 64비트 실행 파일입니다.
-            다운로드 후 바로 실행 가능합니다. (Python 설치 불필요)
-          files: 개발/dist/${{ github.event.inputs.exe_name }}.exe
+            Windows 64비트: `${{ github.event.inputs.exe_name }}_win64.zip`을 받아 압축을 풀고 폴더 안의 exe를 실행하세요. (Python 설치 불필요)
+            이전 버전(단일 exe)을 쓰던 분은 게임 안 업데이트로 넘어올 수 있습니다.
+          files: |
+            개발/dist/${{ github.event.inputs.exe_name }}_win64.zip
+            개발/dist/${{ github.event.inputs.exe_name }}.exe
           draft: false
           prerelease: false
 
@@ -170,9 +173,11 @@ jobs:
           body: |
             ${{ github.event.inputs.notes }}
 
-            Windows 64비트 실행 파일입니다.
-            다운로드 후 바로 실행 가능합니다. (Python 설치 불필요)
-          files: 개발/dist/${{ github.event.inputs.exe_name }}.exe
+            Windows 64비트: `${{ github.event.inputs.exe_name }}_win64.zip`을 받아 압축을 풀고 폴더 안의 exe를 실행하세요. (Python 설치 불필요)
+            이전 버전(단일 exe)을 쓰던 분은 게임 안 업데이트로 넘어올 수 있습니다.
+          files: |
+            개발/dist/${{ github.event.inputs.exe_name }}_win64.zip
+            개발/dist/${{ github.event.inputs.exe_name }}.exe
           draft: false
           prerelease: false
           make_latest: true
@@ -188,9 +193,11 @@ jobs:
           body: |
             ${{ github.event.inputs.notes }}
 
-            Windows 64비트 실행 파일입니다.
-            다운로드 후 바로 실행 가능합니다. (Python 설치 불필요)
-          files: 개발/dist/${{ github.event.inputs.exe_name }}.exe
+            Windows 64비트: `${{ github.event.inputs.exe_name }}_win64.zip`을 받아 압축을 풀고 폴더 안의 exe를 실행하세요. (Python 설치 불필요)
+            이전 버전(단일 exe)을 쓰던 분은 게임 안 업데이트로 넘어올 수 있습니다.
+          files: |
+            개발/dist/${{ github.event.inputs.exe_name }}_win64.zip
+            개발/dist/${{ github.event.inputs.exe_name }}.exe
           draft: true
           prerelease: false
 
@@ -205,9 +212,11 @@ jobs:
 
             ${{ github.event.inputs.notes }}
 
-            Windows 64비트 실행 파일입니다.
-            다운로드 후 바로 실행 가능합니다. (Python 설치 불필요)
-          files: 개발/dist/${{ github.event.inputs.exe_name }}.exe
+            Windows 64비트: `${{ github.event.inputs.exe_name }}_win64.zip`을 받아 압축을 풀고 폴더 안의 exe를 실행하세요. (Python 설치 불필요)
+            이전 버전(단일 exe)을 쓰던 분은 게임 안 업데이트로 넘어올 수 있습니다.
+          files: |
+            개발/dist/${{ github.event.inputs.exe_name }}_win64.zip
+            개발/dist/${{ github.event.inputs.exe_name }}.exe
           draft: false
           prerelease: true
 

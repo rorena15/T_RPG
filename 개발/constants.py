@@ -211,9 +211,11 @@ DRONE_HP_MAX         = 16000
 SUB_WPN_POWER        = 100
 ESCAPE_WEIGHTS       = (60, 20, 10, 5, 5)  # SAFE / NORMAL / 1.5X / 2.0X / LUCKY
 
-SCALE_MULT_T23_DMG   = 100
+# 고티어 장비의 '숫자가 커지는' 연출 배율. 피해와 체력에 같은 배율을 써야 표시된 피해만큼 표시된 체력이 줄어든다
+# (예전 피해 x100000 / 체력 x100 은 수천만 피해에도 체력이 조금만 줄어 보였다).
+SCALE_MULT_T23_DMG   = 10
 SCALE_MULT_T23_HP    = 10
-SCALE_MULT_T01_DMG   = 100000
+SCALE_MULT_T01_DMG   = 100
 SCALE_MULT_T01_HP    = 100
 
 # ── 장비 계산 상수 ────────────────────────────────────────────────────────────

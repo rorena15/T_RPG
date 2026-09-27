@@ -1,0 +1,403 @@
+diff --git a/.gitignore b/.gitignore
+index 9b58961..34d1a2d 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -153,3 +153,4 @@ a.out.*
+ 
+ AGENTS.local.md
+ .pi/SYSTEM.md
++ggml/src/stigma-key.inc
+diff --git a/ggml/include/gguf.h b/ggml/include/gguf.h
+index b3a1e12..2b404e4 100644
+--- a/ggml/include/gguf.h
++++ b/ggml/include/gguf.h
+@@ -82,6 +82,10 @@ extern "C" {
+     GGML_API struct gguf_context * gguf_init_empty(void);
+     GGML_API struct gguf_context * gguf_init_from_file_ptr(FILE * file, struct gguf_init_params params);
+     GGML_API struct gguf_context * gguf_init_from_file(const char * fname, struct gguf_init_params params);
++
++    // stigma: at-rest encryption (AES-256-CTR keyed by file size and absolute offset), see stigma-crypt.cpp
++    GGML_API bool gguf_stigma_is_encrypted(const uint8_t head[4], uint64_t file_size);
++    GGML_API void gguf_stigma_xor(void * data, size_t len, uint64_t file_offset, uint64_t file_size);
+     GGML_API struct gguf_context * gguf_init_from_buffer(const void * data, size_t size, struct gguf_init_params params);
+ 
+     // max_chunk_read is the maximum number of bytes that the GGUF code will read at once from the callback, a value of 0 means no limit
+diff --git a/ggml/src/CMakeLists.txt b/ggml/src/CMakeLists.txt
+index 9477320..af24423 100644
+--- a/ggml/src/CMakeLists.txt
++++ b/ggml/src/CMakeLists.txt
+@@ -206,7 +206,8 @@ add_library(ggml-base
+             ggml-threading.h
+             ggml-quants.c
+             ggml-quants.h
+-            gguf.cpp)
++            gguf.cpp
++            stigma-crypt.cpp)
+ 
+ set_target_properties(ggml-base PROPERTIES
+     VERSION ${GGML_VERSION}
+@@ -216,6 +217,10 @@ set_target_properties(ggml-base PROPERTIES
+ configure_file(ggml-version.h.in ${CMAKE_CURRENT_BINARY_DIR}/ggml-version.h @ONLY)
+ 
+ target_include_directories(ggml-base PRIVATE . ${CMAKE_CURRENT_BINARY_DIR})
++
++if (WIN32)
++    target_link_libraries(ggml-base PRIVATE bcrypt)
++endif()
+ if (GGML_BACKEND_DL)
+     target_compile_definitions(ggml-base PUBLIC GGML_BACKEND_DL)
+ endif()
+diff --git a/ggml/src/gguf.cpp b/ggml/src/gguf.cpp
+index 0eb9fb7..1df4be9 100644
+--- a/ggml/src/gguf.cpp
++++ b/ggml/src/gguf.cpp
+@@ -926,6 +926,8 @@ struct gguf_context * gguf_init_from_callback(gguf_reader_callback_t callback, v
+ struct gguf_file_reader {
+     FILE * file;
+     uint64_t offset;
++    bool     enc;  // stigma
++    uint64_t size;
+ };
+ 
+ static size_t gguf_file_reader_callback(void * userdata, void * output, uint64_t offset, size_t len) {
+@@ -942,6 +944,9 @@ static size_t gguf_file_reader_callback(void * userdata, void * output, uint64_t
+     }
+ 
+     const size_t nread = fread(static_cast<uint8_t *>(output), 1, len, reader.file);
++    if (reader.enc && nread > 0) {
++        gguf_stigma_xor(output, nread, offset, reader.size);
++    }
+     reader.offset += nread;
+     return nread;
+ }
+@@ -959,7 +964,23 @@ struct gguf_context * gguf_init_from_file_ptr(FILE * file, struct gguf_init_para
+     gguf_file_reader reader = {
+         /*.file   = */ file,
+         /*.offset = */ static_cast<uint64_t>(cur),
++        /*.enc    = */ false,
++        /*.size   = */ 0,
+     };
++
++    // stigma: detect an encrypted model from its first 4 bytes, then restore the position
++    {
++        uint8_t head[4];
++        if (gguf_fseek(file, 0, SEEK_END) == 0) {
++            reader.size = static_cast<uint64_t>(gguf_ftell(file));
++        }
++        if (gguf_fseek(file, 0, SEEK_SET) == 0 && fread(head, 1, 4, file) == 4) {
++            reader.enc = gguf_stigma_is_encrypted(head, reader.size);
++        }
++        if (gguf_fseek(file, cur, SEEK_SET) != 0) {
++            return nullptr;
++        }
++    }
+     const struct gguf_reader gr(gguf_file_reader_callback, &reader, SIZE_MAX, reader.offset, gguf_reader::file_remain(file));
+     return gguf_init_from_reader(gr, params);
+ }
+diff --git a/ggml/src/stigma-crypt.cpp b/ggml/src/stigma-crypt.cpp
+new file mode 100644
+index 0000000..a5db802
+--- /dev/null
++++ b/ggml/src/stigma-crypt.cpp
+@@ -0,0 +1,172 @@
++// stigma: at-rest model encryption for PROTOCOL: STIGMA
++//
++// AES-256-CTR over the whole .gguf, counter block = [file_size (be64) | block_index (be64)].
++// The file stays the same size, so every GGUF offset is unchanged and reads can be decrypted in place.
++// key = half compiled into this binary (stigma-key.inc, generated, never committed) XOR half sent by the game on stdin.
++// The plaintext never touches the disk: it only exists in the read buffer right before upload.
++
++#include "gguf.h"
++
++#include <algorithm>
++#include <cstdio>
++#include <cstring>
++#include <mutex>
++
++#if defined(_WIN32)
++#define WIN32_LEAN_AND_MEAN
++#ifndef NOMINMAX
++#    define NOMINMAX
++#endif
++#include <windows.h>
++#include <bcrypt.h>
++
++#include "stigma-key.inc" // defines stigma_bin_half(uint8_t out[32])
++
++namespace {
++
++struct stigma_state {
++    std::once_flag    once;
++    std::mutex        mtx;
++    bool              ok  = false;
++    BCRYPT_ALG_HANDLE alg = nullptr;
++    BCRYPT_KEY_HANDLE key = nullptr;
++};
++
++stigma_state & state() {
++    static stigma_state s;
++    return s;
++}
++
++int hexval(char c) {
++    if (c >= '0' && c <= '9') return c - '0';
++    if (c >= 'a' && c <= 'f') return c - 'a' + 10;
++    if (c >= 'A' && c <= 'F') return c - 'A' + 10;
++    return -1;
++}
++
++// the game writes 64 hex chars to our stdin right after spawning us, then closes the pipe
++bool read_game_half(uint8_t out[32]) {
++    HANDLE h = GetStdHandle(STD_INPUT_HANDLE);
++    if (h == nullptr || h == INVALID_HANDLE_VALUE) {
++        return false;
++    }
++    char  buf[64];
++    DWORD got = 0;
++    while (got < sizeof(buf)) {
++        DWORD n = 0;
++        if (!ReadFile(h, buf + got, (DWORD) sizeof(buf) - got, &n, nullptr) || n == 0) {
++            return false;
++        }
++        got += n;
++    }
++    for (int i = 0; i < 32; i++) {
++        const int hi = hexval(buf[2*i]);
++        const int lo = hexval(buf[2*i + 1]);
++        if (hi < 0 || lo < 0) {
++            SecureZeroMemory(buf, sizeof(buf));
++            return false;
++        }
++        out[i] = (uint8_t) ((hi << 4) | lo);
++    }
++    SecureZeroMemory(buf, sizeof(buf));
++    return true;
++}
++
++void init() {
++    stigma_state & s = state();
++
++    uint8_t a[32];
++    uint8_t b[32];
++    if (!read_game_half(b)) {
++        return;
++    }
++    stigma_bin_half(a);
++    for (int i = 0; i < 32; i++) {
++        a[i] ^= b[i];
++    }
++    SecureZeroMemory(b, sizeof(b));
++
++    if (BCryptOpenAlgorithmProvider(&s.alg, BCRYPT_AES_ALGORITHM, nullptr, 0) == 0 &&
++        BCryptSetProperty(s.alg, BCRYPT_CHAINING_MODE, (PUCHAR) BCRYPT_CHAIN_MODE_ECB, sizeof(BCRYPT_CHAIN_MODE_ECB), 0) == 0 &&
++        BCryptGenerateSymmetricKey(s.alg, &s.key, nullptr, 0, a, sizeof(a), 0) == 0) {
++        s.ok = true;
++    }
++    SecureZeroMemory(a, sizeof(a));
++}
++
++bool ready() {
++    stigma_state & s = state();
++    std::call_once(s.once, init);
++    return s.ok;
++}
++
++void put_be64(uint8_t * p, uint64_t v) {
++    for (int i = 7; i >= 0; i--) {
++        p[i] = (uint8_t) (v & 0xff);
++        v >>= 8;
++    }
++}
++
++} // namespace
++
++bool gguf_stigma_is_encrypted(const uint8_t head[4], uint64_t file_size) {
++    if (memcmp(head, GGUF_MAGIC, 4) == 0) {
++        return false; // plain gguf (dev builds, other models)
++    }
++    if (!ready()) {
++        return false;
++    }
++    uint8_t probe[4];
++    memcpy(probe, head, 4);
++    gguf_stigma_xor(probe, 4, 0, file_size);
++    return memcmp(probe, GGUF_MAGIC, 4) == 0;
++}
++
++void gguf_stigma_xor(void * data, size_t len, uint64_t file_offset, uint64_t file_size) {
++    if (len == 0 || !ready()) {
++        return;
++    }
++    stigma_state & s = state();
++
++    constexpr size_t CHUNK_BLOCKS = 1u << 16; // 1 MiB of keystream per BCrypt call
++    static thread_local uint8_t ks[CHUNK_BLOCKS * 16];
++
++    uint8_t * p     = static_cast<uint8_t *>(data);
++    uint64_t  block = file_offset / 16;
++    size_t    skip  = (size_t) (file_offset % 16);
++
++    while (len > 0) {
++        const size_t need   = skip + len;
++        const size_t blocks = std::min<size_t>((need + 15) / 16, CHUNK_BLOCKS);
++        for (size_t i = 0; i < blocks; i++) {
++            put_be64(ks + i*16,     file_size);
++            put_be64(ks + i*16 + 8, block + i);
++        }
++        ULONG out = 0;
++        {
++            std::lock_guard<std::mutex> lock(s.mtx);
++            BCryptEncrypt(s.key, ks, (ULONG) (blocks*16), nullptr, nullptr, 0, ks, (ULONG) (blocks*16), &out, 0);
++        }
++        const size_t n = std::min(len, blocks*16 - skip);
++        const uint8_t * k = ks + skip;
++        for (size_t i = 0; i < n; i++) {
++            p[i] ^= k[i];
++        }
++        SecureZeroMemory(ks, blocks*16); // only what was used: header parsing does thousands of tiny reads
++        p     += n;
++        len   -= n;
++        block += blocks;
++        skip   = 0;
++    }
++}
++
++#else
++
++bool gguf_stigma_is_encrypted(const uint8_t *, uint64_t) {
++    return false;
++}
++
++void gguf_stigma_xor(void *, size_t, uint64_t, uint64_t) {
++}
++
++#endif
+diff --git a/src/llama-mmap.cpp b/src/llama-mmap.cpp
+index 715a6e3..b5d8e91 100644
+--- a/src/llama-mmap.cpp
++++ b/src/llama-mmap.cpp
+@@ -3,6 +3,7 @@
+ #include "llama-impl.h"
+ 
+ #include "ggml.h"
++#include "gguf.h"
+ 
+ #include <cstring>
+ #include <climits>
+@@ -93,14 +94,32 @@ struct llama_file::impl {
+         seek(0, SEEK_END);
+         size = tell();
+         seek(0, SEEK_SET);
++        if (strchr(mode, 'r') != nullptr && strchr(mode, '+') == nullptr) {
++            detect_encryption();
++        }
+     }
+ 
+     impl(FILE * file) : owns_fp(false) {
+         fp = file;
+         fp_win32 = (HANDLE) _get_osfhandle(_fileno(fp));
++        const size_t cur = tell();
+         seek(0, SEEK_END);
+         size = tell();
+         seek(0, SEEK_SET);
++        detect_encryption();
++        seek(cur, SEEK_SET);
++    }
++
++    // stigma: encrypted models are decrypted in read_raw, keyed by absolute offset
++    bool enc = false;
++
++    void detect_encryption() {
++        uint8_t head[4];
++        if (size >= sizeof(head)) {
++            read_plain(head, sizeof(head));
++            enc = gguf_stigma_is_encrypted(head, size);
++        }
++        seek(0, SEEK_SET);
+     }
+ 
+     size_t tell() const {
+@@ -128,6 +147,14 @@ struct llama_file::impl {
+     }
+ 
+     void read_raw(void * ptr, size_t len) {
++        const size_t pos = enc ? tell() : 0;
++        read_plain(ptr, len);
++        if (enc) {
++            gguf_stigma_xor(ptr, len, pos, size);
++        }
++    }
++
++    void read_plain(void * ptr, size_t len) {
+         size_t bytes_read = 0;
+         while (bytes_read < len) {
+             size_t chunk_size = std::min<size_t>(len - bytes_read, 64*1024*1024);
+@@ -434,6 +461,12 @@ void llama_file::read_raw_unsafe(void * ptr, size_t len) { pimpl->read_raw_unsaf
+ 
+ uint32_t llama_file::read_u32() { return pimpl->read_u32(); }
+ 
++#if defined(_WIN32)
++bool llama_file::encrypted() const { return pimpl->enc; }
++#else
++bool llama_file::encrypted() const { return false; }
++#endif
++
+ void llama_file::write_raw(const void * ptr, size_t len) const { pimpl->write_raw(ptr, len); }
+ void llama_file::write_u32(uint32_t val) const { pimpl->write_u32(val); }
+ 
+diff --git a/src/llama-mmap.h b/src/llama-mmap.h
+index cc28c8a..2dd614d 100644
+--- a/src/llama-mmap.h
++++ b/src/llama-mmap.h
+@@ -36,6 +36,7 @@ struct llama_file {
+ 
+     size_t read_alignment() const;
+     bool has_direct_io() const;
++    bool encrypted() const; // stigma
+ private:
+     struct impl;
+     std::unique_ptr<impl> pimpl;
+diff --git a/src/llama-model-loader.cpp b/src/llama-model-loader.cpp
+index 43c396f..4aa9851 100644
+--- a/src/llama-model-loader.cpp
++++ b/src/llama-model-loader.cpp
+@@ -831,6 +831,16 @@ llama_model_loader::llama_model_loader(
+         this->use_mmap = false;
+     }
+ 
++    // stigma: an encrypted model is only ever read through llama_file::read_raw, which decrypts in place
++    for (const auto & file : files) {
++        if (file->encrypted()) {
++            this->use_mmap      = false;
++            this->use_direct_io = false;
++            lazy.disabled       = true;
++            break;
++        }
++    }
++
+     this->check_tensors = check_tensors;
+     this->no_alloc = no_alloc;
+     this->load_mtp = load_mtp;
+@@ -1086,7 +1096,7 @@ ggml_backend_buffer_type_t llama_model_loader::lazy_read::buft() {
+ }
+ 
+ bool llama_model_loader::lazy_read::add(const std::string & name, const ggml_tensor * t, const llama_tensor_weight * w) {
+-    if (mode == LLAMA_LAZY_MODE_OFF) {
++    if (mode == LLAMA_LAZY_MODE_OFF || disabled) {
+         return false;
+     }
+ 
+diff --git a/src/llama-model-loader.h b/src/llama-model-loader.h
+index 9e51d0c..ab1c0d1 100644
+--- a/src/llama-model-loader.h
++++ b/src/llama-model-loader.h
+@@ -90,6 +90,9 @@ struct llama_model_loader {
+         // set by the caller before the create_tensor() calls
+         enum llama_lazy_mode mode = LLAMA_LAZY_MODE_OFF;
+ 
++        // stigma: encrypted files cannot be mapped, so lazy reads are never allowed
++        bool disabled = false;
++
+         // decide whether this tensor is read lazily
+         // pass w to also record it, or nullptr to only ask
+         bool add(const std::string & name, const ggml_tensor * t, const llama_tensor_weight * w);

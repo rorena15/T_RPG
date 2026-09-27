@@ -534,3 +534,14 @@ log.txt
 릴리즈/
 QA/
 db_editor.py
+
+### PROTOCOL: STIGMA ###
+# 동적 서사 실행기 (개발/install_llama_runtime.py로 복사한 패치 빌드, exe 빌드 때 함께 넣음)
+개발/runtime/
+
+# stigma: 모델 복호화 키 절반 (tools/model_crypt.py 생성물, 공개 금지)
+개발/gm_key.py
+
+# stigma-gm: 학습 데이터는 비공개 (공개되면 누구나 같은 모델을 다시 학습할 수 있고, train.jsonl에 워터마크 비밀 문구가 들어 있다)
+stigma-gm/data/
+stigma-gm/unsloth_compiled_cache/
