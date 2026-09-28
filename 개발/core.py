@@ -8,7 +8,7 @@ import sqlite3
 import time
 import db_init
 import constants
-from i18n import t
+from i18n import t, db_t
 from sys_log import sys_log, track
 
 _eq_cache: dict = {}
@@ -96,6 +96,30 @@ def init_and_load_db():
     except Exception as e:
         sys_log(f" [SYSTEM FATAL] Failed to parse JSON database: {e}", level="FATAL")
         sys.exit()
+
+
+def roll_equipment():
+    """드롭 장비 하나를 고른다: 등급은 GEAR_DROP_TIER_WEIGHTS 비율, 그 등급 안에서는 무작위. 없으면 None."""
+    import random
+    tiers = list(constants.GEAR_DROP_TIER_WEIGHTS)
+    tier = random.choices(tiers, weights=[constants.GEAR_DROP_TIER_WEIGHTS[x] for x in tiers], k=1)[0]
+    try:
+        with sqlite3.connect("stigma_data.db") as conn:
+            rows = conn.execute("SELECT item_id FROM equipment WHERE tier = ? AND item_id != 'WEAPON_NONE'", (tier,)).fetchall()
+    except sqlite3.Error:
+        return None
+    return random.choice(rows)[0] if rows else None
+
+
+
+def grant_gear_drop(player):
+    """장비 하나를 굴려 가방에 넣고 알림 문구를 돌려준다. 못 골랐으면 None."""
+    iid = roll_equipment()
+    if not iid:
+        return None
+    player.inventory.append(iid)
+    d = get_equipment_data(iid)
+    return t('loot_gear', name=db_t(d, 'name'), tier=constants.tier_tag(d.get('tier', 4)))
 
 
 @track

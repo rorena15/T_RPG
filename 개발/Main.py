@@ -15,7 +15,7 @@ from rich.console import Console
 from i18n import t, set_lang, db_t
 from updater import check_and_prompt_update
 
-from core import init_and_load_db, get_save_path, save_data, load_settings, save_settings
+from core import init_and_load_db, get_save_path, save_data, load_settings, save_settings, grant_gear_drop
 from ui import (clear_screen, type_text, print_header, print_divider,
                 print_ambient_lore, read_key, wait_for_keypress,
                 ea_center, ea_rpad, log_diary, show_diary,
@@ -426,9 +426,12 @@ def run_game():
                     print(f"\n  {_empty}")
                     print_ambient_lore()
             else:
-                # 자원 파밍 (나머지 ~22%)
+                # 자원 파밍 (나머지 ~22%). GEAR_DROP_SEARCH 확률로 자원 대신 장비
+                gear_msg = grant_gear_drop(player) if random.random() < constants.GEAR_DROP_SEARCH else None
                 item_roll = random.random()
-                if item_roll <= 0.25:
+                if gear_msg:
+                    print(gear_msg)
+                elif item_roll <= 0.25:
                     gained = random.randint(10, 25)
                     player.materials += gained
                     advance_quest(player, "scrap", gained)

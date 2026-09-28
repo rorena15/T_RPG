@@ -7,7 +7,7 @@ import sys
 import time
 import constants
 from colorama import Fore, Style
-from core import get_equipment_data
+from core import get_equipment_data, grant_gear_drop
 from i18n import t, db_t
 from ui import (clear_screen, print_header, print_divider, type_text,
                 wait_for_keypress, read_key, log_diary,
@@ -74,9 +74,10 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
         name        = t('enemy_boss_name')
         header_title = t('enemy_boss_header')
         e_def, base_atk, hp = constants.BOSS_DEF, constants.BOSS_BASE_ATK, constants.BOSS_HP
+        diff_mult = constants.BOSS_DIFF_MULT.get(player.difficulty, 1.0)
+        base_atk, hp = int(base_atk * diff_mult), int(hp * diff_mult)
         art = constants.ENEMY_ART["BOSS"]
-        base_atk = int(base_atk * scale_mult)
-        hp = int(hp * scale_mult)
+        # 보스는 턴 성장을 받지 않는다: 받으면 준비 없이 곧장 달려가는 쪽이 가장 쉬웠다 (시뮬레이션 보통 81% vs 탐색 44%)
         boss_max_hp = hp
         atk = base_atk
         player.alert_level = min(100, player.alert_level + constants.ALERT_INC_BOSS)
@@ -581,6 +582,10 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
             player.materials += 20
             advance_quest(player, "scrap", 20)
             print(t('combat_farm_scrap'))
+        if random.random() < constants.GEAR_DROP_COMBAT:  # 장비 드롭은 위 보상과 따로 굴린다
+            msg = grant_gear_drop(player)
+            if msg:
+                print(msg)
 
     advance_quest(player, "combat")
     log_diary(player, t('combat_log_win_diary', name=name, count=player.enemies_defeated))

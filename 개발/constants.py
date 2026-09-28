@@ -202,12 +202,16 @@ DIFFICULTY_SCALING_RATE = {"easy": 0.01, "normal": 0.02, "hard": 0.035}
 
 # ── 전투 균형 상수 ────────────────────────────────────────────────────────────
 BOSS_DEF             = 45
-BOSS_BASE_ATK        = 400
-BOSS_HP              = 35000
+BOSS_BASE_ATK        = 200
+BOSS_HP              = 20000
 BOSS_TURN_LIMIT      = 15
 BOSS_PHASE2_RATIO    = 0.5    # HP 이 비율 이하 → Phase 2 전환
 BOSS_PHASE2_ATK_MULT = 1.6
 BOSS_PHASE2_LI_BONUS = 5
+# 난이도별 보스 체력·공격력 배율 (목표 클리어율: 쉬움 약 70% / 보통 약 40% / 어려움 약 20%, 봇 시뮬레이션으로 맞춤)
+# 기준 플레이어: 체력이 반 밑이면 후퇴, 탐색 20회, 가장 좋은 장비 장착. 보스는 턴 성장을 받지 않는다 (combat.py)
+# 검증 (400판씩): 쉬움 68.7% / 보통 40.6% / 어려움 21.2%
+BOSS_DIFF_MULT       = {"easy": 0.92, "normal": 1.13, "hard": 1.25}
 ALERT_INC_BOSS       = 40
 ALERT_INC_BIO        = 20
 ALERT_INC_DRONE      = 10
@@ -223,6 +227,11 @@ DRONE_HP_MIN         = 8000
 DRONE_HP_MAX         = 16000
 
 SUB_WPN_POWER        = 100
+
+# 장비 드롭: 일반 전투 승리 / 탐색 파밍에서 나올 확률, 나오면 등급 비율 (T4 80% / T3 19% / T2 1%)
+GEAR_DROP_COMBAT     = 0.30
+GEAR_DROP_SEARCH     = 0.15
+GEAR_DROP_TIER_WEIGHTS = {4: 80, 3: 19, 2: 1}
 ESCAPE_WEIGHTS       = (60, 20, 10, 5, 5)  # SAFE / NORMAL / 1.5X / 2.0X / LUCKY
 
 # 고티어 장비의 '숫자가 커지는' 연출 배율. 피해와 체력에 같은 배율을 써야 표시된 피해만큼 표시된 체력이 줄어든다

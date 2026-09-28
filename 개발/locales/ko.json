@@ -800,5 +800,6 @@
   "eta_sec": "{n}초",
   "trader_key_buy": "구매",
   "trader_key_leave": "떠난다",
-  "diary_turn": "[턴 {n:>4d}]"
+  "diary_turn": "[턴 {n:>4d}]",
+  "loot_gear": "  [획득] 장비 '{name}' ({tier}) — 인벤토리에서 장착하세요."
 }

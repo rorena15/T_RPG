@@ -800,5 +800,6 @@
   "eta_sec": "{n} s",
   "trader_key_buy": "Buy",
   "trader_key_leave": "Leave",
-  "diary_turn": "[Turn {n:>4d}]"
+  "diary_turn": "[Turn {n:>4d}]",
+  "loot_gear": "  [LOOTED] Gear '{name}' ({tier}) — equip it from the inventory."
 }
