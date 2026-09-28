@@ -801,5 +801,7 @@
   "trader_key_buy": "Buy",
   "trader_key_leave": "Leave",
   "diary_turn": "[Turn {n:>4d}]",
-  "loot_gear": "  [LOOTED] Gear '{name}' ({tier}) — equip it from the inventory."
+  "loot_gear": "  [LOOTED] Gear '{name}' ({tier}) — equip it from the inventory.",
+  "bunker_locked": "  [DENIED] The shelter's iron door won't budge. You need more parts and supplies to hold it. (Searches {n}/{need})",
+  "map_search_need": "Searches {n}/{need}"
 }

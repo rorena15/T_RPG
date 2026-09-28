@@ -63,6 +63,8 @@ class MapView(EventView):
         head = t('map_arrived') if dist == 0 else t('map_dist', n=dist)
         c.blit(self.f_title.render(head, True, INK), (x, y + 22))
         sky = t('map_sky', time=t(f'time_{scene_art.world_time(turn)}'), weather=t(f'weather_{scene_art.world_weather(turn)}'), turn=turn)
+        if p.searches_done < constants.BUNKER_MIN_SEARCHES:  # 방공호 문 조건이 남았으면 진행도를 보여 준다
+            sky += "  ·  " + t('map_search_need', n=p.searches_done, need=constants.BUNKER_MIN_SEARCHES)
         c.blit(self.f_sans.render(sky, True, INK_DIM), (x, y + 66))
         y += 104
 

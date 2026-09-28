@@ -395,6 +395,7 @@ def run_game():
                 continue
             player.consume_resources()
             grid.use_search(player.turn_count)
+            player.searches_done += 1
             print(t('search_start'))
             time.sleep(0.5)
 
@@ -494,6 +495,12 @@ def run_game():
         else:
             print(f"\n{t('move_blocked')}")
             time.sleep(0.5)
+            continue
+
+        if valid_move and [px, py] == list(grid.bunker_pos) and player.searches_done < constants.BUNKER_MIN_SEARCHES:
+            # 파밍 없이는 방공호(보스)에 들어갈 수 없다
+            print(f"\n{t('bunker_locked', n=player.searches_done, need=constants.BUNKER_MIN_SEARCHES)}")
+            wait_for_keypress()
             continue
 
         if valid_move:

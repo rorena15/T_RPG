@@ -801,5 +801,7 @@
   "trader_key_buy": "구매",
   "trader_key_leave": "떠난다",
   "diary_turn": "[턴 {n:>4d}]",
-  "loot_gear": "  [획득] 장비 '{name}' ({tier}) — 인벤토리에서 장착하세요."
+  "loot_gear": "  [획득] 장비 '{name}' ({tier}) — 인벤토리에서 장착하세요.",
+  "bunker_locked": "  [거부] 방공호의 무쇠 문이 꿈쩍도 하지 않는다. 문을 버틸 부품과 물자를 더 모아야 한다. (탐색 {n}/{need})",
+  "map_search_need": "탐색 {n}/{need}"
 }

@@ -46,6 +46,7 @@ class Player:
 
         self.weights = {"kinetic": 0, "scrap": 0, "cyber": 0}
         self.enemies_defeated = 0
+        self.searches_done = 0      # 탐색(F) 횟수. 방공호 문 조건 (BUNKER_MIN_SEARCHES)
 
         # --- 진행 턴 기반 적 스케일링용 상태 ---
         # turn_count : 이동/탐색(consume_resources 호출) 1회당 1씩 누적되는 전체 진행 턴.
@@ -136,7 +137,7 @@ class Player:
             "consumables": self.consumables, "weights": self.weights,
             "inventory": self.inventory, "equipment": self.equipment, "reputation": self.reputation,
             "turn_count": self.turn_count, "difficulty": self.difficulty,
-            "enemies_defeated": self.enemies_defeated, "diary": self.diary,
+            "enemies_defeated": self.enemies_defeated, "searches_done": self.searches_done, "diary": self.diary,
             "active_quest": self.active_quest,
         }
 
@@ -167,6 +168,7 @@ class Player:
         self.turn_count = data.get("turn_count", 0)
         self.difficulty = data.get("difficulty", "normal")
         self.enemies_defeated = data.get("enemies_defeated", 0)
+        self.searches_done = data.get("searches_done", constants.BUNKER_MIN_SEARCHES)  # 예전 세이브는 막지 않는다
         self.diary = data.get("diary", [])
         self.active_quest = data.get("active_quest", None)
 
