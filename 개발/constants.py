@@ -210,8 +210,8 @@ BOSS_PHASE2_ATK_MULT = 1.6
 BOSS_PHASE2_LI_BONUS = 5
 # 난이도별 보스 체력·공격력 배율 (목표 클리어율: 쉬움 약 70% / 보통 약 40% / 어려움 약 20%, 봇 시뮬레이션으로 맞춤)
 # 기준 플레이어: 체력이 반 밑이면 후퇴, 탐색 20회, 가장 좋은 장비 장착. 보스는 턴 성장을 받지 않는다 (combat.py)
-# 검증 (400판씩): 쉬움 68.7% / 보통 40.6% / 어려움 21.2%
-BOSS_DIFF_MULT       = {"easy": 0.92, "normal": 1.13, "hard": 1.25}
+# 검증 (타일 수색 한도 포함, 300~400판씩): 쉬움 70.8% / 보통 41.7% / 어려움 21.1%
+BOSS_DIFF_MULT       = {"easy": 0.92, "normal": 1.13, "hard": 1.32}
 ALERT_INC_BOSS       = 40
 ALERT_INC_BIO        = 20
 ALERT_INC_DRONE      = 10

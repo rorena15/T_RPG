@@ -387,7 +387,14 @@ def run_game():
             continue
 
         if move == "F":
+            # 타일마다 수색 횟수(2~4회)가 있고, 다 쓰면 8~14턴 쿨타임 (map.py). 7785fff에서 빠졌던 것을 되살림
+            _can_srch, _ = grid.can_search(player.turn_count)
+            if not _can_srch:
+                print(f"\n  {random.choice(t('tile_exhausted'))}")
+                wait_for_keypress()
+                continue
             player.consume_resources()
+            grid.use_search(player.turn_count)
             print(t('search_start'))
             time.sleep(0.5)
 
