@@ -8,6 +8,7 @@ pygame 이벤트 루프로 대체합니다.
 """
 
 import math
+import re
 import sys
 import os
 import pygame
@@ -57,6 +58,8 @@ _ANSI_COLORS = {
 }
 
 _DEFAULT_COLOR = (200, 200, 200)
+# 타자 연출 단위: 색상 코드(ESC[..m)는 통째로, 나머지는 한 글자씩. 쪼개면 코드가 글자로 찍힌다
+_TYPE_TOKEN = re.compile(r"\x1b\[[0-9;]*[A-Za-z]|.", re.S)
 _BG_COLOR      = (4,   4,   12)
 _FRAME_COLOR   = (40,  40,  80)   # 패널 테두리 색상
 _BRIGHT_BOOST  = 1.35
@@ -144,7 +147,7 @@ class PygameTerminal:
         self._fullscreen  = False
         self._ui_manager  = None   # UIManager 연결 시 패널 렌더링 모드로 전환
         self._set_window_icon()    # 창을 띄우기 전에 붙여야 작업 표시줄에도 들어간다
-        self.screen = pygame.display.set_mode((w, h), pygame.RESIZABLE)
+        self.screen = pygame.display.set_mode(self._window_size(), pygame.RESIZABLE)
         pygame.display.set_caption(title)
 
         self._render()
@@ -597,9 +600,20 @@ class PygameTerminal:
         if self._fullscreen:
             self.screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
         else:
-            self.screen = pygame.display.set_mode(self._canvas_size, pygame.RESIZABLE)
+            self.screen = pygame.display.set_mode(self._window_size(), pygame.RESIZABLE)
         self._dirty = True
         self._render()
+
+    def _window_size(self):
+        """창 크기: 보통은 canvas 그대로, 화면이 작으면(1366×768 노트북 등) 비율을 지켜 줄인다.
+        canvas(948×944)가 화면보다 크면 아래 조작 안내가 화면 밖으로 잘렸다. 작업 표시줄·제목 표시줄 몫으로 90%만 쓴다."""
+        cw, ch = self._canvas_size
+        try:
+            dw, dh = pygame.display.get_desktop_sizes()[0]
+        except (pygame.error, IndexError, AttributeError):
+            return cw, ch
+        scale = min(1.0, dw * 0.9 / cw, dh * 0.9 / ch)
+        return int(cw * scale), int(ch * scale)
 
     # ── 화면 제어 ─────────────────────────────────────────────────────────────
     def clear(self):
@@ -728,7 +742,7 @@ class PygameTerminal:
     def type_text_animated(self, text: str, speed: float = 0.015):
         delay_ms = max(1, int(speed * 1000))
         skipped  = False
-        for char in text:
+        for char in _TYPE_TOKEN.findall(text):
             self._parse(char)
             if not skipped:
                 self._dirty = True

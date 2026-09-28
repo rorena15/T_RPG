@@ -481,10 +481,11 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
                 learning_index = max(0, learning_index - 3)
                 action_logs.append(t('combat_pulse_e_drain'))
 
-        else:
+        else:  # 잘못 누른 키는 턴을 쓰지 않는다 (적 반격 없음)
             print(t('combat_invalid_cmd'))
             _sleep(1)
             action_logs.append(t('combat_invalid_log'))
+            continue
 
         # --- 적의 반격 ---
         if hp > 0 and not escaped and not combat_ctx.get("skip_enemy_attack"):
