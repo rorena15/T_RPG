@@ -206,6 +206,16 @@ def check_output(state, roll, out):
     errs = []
     if not isinstance(out, dict) or set(out) != TOP_KEYS:
         return [f"top-level keys {sorted(out) if isinstance(out, dict) else type(out).__name__}"]
+    # 모양이 틀린 JSON(예: "items": [])은 아래 검사가 .get/.items에서 터져 게임까지 멈췄다. 형식 위반으로 돌려 재생성한다
+    kinds = {k: type(out[k]).__name__ for k in ("delta", "weights", "items") if not isinstance(out[k], dict)}
+    if out["check"] is not None and not isinstance(out["check"], dict):
+        kinds["check"] = type(out["check"]).__name__
+    if kinds:
+        return [f"bad type {kinds}"]
+    for key in ("add", "remove"):
+        v = out["items"].get(key, [])
+        if not isinstance(v, list) or not all(isinstance(x, str) for x in v):
+            return [f"items.{key} must be a list of names"]
     c = out["check"]
     if c is not None:
         if c.get("stat") not in STATS:

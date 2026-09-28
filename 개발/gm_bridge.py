@@ -312,7 +312,7 @@ def _call(view, player, grid, action, history, hint="", force_check=False):
         _status["models"] = set()
         _status["checked"] = time.time()
         return None
-    except (RuntimeError, ValueError):  # 이번 턴만 검증 실패
+    except (RuntimeError, ValueError, KeyError, TypeError, AttributeError):  # 이번 턴만 검증 실패 (응답 모양이 틀려도 게임은 대본으로)
         return None
 
 
@@ -429,7 +429,8 @@ def run_event(player, grid, event):
         log_diary(player, t('event_log_simple', title=db_t(event, 'title')))
         if result is None:  # GM 실패: 같은 화면에서 조용히 대체
             if src is not None:
-                empty = {"check": None, "delta": {}, "weights": {}, "items": {"add": [], "remove": []}}
+                # 대본 결과 그대로: 대본 모드처럼 보상을 준다 (check가 None이면 실패로 쳐서 "얻은 것 없음"이 떴다)
+                empty = {"check": {"outcome": "success"}, "delta": {}, "weights": {}, "items": {"add": [], "remove": []}}
                 _show(view, SCRIPT_TAG.sub("", db_t(src, 'log').split("\n")[0]), _apply_script(player, src, weight, empty))
             else:
                 _show(view, t('gm_fallback_custom'), [])

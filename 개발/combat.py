@@ -489,9 +489,6 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
 
         # --- 적의 반격 ---
         if hp > 0 and not escaped and not combat_ctx.get("skip_enemy_attack"):
-            if cmd == "2":
-                atk = int(base_atk * (1.6 if phase2_triggered else 1.0))
-
             curr_atk = int(atk * _skills.get_enemy_atk_mult(player))
             dmg_taken = max(1, curr_atk - total_def)
             dmg_taken = _skills.apply_incoming_buffs(player, dmg_taken, action_logs, combat_ctx)
@@ -508,6 +505,8 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
             _summary(t('combat_damage_log', dmg=f"{disp_dmg_taken:,}", def_note=def_note))
             _sleep(1)
 
+        if cmd == "2":  # 바리케이드 반감은 이번 반격에만. 예전엔 반격 직전에 되돌려서 피해가 전혀 줄지 않았다
+            atk = int(base_atk * (constants.BOSS_PHASE2_ATK_MULT if phase2_triggered else 1.0))
         combat_ctx["skip_enemy_attack"] = False
         _skills.end_of_turn_tick(player, action_logs)
         turn += 1
