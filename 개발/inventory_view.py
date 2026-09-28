@@ -70,13 +70,13 @@ class InventoryView(EventView):
                 return
             if self.confirm != row["id"]:
                 self.confirm = row["id"]
-                self.msg = [t('inv_confirm_dismantle', name=row['d']['name'])]
+                self.msg = [t('inv_confirm_dismantle', name=db_t(row['d'], 'name'))]
                 return
             p.inventory.pop(row["index"])
             gained = random.randint(15, 30)
             p.materials += gained
             advance_quest(p, "scrap", gained)
-            self.msg = [t('inv_dismantled', name=row['d']['name'], gained=gained)]
+            self.msg = [t('inv_dismantled', name=db_t(row['d'], 'name'), gained=gained)]
             self.confirm = None
             return
         self.confirm = None
@@ -85,13 +85,13 @@ class InventoryView(EventView):
             sk = d.get("slot", "main_weapon")
             prev = p.equipment.get(sk)
             p.equipment[sk] = row["id"]
-            self.msg = [t('inv_equipped', name=d['name'], slot=constants.slot_label(sk))]
+            self.msg = [t('inv_equipped', name=db_t(d, 'name'), slot=constants.slot_label(sk))]
             if prev and prev != "WEAPON_NONE" and prev != row["id"]:
-                self.msg.append(t('inv_replaced', name=get_equipment_data(prev)['name']))
+                self.msg.append(t('inv_replaced', name=db_t(get_equipment_data(prev), 'name')))
         elif row["kind"] == "slot":
             if row["id"]:
                 p.equipment[row["slot"]] = constants.SLOT_DEFAULTS[row["slot"]]
-                self.msg = [t('inv_unequipped', name=row['d']['name'], slot=row['label'])]
+                self.msg = [t('inv_unequipped', name=db_t(row['d'], 'name'), slot=row['label'])]
             else:
                 self.msg = [t('inv_slot_empty', slot=row['label'])]
         elif row["kind"] == "cons":
@@ -160,13 +160,13 @@ class InventoryView(EventView):
         ink = INK if on else _lerp(INK, BG, 0.15)
         if row["kind"] == "slot":
             c.blit(self.f_sans.render(row["label"], True, INK_DIM), (x, y))
-            name = row["d"]["name"] if row["d"] else t('inv_not_equipped').strip()
+            name = db_t(row["d"], "name") if row["d"] else t('inv_not_equipped').strip()
             col = TIER_COLOR.get(row["d"].get("tier", 4), ink) if row["d"] else INK_FAINT
             c.blit(self.f_sans.render(name, True, col), (x + 110, y))
         elif row["kind"] == "item":
             d = row["d"]
             mark = "★ " if row["eq"] else "   "
-            c.blit(self.f_sans.render(mark + d["name"], True, TIER_COLOR.get(d.get("tier", 4), ink)), (x, y))
+            c.blit(self.f_sans.render(mark + db_t(d, "name"), True, TIER_COLOR.get(d.get("tier", 4), ink)), (x, y))
             info = self.f_mono.render(f"{constants.tier_tag(d.get('tier', 4))}   {t('inv_power', pw=d['power'])}", True, INK_DIM)
             c.blit(info, (x + width - info.get_width() - 10, y + 3))
         else:
@@ -187,10 +187,10 @@ class InventoryView(EventView):
                       (t('consumable_thirst', val=d['thirst']) if d['thirst'] > 0 else "")
             return [(db_t(d, 'name'), INK), (eff.strip(), INK_DIM), (t('inv_hint_use'), INK_FAINT)]
         slot = constants.slot_label(d.get("slot", ""))
-        lines = [(d["name"], TIER_COLOR.get(d.get("tier", 4), INK)),
+        lines = [(db_t(d, "name"), TIER_COLOR.get(d.get("tier", 4), INK)),
                  (t('inv_detail', tier=constants.tier_tag(d.get('tier', 4)), slot=slot, pw=d['power'], w=d.get('slot_weight', 1.0)), INK_DIM)]
-        if d.get("desc"):
-            lines.append((d["desc"], INK_DIM))
+        if db_t(d, "desc"):
+            lines.append((db_t(d, "desc"), INK_DIM))
         hint = {"item": t('inv_hint_item'), "slot": t('inv_hint_slot')}.get(row["kind"], "")
         lines.append((hint, INK_FAINT))
         return lines

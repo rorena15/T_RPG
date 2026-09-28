@@ -1,6 +1,7 @@
 import sqlite3
 import os
 from sys_log import sys_log 
+from equipment_en import EQUIPMENT_EN
 
 
 def init_database():
@@ -30,6 +31,7 @@ def init_database():
     #   slot_weight  : 슬롯 가중치 ($W_{part}$). 1.5 / 1.2 / 1.0 / 0.5
     #   description  : 서사적 콘셉트 및 출력 로그 힌트 (장비/장신구), 유물의 경우 기반이 된
     #                  1등급 기업제 장비명을 "[기반: ...]" 형태로 함께 기록
+    #   name_en / description_en : 영어 번역 (equipment_en.py의 EQUIPMENT_EN에서 item_id로 합침)
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS equipment (
             item_id TEXT PRIMARY KEY,
@@ -39,7 +41,9 @@ def init_database():
             tier INTEGER NOT NULL,
             slot TEXT NOT NULL,
             slot_weight REAL NOT NULL,
-            description TEXT
+            description TEXT,
+            name_en TEXT,
+            description_en TEXT
         )
     ''')
 
@@ -581,10 +585,11 @@ def init_database():
         ("PART_LEGACY_05", "캉타오 센트리 자율 팩토리 오버레이", 310, "accessory", 0, "custom_part", 0.5, "[T=0 유물 / 기반: 캉타오 센트리 알고리즘 오버레이] [연산 - 자율 엔지니어] [센트리 인프라] 포탑 스킬 발동률 및 사거리를 유저 지력 최고 함수 점수로 강제 세팅 잠금 / [페널티] 포탑 파손 시 가상 은신처가 30% 확률로 즉각 강제 차단 폐쇄."),
         ("PART_LEGACY_06", "바이오테크니카 하이퍼 리퍼 적출 칩", 290, "accessory", 0, "custom_part", 0.5, "[T=0 유물 / 기반: 바이오테크니카 절단 로그 적출 팁] [공격 - 의체 도살자] 특화 스킬 [바이오 적출] 발동 확률 보정 수식을 무조건 최고 한계선인 80% 고점으로 부스팅 / [페널티] 매 턴 종료 마다 허기/갈증 생존 지표 감소 속도가 상시 +3 가속 차감 누적."),    ]
 
+    equipment_rows = [row + EQUIPMENT_EN.get(row[0], (None, None)) for row in equipment_data]
     cursor.executemany('''
-        INSERT INTO equipment (item_id, name, power, type, tier, slot, slot_weight, description)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    ''', equipment_data)
+        INSERT INTO equipment (item_id, name, power, type, tier, slot, slot_weight, description, name_en, description_en)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ''', equipment_rows)
 
     # =========================================================
     # 2. 소모품(Consumables) 테이블 생성

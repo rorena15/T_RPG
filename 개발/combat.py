@@ -540,7 +540,7 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
                 part = random.choice(["PART_SCRAP_01", "PART_SCRAP_02", "PART_SCRAP_03"])
                 player.inventory.append(part)
                 item_data = get_equipment_data(part)
-                print(t('combat_loot_part', name=item_data['name']))
+                print(t('combat_loot_part', name=db_t(item_data, 'name')))
             elif loot_res == "WATER":
                 it = roll_water()
                 player.consumables[it] += 1

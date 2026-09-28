@@ -23,6 +23,7 @@ SPECIAL_ITEMS = {
     "NEOARC_AI_WPN": {
         "id": "NEOARC_AI_WPN",
         "name": "죽은 AI의 서비스 화기",
+        "name_en": "Dead AI's Service Firearm",
         "power": 100,
         "tier": 1,
         "slot": "main_weapon",
@@ -33,6 +34,7 @@ SPECIAL_ITEMS = {
         "e_suppress": 0,
         "cyber_regen": 0,
         "desc": "[T=1 기업제·폐기 예정] 네오 아크 AI 잔해에서 회수한 과부하 화기. 2전투 후 열손상으로 자동 파기.",
+        "desc_en": "[T=1 Corporate · Pending Disposal] An overloaded firearm salvaged from the wreck of a Neo Arc AI. Self-destructs from heat damage after 2 battles.",
     }
 }
 

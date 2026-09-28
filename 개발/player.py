@@ -273,7 +273,7 @@ class Player:
         print(f"  {t('bar_thirst')}{th_col}{th_bar}{Style.RESET_ALL}  {th_col}{self.thirst:3d}{Style.RESET_ALL} / 100")
 
         item_data = get_equipment_data(self.equipment['main_weapon'])
-        wpn_name = item_data['name']
+        wpn_name = db_t(item_data, 'name')
         wpn_pwr = self.get_attack_power()
         gear_atk = self.get_gear_atk_bonus()
         hp_b, def_b = self.get_armor_bonus()
@@ -342,7 +342,7 @@ class Player:
                 if eid and eid != "WEAPON_NONE":
                     d = get_equipment_data(eid)
                     tag = constants.tier_tag(d.get("tier", 4), "T?    ")
-                    print(f"   [{si:2d}] {label}  │  ★  {d['name'][:22]}    {tag}  {t('inv_power_col')}{d['power']:>4}")
+                    print(f"   [{si:2d}] {label}  │  ★  {db_t(d, 'name')[:22]}    {tag}  {t('inv_power_col')}{d['power']:>4}")
                 else:
                     print(f"   [{si:2d}] {label}  │  " + t('inv_not_equipped'))
             print()
@@ -374,7 +374,7 @@ class Player:
                         mark = "★" if equipped else " "
                         tag = constants.tier_tag(d.get("tier", 4), "T?    ")
                         w = d.get("slot_weight", 1.0)
-                        print(f"   [{n:2d}] {mark}  {d['name'][:26]:<26}  {tag}  {t('inv_power_col')}{d['power']:>4}  W:{w:.1f}")
+                        print(f"   [{n:2d}] {mark}  {db_t(d, 'name')[:26]:<26}  {tag}  {t('inv_power_col')}{d['power']:>4}  W:{w:.1f}")
             print_divider()
 
             print(t('inv_cmd_header'))
@@ -398,10 +398,10 @@ class Player:
                         sk = d.get("slot", "main_weapon")
                         prev = self.equipment.get(sk)
                         self.equipment[sk] = item_id
-                        print(t('inv_equipped', name=d['name'], slot=constants.slot_label(sk)))
+                        print(t('inv_equipped', name=db_t(d, 'name'), slot=constants.slot_label(sk)))
                         if prev and prev != "WEAPON_NONE":
                             pd = get_equipment_data(prev)
-                            print(t('inv_replaced', name=pd['name']))
+                            print(t('inv_replaced', name=db_t(pd, 'name')))
                     else:
                         print(t('inv_invalid_number'))
                 else:
@@ -418,7 +418,7 @@ class Player:
                         if eid and eid != "WEAPON_NONE":
                             d = get_equipment_data(eid)
                             self.equipment[sk] = constants.SLOT_DEFAULTS[sk]
-                            print(t('inv_unequipped', name=d['name'], slot=constants.slot_label(sk)))
+                            print(t('inv_unequipped', name=db_t(d, 'name'), slot=constants.slot_label(sk)))
                         else:
                             print(t('inv_slot_empty', slot=constants.slot_label(sk)))
                     else:
@@ -444,7 +444,7 @@ class Player:
                             self.materials += gained
                             advance_quest(self, "scrap", gained)
                             d = get_equipment_data(item_id)
-                            print(t('inv_dismantled', name=d['name'], gained=gained))
+                            print(t('inv_dismantled', name=db_t(d, 'name'), gained=gained))
                     else:
                         print(t('inv_invalid_number'))
                 else:

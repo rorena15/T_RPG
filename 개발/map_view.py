@@ -154,7 +154,7 @@ class MapView(EventView):
         from core import get_equipment_data
         p = self.player
         try:
-            name = get_equipment_data(p.equipment['main_weapon'])['name']
+            name = db_t(get_equipment_data(p.equipment['main_weapon']), 'name')
             return t('map_weapon', name=name, pw=p.get_attack_power(), tier=p.get_highest_tier())
         except Exception:  # noqa: BLE001 - 표시용
             return ""

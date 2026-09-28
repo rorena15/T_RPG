@@ -115,13 +115,15 @@ def get_equipment_data(item_id):
 
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
-    cursor.execute("SELECT name, power, type, tier, slot, slot_weight, description FROM equipment WHERE item_id = ?", (item_id,))
+    cursor.execute("SELECT name, power, type, tier, slot, slot_weight, description, name_en, description_en "
+                   "FROM equipment WHERE item_id = ?", (item_id,))
     row = cursor.fetchone()
     conn.close()
 
     if row:
         result = {"name": row[0], "power": row[1], "type": row[2], "tier": row[3],
-                  "slot": row[4], "slot_weight": row[5], "desc": row[6]}
+                  "slot": row[4], "slot_weight": row[5], "desc": row[6],
+                  "name_en": row[7], "desc_en": row[8]}
     else:
         result = {"name": t('equip_unidentified_scrap'), "power": 5, "type": "kinetic", "tier": 4,
                   "slot": "main_weapon", "slot_weight": 1.5, "desc": t('equip_desc_unregistered')}

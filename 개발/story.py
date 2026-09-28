@@ -76,7 +76,7 @@ def handle_session(player, session):
                 else:
                     player.inventory.append(choice_data["reward"])
                     item_data = get_equipment_data(choice_data["reward"])
-                    _say(t('session_item_gain', name=item_data['name']))
+                    _say(t('session_item_gain', name=db_t(item_data, 'name')))
 
             if choice_data.get("consumable"):
                 key = choice_data["consumable"]
@@ -117,7 +117,7 @@ def handle_session(player, session):
             _reward_note = ""
             if choice_data.get("reward") and choice_data["reward"] != "SCRAP_MAT":
                 _rd = get_equipment_data(choice_data["reward"])
-                _reward_note = t('session_log_reward_item', name=_rd['name'])
+                _reward_note = t('session_log_reward_item', name=db_t(_rd, 'name'))
             elif choice_data.get("reward") == "SCRAP_MAT":
                 _reward_note = t('session_log_reward_scrap', val=choice_data.get('materials', 30))
             if choice_data.get("ram_bonus"):
