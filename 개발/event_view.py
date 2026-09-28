@@ -46,17 +46,17 @@ FOOT_H = 52
 
 # 장면 그림 팔레트 (위치별)
 SCENES = {
-    "폐기물 처리장": {
+    JUNKYARD: {
         "sky": [(12, 15, 17), (34, 32, 30), (92, 58, 36), (150, 90, 44)],
         "layers": [(58, 46, 40), (40, 33, 30), (25, 21, 20), (13, 12, 12)],
         "sun": (236, 150, 70), "fog": (120, 132, 128), "dust": (230, 170, 100),
-        "sub": "데드존 최외각",
+        "sub": "scene_sub_junkyard",  # 언어 키
     },
-    "구시대 지하 방공호": {
+    BUNKER: {
         "sky": [(8, 8, 9), (18, 17, 16), (40, 30, 22), (96, 52, 24)],
         "layers": [(44, 40, 36), (30, 28, 26), (19, 18, 17), (10, 10, 10)],
         "sun": (240, 110, 40), "fog": (90, 86, 80), "dust": (220, 140, 80),
-        "sub": "쓰레기 바다 안쪽의 무쇠 문",
+        "sub": "scene_sub_bunker",
     },
 }
 
@@ -275,7 +275,7 @@ class EventView:
 
     # ── 장면 그림 (한 번 그려 캐시) ────────────────────────────────────────
     def _build_plate(self, H):
-        sc = dict(SCENES.get(self.location, SCENES["폐기물 처리장"]))
+        sc = dict(SCENES.get(self.location, SCENES[JUNKYARD]))
         sc.update(MOTIF_TINT.get(self.motif, {}))
         rng = random.Random(sum(map(ord, self.location)))
         w = PLATE_W
@@ -787,13 +787,13 @@ class EventView:
             c.blit(self.f_place.render(place_label(self.location), True, INK), (22, H - 118))
             return
         x, y = 22, 22
-        c.blit(self.f_mono.render("N-404  //  생체 지표", True, INK_DIM), (x, y))
+        c.blit(self.f_mono.render(i18n.t("hud_title"), True, INK_DIM), (x, y))
         y += 24
         ratio = p.hp / max(1, p.max_hp)
         hp_col = GREEN if ratio > 0.5 else (AMBER if ratio > 0.25 else RED)
         now = pygame.time.get_ticks()
-        for key, label, val, mx, col in (("hp", "HP", p.hp, p.max_hp, hp_col), ("hunger", "허기", p.hunger, 100, AMBER),
-                                         ("thirst", "갈증", p.thirst, 100, TEAL)):
+        for key, label, val, mx, col in (("hp", "HP", p.hp, p.max_hp, hp_col), ("hunger", i18n.t("hud_hunger"), p.hunger, 100, AMBER),
+                                         ("thirst", i18n.t("hud_thirst"), p.thirst, 100, TEAL)):
             # 표시값이 실제 값을 따라간다: 줄면 줄어든 구간을 붉게 남겼다가 지우고, 숫자는 굴러간다
             shown = self._hud.get(key, val)
             if self.hud_hold and key in self._hud:  # 서술이 끝나고 결과가 나올 때까지 옛 값을 보여 준다
@@ -821,7 +821,7 @@ class EventView:
             y += 22
         # 지명
         c.blit(self.f_place.render(place_label(self.location), True, INK), (22, H - 118))
-        sub = f"{self._sc['sub']}  ·  턴 {p.turn_count}"
+        sub = i18n.t("place_turn", sub=i18n.t(self._sc["sub"]), turn=p.turn_count)
         c.blit(self.f_mono.render(sub, True, INK_DIM), (24, H - 78))
 
     # ── 이야기 열 ───────────────────────────────────────────────────────────
@@ -1330,7 +1330,7 @@ class EventView:
             self._events()
 
 
-def scene_card(scene, title, tag="", line=None, player=None, location="폐기물 처리장", hold_ms=2600):
+def scene_card(scene, title, tag="", line=None, player=None, location=JUNKYARD, hold_ms=2600):
     """장면이 시작될 때 그림과 제목을 잠깐 보여 주는 카드 (전투 시작, 스토리 세션, 프롤로그).
     그 뒤 흐름은 원래 화면(터미널)이 그대로 이어간다. 그림 화면을 못 여는 환경이면 아무것도 안 한다."""
     try:
@@ -1343,7 +1343,7 @@ def scene_card(scene, title, tag="", line=None, player=None, location="폐기물
         view.add("title", tag=tag, title=title)
         if line:
             entry = view.add("narr", lines=[line])
-        view.footer = [("Enter", "계속")]
+        view.footer = [("Enter", i18n.t("ui_continue"))]
         view.open()
         try:
             if line:

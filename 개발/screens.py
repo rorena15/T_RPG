@@ -7,13 +7,13 @@
 값이 바뀌는 메뉴(설정)는 같은 화면을 두고 ask()만 다시 불러 글자만 바꾼다 (그림이 깜박이지 않게).
 그림 화면을 못 여는 환경이면 get_terminal()이 None이라 쓰지 않는다 (Main.py가 터미널 메뉴로 대체).
 """
-from event_view import EventView
+from event_view import EventView, JUNKYARD
 from gui import get_terminal
 from i18n import t
 
 
 class MenuScreen:
-    def __init__(self, scene="junkyard", card=True, location="폐기물 처리장", player=None):
+    def __init__(self, scene="junkyard", card=True, location=JUNKYARD, player=None):
         self.view = EventView(get_terminal(), player, None, location, scene=scene)
         self.view.card = card
         self._opened = False
@@ -79,9 +79,9 @@ def show_diary_view(player):
                 c.blit(self.f_serif.render(t('diary_empty').strip(), True, INK_FAINT), (x, y))
 
     entries = list(player.diary)
-    v = DiaryView(get_terminal(), player, None, "폐기물 처리장", scene="bunker_inside")
+    v = DiaryView(get_terminal(), player, None, JUNKYARD, scene="bunker_inside")
     v.off, v.max_off = 0, 0
-    v.footer = [("↑↓", t('ui_select')), ("PgUp/PgDn", "쪽"), ("Enter", t('ui_back'))]
+    v.footer = [("↑↓", t('ui_select')), ("PgUp/PgDn", t('diary_page')), ("Enter", t('ui_back'))]
     v.open()
     try:
         while True:
@@ -97,7 +97,7 @@ def show_diary_view(player):
         v.close()
 
 
-def story_page(scene, title, lines, tag="", location="폐기물 처리장", player=None, footer_label=None):
+def story_page(scene, title, lines, tag="", location=JUNKYARD, player=None, footer_label=None):
     """그림 + 이야기 칸 한 페이지: 제목, 문단을 하나씩 타자로 보여 주고 Enter를 기다린다 (프롤로그·엔딩 등)."""
     v = EventView(get_terminal(), player, None, location, scene=scene)
     v.add("title", tag=tag, title=title)

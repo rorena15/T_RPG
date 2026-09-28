@@ -5,7 +5,10 @@ ROOT   = os.path.dirname(__file__)
 LOCALE = os.path.join(ROOT, "locales", "ko.json")
 
 TARGET_FILES = ["Main.py","combat.py","player.py","skills.py","story.py",
-                "quest.py","ui.py","core.py","map.py","updater.py"]
+                "quest.py","ui.py","core.py","map.py","updater.py",
+                # 그림 화면
+                "event_view.py","map_view.py","combat_view.py","inventory_view.py",
+                "screens.py","intro_view.py","download_view.py","constants.py"]
 
 # 이 함수의 인자는 내부 전용 — 한국어여도 i18n 불필요
 INTERNAL_FUNCS = {"sys_log","log_error","track","sys.exit","system",
@@ -18,6 +21,9 @@ DATA_ASSIGN_NAMES = {
     "WEAPON_TYPES","SPECIAL_ITEMS","AMBIENT_LORE","SESSIONS_DB",
     "CONSUMABLES_DB","EQUIPMENT","ITEM_DB","bat_content","ENEMY_ART",
     "SESSION_SCENES",  # 한국어 세션 제목으로 장면 그림을 찾는 표 (화면에 안 나감)
+    "SCENES","SFX","SFX_RAIN","SFX_DEFAULT",  # event_view: 장면 팔레트(키=장소 ID), 한국어 GM 서술에 맞춘 소리 말
+    "JUNKYARD","BUNKER","_WORDISH",           # 장소 ID, 글자 판별 정규식
+    "SLOT_DISPLAY_KO",
 }
 
 ERRORS, WARNS = [], []
@@ -48,7 +54,8 @@ def _data_constant_nodes(tree):
                         if isinstance(child, ast.Constant):
                             data_ids.add(id(child))
         # _log_color: startswith() 인자들 (함수명 _log_color 내부 리터럴)
-        if isinstance(node, ast.FunctionDef) and node.name == "_log_color":
+        # 로그 문구의 낱말로 색을 고르는 함수 (한국어·영어 낱말을 함께 본다)
+        if isinstance(node, ast.FunctionDef) and node.name in ("_log_color", "_log_surfaces"):
             for child in ast.walk(node):
                 if isinstance(child, ast.Constant):
                     data_ids.add(id(child))
@@ -136,8 +143,6 @@ for fname in TARGET_FILES:
             continue
         val = node.value
         if not KOREAN_RE.search(val):
-            continue
-        if len(val.strip()) <= 3:
             continue
         caller = _caller_name(parent_map, node)
         if caller in INTERNAL_FUNCS:

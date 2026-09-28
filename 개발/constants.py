@@ -59,33 +59,45 @@ SLOT_DEFAULTS = {
 }
 TIER_TAGS = {4: "T4 급조", 3: "T3 규격", 2: "T2 정제", 1: "T1 기업", 0: "T0 유물"}
 
+
+def slot_label(slot):
+    """장비 슬롯 표시 이름 (언어별). SLOT_DISPLAY는 한국어 원본. 모르는 슬롯은 '기타'."""
+    from i18n import t
+    return t(f"slot_{slot}") if slot in SLOT_DISPLAY else t("slot_other")
+
+
+def tier_tag(tier, default=""):
+    """등급 태그 (언어별)."""
+    from i18n import t
+    return t(f"tier_tag_{tier}") if tier in TIER_TAGS else default
+
 _eq_cache: dict = {}
 
 SUDDEN_QUESTS = [
-    {"id": "SQ_SCRAP_A", "title": "잔해 자원 긴급 확보",
-     "desc": "산개한 고철 잔해에서 자원을 집중적으로 확보하십시오.",
-     "detail": "고철 +50개 수집", "type": "scrap", "target": 50, "turns": 10,
-     "reward_type": "consumable", "reward_id": "MED_FIX_300", "reward_desc": "군용 지혈제 1개"},
-    {"id": "SQ_SCRAP_B", "title": "집중 파밍 프로토콜",
-     "desc": "이 구역 전체에 회수 가능한 잔해가 산재합니다. 최대한 확보하십시오.",
-     "detail": "고철 +80개 수집", "type": "scrap", "target": 80, "turns": 14,
-     "reward_type": "materials", "reward_amount": 50, "reward_desc": "고철 50개 추가"},
-    {"id": "SQ_COMBAT_A", "title": "구역 정화",
-     "desc": "이 구역의 기계 밀도가 비정상입니다. 적 일부를 제압하여 경로를 확보하십시오.",
-     "detail": "전투 2회 승리", "type": "combat", "target": 2, "turns": 12,
-     "reward_type": "consumable", "reward_id": "MED_PER_50", "reward_desc": "응급 지혈대 1개"},
-    {"id": "SQ_COMBAT_B", "title": "데드존 청소부",
-     "desc": "총괄국이 자동화 기계 포대를 증파했습니다. 전투 역량을 검증하십시오.",
-     "detail": "전투 3회 승리", "type": "combat", "target": 3, "turns": 18,
-     "reward_type": "consumable", "reward_id": "MED_FIX_500", "reward_desc": "합성 바이오 젤 1개"},
-    {"id": "SQ_SEARCH_A", "title": "지형 데이터 스캔",
-     "desc": "사이버덱이 불완전한 지형 정보를 감지했습니다. 추가 스캔이 필요합니다.",
-     "detail": "탐색 3회", "type": "search", "target": 3, "turns": 7,
-     "reward_type": "ram", "reward_amount": 1, "reward_desc": "RAM +1"},
-    {"id": "SQ_SEARCH_B", "title": "광역 환경 스캐닝",
-     "desc": "광범위한 지형 정보 수집이 요청됩니다. 반복 스캔을 실시하십시오.",
-     "detail": "탐색 5회", "type": "search", "target": 5, "turns": 12,
-     "reward_type": "consumable", "reward_id": "FOOD_BOTH", "reward_desc": "수분 함유 전투식량 1개"},
+    {"id": "SQ_SCRAP_A", "title": "잔해 자원 긴급 확보", "title_en": "Emergency Salvage",
+     "desc": "산개한 고철 잔해에서 자원을 집중적으로 확보하십시오.", "desc_en": "Secure resources from the scattered scrap debris.",
+     "detail": "고철 +50개 수집", "detail_en": "Collect +50 scrap", "type": "scrap", "target": 50, "turns": 10,
+     "reward_type": "consumable", "reward_id": "MED_FIX_300", "reward_desc": "군용 지혈제 1개", "reward_desc_en": "1 Military Hemostatic"},
+    {"id": "SQ_SCRAP_B", "title": "집중 파밍 프로토콜", "title_en": "Intensive Farming Protocol",
+     "desc": "이 구역 전체에 회수 가능한 잔해가 산재합니다. 최대한 확보하십시오.", "desc_en": "Recoverable debris is scattered across this sector. Secure as much as you can.",
+     "detail": "고철 +80개 수집", "detail_en": "Collect +80 scrap", "type": "scrap", "target": 80, "turns": 14,
+     "reward_type": "materials", "reward_amount": 50, "reward_desc": "고철 50개 추가", "reward_desc_en": "50 extra scrap"},
+    {"id": "SQ_COMBAT_A", "title": "구역 정화", "title_en": "Sector Purge",
+     "desc": "이 구역의 기계 밀도가 비정상입니다. 적 일부를 제압하여 경로를 확보하십시오.", "desc_en": "Machine density in this sector is abnormal. Suppress some enemies to secure a route.",
+     "detail": "전투 2회 승리", "detail_en": "Win 2 battles", "type": "combat", "target": 2, "turns": 12,
+     "reward_type": "consumable", "reward_id": "MED_PER_50", "reward_desc": "응급 지혈대 1개", "reward_desc_en": "1 Emergency Tourniquet"},
+    {"id": "SQ_COMBAT_B", "title": "데드존 청소부", "title_en": "Dead Zone Sweeper",
+     "desc": "총괄국이 자동화 기계 포대를 증파했습니다. 전투 역량을 검증하십시오.", "desc_en": "The Bureau has deployed more automated gun batteries. Prove your combat capability.",
+     "detail": "전투 3회 승리", "detail_en": "Win 3 battles", "type": "combat", "target": 3, "turns": 18,
+     "reward_type": "consumable", "reward_id": "MED_FIX_500", "reward_desc": "합성 바이오 젤 1개", "reward_desc_en": "1 Synthetic Bio-Gel"},
+    {"id": "SQ_SEARCH_A", "title": "지형 데이터 스캔", "title_en": "Terrain Data Scan",
+     "desc": "사이버덱이 불완전한 지형 정보를 감지했습니다. 추가 스캔이 필요합니다.", "desc_en": "Your cyberdeck detected incomplete terrain data. Further scans are needed.",
+     "detail": "탐색 3회", "detail_en": "Search 3 times", "type": "search", "target": 3, "turns": 7,
+     "reward_type": "ram", "reward_amount": 1, "reward_desc": "RAM +1", "reward_desc_en": "RAM +1"},
+    {"id": "SQ_SEARCH_B", "title": "광역 환경 스캐닝", "title_en": "Wide-Area Scan",
+     "desc": "광범위한 지형 정보 수집이 요청됩니다. 반복 스캔을 실시하십시오.", "desc_en": "Wide-range terrain data collection requested. Run repeated scans.",
+     "detail": "탐색 5회", "detail_en": "Search 5 times", "type": "search", "target": 5, "turns": 12,
+     "reward_type": "consumable", "reward_id": "FOOD_BOTH", "reward_desc": "수분 함유 전투식량 1개", "reward_desc_en": "1 Hydrated Combat Ration"},
 ]
 
 ENEMY_ART = {

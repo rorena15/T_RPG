@@ -10,12 +10,12 @@ import pygame
 
 import constants
 from core import get_equipment_data
-from event_view import AMBER, BG, EventView, GREEN, INK, INK_DIM, INK_FAINT, RED, TEAL, VIOLET, _lerp
+from event_view import AMBER, BG, EventView, GREEN, INK, INK_DIM, INK_FAINT, JUNKYARD, RED, TEAL, VIOLET, _lerp
 from i18n import db_t, t
 from quest import advance_quest
 
 TABS = ["slots", "bag", "consumables"]
-TAB_LABEL = {"slots": "장비 슬롯", "bag": "가방", "consumables": "소모품"}
+TAB_KEY = {"slots": "inv_tab_slots", "bag": "inv_tab_bag", "consumables": "inv_tab_cons"}
 TIER_COLOR = {0: (236, 196, 92), 1: VIOLET, 2: TEAL, 3: INK, 4: INK_DIM}
 ROW_H = 30
 VISIBLE = 13
@@ -23,11 +23,12 @@ VISIBLE = 13
 
 class InventoryView(EventView):
     def __init__(self, term, player, tab="bag"):
-        super().__init__(term, player, None, "폐기물 처리장", scene="forge")
+        super().__init__(term, player, None, JUNKYARD, scene="forge")
         self.tab = tab
         self.sel = {k: 0 for k in TABS}
         self.msg = []           # 방금 한 일
         self.confirm = None     # 분해 확인 중인 항목 id
+        self.msg_warn = False   # 분해 관련 알림은 호박색
 
     # ── 목록 ─────────────────────────────────────────────────────────────
     def rows(self):
@@ -42,7 +43,8 @@ class InventoryView(EventView):
         p = self.player
         if self.tab == "slots":
             out = []
-            for sk, label in constants.SLOT_DISPLAY.items():
+            for sk in constants.SLOT_DISPLAY:
+                label = constants.slot_label(sk)
                 eid = p.equipment.get(sk)
                 d = get_equipment_data(eid) if eid and eid != "WEAPON_NONE" else None
                 out.append({"kind": "slot", "slot": sk, "label": label, "id": eid if d else None, "d": d})
@@ -59,6 +61,7 @@ class InventoryView(EventView):
         p = self.player
         if row is None:
             return
+        self.msg_warn = dismantle
         if dismantle:
             if row["kind"] != "item":
                 return
@@ -67,7 +70,7 @@ class InventoryView(EventView):
                 return
             if self.confirm != row["id"]:
                 self.confirm = row["id"]
-                self.msg = [f"{row['d']['name']}: 한 번 더 D를 누르면 분해합니다."]
+                self.msg = [t('inv_confirm_dismantle', name=row['d']['name'])]
                 return
             p.inventory.pop(row["index"])
             gained = random.randint(15, 30)
@@ -82,7 +85,7 @@ class InventoryView(EventView):
             sk = d.get("slot", "main_weapon")
             prev = p.equipment.get(sk)
             p.equipment[sk] = row["id"]
-            self.msg = [t('inv_equipped', name=d['name'], slot=constants.SLOT_DISPLAY.get(sk, sk))]
+            self.msg = [t('inv_equipped', name=d['name'], slot=constants.slot_label(sk))]
             if prev and prev != "WEAPON_NONE" and prev != row["id"]:
                 self.msg.append(t('inv_replaced', name=get_equipment_data(prev)['name']))
         elif row["kind"] == "slot":
@@ -108,13 +111,13 @@ class InventoryView(EventView):
         x = self._col_x
         width = W - x - 36
         y = 40
-        c.blit(self.f_mono.render(f"인벤토리  ·  고철 {self.player.materials}", True, AMBER), (x, y))
+        c.blit(self.f_mono.render(t('inv_view_header', n=self.player.materials), True, AMBER), (x, y))
         y += 26
         tx = x
         for tab in TABS:
             on = tab == self.tab
-            g = self.f_title.render(TAB_LABEL[tab], True, INK if on else INK_FAINT) if on else \
-                self.f_sans.render(TAB_LABEL[tab], True, INK_FAINT)
+            g = self.f_title.render(t(TAB_KEY[tab]), True, INK if on else INK_FAINT) if on else \
+                self.f_sans.render(t(TAB_KEY[tab]), True, INK_FAINT)
             c.blit(g, (tx, y + (0 if on else 10)))
             if on:
                 pygame.draw.line(c, AMBER, (tx, y + 42), (tx + g.get_width(), y + 42), 2)
@@ -150,7 +153,7 @@ class InventoryView(EventView):
         y += 8
         for m in self.msg:
             for ln in self._wrap(self.f_serif, m.strip(), width):
-                c.blit(self.f_serif.render(ln, True, GREEN if "분해" not in m else AMBER), (x, y))
+                c.blit(self.f_serif.render(ln, True, AMBER if self.msg_warn else GREEN), (x, y))
                 y += 28
 
     def _draw_row(self, c, row, x, y, width, on):
@@ -164,7 +167,7 @@ class InventoryView(EventView):
             d = row["d"]
             mark = "★ " if row["eq"] else "   "
             c.blit(self.f_sans.render(mark + d["name"], True, TIER_COLOR.get(d.get("tier", 4), ink)), (x, y))
-            info = self.f_mono.render(f"{constants.TIER_TAGS.get(d.get('tier', 4), '')}   위력 {d['power']}", True, INK_DIM)
+            info = self.f_mono.render(f"{constants.tier_tag(d.get('tier', 4))}   {t('inv_power', pw=d['power'])}", True, INK_DIM)
             c.blit(info, (x + width - info.get_width() - 10, y + 3))
         else:
             d = row["d"]
@@ -182,19 +185,19 @@ class InventoryView(EventView):
             else:
                 eff = (t('consumable_hunger', val=d['hunger']) if d['hunger'] > 0 else "") + \
                       (t('consumable_thirst', val=d['thirst']) if d['thirst'] > 0 else "")
-            return [(db_t(d, 'name'), INK), (eff.strip(), INK_DIM), ("Enter: 사용", INK_FAINT)]
-        slot = constants.SLOT_DISPLAY.get(d.get("slot", ""), d.get("slot", ""))
+            return [(db_t(d, 'name'), INK), (eff.strip(), INK_DIM), (t('inv_hint_use'), INK_FAINT)]
+        slot = constants.slot_label(d.get("slot", ""))
         lines = [(d["name"], TIER_COLOR.get(d.get("tier", 4), INK)),
-                 (f"{constants.TIER_TAGS.get(d.get('tier', 4), '')}  ·  {slot}  ·  위력 {d['power']}  ·  무게 {d.get('slot_weight', 1.0):.1f}", INK_DIM)]
+                 (t('inv_detail', tier=constants.tier_tag(d.get('tier', 4)), slot=slot, pw=d['power'], w=d.get('slot_weight', 1.0)), INK_DIM)]
         if d.get("desc"):
             lines.append((d["desc"], INK_DIM))
-        hint = {"item": "Enter: 장착   D: 분해", "slot": "Enter: 해제"}.get(row["kind"], "")
+        hint = {"item": t('inv_hint_item'), "slot": t('inv_hint_slot')}.get(row["kind"], "")
         lines.append((hint, INK_FAINT))
         return lines
 
     # ── 입력 루프 ─────────────────────────────────────────────────────────
     def run(self):
-        self.footer = [("↑↓", "선택"), ("←→", "탭"), ("Enter", "장착·해제·사용"), ("D", "분해"), ("0", "돌아가기")]
+        self.footer = [("↑↓", t('ui_select')), ("←→", t('inv_key_tab')), ("Enter", t('inv_key_act')), ("D", t('inv_key_dismantle')), ("0", t('inv_key_back'))]
         self.open()
         try:
             while True:

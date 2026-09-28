@@ -350,8 +350,8 @@ def run_game():
         clear_screen()
         if player.active_quest and player.turn_count > player.active_quest["deadline"]:
             q = player.active_quest
-            print(t('quest_failed', title=q['title']))
-            log_diary(player, t('quest_fail_diary', title=q['title']))
+            print(t('quest_failed', title=db_t(q, 'title')))
+            log_diary(player, t('quest_fail_diary', title=db_t(q, 'title')))
             player.active_quest = None
             time.sleep(1.5)
             clear_screen()

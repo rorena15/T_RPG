@@ -20,25 +20,27 @@ def trigger_sudden_quest(player):
     q: dict = {
         "id":          tpl["id"],
         "title":       tpl["title"],
+        "title_en":    tpl.get("title_en"),
         "type":        tpl["type"],
         "target":      tpl["target"],
         "progress":    0,
         "deadline":    deadline,
         "reward_type": tpl["reward_type"],
         "reward_desc": tpl["reward_desc"],
+        "reward_desc_en": tpl.get("reward_desc_en"),
     }
     if "reward_id"     in tpl: q["reward_id"]     = tpl["reward_id"]
     if "reward_amount" in tpl: q["reward_amount"] = tpl["reward_amount"]
     player.active_quest = q
     clear_screen()
-    print_header(t('quest_trigger_header', title=tpl['title']))
-    type_text(f"  {tpl['desc']}", 0.022)
+    print_header(t('quest_trigger_header', title=db_t(tpl, 'title')))
+    type_text(f"  {db_t(tpl, 'desc')}", 0.022)
     print()
-    print(t('quest_goal_label', detail=tpl['detail']))
+    print(t('quest_goal_label', detail=db_t(tpl, 'detail')))
     print(t('quest_deadline_label', turns=tpl['turns'], current=player.turn_count, deadline=deadline))
-    print(t('quest_reward_label', reward=tpl['reward_desc']))
+    print(t('quest_reward_label', reward=db_t(tpl, 'reward_desc')))
     print()
-    log_diary(player, t('quest_log_start', title=tpl['title'], deadline=deadline))
+    log_diary(player, t('quest_log_start', title=db_t(tpl, 'title'), deadline=deadline))
     wait_for_keypress()
 
 
@@ -48,9 +50,9 @@ def _complete_quest(player):
     if q is None:
         return
     clear_screen()
-    print_header(t('quest_complete_header', title=q['title']))
+    print_header(t('quest_complete_header', title=db_t(q, 'title')))
     print()
-    print(t('quest_reward_header', reward=q['reward_desc']))
+    print(t('quest_reward_header', reward=db_t(q, 'reward_desc')))
     rtype = q["reward_type"]
     if rtype == "consumable":
         rid = q["reward_id"]
@@ -65,7 +67,7 @@ def _complete_quest(player):
         player.max_ram += amt
         print(t('quest_ram_remaining', val=player.max_ram))
     print()
-    log_diary(player, t('quest_log_complete', title=q['title'], reward=q['reward_desc']))
+    log_diary(player, t('quest_log_complete', title=db_t(q, 'title'), reward=db_t(q, 'reward_desc')))
     player.active_quest = None
     wait_for_keypress()
 
@@ -198,7 +200,7 @@ def _trader_view(player):
             menu = view.add("choices", items=items, start=last)
             if note:
                 view.add("narr", lines=note)
-            view.footer = [("↑↓", "선택"), ("Enter", "구매"), ("0", "떠난다")]
+            view.footer = [("↑↓", t('ui_select')), ("Enter", t('trader_key_buy')), ("0", t('trader_key_leave'))]
             cmd = view.choose(menu, len(items), extra=("ESC",))
             last = next(i for i, (k, _) in enumerate(items) if k == cmd) if cmd != "ESC" else last
             if cmd in ("0", "ESC"):

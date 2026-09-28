@@ -188,18 +188,21 @@ def print_divider():
 
 def _log_color(log):
     """전투 로그 항목의 색상을 반환합니다."""
-    if any(log.startswith(p) for p in ("[타격]", "[회복]", "[파밍]", "[수집]", "[승리]")):
-        return Fore.GREEN + Style.BRIGHT
-    if any(log.startswith(p) for p in ("[피격]", "[페이즈 전환]")):
+    # 영어 로그는 "[HIT] Took"(받은 피해)와 "[HIT] Dealt"(준 피해)가 같은 태그라 받은 피해를 먼저 본다
+    if any(log.startswith(p) for p in ("[피격]", "[페이즈 전환]", "[HIT] Took", "[PHASE SHIFT]")):
         return Fore.RED + Style.BRIGHT
-    if any(log.startswith(p) for p in ("[경고]", "[탈출]", "[탈출 참사]", "[기적적 탈출]", "[경보]")):
+    if any(log.startswith(p) for p in ("[타격]", "[회복]", "[파밍]", "[수집]", "[승리]",
+                                       "[HIT]", "[RECOVERY]", "[FARMED]", "[LOOTED]", "[VICTORY]")):
+        return Fore.GREEN + Style.BRIGHT
+    if any(log.startswith(p) for p in ("[경고]", "[탈출]", "[탈출 참사]", "[기적적 탈출]", "[경보]",
+                                       "[WARNING]", "[ESCAPE]", "[ESCAPE DISASTER]", "[MIRACLE ESCAPE]", "[ALERT]")):
         return Fore.YELLOW + Style.BRIGHT
-    if any(log.startswith(p) for p in ("[해킹]", "[방어]")):
+    if any(log.startswith(p) for p in ("[해킹]", "[방어]", "[HACK]", "[DEFENSE]")):
         return Fore.CYAN + Style.BRIGHT
     return ""
 
 def log_diary(player, entry):
-    player.diary.append(f"[턴 {player.turn_count:>4d}]  {entry}")
+    player.diary.append(f"{t('diary_turn', n=player.turn_count)}  {entry}")
 
 def show_diary(player):
     from gui import get_terminal

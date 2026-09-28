@@ -50,7 +50,7 @@ def handle_session(player, session):
         view.add("title", tag=t('tag_record'), title=db_t(session, 'title'))
         view.add("prose", lines=[" ".join(db_t(session, 'text').split())])
         menu = view.add("choices", items=[(str(i + 1), db_t(c, 'text')) for i, c in enumerate(session['choices'])])
-        view.footer = [("↑↓", "선택"), ("Enter", "결정")]
+        view.footer = [("↑↓", t('ui_select')), ("Enter", t('ui_confirm'))]
         view.open()
     else:
         print_header(db_t(session, 'title'))
@@ -82,7 +82,7 @@ def handle_session(player, session):
                 key = choice_data["consumable"]
                 if key in player.consumables:
                     player.consumables[key] += 1
-                    _say(t('session_consumable_gain', name=constants.CONSUMABLES_DB.get(key, {}).get('name', key)))
+                    _say(t('session_consumable_gain', name=db_t(constants.CONSUMABLES_DB.get(key, {}), 'name') or key))
 
             raw_mat = choice_data.get("materials", 0)
             if raw_mat != 0 and not choice_data.get("reward") == "SCRAP_MAT":
@@ -139,13 +139,13 @@ def handle_session(player, session):
             sound.resume_map_ambient()
             if view:  # 고른 행동 → 결과 서술(타자) → 얻고 잃은 것
                 view.log.remove(menu)
-                view.add("you", text=choice_data['text'])
+                view.add("you", text=db_t(choice_data, 'text'))
                 entry = view.add("narr", lines=[" ".join(db_t(choice_data, 'log').split())])
                 view.type_out(entry)
                 if msgs:
                     view.pause(150)
                     view.add("prose", lines=msgs)
-                view.footer = [("Enter", "계속")]
+                view.footer = [("Enter", t('ui_continue'))]
                 view.wait_key({"ENTER", "ESC", " "})
                 view.close()
             else:
@@ -338,11 +338,11 @@ def run_boss_core_choice(player):
     print()
     print_divider()
     job, granted = skills.grant_awakening_skill(player)
-    job_label = skills.JOB_LABEL.get(job, job)
+    job_label = skills.job_label(job)
     print(t('ending_skill_header', job_label=job_label))
     print_divider()
     if granted:
-        skill_names = ", ".join(skills.SKILL_DEFS[sid]['name'] for sid in granted)
+        skill_names = ", ".join(skills.skill_name(sid) for sid in granted)
         print(t('ending_skill_slots', max_col=2, count=len(player.skill_slots)))
         print(f"  {skill_names}")
         print(t('ending_skill_notice'))
@@ -475,8 +475,8 @@ def run_ending(player):
     total_consumables = sum(player.consumables.values())
     print(t('ending_stat_consumables', val=total_consumables))
     if player.skill_slots:
-        end_job_label = skills.JOB_LABEL.get(player.job_class, player.job_class)
-        end_skill_names = ", ".join(skills.SKILL_DEFS.get(sid, {}).get('name', sid) for sid in player.skill_slots)
+        end_job_label = skills.job_label(player.job_class)
+        end_skill_names = ", ".join(skills.skill_name(sid) for sid in player.skill_slots)
         print_divider()
         print(t('ending_skill_header', job_label=end_job_label))
         print(t('ending_skill_slots', max_col=2, count=len(player.skill_slots)))

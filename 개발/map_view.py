@@ -10,11 +10,9 @@ import pygame
 import constants
 import scene_art
 from event_view import AMBER, BG, BUNKER, EventView, INK, INK_DIM, INK_FAINT, JUNKYARD, RED, TEAL, GREEN, _lerp, place_label
-from i18n import t
+from i18n import db_t, t
 
 CELL, GAP = 26, 5
-TIME_KO = {"dawn": "새벽", "morning": "아침", "noon": "한낮", "evening": "저녁", "night": "밤"}
-WEATHER_KO = {"smog": "스모그", "fog": "짙은 안개", "dust": "황사", "ash": "재가 내림", "acid": "산성비"}
 
 
 class MapView(EventView):
@@ -60,11 +58,11 @@ class MapView(EventView):
         width = W - x - 36
         y = 40
         turn = p.turn_count
-        c.blit(self.f_mono.render("데드존 섹터 그리드", True, AMBER), (x, y))
+        c.blit(self.f_mono.render(t('map_grid_header'), True, AMBER), (x, y))
         dist = abs(g.bunker_pos[0] - g.player_pos[0]) + abs(g.bunker_pos[1] - g.player_pos[1])
-        head = "방공호에 도착했다" if dist == 0 else f"방공호까지 {dist}칸"
+        head = t('map_arrived') if dist == 0 else t('map_dist', n=dist)
         c.blit(self.f_title.render(head, True, INK), (x, y + 22))
-        sky = f"{TIME_KO[scene_art.world_time(turn)]} · {WEATHER_KO[scene_art.world_weather(turn)]} · 턴 {turn}"
+        sky = t('map_sky', time=t(f'time_{scene_art.world_time(turn)}'), weather=t(f'weather_{scene_art.world_weather(turn)}'), turn=turn)
         c.blit(self.f_sans.render(sky, True, INK_DIM), (x, y + 66))
         y += 104
 
@@ -76,7 +74,7 @@ class MapView(EventView):
         lines = [
             (weapon, INK),
             (f"VIT {p.vit}   INT {p.int_s}   DEX {p.dex}", INK),
-            (f"방어 {p.calc_def_base()}   회피 {p.calc_eva_rate() * 100:.1f}%   치명 {p.calc_crt_rate() * 100:.1f}%", INK_DIM),
+            (t('map_stats', df=p.calc_def_base(), eva=p.calc_eva_rate() * 100, crt=p.calc_crt_rate() * 100), INK_DIM),
             (self._items_line(), INK_DIM),
         ]
         for text, col in lines:
@@ -86,7 +84,7 @@ class MapView(EventView):
         al = max(0, min(100, p.alert_level))
         col = RED if al >= 70 else (AMBER if al >= 40 else GREEN)
         label = t('alert_danger') if al >= 70 else (t('alert_caution') if al >= 40 else t('alert_safe'))
-        c.blit(self.f_mono.render("경보", True, INK_DIM), (sx, sy + 4))
+        c.blit(self.f_mono.render(t('map_alert'), True, INK_DIM), (sx, sy + 4))
         bx, bw = sx + 44, 220
         pygame.draw.line(c, (46, 44, 42), (bx, sy + 12), (bx + bw, sy + 12), 3)
         pygame.draw.line(c, col, (bx, sy + 12), (bx + int(bw * al / 100), sy + 12), 3)
@@ -94,7 +92,7 @@ class MapView(EventView):
         if p.active_quest:
             q = p.active_quest
             left = max(0, q["deadline"] - p.turn_count)
-            c.blit(self.f_sans.render(f"의뢰: {q['title']} (남은 턴 {left})", True, AMBER), (sx, sy + 30))
+            c.blit(self.f_sans.render(t('map_quest', title=db_t(q, 'title'), left=left), True, AMBER), (sx, sy + 30))
 
         # 최근 기록 (터미널에 찍힌 글)
         y = sy + (60 if p.active_quest else 40)
@@ -144,7 +142,7 @@ class MapView(EventView):
         c.blit(self._hud_surface(), (0, hud_top - 22))
         c.set_clip(None)
         c.blit(self.f_place.render(place_label(self.location), True, INK), (22, H - 118))
-        c.blit(self.f_mono.render(f"{self._sc['sub']}  ·  턴 {self.player.turn_count}", True, INK_DIM), (24, H - 78))
+        c.blit(self.f_mono.render(t('place_turn', sub=t(self._sc['sub']), turn=self.player.turn_count), True, INK_DIM), (24, H - 78))
 
     def _hud_surface(self):
         """EventView의 생체 지표(숫자 굴림·피해 번쩍임 포함)를 투명 판에 그린다."""
@@ -157,7 +155,7 @@ class MapView(EventView):
         p = self.player
         try:
             name = get_equipment_data(p.equipment['main_weapon'])['name']
-            return f"{name}  ·  위력 {p.get_attack_power()}  ·  T{p.get_highest_tier()}"
+            return t('map_weapon', name=name, pw=p.get_attack_power(), tier=p.get_highest_tier())
         except Exception:  # noqa: BLE001 - 표시용
             return ""
 
@@ -166,7 +164,7 @@ class MapView(EventView):
 
         def count(kind):
             return sum(v for k, v in p.consumables.items() if constants.CONSUMABLES_DB.get(k, {}).get("type") == kind)
-        return f"회복약 {count('hp')} · 식량 {count('food')} · 식수 {count('water')} · 고철 {p.materials}"
+        return t('map_items', hp=count('hp'), food=count('food'), water=count('water'), mat=p.materials)
 
     def _recent_lines(self):
         """터미널 버퍼의 최근 글 (빈 줄·테두리 줄 제외). 게임이 화면을 지워도 앞 기록은 이어서 보인다.

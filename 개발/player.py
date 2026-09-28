@@ -13,7 +13,7 @@ from colorama import Fore, Style
 from combat import apply_dynamic_scaling, get_turn_scale_multiplier
 from quest import advance_quest
 from sys_log import sys_log, track, log_error
-from i18n import t
+from i18n import t, db_t
 import sound
 
 class Player:
@@ -319,7 +319,7 @@ class Player:
             q = self.active_quest
             turns_left = max(0, q["deadline"] - self.turn_count)
             print_divider()
-            print(t('status_quest_line', title=q['title'], progress=q['progress'], target=q['target'], turns=turns_left))
+            print(t('status_quest_line', title=db_t(q, 'title'), progress=q['progress'], target=q['target'], turns=turns_left))
         print_divider()
         print()
 
@@ -337,12 +337,12 @@ class Player:
             print(t('inv_slot_header'))
             print_divider()
             for si, sk in enumerate(slot_keys, 1):
-                label = ea_rpad(constants.SLOT_DISPLAY[sk], 8)
+                label = ea_rpad(constants.slot_label(sk), 8)
                 eid = self.equipment.get(sk)
                 if eid and eid != "WEAPON_NONE":
                     d = get_equipment_data(eid)
-                    tag = constants.TIER_TAGS.get(d.get("tier", 4), "T?    ")
-                    print(f"   [{si:2d}] {label}  │  ★  {d['name'][:22]}    {tag}  위력:{d['power']:>4}")
+                    tag = constants.tier_tag(d.get("tier", 4), "T?    ")
+                    print(f"   [{si:2d}] {label}  │  ★  {d['name'][:22]}    {tag}  {t('inv_power_col')}{d['power']:>4}")
                 else:
                     print(f"   [{si:2d}] {label}  │  " + t('inv_not_equipped'))
             print()
@@ -353,28 +353,28 @@ class Player:
                 print(t('inv_empty'))
             else:
                 groups = {sk: [] for sk in slot_keys}
-                groups["기타"] = []
+                groups["other"] = []
                 num = 1
                 for item_id in self.inventory:
                     d = get_equipment_data(item_id)
-                    sk = d.get("slot", "기타")
+                    sk = d.get("slot", "other")
                     if sk not in groups:
-                        sk = "기타"
+                        sk = "other"
                     groups[sk].append((num, item_id, d))
                     num += 1
 
-                for sk in slot_keys + ["기타"]:
+                for sk in slot_keys + ["other"]:
                     items = groups[sk]
                     if not items:
                         continue
-                    label = constants.SLOT_DISPLAY.get(sk, sk)
+                    label = constants.slot_label(sk)
                     print(f"   ── {label} {'─' * max(2, 56 - len(label) * 2)}")
                     for n, iid, d in items:
                         equipped = (self.equipment.get(sk) == iid)
                         mark = "★" if equipped else " "
-                        tag = constants.TIER_TAGS.get(d.get("tier", 4), "T?    ")
+                        tag = constants.tier_tag(d.get("tier", 4), "T?    ")
                         w = d.get("slot_weight", 1.0)
-                        print(f"   [{n:2d}] {mark}  {d['name'][:26]:<26}  {tag}  위력:{d['power']:>4}  W:{w:.1f}")
+                        print(f"   [{n:2d}] {mark}  {d['name'][:26]:<26}  {tag}  {t('inv_power_col')}{d['power']:>4}  W:{w:.1f}")
             print_divider()
 
             print(t('inv_cmd_header'))
@@ -398,7 +398,7 @@ class Player:
                         sk = d.get("slot", "main_weapon")
                         prev = self.equipment.get(sk)
                         self.equipment[sk] = item_id
-                        print(t('inv_equipped', name=d['name'], slot=constants.SLOT_DISPLAY.get(sk, sk)))
+                        print(t('inv_equipped', name=d['name'], slot=constants.slot_label(sk)))
                         if prev and prev != "WEAPON_NONE":
                             pd = get_equipment_data(prev)
                             print(t('inv_replaced', name=pd['name']))
@@ -418,9 +418,9 @@ class Player:
                         if eid and eid != "WEAPON_NONE":
                             d = get_equipment_data(eid)
                             self.equipment[sk] = constants.SLOT_DEFAULTS[sk]
-                            print(t('inv_unequipped', name=d['name'], slot=constants.SLOT_DISPLAY[sk]))
+                            print(t('inv_unequipped', name=d['name'], slot=constants.slot_label(sk)))
                         else:
-                            print(t('inv_slot_empty', slot=constants.SLOT_DISPLAY[sk]))
+                            print(t('inv_slot_empty', slot=constants.slot_label(sk)))
                     else:
                         print(t('inv_slot_range', max=len(slot_keys)))
                 else:
@@ -495,7 +495,7 @@ class Player:
                 desc = hunger_str + thirst_str
 
             icon = item.get('icon', '')
-            name_disp = f"{icon} {item['name']}" if icon else item['name']
+            name_disp = f"{icon} {db_t(item, 'name')}" if icon else db_t(item, 'name')
             print(t('consumable_item_line', idx=i+1, name=name_disp, owned=self.consumables[key], desc=desc))
 
         print_divider()
@@ -510,9 +510,9 @@ class Player:
             if item["type"] == "hp":
                 heal_amt = int(self.max_hp * item["val"]) if item["is_percent"] else item["val"]
                 self.hp = min(self.max_hp, self.hp + heal_amt)
-                print(t('consumable_used_hp', name=item['name'], amt=heal_amt))
+                print(t('consumable_used_hp', name=db_t(item, 'name'), amt=heal_amt))
             else:
                 self.hunger = min(100, self.hunger + item["hunger"])
                 self.thirst = min(100, self.thirst + item["thirst"])
-                print(t('consumable_used_food', name=item['name']))
+                print(t('consumable_used_food', name=db_t(item, 'name')))
             wait_for_keypress()

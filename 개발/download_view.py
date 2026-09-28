@@ -21,8 +21,8 @@ def _fmt_size(n):
 
 def _fmt_eta(sec):
     if sec >= 3600:
-        return f"{sec / 3600:.1f}시간"
-    return f"{max(1, round(sec / 60))}분" if sec >= 60 else f"{int(sec)}초"
+        return t('eta_hours', n=sec / 3600)
+    return t('eta_min', n=max(1, round(sec / 60))) if sec >= 60 else t('eta_sec', n=int(sec))
 
 
 class DownloadView:

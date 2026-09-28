@@ -17,7 +17,8 @@ import random
 import time
 from colorama import Fore, Style
 from ui import type_text
-from i18n import t
+from i18n import t, db_t
+import i18n
 
 # ─────────────────────────────────────────────────────────────────────
 # § 기초 연산
@@ -39,39 +40,45 @@ SKILL_DEFS = {
     # [특수 스킬] unique — 특수 조건 언락. 각성 지급 불가.
     # ════════════════════════════════════════════════════════════════
     "overclock": {
-        "id": "overclock", "name": "의체 오버클럭", "job": "combat", "tier": "unique",
+        "id": "overclock", "name": "의체 오버클럭", "name_en": "Overclock", "job": "combat", "tier": "unique",
         "cost_type": "hp", "cost": 0,
         "desc": "현재 HP 10% 소모. 2회 공격 ×2.0. 공격 시 현재 HP 5% 드레인.",
+        "desc_en": "Costs 10% of current HP. Next 2 attacks ×2.0. Each attack drains 5% of current HP.",
         "unlock_cond": "[컴뱃 포스] kinetic 가중치 누적 5+ 달성 시",
     },
     "bio_reap": {
-        "id": "bio_reap", "name": "바이오 적출", "job": "combat", "tier": "unique",
+        "id": "bio_reap", "name": "바이오 적출", "name_en": "Bio Reap", "job": "combat", "tier": "unique",
         "cost_type": "ram", "cost": 2,
         "desc": "RAM 2. 다음 공격 후 생체연료 흡수. Pr_reap = 0.10+(f(VIT)+f(DEX))×0.5.",
+        "desc_en": "RAM 2. Absorb biofuel after your next attack. Pr_reap = 0.10+(f(VIT)+f(DEX))×0.5.",
         "unlock_cond": "[컴뱃 포스] |VIT-DEX|≤3 유지 5전투 승리",
     },
     "sentry_infra": {
-        "id": "sentry_infra", "name": "센트리 인프라", "job": "mech", "tier": "unique",
+        "id": "sentry_infra", "name": "센트리 인프라", "name_en": "Sentry Infra", "job": "mech", "tier": "unique",
         "cost_type": "materials", "cost": 30,
         "desc": "고철 30개. 3회 공격 포탑 지원. 위력 100 + f(INT)×500.",
+        "desc_en": "30 scrap. Turret support on 3 attacks. Power 100 + f(INT)×500.",
         "unlock_cond": "[메카니컬 테크] 전직 후 고철 누적 100개 달성",
     },
     "signal_trace": {
-        "id": "signal_trace", "name": "주파수 역추적", "job": "mech", "tier": "unique",
+        "id": "signal_trace", "name": "주파수 역추적", "name_en": "Signal Trace", "job": "mech", "tier": "unique",
         "cost_type": "ram", "cost": 2,
         "desc": "RAM 2. 다음 공격 치명타 확정. |INT-DEX|≤3 시 CRT배율↑+스턴.",
+        "desc_en": "RAM 2. Next attack is a guaranteed critical. If |INT-DEX|≤3: higher CRT multiplier + stun.",
         "unlock_cond": "[메카니컬 테크] |INT-DEX|≤3 유지 3전투 승리",
     },
     "grid_intrude": {
-        "id": "grid_intrude", "name": "그리드 침투", "job": "net", "tier": "unique",
+        "id": "grid_intrude", "name": "그리드 침투", "name_en": "Grid Intrude", "job": "net", "tier": "unique",
         "cost_type": "ram", "cost": 1,
         "desc": "RAM 1. 반격 차단 + 다음 적 공격 -30% + 내 다음 공격 +15%.",
+        "desc_en": "RAM 1. Blocks the counterattack + next enemy attack -30% + your next attack +15%.",
         "unlock_cond": "[넷 포스] cyber 가중치 누적 5+ 달성",
     },
     "protocol_glitch": {
-        "id": "protocol_glitch", "name": "프로토콜 위조", "job": "net", "tier": "unique",
+        "id": "protocol_glitch", "name": "프로토콜 위조", "name_en": "Protocol Glitch", "job": "net", "tier": "unique",
         "cost_type": "ram", "cost": 3,
         "desc": "RAM 3. Pr_glitch=0.15+f(INT)×0.8. 성공 시 피해 0 위조.",
+        "desc_en": "RAM 3. Pr_glitch=0.15+f(INT)×0.8. On success the enemy hit deals 0.",
         "unlock_cond": "[넷 포스] |INT-VIT|≤3 유지 3전투 승리",
     },
 
@@ -81,104 +88,122 @@ SKILL_DEFS = {
 
     # ── 컴뱃 포스 (2개) ──────────────────────────────────────────────
     "hydraulic_crush": {
-        "id": "hydraulic_crush", "name": "유압 분쇄", "job": "combat", "tier": "special",
+        "id": "hydraulic_crush", "name": "유압 분쇄", "name_en": "Hydraulic Crush", "job": "combat", "tier": "special",
         "cost_type": "hp", "cost": 0,   # 실제: HP 15%
         "desc": "현재 HP 15% 소모. 다음 공격 ×1.8 + 적 방어력 50% 관통.",
+        "desc_en": "Costs 15% of current HP. Next attack ×1.8 + 50% armor penetration.",
     },
     "iron_body": {
-        "id": "iron_body", "name": "철제 의체", "job": "combat", "tier": "special",
+        "id": "iron_body", "name": "철제 의체", "name_en": "Iron Body", "job": "combat", "tier": "special",
         "cost_type": "materials", "cost": 10,
         "desc": "고철 10개. 다음 3회 피격 피해 -40% (VIT가 높을수록 차단율 증가).",
+        "desc_en": "10 scrap. Next 3 hits -40% damage (higher VIT blocks more).",
     },
 
     # ── 메카니컬 테크 (2개) ───────────────────────────────────────────
     "scrap_construct": {
-        "id": "scrap_construct", "name": "고철 구조체", "job": "mech", "tier": "special",
+        "id": "scrap_construct", "name": "고철 구조체", "name_en": "Scrap Construct", "job": "mech", "tier": "special",
         "cost_type": "materials", "cost": 20,
         "desc": "고철 20개. 2턴간 피해 -25% + 보스 패턴 학습 차단.",
+        "desc_en": "20 scrap. 2 turns: damage -25% + blocks boss pattern learning.",
     },
     "overclock_repair": {
-        "id": "overclock_repair", "name": "과부하 수리", "job": "mech", "tier": "special",
+        "id": "overclock_repair", "name": "과부하 수리", "name_en": "Overclock Repair", "job": "mech", "tier": "special",
         "cost_type": "materials", "cost": 10,
         "desc": "고철 10개. HP 즉시 회복: max_HP × (0.15 + f(INT)×0.3). RAM +1 회복.",
+        "desc_en": "10 scrap. Instant heal: max_HP × (0.15 + f(INT)×0.3). RAM +1.",
     },
 
     # ── 넷 포스 (2개) ─────────────────────────────────────────────────
     "data_siphon": {
-        "id": "data_siphon", "name": "데이터 사이펀", "job": "net", "tier": "special",
+        "id": "data_siphon", "name": "데이터 사이펀", "name_en": "Data Siphon", "job": "net", "tier": "special",
         "cost_type": "ram", "cost": 2,
         "desc": "RAM 2. 이번 전투 적 공격력 -30% 영구 약화. 매 턴 종료 시 RAM +1 자동 회수.",
+        "desc_en": "RAM 2. Enemy ATK -30% for the rest of this combat. RAM +1 recovered at each turn end.",
     },
     "ghost_protocol": {
-        "id": "ghost_protocol", "name": "고스트 프로토콜", "job": "net", "tier": "special",
+        "id": "ghost_protocol", "name": "고스트 프로토콜", "name_en": "Ghost Protocol", "job": "net", "tier": "special",
         "cost_type": "ram", "cost": 1,
         "desc": "RAM 1. 이번 턴 적 반격 차단. 다음 공격 치명타율 +30% 추가.",
+        "desc_en": "RAM 1. Blocks the enemy counterattack this turn. Next attack +30% crit chance.",
     },
 
     # ── 황금 분할 (2개) ───────────────────────────────────────────────
     "synthesis_drive": {
-        "id": "synthesis_drive", "name": "종합 구동", "job": "balanced", "tier": "special",
+        "id": "synthesis_drive", "name": "종합 구동", "name_en": "Synthesis Drive", "job": "balanced", "tier": "special",
         "cost_type": "hp", "cost": 0,   # 실제: HP 5% + RAM 1 (복합)
         "desc": "HP 5% + RAM 1 소모. VIT·INT·DEX 합산 f(A) 기반 즉각 피해 + 허기·갈증 +8.",
+        "desc_en": "Costs 5% HP + RAM 1. Instant damage from combined VIT·INT·DEX f(A) + hunger·thirst +8.",
     },
     "equilibrium": {
-        "id": "equilibrium", "name": "균형점", "job": "balanced", "tier": "special",
+        "id": "equilibrium", "name": "균형점", "name_en": "Equilibrium", "job": "balanced", "tier": "special",
         "cost_type": "materials", "cost": 10,
         "desc": "고철 10개. HP·허기·갈증 각 +10% 동시 소량 회복 (황금 분할 재조율).",
+        "desc_en": "10 scrap. Restores HP, hunger and thirst by 10% each (golden ratio recalibration).",
     },
 
     # ════════════════════════════════════════════════════════════════
     # [보조 스킬] aux — 자유 장착. (Act 2+ 획득 경로 예정)
     # ════════════════════════════════════════════════════════════════
     "vital_pump": {
-        "id": "vital_pump", "name": "생명 펌프", "job": "any", "tier": "aux",
+        "id": "vital_pump", "name": "생명 펌프", "name_en": "Vital Pump", "job": "any", "tier": "aux",
         "cost_type": "materials", "cost": 15,
         "desc": "고철 15개. HP 즉시 회복: max_HP × (0.10 + f(VIT)×0.5).",
+        "desc_en": "15 scrap. Instant heal: max_HP × (0.10 + f(VIT)×0.5).",
     },
     "scrap_armor": {
-        "id": "scrap_armor", "name": "고철 방어구 증설", "job": "any", "tier": "aux",
+        "id": "scrap_armor", "name": "고철 방어구 증설", "name_en": "Scrap Armor", "job": "any", "tier": "aux",
         "cost_type": "materials", "cost": 20,
         "desc": "고철 20개. 다음 2회 피격 피해 -20%.",
+        "desc_en": "20 scrap. Next 2 hits -20% damage.",
     },
     "junk_cannon": {
-        "id": "junk_cannon", "name": "고철 함포", "job": "any", "tier": "aux",
+        "id": "junk_cannon", "name": "고철 함포", "name_en": "Junk Cannon", "job": "any", "tier": "aux",
         "cost_type": "materials", "cost": 25,
         "desc": "고철 25개. 즉각 피해 300 + VIT×15. (적 반격 없음)",
+        "desc_en": "25 scrap. Instant damage 300 + VIT×15. (No enemy counterattack)",
     },
     "bioloop": {
-        "id": "bioloop", "name": "바이오 피드백 루프", "job": "any", "tier": "aux",
+        "id": "bioloop", "name": "바이오 피드백 루프", "name_en": "Bioloop", "job": "any", "tier": "aux",
         "cost_type": "ram", "cost": 2,
         "desc": "RAM 2. 다음 2회 공격 시 허기·갈증 +5 자동 흡수.",
+        "desc_en": "RAM 2. Next 2 attacks restore hunger·thirst +5.",
     },
     "ram_condenser": {
-        "id": "ram_condenser", "name": "RAM 압축기", "job": "any", "tier": "aux",
+        "id": "ram_condenser", "name": "RAM 압축기", "name_en": "RAM Condenser", "job": "any", "tier": "aux",
         "cost_type": "materials", "cost": 10,
         "desc": "고철 10개. 즉시 RAM +2 회복.",
+        "desc_en": "10 scrap. Instantly restores RAM +2.",
     },
     "code_compile": {
-        "id": "code_compile", "name": "코드 컴파일", "job": "any", "tier": "aux",
+        "id": "code_compile", "name": "코드 컴파일", "name_en": "Code Compile", "job": "any", "tier": "aux",
         "cost_type": "ram", "cost": 1,
         "desc": "RAM 1. 다음 2턴 보스 딥러닝 패턴 학습 차단.",
+        "desc_en": "RAM 1. Blocks boss deep-learning pattern analysis for 2 turns.",
     },
     "pulse_grenade": {
-        "id": "pulse_grenade", "name": "펄스 수류탄", "job": "any", "tier": "aux",
+        "id": "pulse_grenade", "name": "펄스 수류탄", "name_en": "Pulse Grenade", "job": "any", "tier": "aux",
         "cost_type": "ram", "cost": 2,
         "desc": "RAM 2. 즉각 피해 200 + INT×10. 보스 E지수 -3.",
+        "desc_en": "RAM 2. Instant damage 200 + INT×10. Boss E index -3.",
     },
     "kinetic_burst": {
-        "id": "kinetic_burst", "name": "운동 폭발", "job": "any", "tier": "aux",
+        "id": "kinetic_burst", "name": "운동 폭발", "name_en": "Kinetic Burst", "job": "any", "tier": "aux",
         "cost_type": "hp", "cost": 0,
         "desc": "현재 HP 5% 소모. 다음 공격 +DEX×20 고정 추가 피해.",
+        "desc_en": "Costs 5% of current HP. Next attack +DEX×20 flat bonus damage.",
     },
     "neural_acc": {
-        "id": "neural_acc", "name": "신경 가속기", "job": "any", "tier": "aux",
+        "id": "neural_acc", "name": "신경 가속기", "name_en": "Neural Acc", "job": "any", "tier": "aux",
         "cost_type": "ram", "cost": 1,
         "desc": "RAM 1. 다음 공격 치명타율 ×2 (상한 75%).",
+        "desc_en": "RAM 1. Next attack crit chance ×2 (max 75%).",
     },
     "void_shift": {
-        "id": "void_shift", "name": "허공 전위", "job": "any", "tier": "aux",
+        "id": "void_shift", "name": "허공 전위", "name_en": "Void Shift", "job": "any", "tier": "aux",
         "cost_type": "ram", "cost": 1,
         "desc": "RAM 1. 다음 탈출 시도를 SAFE 결과로 강제 고정.",
+        "desc_en": "RAM 1. Your next escape attempt is forced to a SAFE result.",
     },
 }
 
@@ -199,6 +224,16 @@ JOB_LABEL = {
     "net":      "넷 포스",
     "balanced": "황금 분할의 조율사",
 }
+
+def job_label(job) -> str:
+    """직업 표시 이름 (언어별). JOB_LABEL은 한국어 원본."""
+    return t(f"job_{job}") if job in JOB_LABEL else str(job)
+
+
+def skill_name(skill_id, short=False) -> str:
+    """스킬 표시 이름 (언어별). short: 전투 버튼 칸에 맞게 자른다 (한국어 6자, 영어 16자)."""
+    name = db_t(SKILL_DEFS.get(skill_id, {}), "name") or str(skill_id)
+    return name[:16 if i18n.LANG == "en" else 6] if short else name
 
 # ─────────────────────────────────────────────────────────────────────
 # § 직업 판별 & 각성 지급

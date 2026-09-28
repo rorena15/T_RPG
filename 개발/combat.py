@@ -112,7 +112,7 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
     scene = "enemy_collector" if is_boss else ("enemy_hound" if enemy_type == "bio_hound" else "enemy_drones")
     if current_hp is None:  # 새 교전일 때만 적 그림 카드
         from event_view import scene_card
-        scene_card(scene, header_title, tag="교전", line=name, player=player)
+        scene_card(scene, header_title, tag=t('tag_combat'), line=name, player=player)
 
     enemy_max_hp = hp  # HP 바 표시용
 
@@ -245,7 +245,7 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
             for _i, _sid in enumerate(player.skill_slots):
                 _sk = _skills.SKILL_DEFS.get(_sid, {})
                 _key = f"S{'12'[_i] if len(player.skill_slots) > 1 else ''}"
-                _acts.append((_key, _sk.get('name', '?')[:6], True))
+                _acts.append((_key, _skills.skill_name(_sid, short=True), True))
             _ui.set_actions(_acts)
         else:
             print()
@@ -260,7 +260,7 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
             if player.skill_slots:
                 for _i, _sid in enumerate(player.skill_slots):
                     _sk = _skills.SKILL_DEFS.get(_sid, {})
-                    print(f"  {Fore.YELLOW + Style.BRIGHT}S{'12'[_i] if len(player.skill_slots) > 1 else ''}. {_sk.get('name','?')} — {_sk.get('desc','')}{Style.RESET_ALL}")
+                    print(f"  {Fore.YELLOW + Style.BRIGHT}S{'12'[_i] if len(player.skill_slots) > 1 else ''}. {_skills.skill_name(_sid)} — {db_t(_sk, 'desc')}{Style.RESET_ALL}")
 
         cmd = read_key()
 
@@ -396,7 +396,7 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
                     thirst_str = t('consumable_thirst', val=item['thirst']) if item['thirst'] > 0 else ""
                     desc = h_val + thirst_str
                 icon = item.get('icon', '')
-                name_disp = f"{icon} {item['name']}" if icon else item['name']
+                name_disp = f"{icon} {db_t(item, 'name')}" if icon else db_t(item, 'name')
                 print(f"  [{i+1}] {name_disp} x{player.consumables[key]} — {desc}")
             print(t('combat_cancel_item'))
             item_cmd = read_key()
@@ -408,11 +408,11 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
                     heal = int(player.max_hp * item["val"]) if item["is_percent"] else item["val"]
                     player.hp = min(player.max_hp, player.hp + heal)
                     _, disp_heal, _ = apply_dynamic_scaling(heal, 0, tier)
-                    action_logs.append(t('combat_recover_log', name=item['name'], hp=f"{disp_heal:,}"))
+                    action_logs.append(t('combat_recover_log', name=db_t(item, 'name'), hp=f"{disp_heal:,}"))
                 else:
                     player.hunger = min(100, player.hunger + item["hunger"])
                     player.thirst = min(100, player.thirst + item["thirst"])
-                    action_logs.append(t('combat_eat_log', name=item['name']))
+                    action_logs.append(t('combat_eat_log', name=db_t(item, 'name')))
             else:
                 action_logs.append(t('combat_cancel_log'))
 

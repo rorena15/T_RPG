@@ -10,14 +10,15 @@ import re
 
 import pygame
 
-from event_view import AMBER, BG, EventView, GREEN, INK, INK_DIM, INK_FAINT, PLATE_W, RED, _lerp
+from event_view import AMBER, BG, EventView, GREEN, INK, INK_DIM, INK_FAINT, JUNKYARD, PLATE_W, RED, _lerp
+from i18n import t
 
 _WORDISH = re.compile(r"[가-힣A-Za-z0-9]")
 
 
 class CombatView(EventView):
     def __init__(self, term, player, scene, is_boss=False):
-        super().__init__(term, player, None, "폐기물 처리장", scene=scene)
+        super().__init__(term, player, None, JUNKYARD, scene=scene)
         self.is_boss = is_boss
         self.enemy_name, self.enemy_hp, self.enemy_max = "", 0, 1
         self._shown_hp = None
@@ -71,7 +72,7 @@ class CombatView(EventView):
         x = self._col_x
         width = W - x - 36
         y = 40
-        c.blit(self.f_mono.render("교전" + ("  ·  BOSS" if self.is_boss else ""), True, RED), (x, y))
+        c.blit(self.f_mono.render(t("tag_combat") + ("  ·  BOSS" if self.is_boss else ""), True, RED), (x, y))
         c.blit(self.f_title.render(self.enemy_name, True, INK), (x, y + 22))
         y += 76
         # 큰 적 HP 바: 줄어든 구간은 잠깐 붉게 남는다
@@ -109,13 +110,16 @@ class CombatView(EventView):
             lines.append(text)
         wrapped = []
         for text in lines:
-            if text.startswith("[시스템 갱신]"):  # 매 턴 반복되는 잔여 체력 줄은 흐리게
+            # 로그 문구의 낱말로 색을 고른다 (한국어·영어 문구 둘 다)
+            if text.startswith(("[시스템 갱신]", "[SYSTEM UPDATE]")):  # 매 턴 반복되는 잔여 체력 줄은 흐리게
                 color = INK_FAINT
-            elif "손상" in text or "무자비한 공격" in text or "받" in text and "피해" in text:
+            elif ("손상" in text or "무자비한 공격" in text or "받" in text and "피해" in text
+                  or "relentless attack" in text or "Took" in text or "Took a hit" in text):
                 color = RED          # 받은 피해
-            elif "적에게" in text or "관통" in text or "피해량" in text:
+            elif "적에게" in text or "관통" in text or "피해량" in text or "penetrated" in text or "Dealt" in text or "Damage" in text:
                 color = AMBER        # 내 공격
-            elif "회복" in text or "획득" in text or "승리" in text or "전개" in text:
+            elif ("회복" in text or "획득" in text or "승리" in text or "전개" in text
+                  or "RECOVERY" in text or "LOOTED" in text or "VICTORY" in text or "deployed" in text):
                 color = GREEN
             else:
                 color = INK

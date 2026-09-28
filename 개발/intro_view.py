@@ -12,18 +12,24 @@ import random
 
 import pygame
 
+import i18n
 import sound
 from event_view import AMBER, BG, INK, INK_DIM, RED, CachedFont
 
 # (글, 색) — 설정: 네오 아크가 N-404를 불량 코드로 분류해 폐기했지만, 신호가 아직 살아 있다
-LINES = [
-    ("NEO ARC  //  중앙 관리 시스템", INK_DIM),
-    ("폐기 기록 열람 ─ 개체 번호 N-404", INK_DIM),
-    ("분류: 무국적 불량 코드      처리: 폐기 완료", INK_DIM),
+# 언어 키 (빈 문자열은 빈 줄). 언어를 바꾼 뒤에도 맞게 나오도록 그릴 때 번역한다
+LINE_KEYS = [
+    ("intro_line_1", INK_DIM),
+    ("intro_line_2", INK_DIM),
+    ("intro_line_3", INK_DIM),
     ("", INK_DIM),
-    ("잔여 생체 신호 ··········· 감지", AMBER),
-    ("경고: 폐기된 개체가 아직 숨 쉬고 있습니다.", RED),
+    ("intro_line_4", AMBER),
+    ("intro_line_5", RED),
 ]
+
+
+def _lines():
+    return [(i18n.t(k) if k else "", col) for k, col in LINE_KEYS]
 CHAR_MS = 13        # 한 글자
 LINE_GAP_MS = 230   # 줄 사이
 EYE_MS = 2800       # 붉은 눈
@@ -38,6 +44,7 @@ class Intro:
         self._term = term
         self.view = title_view  # 타이틀 메뉴의 화면 (카드). 그림을 여기서 먼저 골라 두면 메뉴도 같은 그림이다
         self.title, self.tag = title, tag
+        self.lines = _lines()
         self._active = False
         self._prev = None
         mono = term._find_bundled_font()
@@ -45,7 +52,7 @@ class Intro:
         self._eye = None
         # 시간표 (ms)
         self.t_text = 300
-        text_ms = sum(len(s) * CHAR_MS + LINE_GAP_MS for s, _ in LINES) + 500
+        text_ms = sum(len(s) * CHAR_MS + LINE_GAP_MS for s, _ in self.lines) + 500
         self.t_eye = self.t_text + text_ms
         self.eye_ms, self._eye_off, self.title_ms = EYE_MS, EYE_OFF_MS, TITLE_MS
         self.t_title = self.t_eye + self.eye_ms
@@ -108,13 +115,13 @@ class Intro:
             self._tinnitus = self._sfx("tinnitus.mp3", "tin", 0.30, fade_ms=900) or False
         x, y = int(W * 0.16), int(H * 0.36)
         t = now - self.t_text
-        for i, (text, col) in enumerate(LINES):
-            start = sum(len(s) * CHAR_MS + LINE_GAP_MS for s, _ in LINES[:i])
+        for i, (text, col) in enumerate(self.lines):
+            start = sum(len(s) * CHAR_MS + LINE_GAP_MS for s, _ in self.lines[:i])
             if t < start:
                 break
             n = min(len(text), int((t - start) / CHAR_MS))
             shown = text[:n]
-            last = i == len(LINES) - 1
+            last = i == len(self.lines) - 1
             if last and n > 0:
                 self._sfx("heartbeat4.wav", "hb", 0.9)
             if shown:
