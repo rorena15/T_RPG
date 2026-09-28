@@ -9,7 +9,7 @@ import pygame
 
 import constants
 import scene_art
-from event_view import AMBER, BG, EventView, INK, INK_DIM, INK_FAINT, RED, TEAL, GREEN, _lerp
+from event_view import AMBER, BG, BUNKER, EventView, INK, INK_DIM, INK_FAINT, JUNKYARD, RED, TEAL, GREEN, _lerp, place_label
 from i18n import t
 
 CELL, GAP = 26, 5
@@ -25,7 +25,7 @@ class MapView(EventView):
 
     @staticmethod
     def _location(grid):
-        return "구시대 지하 방공호" if list(grid.player_pos) == list(grid.bunker_pos) else "폐기물 처리장"
+        return BUNKER if list(grid.player_pos) == list(grid.bunker_pos) else JUNKYARD
 
     # ── Main.py가 부르는 것 ────────────────────────────────────────────────
     def activate(self):
@@ -143,7 +143,7 @@ class MapView(EventView):
         c.set_clip(pygame.Rect(0, hud_top, 340, 90))
         c.blit(self._hud_surface(), (0, hud_top - 22))
         c.set_clip(None)
-        c.blit(self.f_place.render(self.location, True, INK), (22, H - 118))
+        c.blit(self.f_place.render(place_label(self.location), True, INK), (22, H - 118))
         c.blit(self.f_mono.render(f"{self._sc['sub']}  ·  턴 {self.player.turn_count}", True, INK_DIM), (24, H - 78))
 
     def _hud_surface(self):

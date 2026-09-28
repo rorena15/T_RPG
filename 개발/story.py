@@ -14,7 +14,7 @@ from ui import (clear_screen, print_header, print_divider, type_text,
 from combat import combat_loop, get_turn_scale_multiplier
 from quest import advance_quest
 from sys_log import sys_log, log_error
-from i18n import t
+from i18n import t, db_t
 import sound
 import skills
 
@@ -30,7 +30,7 @@ def handle_session(player, session):
     title_ko = session.get("title", "")
     scene = next((sc for key, sc in SESSION_SCENES if title_ko.startswith(key)), None)
     if scene:
-        scene_card(scene, session['title'], tag="기록", player=player)
+        scene_card(scene, db_t(session, 'title'), tag=t('tag_record'), player=player)
     from gui import get_terminal
     term = get_terminal()
     view = menu = None
@@ -45,19 +45,19 @@ def handle_session(player, session):
     clear_screen()
     sound.play_typing_bgm()
     if term:  # 그림 화면 세션 (이벤트 화면과 같은 틀)
-        from event_view import EventView
-        view = EventView(term, player, None, "폐기물 처리장", scene=scene, context=title_ko)
-        view.add("title", tag="기록", title=session['title'])
-        view.add("prose", lines=[" ".join(session['text'].split())])
-        menu = view.add("choices", items=[(str(i + 1), c['text']) for i, c in enumerate(session['choices'])])
+        from event_view import EventView, JUNKYARD
+        view = EventView(term, player, None, JUNKYARD, scene=scene, context=title_ko)
+        view.add("title", tag=t('tag_record'), title=db_t(session, 'title'))
+        view.add("prose", lines=[" ".join(db_t(session, 'text').split())])
+        menu = view.add("choices", items=[(str(i + 1), db_t(c, 'text')) for i, c in enumerate(session['choices'])])
         view.footer = [("↑↓", "선택"), ("Enter", "결정")]
         view.open()
     else:
-        print_header(session['title'])
-        type_text(session['text'], 0.02)
+        print_header(db_t(session, 'title'))
+        type_text(db_t(session, 'text'), 0.02)
         print()
         for i, choice in enumerate(session['choices']):
-            print(f"  [{i+1}] {choice['text']}")
+            print(f"  [{i+1}] {db_t(choice, 'text')}")
         time.sleep(1)
     while True:
         ans = view.choose(menu, len(session['choices'])) if view else read_key()
@@ -106,7 +106,7 @@ def handle_session(player, session):
 
             if not view:
                 time.sleep(0.6)
-                type_text(f"\n  {choice_data['log']}", 0.025)
+                type_text(f"\n  {db_t(choice_data, 'log')}", 0.025)
 
             _w_label_map = {
                 "kinetic": t('weight_label_kinetic'),
@@ -122,7 +122,7 @@ def handle_session(player, session):
                 _reward_note = t('session_log_reward_scrap', val=choice_data.get('materials', 30))
             if choice_data.get("ram_bonus"):
                 _reward_note += t('session_log_reward_ram', val=choice_data['ram_bonus'])
-            log_diary(player, t('session_log_diary', title=session['title'], label=_w_label, note=_reward_note))
+            log_diary(player, t('session_log_diary', title=db_t(session, 'title'), label=_w_label, note=_reward_note))
 
             if choice_weight and player.weights[choice_weight] >= 3:
                 _wcb = {
@@ -140,7 +140,7 @@ def handle_session(player, session):
             if view:  # 고른 행동 → 결과 서술(타자) → 얻고 잃은 것
                 view.log.remove(menu)
                 view.add("you", text=choice_data['text'])
-                entry = view.add("narr", lines=[" ".join(choice_data['log'].split())])
+                entry = view.add("narr", lines=[" ".join(db_t(choice_data, 'log').split())])
                 view.type_out(entry)
                 if msgs:
                     view.pause(150)
@@ -156,6 +156,7 @@ def handle_session(player, session):
 def _run_prologue_view():
     """프롤로그 (그림 화면): 건너뛰기 선택 → 부팅 기록 → 도입 서사 → 세계관 → 조작법. 글은 터미널 판과 같다."""
     from screens import MenuScreen, story_page
+    from event_view import BUNKER
     sound.play_typing_bgm()
     ask = MenuScreen(scene="ruin_server")
     import re as _re
@@ -172,12 +173,12 @@ def _run_prologue_view():
                                    "prologue_boot_check", "prologue_boot_fail1", "prologue_boot_id",
                                    "prologue_boot_fail2", "prologue_boot_class", "prologue_boot_action")]
     story_page("ruin_server", "SYSTEM BOOT", boot, tag="N-404")
-    story_page("junkyard", t('prologue_act1_header').strip(" =[]"), [x for x in t('prologue_narr') if x], tag="데드존")
-    story_page("neo_city", t('prologue_world_header').strip(" =[]"), [x for x in t('prologue_world') if x], tag="네오 아크")
+    story_page("junkyard", t('prologue_act1_header').strip(" =[]"), [x for x in t('prologue_narr') if x], tag=t('tag_deadzone'))
+    story_page("neo_city", t('prologue_world_header').strip(" =[]"), [x for x in t('prologue_world') if x], tag=t('tag_neo_arc'))
     guide = [f"[{k}]  {d}" for k, d in t('prologue_guide')]
     warn = [t(k).strip() for k in ("prologue_warn_1", "prologue_warn_2", "prologue_warn_3", "prologue_nav_1", "prologue_nav_2")]
-    story_page("bunker_stairs", t('prologue_manual_header').strip(" =[]"), guide + warn, tag="조작",
-               location="구시대 지하 방공호", footer_label="게임 시작")
+    story_page("bunker_stairs", t('prologue_manual_header').strip(" =[]"), guide + warn, tag=t('tag_controls'),
+               location=BUNKER, footer_label=t('prologue_start_game'))
 
 
 def run_prologue():
@@ -226,7 +227,7 @@ def run_prologue():
 
     # ── 단계 2: 도입 서사 ────────────────────────────────────────────────
     from event_view import scene_card
-    scene_card("junkyard", t('prologue_act1_header'), tag="데드존")
+    scene_card("junkyard", t('prologue_act1_header'), tag=t('tag_deadzone'))
     print_header(t('prologue_act1_header'))
     time.sleep(0.5)
 
@@ -239,7 +240,7 @@ def run_prologue():
     clear_screen()
 
     # ── 단계 3: 세계관 브리핑 ────────────────────────────────────────────
-    scene_card("neo_city", t('prologue_world_header'), tag="네오 아크")
+    scene_card("neo_city", t('prologue_world_header'), tag=t('tag_neo_arc'))
     print_header(t('prologue_world_header'))
     for line in t('prologue_world'):
         type_text(f"  {line}", 0.02) if line else print()

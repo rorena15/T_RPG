@@ -15,6 +15,17 @@ import threading
 import pygame
 
 import scene_art
+import i18n
+
+# 장소 ID. 장면 그림(SCENES, scene_art)을 찾는 키라서 바꾸지 않는다. 화면에는 place_label()로 번역해 그린다
+JUNKYARD = "폐기물 처리장"
+BUNKER = "구시대 지하 방공호"
+_PLACE_KEYS = {JUNKYARD: "place_junkyard", BUNKER: "place_bunker"}
+
+
+def place_label(location):
+    key = _PLACE_KEYS.get(location)
+    return i18n.t(key) if key else location
 
 # ── 팔레트: 녹과 수은 ─────────────────────────────────────────────────────
 BG        = (9, 9, 11)
@@ -773,7 +784,7 @@ class EventView:
     def _draw_hud(self, c, H):
         p = self.player
         if p is None:  # 프롤로그처럼 아직 캐릭터가 없는 장면: 지명만
-            c.blit(self.f_place.render(self.location, True, INK), (22, H - 118))
+            c.blit(self.f_place.render(place_label(self.location), True, INK), (22, H - 118))
             return
         x, y = 22, 22
         c.blit(self.f_mono.render("N-404  //  생체 지표", True, INK_DIM), (x, y))
@@ -809,7 +820,7 @@ class EventView:
             pygame.draw.line(c, col, (bx, y + 9), (fill(min(val, shown)), y + 9), 3)
             y += 22
         # 지명
-        c.blit(self.f_place.render(self.location, True, INK), (22, H - 118))
+        c.blit(self.f_place.render(place_label(self.location), True, INK), (22, H - 118))
         sub = f"{self._sc['sub']}  ·  턴 {p.turn_count}"
         c.blit(self.f_mono.render(sub, True, INK_DIM), (24, H - 78))
 

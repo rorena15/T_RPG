@@ -168,12 +168,12 @@ def run_game():
                     _o = [("1", t('lang_header')), ("2", f"{t('opt_volume')}   ◀ {_vol_pct}% ▶"),
                           ("3", f"{t('opt_mute')}   [{t('opt_mute_on') if _settings['mute'] else t('opt_mute_off')}]"),
                           ("4", f"{t('opt_text_speed')}   [{t(_spd_key)}]"),
-                          ("5", f"{t('opt_gm')}   [{t('opt_gm_' + _gm_mode)}]")]
+                          ("5", f"{t('opt_gm')}   [{t(f'opt_gm_{_gm_mode}')}]")]
                     if _need_data:
                         _o.append(("6", t('opt_gm_download')))
                     _o.append(("0", t('diff_back')))
                     _cur = getattr(_opt_scr, "last", "1")
-                    ok = _opt_scr.ask(t('menu_options'), _o, lines=[t('opt_gm_desc_' + _gm_mode)], back="0",
+                    ok = _opt_scr.ask(t('menu_options'), _o, lines=[t(f'opt_gm_desc_{_gm_mode}')], back="0",
                                       start=next((i for i, (k, _) in enumerate(_o) if k == _cur), 0))
                     _opt_scr.last = ok
                     if ok == "1":
@@ -205,8 +205,8 @@ def run_game():
                     print(f"  4. {t('opt_text_speed')}  [{_spd_str}]")
                     _gm_mode = gm_bridge.get_mode()
                     _gm_note = "" if gm_bridge.mode_installed(_gm_mode) else f"  {t('opt_gm_missing')}"
-                    print(f"  5. {t('opt_gm')}  [{t('opt_gm_' + _gm_mode)}]{_gm_note}")
-                    print(f"     {t('opt_gm_desc_' + _gm_mode)}")
+                    print(f"  5. {t('opt_gm')}  [{t(f'opt_gm_{_gm_mode}')}]{_gm_note}")
+                    print(f"     {t(f'opt_gm_desc_{_gm_mode}')}")
                     _need_data = _gm_mode != "off" and not gm_bridge.mode_installed(_gm_mode)
                     if _need_data:
                         print(f"  6. {t('opt_gm_download')}")
@@ -338,12 +338,12 @@ def run_game():
             _ui_mgr.deactivate()
 
     _EXPLORE_ACTIONS = [
-        ("WASD", "이동",     True),
-        ("F",    "탐색",     True),
-        ("I",    "인벤토리", True),
-        ("J",    "일지",     True),
-        ("C",    "저장",     True),
-        ("Q",    "종료",     True),
+        ("WASD", t('act_move'),      True),
+        ("F",    t('act_search'),    True),
+        ("I",    t('act_inventory'), True),
+        ("J",    t('act_diary'),     True),
+        ("C",    t('act_save'),      True),
+        ("Q",    t('act_quit'),      True),
     ]
 
     while True:

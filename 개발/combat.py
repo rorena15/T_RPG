@@ -234,14 +234,14 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
         if _ui:
             # ActionPanel에 현재 전투 선택지 표시
             _acts = [
-                ("1", "주무기 타격", True),
-                ("2", "바리케이드",  True),
-                ("3", "패킷 교란",   True),
-                ("4", "후퇴",        True),
-                ("5", "소모품",      has_consumable),
+                ("1", t('combat_act_attack'),    True),
+                ("2", t('combat_act_barricade'), True),
+                ("3", t('combat_act_jam'),       True),
+                ("4", t('combat_act_retreat'),   True),
+                ("5", t('combat_act_item'),      has_consumable),
             ]
             if sub_charges > 0:
-                _acts.append(("S", f"보조화기x{sub_charges}", True))
+                _acts.append(("S", t('combat_act_sub', n=sub_charges), True))
             for _i, _sid in enumerate(player.skill_slots):
                 _sk = _skills.SKILL_DEFS.get(_sid, {})
                 _key = f"S{'12'[_i] if len(player.skill_slots) > 1 else ''}"

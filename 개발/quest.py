@@ -183,8 +183,8 @@ def handle_random_event(player, event):
 def _trader_view(player):
     """상인 화면 (이벤트 화면 틀, 방향키). 규칙은 아래 터미널 판과 같다."""
     from gui import get_terminal
-    from event_view import EventView
-    view = EventView(get_terminal(), player, None, "폐기물 처리장", scene="fig_trader")
+    from event_view import EventView, JUNKYARD
+    view = EventView(get_terminal(), player, None, JUNKYARD, scene="fig_trader")
     note = []
     view.open()
     try:
@@ -193,7 +193,7 @@ def _trader_view(player):
             view.log = []
             view.add("title", tag=t('trader_scrap_label', val=player.materials).strip(), title=t('trader_header').strip(" =[]"))
             view.add("prose", lines=[" ".join((t('trader_intro_1') + " " + t('trader_intro_2')).split())])
-            items = [(str(i + 1), f"{db_t(it, 'name')}   ·   고철 {it['cost']}   ·   보유 {player.consumables.get(it['id'], 0)}")
+            items = [(str(i + 1), t('trader_item_choice', name=db_t(it, 'name'), cost=it['cost'], owned=player.consumables.get(it['id'], 0)))
                      for i, it in enumerate(constants.TRADER_ITEMS)] + [("0", t('trader_exit').strip())]
             menu = view.add("choices", items=items, start=last)
             if note:

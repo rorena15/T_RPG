@@ -268,9 +268,9 @@ class Player:
         th_filled = round(th_ratio * 20)
         th_bar    = "█" * th_filled + "░" * (20 - th_filled)
 
-        print(f"  [생명력]  {hp_col}{hp_bar}{Style.RESET_ALL}  {hp_colored} / {display_max_hp:,}")
-        print(f"  [허기]    {hg_col}{hg_bar}{Style.RESET_ALL}  {hg_col}{self.hunger:3d}{Style.RESET_ALL} / 100")
-        print(f"  [갈증]    {th_col}{th_bar}{Style.RESET_ALL}  {th_col}{self.thirst:3d}{Style.RESET_ALL} / 100")
+        print(f"  {t('bar_hp')}{hp_col}{hp_bar}{Style.RESET_ALL}  {hp_colored} / {display_max_hp:,}")
+        print(f"  {t('bar_hunger')}{hg_col}{hg_bar}{Style.RESET_ALL}  {hg_col}{self.hunger:3d}{Style.RESET_ALL} / 100")
+        print(f"  {t('bar_thirst')}{th_col}{th_bar}{Style.RESET_ALL}  {th_col}{self.thirst:3d}{Style.RESET_ALL} / 100")
 
         item_data = get_equipment_data(self.equipment['main_weapon'])
         wpn_name = item_data['name']

@@ -17,6 +17,7 @@ DATA_ASSIGN_NAMES = {
     "TRADER_ITEMS","SKILL_DEFS","JOB_LABEL","SKILL_SETS",
     "WEAPON_TYPES","SPECIAL_ITEMS","AMBIENT_LORE","SESSIONS_DB",
     "CONSUMABLES_DB","EQUIPMENT","ITEM_DB","bat_content","ENEMY_ART",
+    "SESSION_SCENES",  # 한국어 세션 제목으로 장면 그림을 찾는 표 (화면에 안 나감)
 }
 
 ERRORS, WARNS = [], []
