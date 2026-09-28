@@ -3,5 +3,9 @@
     "allow": [
       "Bash(python -c ' *)"
     ]
+  },
+  "attribution": {
+    "commit": "",
+    "pr": ""
   }
 }
