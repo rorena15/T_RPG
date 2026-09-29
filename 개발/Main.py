@@ -516,6 +516,9 @@ def run_game():
             current_loc = tuple(grid.player_pos)
             is_new_tile = current_loc not in grid.visited_tiles
             grid.visited_tiles.add(current_loc)
+            if _ui_mgr:  # 그림 화면: 장면이 옮겨 가는 연출 (map_view.py)
+                _ui_mgr.update(player, grid)
+                _ui_mgr.play_move()
 
             if current_loc == tuple(grid.bunker_pos):
                 if constants.SESSIONS_DB and len(constants.SESSIONS_DB) > 6:

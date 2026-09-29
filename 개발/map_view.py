@@ -5,17 +5,21 @@
 Main.py의 _ui_mgr 자리에 들어간다: update(player, grid)로 상태를 받고, 입력은 원래대로 read_key()가 받는다.
 인벤토리·일지·전투처럼 자기 화면이 있는 기능 앞에서는 deactivate()로 내려 원래 화면이 나오게 한다.
 """
+import math
 import random
+import time
 
 import pygame
 
 import constants
 import forge
 import scene_art
-from event_view import AMBER, BG, BUNKER, EventView, INK, INK_DIM, INK_FAINT, JUNKYARD, RED, TEAL, GREEN, VIOLET, _lerp, place_label
+from event_view import AMBER, BG, BUNKER, PLATE_W, EventView, INK, INK_DIM, INK_FAINT, JUNKYARD, RED, TEAL, GREEN, VIOLET, _lerp, place_label
 from i18n import db_t, t
 
 ISO_W, ISO_H = 32, 16   # 2.5D 미니맵 마름모 한 칸 (가로, 세로)
+MOVE_MS = 450           # 칸 이동 연출 길이
+PAN = 0.08              # 좌우 이동 때 이전 장면이 밀려나는 폭 (그림 너비 대비)
 
 
 class MapView(EventView):
@@ -23,6 +27,8 @@ class MapView(EventView):
         super().__init__(term, player, grid, self._location(grid))
         self._key = None
         self.actions = []
+        self._move = None          # 이동 연출: {"old": 이전 장면 그림, "d": (dx, dy), "from": 이전 칸, "t0": 시작}
+        self._pos = list(grid.player_pos)
 
     @staticmethod
     def _location(grid):
@@ -44,11 +50,88 @@ class MapView(EventView):
         self.location = self._location(grid)
         turn = player.turn_count
         key = (tuple(grid.player_pos), scene_art.world_time(turn), scene_art.world_weather(turn))
+        pos = list(grid.player_pos)
+        if pos != self._pos:  # 칸을 옮겼다: 지금 보이는 장면을 떠 두고 새 장면으로 넘어가는 연출
+            d = (pos[0] - self._pos[0], pos[1] - self._pos[1])
+            old = None
+            if self._active and self._plate is not None:  # 이전 칸 장면 그림만 (미니맵·지명은 빼고)
+                H = self._term._canvas.get_height()
+                old = pygame.Surface((PLATE_W, H))
+                old.fill(BG)
+                EventView._draw_plate(self, old, H)
+            self._move = {"old": old, "d": d, "from": self._pos, "t0": None}  # 새 장면을 처음 그린 뒤부터 잰다
+            self._pos = pos
         if key != self._key:
             self._key = key
             self._plate, self._art, self._layers = None, None, []
             self.motif = scene_art.tile_scene(self.location, key[0])
             self.stable_key = key  # 같은 칸·시간·날씨면 늘 같은 그림 (돌아오면 같은 장면, 캐시도 걸린다)
+
+    def _move_progress(self):
+        """이동 연출 진행도 0..1 (연출 중이 아니면 None). 부드럽게 가속했다 멈춘다."""
+        if not self._move:
+            return None
+        if self._move["t0"] is None:
+            return 0.0
+        k = (time.perf_counter() - self._move["t0"]) * 1000 / MOVE_MS
+        if k >= 1:
+            self._move = None
+            return None
+        return k * k * (3 - 2 * k)
+
+    def play_move(self):
+        """Main.py: 칸을 옮긴 직후 연출이 끝날 때까지 그린다 (입력은 그동안 받지 않는다)."""
+        if not self._active:
+            self._move = None
+            return
+        end = time.perf_counter() + MOVE_MS * 4 / 1000   # 그림 불러오기가 아무리 느려도 이 안에 끝낸다
+        while self._move and time.perf_counter() < end:
+            self._term.sleep_render(0.03)
+        self._move = None
+
+    def _draw_plate(self, c, H):
+        """장면 그림. 이동 중이면 새 장면을 깔고 그 위에서 이전 장면이 옅어지며 떠나간다 (좌우는 시선이 흘러가고, 앞뒤는 다가가거나 물러난다)."""
+        e = self._move_progress()
+        old = self._move["old"] if self._move else None
+        if e is None or old is None:
+            if self._move and self._move["t0"] is None:
+                self._move["t0"] = time.perf_counter()   # 장면이 없던 이동 (미니맵 표식만 미끄러진다)
+            return super()._draw_plate(c, H)
+        dx, dy = self._move["d"]
+        bob = int(math.sin(e * math.pi * 2) * 2)          # 걸음걸이처럼 살짝 출렁인다
+        # 새 장면: 좌우 이동이면 그림 속 시선이 이동 방향 끝에서 가운데로 흘러온다 (깊이 층마다 다르게)
+        self._pan = dx * (1 - e)
+        new = pygame.Surface((PLATE_W, H))
+        new.fill(BG)
+        super()._draw_plate(new, H)
+        self._pan = 0.0
+        if self._move["t0"] is None:  # 새 장면 그림이 준비됐다: 여기서부터 연출 시작
+            self._move["t0"] = time.perf_counter()
+        prev_clip = c.get_clip()
+        c.set_clip(pygame.Rect(0, 0, PLATE_W, H))
+        if dy < 0:   # 남(S): 물러나듯 새 장면이 조금 크게 보였다가 제자리로
+            ng = 1.1 - 0.1 * e
+            nw, nh = int(PLATE_W * ng), int(H * ng)
+            c.blit(pygame.transform.smoothscale(new, (nw, nh)), ((PLATE_W - nw) // 2, (H - nh) // 2 + bob))
+        else:
+            c.blit(new, (0, bob))
+        # 이전 장면은 위에서 옅어지며 떠나간다: 좌우는 반대쪽으로 조금 밀리고, 북(W)은 걸어 들어가듯 커진다
+        if dx:
+            o, pos = old, (-int(e * PLATE_W * PAN) * dx, bob)
+        elif dy > 0:
+            g_ = 1 + 0.2 * e
+            ow, oh = int(PLATE_W * g_), int(H * g_)
+            o = pygame.transform.smoothscale(old, (ow, oh))
+            pos = ((PLATE_W - ow) // 2, (H - oh) // 2 + bob)
+        else:
+            o, pos = old, (0, bob)
+        o = o.copy() if o is old else o
+        o.set_alpha(int(255 * (1 - e)))
+        c.blit(o, pos)
+        dim = pygame.Surface((PLATE_W, H), pygame.SRCALPHA)  # 가운데쯤 살짝 어두워진다 (시선이 옮겨 가는 느낌)
+        dim.fill((0, 0, 0, int(70 * math.sin(e * math.pi))))
+        c.blit(dim, (0, 0))
+        c.set_clip(prev_clip)
 
     def set_actions(self, actions):
         self.actions = actions
@@ -244,16 +327,22 @@ class MapView(EventView):
                     if abs(ux) + abs(uy) < 0.9:
                         nx, ny = sx + int(ux * hw * 0.8), sy - 1 + int(uy * hh * 0.8)
                         c.set_at((nx, ny), (46, 45, 42) if not alarm else (96, 52, 46))
-            if pos == list(g.player_pos):
-                # N-404: 스캔 핑 고리 + 낙인 표식
-                ty = sy - 4
-                ring = pygame.Surface((ISO_W + 10, ISO_H + 10), pygame.SRCALPHA)
-                rw = int(8 + pulse * (ISO_W + 2))
-                pygame.draw.ellipse(ring, (*AMBER, int(210 * (1 - pulse))),
-                                    (ring.get_width() // 2 - rw // 2, ring.get_height() // 2 - rw // 4, rw, rw // 2), 1)
-                c.blit(ring, (sx - ring.get_width() // 2, ty - ring.get_height() // 2))
-                pygame.draw.polygon(c, AMBER, [(sx - 4, ty - 12), (sx + 4, ty - 12), (sx, ty - 5)])
-                pygame.draw.line(c, _lerp(BG, AMBER, 0.6), (sx, ty - 5), (sx, ty), 1)
+        # N-404: 스캔 핑 고리 + 낙인 표식 (이동 중이면 이전 칸에서 미끄러져 온다)
+        px, py = g.player_pos
+        e = self._move_progress()
+        if e is not None:
+            fx0, fy0 = self._move["from"]
+            px, py = fx0 + (px - fx0) * e, fy0 + (py - fy0) * e
+        sx = cx + int((px - py) * hw)
+        sy = base - int((px + py) * hh)
+        ty = sy - 4
+        ring = pygame.Surface((ISO_W + 10, ISO_H + 10), pygame.SRCALPHA)
+        rw = int(8 + pulse * (ISO_W + 2))
+        pygame.draw.ellipse(ring, (*AMBER, int(210 * (1 - pulse))),
+                            (ring.get_width() // 2 - rw // 2, ring.get_height() // 2 - rw // 4, rw, rw // 2), 1)
+        c.blit(ring, (sx - ring.get_width() // 2, ty - ring.get_height() // 2))
+        pygame.draw.polygon(c, AMBER, [(sx - 4, ty - 12), (sx + 4, ty - 12), (sx, ty - 5)])
+        pygame.draw.line(c, _lerp(BG, AMBER, 0.6), (sx, ty - 5), (sx, ty), 1)
 
         # 시각 센서 느낌: 주사선 + 천천히 내려가는 스캔 띠 + 비
         fx = pygame.Surface((width, height), pygame.SRCALPHA)

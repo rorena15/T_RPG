@@ -746,9 +746,10 @@ class EventView:
             drift = (math.sin(t * 0.045), math.sin(t * 0.031 + 1.3))  # -1..1
             tilt = self._mouse_tilt()
             self._offsets = []
+            pan = getattr(self, "_pan", 0.0)  # 칸 이동 연출: 시선이 옆으로 흘러간다 (-1..1, map_view.py)
             for depth, layer in enumerate([self._art] + self._layers):
                 k = PARALLAX[depth]
-                ox = mx / 2 + (drift[0] * 0.5 * k + tilt[0] * TILT[depth]) * mx
+                ox = mx / 2 + (drift[0] * 0.5 * k + tilt[0] * TILT[depth] + pan * k) * mx
                 oy = my / 2 + (drift[1] * 0.5 * k + tilt[1] * TILT[depth]) * my
                 off = (int(max(0, min(mx, ox))), int(max(0, min(my, oy))))
                 self._offsets.append(off)
