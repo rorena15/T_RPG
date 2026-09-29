@@ -98,13 +98,21 @@ def show_diary_view(player):
 
 
 def show_text_view(title, text, scene="forge"):
-    """긴 글을 위에서부터 읽는 화면 (크레딧·라이선스 전문). ↑↓·휠 한 줄, PgUp/PgDn 한 쪽, Home/End, Enter·0으로 닫는다."""
+    """긴 글을 위에서부터 읽는 화면 (크레딧·라이선스 전문, 그림 없이 글만). ↑↓·휠 한 줄, PgUp/PgDn 한 쪽, Home/End, Enter·0으로 닫는다."""
     import pygame
-    from event_view import AMBER, INK, INK_DIM, INK_FAINT
+    from event_view import AMBER, BG, INK, INK_DIM, INK_FAINT
 
     class TextView(EventView):
+        def render(self, canvas):   # 그림 없이 글만: 읽을 거리라 장면 그림·장소 표시는 두지 않는다
+            W, H = canvas.get_size()
+            canvas.fill(BG)
+            self._col_x = (W - min(W - 120, 960)) // 2   # 발밑 안내도 글 칸 왼쪽에 맞춘다
+            self._draw_column(canvas, W, H)
+            self._draw_footer(canvas, W, H)
+
         def _draw_column(self, c, W, H):
-            x, width, y = self._col_x, W - self._col_x - 36, 40
+            width = min(W - 120, 960)
+            x, y = (W - width) // 2, 40
             c.blit(self.f_mono.render(title, True, AMBER), (x, y))
             y += 40
             if self._wrapped is None or self._wrapped[0] != width:   # 수백 줄이라 폭이 바뀔 때만 다시 자른다
