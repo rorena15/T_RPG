@@ -27,6 +27,7 @@ from quest import handle_random_event, handle_trader, advance_quest, trigger_sud
 from story import handle_session, run_prologue, run_boss_core_choice, run_ending
 from gui import get_terminal
 import gm_bridge
+import forge
 
 _console = Console(highlight=False)
 
@@ -357,8 +358,9 @@ def run_game():
             clear_screen()
 
         _actions = _EXPLORE_ACTIONS
-        if grid.at_forge():  # 강화소 칸: U로 강화·수리
-            _actions = _EXPLORE_ACTIONS[:3] + [("U", t('act_forge'), True)] + _EXPLORE_ACTIONS[3:]
+        if grid.at_forge() and grid.forge_known():  # 강화소 칸: U로 발칸 게이츠 / 강화소 (forge.py)
+            _flabel = t('act_forge') if forge.built(grid) else t('act_forge_npc')
+            _actions = _EXPLORE_ACTIONS[:3] + [("U", _flabel, True)] + _EXPLORE_ACTIONS[3:]
         if _ui_mgr:
             _ui_mgr.update(player, grid)
             _ui_mgr.set_actions(_actions)
@@ -370,8 +372,10 @@ def run_game():
             print(f"  {t('cmd_move')}")
             print(f"  {t('cmd_search')}")
             print(f"  {t('cmd_inventory')}")
-            if grid.at_forge():
-                print(f"  {t('cmd_forge')}")
+            if grid.forge.get("stage", 0) == 1:
+                print(f"  {forge.progress_text(player, grid)}")
+            if grid.at_forge() and grid.forge_known():
+                print(f"  {t('cmd_forge') if forge.built(grid) else t('cmd_forge_npc')}")
             print(f"  {t('cmd_diary')}")
             print(f"  {t('cmd_save')}")
             print(f"  {t('cmd_quit')}")
@@ -383,9 +387,9 @@ def run_game():
             _off()
             player.manage_inventory()
             continue
-        elif move == "U" and grid.at_forge():
+        elif move == "U" and grid.at_forge() and grid.forge_known():
             _off()
-            player.manage_inventory(forge=True)
+            forge.visit(player, grid)
             continue
         elif move == "J":
             _off()
@@ -553,11 +557,10 @@ def run_game():
                 run_ending(player)
                 break
             else:
-                if grid.at_forge():
-                    print(t('forge_arrive_first') if is_new_tile else t('forge_arrive'))
-                    time.sleep(0.8)
-                session_triggered = False
-                if is_new_tile and constants.SESSIONS_DB and grid.session_index < len(constants.SESSIONS_DB) - 1:
+                if grid.at_forge() and not grid.forge_known():
+                    _off()
+                session_triggered = forge.on_enter(player, grid, is_new_tile)  # 발칸 게이츠를 만나면 이 칸의 세션은 건너뛴다
+                if not session_triggered and is_new_tile and constants.SESSIONS_DB and grid.session_index < len(constants.SESSIONS_DB) - 1:
                     _s_base = 0.40 if grid.session_index < 3 else 0.10
                     _s_prob = max(0.05, _s_base * (1.0 - player.turn_count / 100.0))
                     if random.random() < _s_prob:

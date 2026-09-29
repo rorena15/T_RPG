@@ -14,7 +14,8 @@ class GameMap:
         self.size = 5
         self.player_pos = [0, 0]
         self.bunker_pos = [4, 4]
-        self.forge_pos = self._pick_forge_pos()   # 강화소 (주무기 강화·수리는 여기서만)
+        self.forge_pos = self._pick_forge_pos()   # 강화소 자리 (발칸 게이츠 퀘스트, forge.py). 처음엔 안 보임
+        self.forge = {"stage": 0}                  # 0 못 만남 / 1 의뢰 중 / 2 완공
         self.visited_tiles: set = {(0, 0)}
         self.session_index = 0
         self.escaped_enemy_hp = None
@@ -29,6 +30,9 @@ class GameMap:
         cands = [[x, y] for x in range(self.size) for y in range(self.size)
                  if 2 <= x + y <= 5 and abs(x - bunker[0]) + abs(y - bunker[1]) >= 2 and (x, y) != start]
         return random.choice(cands)
+
+    def forge_known(self) -> bool:
+        return self.forge.get("stage", 0) >= 1 or bool(self.forge.get("met"))
 
     def at_forge(self) -> bool:
         return list(self.player_pos) == list(self.forge_pos)
@@ -99,6 +103,7 @@ class GameMap:
         return {
             "player_pos": self.player_pos,
             "forge_pos": self.forge_pos,
+            "forge": self.forge,
             "visited_tiles": list(self.visited_tiles),
             "session_index": self.session_index,
             "escaped_enemy_hp": self.escaped_enemy_hp,
@@ -111,6 +116,7 @@ class GameMap:
     def from_dict(self, data):
         self.player_pos = data.get("player_pos", [0, 0])
         self.forge_pos = data.get("forge_pos", self.forge_pos)
+        self.forge = data.get("forge", {"stage": 0})
         self.visited_tiles = {tuple(x) for x in data.get("visited_tiles", [(0, 0)])}
         self.session_index = data.get("session_index", 0)
         self.escaped_enemy_hp = data.get("escaped_enemy_hp", None)
@@ -144,8 +150,9 @@ class GameMap:
                     row += Fore.CYAN + Style.BRIGHT + "[ P ]" + RST
                 elif [x, y] == self.bunker_pos:
                     row += Fore.YELLOW + Style.BRIGHT + "[ B ]" + RST
-                elif [x, y] == self.forge_pos:
-                    row += Fore.MAGENTA + Style.BRIGHT + "[ U ]" + RST
+                elif [x, y] == self.forge_pos and self.forge_known():
+                    built = self.forge.get("stage", 0) >= 2
+                    row += (Fore.MAGENTA + Style.BRIGHT + "[ U ]" if built else Fore.MAGENTA + "[ u ]") + RST
                 elif (x, y) in self.visited_tiles:
                     row += Fore.WHITE + Style.DIM + "[ ■ ]" + RST
                 else:

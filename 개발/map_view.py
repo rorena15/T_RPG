@@ -8,6 +8,7 @@ Main.py의 _ui_mgr 자리에 들어간다: update(player, grid)로 상태를 받
 import pygame
 
 import constants
+import forge
 import scene_art
 from event_view import AMBER, BG, BUNKER, EventView, INK, INK_DIM, INK_FAINT, JUNKYARD, RED, TEAL, GREEN, _lerp, place_label
 from i18n import db_t, t
@@ -64,9 +65,12 @@ class MapView(EventView):
         c.blit(self.f_title.render(head, True, INK), (x, y + 22))
         sky = t('map_sky', time=t(f'time_{scene_art.world_time(turn)}'), weather=t(f'weather_{scene_art.world_weather(turn)}'), turn=turn)
         c.blit(self.f_sans.render(sky, True, INK_DIM), (x, y + 66))
-        fd = g.forge_dist()
-        forge = self.f_sans.render(t('map_at_forge') if fd == 0 else t('map_forge_dist', n=fd), True, AMBER)
-        c.blit(forge, (x + width - forge.get_width(), y + 66))
+        fs = g.forge.get("stage", 0)
+        if fs >= 2 or g.forge.get("met"):  # 강화소 (완공) / 발칸 게이츠 (만났지만 의뢰 전) 거리
+            fd = g.forge_dist()
+            key = ('map_at_forge' if fs >= 2 else 'map_at_vulkan') if fd == 0 else ('map_forge_dist' if fs >= 2 else 'map_vulkan_dist')
+            fsurf = self.f_sans.render(t(key, n=fd), True, AMBER)
+            c.blit(fsurf, (x + width - fsurf.get_width(), y + 66))
         y += 104
 
         mw = 0
@@ -92,13 +96,18 @@ class MapView(EventView):
         pygame.draw.line(c, (46, 44, 42), (bx, sy + 12), (bx + bw, sy + 12), 3)
         pygame.draw.line(c, col, (bx, sy + 12), (bx + int(bw * al / 100), sy + 12), 3)
         c.blit(self.f_mono.render(f"{al} · {label.strip('[]')}", True, col), (bx + bw + 10, sy + 4))
+        qy = sy + 30
         if p.active_quest:
             q = p.active_quest
             left = max(0, q["deadline"] - p.turn_count)
-            c.blit(self.f_sans.render(t('map_quest', title=db_t(q, 'title'), left=left), True, AMBER), (sx, sy + 30))
+            c.blit(self.f_sans.render(t('map_quest', title=db_t(q, 'title'), left=left), True, AMBER), (sx, qy))
+            qy += 26
+        if fs == 1:  # 발칸 게이츠 의뢰 진행
+            c.blit(self.f_sans.render(forge.progress_text(p, g), True, AMBER), (sx, qy))
+            qy += 26
 
         # 최근 기록 (터미널에 찍힌 글)
-        y = sy + (60 if p.active_quest else 40)
+        y = qy + 10
         mid = x + width // 2
         for i in (-18, 0, 18):
             pygame.draw.circle(c, INK_FAINT, (mid + i, y), 2)
@@ -135,12 +144,13 @@ class MapView(EventView):
                     pygame.draw.rect(c, _lerp(BG, TEAL, 0.25), rect)
                     pygame.draw.rect(c, TEAL, rect, 1)
                     pygame.draw.rect(c, TEAL, rect.inflate(-12, -12))
-                elif [gx, gy] == list(g.forge_pos):  # 강화소: 호박색 모루 표시
+                elif [gx, gy] == list(g.forge_pos) and g.forge_known():  # 강화소: 호박색 모루 (완공 전엔 흐리게)
+                    col = AMBER if forge.built(g) else _lerp(BG, AMBER, 0.55)
                     pygame.draw.rect(c, _lerp(BG, AMBER, 0.18), rect)
-                    pygame.draw.rect(c, AMBER, rect, 1)
+                    pygame.draw.rect(c, col, rect, 1)
                     cx, cy = rect.center
-                    pygame.draw.rect(c, AMBER, (cx - 7, cy - 3, 14, 4))
-                    pygame.draw.rect(c, AMBER, (cx - 3, cy + 1, 6, 5))
+                    pygame.draw.rect(c, col, (cx - 7, cy - 3, 14, 4))
+                    pygame.draw.rect(c, col, (cx - 3, cy + 1, 6, 5))
                 else:
                     seen = pos in g.visited_tiles
                     pygame.draw.rect(c, (34, 33, 31) if seen else (14, 14, 15), rect)
