@@ -1,6 +1,6 @@
 """인벤토리 화면 (이벤트 화면과 같은 틀, 방향키 조작).
 
-탭: 장비 슬롯 / 가방 / 소모품 (←→ 또는 Tab). 목록은 ↑↓, 아래에 고른 항목의 상세.
+탭: 장비 슬롯 / 가방 / 소모품 (Tab, Shift+Tab 거꾸로, 또는 탭을 클릭). 목록은 ↑↓, 아래에 고른 항목의 상세.
 Enter: 가방=장착, 슬롯=해제, 소모품=사용.  D: 가방 항목 분해(한 번 더 D로 확인).  0: 돌아가기.
 규칙은 player.py의 예전 터미널 인벤토리와 같다 (장착 슬롯 자동 인식, 장착 중 분해 불가, 분해 고철 15~30).
 """
@@ -332,15 +332,13 @@ class InventoryView(EventView):
         return False
 
     def run(self):
-        # 고르기 ↑↓(W/S)·휠, 탭 ←→(A/D·Tab), 장착·사용 Enter·Space·더블 클릭, 분해 X(Delete), 강화 R, 수리 F,
+        # 고르기 ↑↓(W/S)·휠, 탭 전환 Tab(Shift+Tab 거꾸로)·탭 클릭, 장착·사용 Enter·Space·더블 클릭, 분해 X(Delete), 강화 R, 수리 F,
         # 퀵슬롯 등록 1~0 (소모품 탭), 닫기 Esc·I
         # (예전엔 D가 분해라 WASD로 탭을 넘기다 분해 확인이 떴다)
-        self.footer = [("←→", t('inv_key_tab')), ("Enter", t('inv_key_act')), ("X", t('inv_key_dismantle'))]
+        self.footer = [("Tab", t('inv_key_tab')), ("Enter", t('inv_key_act')), ("X", t('inv_key_dismantle'))]
         if self.forge:
             self.footer += [("R", t('upg_key')), ("F", t('rep_key'))]
         self.footer.append(("Esc", t('inv_key_back'), "0"))
-        if not self.forge:
-            self.footer.insert(-1, ("1~0", t('qs_key')))
         sound.sfx("inv_open")
         self.open()
         try:
@@ -368,8 +366,8 @@ class InventoryView(EventView):
                         self.sel[self.tab] = min(max(0, len(rows) - 1), self.sel[self.tab] + 1)
                         self.confirm = None
                         sound.sfx("ui_move")
-                    elif ev.key in (pygame.K_LEFT, pygame.K_a, pygame.K_RIGHT, pygame.K_d, pygame.K_TAB):
-                        step = -1 if ev.key in (pygame.K_LEFT, pygame.K_a) else 1
+                    elif ev.key == pygame.K_TAB:   # 탭 전환은 Tab (Shift+Tab은 거꾸로)
+                        step = -1 if ev.mod & pygame.KMOD_SHIFT else 1
                         self.tab = TABS[(TABS.index(self.tab) + step) % len(TABS)]
                         self.msg, self.confirm = [], None
                         sound.sfx("ui_tab")

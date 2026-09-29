@@ -1392,16 +1392,26 @@ class EventView:
 
     @staticmethod
     def quick_label(key):
-        """칸에 들어갈 짧은 글: 회복은 양(10% / +300), 먹을 것은 식량·식수."""
+        """(짧은 이름, 종류 색): 치료는 붉게, 식량은 호박, 물은 청록."""
         import constants
         d = constants.CONSUMABLES_DB.get(key)
         if not d:
             return "", INK_FAINT
+        # 칸이 좁아 짧은 이름 (locales의 qs_short_<id>, 없으면 이름의 마지막 낱말)
+        k = f"qs_short_{key}"
+        label = i18n.t(k) if i18n.has(k) else i18n.db_t(d, 'name').split()[-1]
+        col = RED if d["type"] == "hp" else (AMBER if d["type"] == "food" else TEAL)
+        return label, col
+
+    @staticmethod
+    def quick_effect(key):
+        """마우스를 올렸을 때 보여 줄 효과 (HP +100 / HP 50% / 허기 +30 …)."""
+        import constants
+        d = constants.CONSUMABLES_DB[key]
         if d["type"] == "hp":
-            return (f"{int(d['val'] * 100)}%" if d["is_percent"] else f"+{d['val']}"), RED
-        if d["type"] == "food":
-            return i18n.t('qs_food'), AMBER
-        return i18n.t('qs_water'), TEAL
+            return i18n.t('consumable_hp_percent', pct=int(d['val'] * 100)) if d["is_percent"] else i18n.t('consumable_hp_fixed', val=d['val'])
+        return ((i18n.t('consumable_hunger', val=d['hunger']) if d['hunger'] > 0 else "") +
+                (i18n.t('consumable_thirst', val=d['thirst']) if d['thirst'] > 0 else "")).strip()
 
     def _draw_quickbar(self, c, x, y, width):
         """퀵슬롯 10칸. 비었으면 흐린 칸, 개수가 0이면 흐리게. 마우스를 올린 칸 이름은 위에 띄운다."""
@@ -1417,21 +1427,26 @@ class EventView:
             n = p.consumables.get(key, 0) if key else 0
             hov = self._quick_hover == ch
             box = pygame.Surface(rect.size, pygame.SRCALPHA)
-            box.fill((*AMBER, 36) if hov else (255, 255, 255, 12 if key else 5))
+            box.fill((*AMBER, 36) if hov else (255, 255, 255, 12 if key else 4))
             c.blit(box, rect.topleft)
-            pygame.draw.rect(c, AMBER if hov else ((70, 66, 60) if key else (40, 38, 36)), rect, 1)
-            c.blit(self.f_mono.render(ch, True, AMBER if key else INK_FAINT), (rect.x + 4, rect.y + 2))
+            pygame.draw.rect(c, AMBER if hov else ((70, 66, 60) if key else (36, 34, 32)), rect, 1)
+            c.blit(self.f_mono.render(ch, True, AMBER if key else (70, 66, 60)), (rect.x + 4, rect.y + 2))
             if key:
                 label, col = self.quick_label(key)
-                col = col if n else INK_FAINT
-                g = self.f_mono_b.render(label, True, col)
-                c.blit(g, (rect.centerx - g.get_width() // 2, rect.y + 17))
-                cnt = self.f_mono.render(f"x{n}", True, INK_DIM if n else INK_FAINT)
+                if n:   # 종류 색 띠 (아래)
+                    pygame.draw.line(c, col, (rect.x + 3, rect.bottom - 3), (rect.right - 4, rect.bottom - 3), 2)
+                font = self.f_mono if self.f_mono.size(label)[0] <= bw - 4 else self.f_mono
+                g = font.render(label, True, INK if n else INK_FAINT)
+                if g.get_width() > bw - 4:
+                    g = pygame.transform.smoothscale(g, (bw - 4, g.get_height()))
+                c.blit(g, (rect.centerx - g.get_width() // 2, rect.y + 20))
+                cnt = self.f_mono.render(str(n), True, INK_DIM if n else RED)
                 c.blit(cnt, (rect.right - cnt.get_width() - 4, rect.y + 2))
             hits.append((ch, rect))
             if hov and key:
-                name = self.f_sans.render(i18n.db_t(constants.CONSUMABLES_DB[key], 'name') + f"  x{n}", True, INK)
-                c.blit(name, (x, y - 26))
+                d = constants.CONSUMABLES_DB[key]
+                tip = f"{ch}  {i18n.db_t(d, 'name')}  ·  {self.quick_effect(key)}  ·  x{n}"
+                c.blit(self.f_sans.render(tip, True, INK if n else INK_DIM), (x, y - 26))
         self._quick_hits = hits
 
     def quick_at(self, pos):

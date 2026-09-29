@@ -411,11 +411,11 @@ def run_game():
             _qk = player.quick_item(move)
             _qmsg = player.use_consumable(_qk) if _qk else None
             if _qmsg:
-                print(f"\n  {_qmsg}")
+                print(_qmsg)
             elif _qk:
-                print(f"\n  {t('qs_none_left', name=db_t(constants.CONSUMABLES_DB[_qk], 'name'))}")
+                print(t('qs_none_left', name=db_t(constants.CONSUMABLES_DB[_qk], 'name')))
             else:
-                print(f"\n  {t('qs_empty', n=move)}")
+                print(t('qs_empty', n=move))
             if not _ui_mgr:
                 time.sleep(0.8)
             continue

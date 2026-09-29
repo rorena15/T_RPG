@@ -293,8 +293,8 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
         elif cmd and cmd in player.QUICK_KEYS:  # 퀵슬롯 (누른 숫자키 그대로, 행동 번호로 바꾸기 전에): 그 소모품을 쓰는 데 한 턴
             _quick_key = player.quick_item(cmd)
             if not _quick_key or player.consumables.get(_quick_key, 0) <= 0:
-                action_logs.append(t('qs_empty', n=cmd) if not _quick_key else
-                                   t('qs_none_left', name=db_t(constants.CONSUMABLES_DB[_quick_key], 'name')))
+                action_logs.append((t('qs_empty', n=cmd) if not _quick_key else
+                                    t('qs_none_left', name=db_t(constants.CONSUMABLES_DB[_quick_key], 'name'))).strip())
                 continue   # 빈 칸은 턴을 쓰지 않는다
             cmd = "5"
         else:
