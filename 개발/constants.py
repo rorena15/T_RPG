@@ -205,7 +205,6 @@ BOSS_DEF             = 45
 BOSS_BASE_ATK        = 200
 BOSS_HP              = 20000
 BOSS_TURN_LIMIT      = 15
-BUNKER_MIN_SEARCHES  = 10     # 방공호(보스) 문을 열려면 필요한 탐색(F) 횟수. 파밍 없이 보스로 곧장 가지 못한다
 BOSS_PHASE2_RATIO    = 0.5    # HP 이 비율 이하 → Phase 2 전환
 BOSS_PHASE2_ATK_MULT = 1.6
 BOSS_PHASE2_LI_BONUS = 5
