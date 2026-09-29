@@ -177,6 +177,7 @@ class Intro:
         if "wind" not in self._played:
             self._played.add("wind")
             sound.play_map_ambient()  # 바람 소리는 타이틀 메뉴까지 그대로 이어진다
+            sound.play_title_bgm()    # 그 위로 타이틀 곡
         v = self.view
         saved = v.log
         v.log = []
@@ -242,6 +243,7 @@ class Intro:
                 self._tinnitus.fadeout(300)
             if "wind" not in self._played:
                 sound.play_map_ambient()
+                sound.play_title_bgm()
             self._active = False
             term._ui_manager = self._prev
             pygame.event.clear(pygame.KEYDOWN)  # 건너뛰려고 누른 키가 메뉴를 고르지 않게

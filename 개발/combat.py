@@ -179,6 +179,7 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
         if is_boss and not phase2_triggered and hp <= boss_max_hp * constants.BOSS_PHASE2_RATIO:
             phase2_triggered = True
             sound.sfx("phase2")
+            sound.boss_phase2()
             atk = int(base_atk * constants.BOSS_PHASE2_ATK_MULT)
             learning_index += constants.BOSS_PHASE2_LI_BONUS
             clear_screen()

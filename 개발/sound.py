@@ -29,13 +29,13 @@ _TRACKS = {
     "combat": ("combat.mp3", 0.65),
     "boss":   ("bgm_boss.ogg", 0.6),      # Godot TPS Demo 음악 (CC BY 3.0, Christian Fernando Perucchi)
     "night":  ("bgm_night.ogg", 0.4),     # "House In a Forest Loop" (CC BY 3.0, HorrorPen)
-    "ending": ("bgm_ending.ogg", 0.55),   # Godot TPS Demo 메뉴 음악 (CC BY 3.0, Christian Fernando Perucchi)
+    "menu":   ("bgm_menu.ogg", 0.5),      # 타이틀·엔딩: Godot TPS Demo 메뉴 음악 (CC BY 3.0, Christian Fernando Perucchi)
     # 날씨 (assets/weather_*.wav, 10초 반복)
     "wx_smog": ("weather_smog.wav", 0.22), "wx_fog": ("weather_fog.wav", 0.25), "wx_dust": ("weather_dust.wav", 0.4),
     "wx_ash": ("weather_ash.wav", 0.3), "wx_acid": ("weather_acid.wav", 0.4),
 }
 _FADE_MS = 700        # 곡 바꿀 때 겹치는 시간
-_DUCK = {"typing": 0.45, "combat": 0.0, "boss": 0.0, "night": 0.75, "ending": 0.0}   # 음악이 나올 때 바람 소리 크기 (기본 대비)
+_DUCK = {"typing": 0.45, "combat": 0.0, "boss": 0.0, "night": 0.75, "menu": 0.5}   # 음악이 나올 때 바람 소리 크기 (기본 대비)
 
 _vol_mult = 0.5       # 사용자 BGM 음량 (0.0~1.0)
 _muted    = False     # 음소거 상태
@@ -463,8 +463,40 @@ def play_boss_bgm():
 
 
 def play_ending_bgm():
-    """엔딩 BGM"""
-    _play_music("ending")
+    """엔딩 BGM (타이틀 곡으로 처음과 끝을 잇는다)"""
+    _play_music("menu")
+
+
+def play_title_bgm():
+    """타이틀 BGM (바람 소리 위로)"""
+    _play_music("menu")
+
+
+_boss_hb = False     # 보스 2페이즈 심장박동 (허기 경보가 끄지 않게)
+
+
+def boss_phase2():
+    """보스 2페이즈: 보스 음악을 키우고, 심장박동을 깔고, 귀울림을 한 번 울린다."""
+    global _boss_hb
+    if not _ready or _current != "boss":
+        return
+    try:
+        ch = _music_ch.get("boss")
+        if ch is not None:
+            _ramp(ch, min(1.0, _music_level("boss") * 1.35), 1200)
+        if _hb_channel is not None and _hb_sound is not None and not _muted:
+            _boss_hb = True
+            if not _hb_channel.get_busy():
+                _hb_channel.play(_hb_sound, loops=-1)
+        p = _asset("tinnitus.mp3")
+        if os.path.exists(p) and not _muted:
+            snd = pygame.mixer.Sound(p)
+            ch2 = _free_sfx_channel()
+            ch2.set_volume(0.35 * _sfx_gain())
+            ch2.play(snd, fade_ms=400)
+            ch2.fadeout(3500)
+    except Exception:
+        pass
 
 
 def map_mood(time_of_day):
@@ -484,9 +516,10 @@ def resume_map_ambient():
 
 def stop_all(fade_ms=800):
     """모든 사운드 정지 (게임 종료·엔딩 시)"""
-    global _current, _weather, _weather_ch
+    global _current, _weather, _weather_ch, _boss_hb
     if not _ready:
         return
+    _boss_hb = False
     try:
         for ch in [_ch_wind] + _ch_music + _ch_weather:
             if ch.get_busy():
@@ -505,7 +538,7 @@ def check_survival_alert(hunger: int, thirst: int):
     if not _OK or _hb_channel is None or _hb_sound is None:
         return
     try:
-        critical = hunger <= 10 or thirst <= 10
+        critical = hunger <= 10 or thirst <= 10 or _boss_hb
         if critical:
             if not _hb_channel.get_busy():
                 _hb_channel.play(_hb_sound, loops=-1)

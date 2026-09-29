@@ -16,7 +16,7 @@ CC BY 3.0 음원은 원작자 표기가 필요하다: 게임 크레딧과 README
 | 파일 | 곡 | 라이선스 |
 |---|---|---|
 | `bgm_boss.ogg` (보스전) | Godot TPS Demo 레벨 음악 — © 2018 Christian Fernando Perucchi (https://github.com/godotengine/tps-demo) | CC BY 3.0 |
-| `bgm_ending.ogg` (엔딩) | Godot TPS Demo 메뉴 음악 — © 2018 Christian Fernando Perucchi | CC BY 3.0 |
+| `bgm_menu.ogg` (타이틀·엔딩) | Godot TPS Demo 메뉴 음악 — © 2018 Christian Fernando Perucchi | CC BY 3.0 |
 | `bgm_night.ogg` (밤·새벽 탐색) | "Loop - House in a Forest" — © 2012 HorrorPen (https://opengameart.org/content/loop-house-in-a-forest) | CC BY 3.0 |
 
 ## 날씨 환경음 (`assets/weather_*.wav`)
