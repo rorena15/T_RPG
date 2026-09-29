@@ -54,10 +54,12 @@ def h2():
     for i, (k, l, hint) in enumerate(items):
         on = i == 1; r = pygame.Rect(COL_X - 12, y - 6, COL_W + 24, 38)
         if on: panel(c, r, 120, None); m._sensor_frame(c, r, SEN, 11)
-        text(c, m.f_mono_b, k, SEN if on else AMBER, (COL_X, y + 2)); text(c, m.f_sans, l, INK if on else INK_DIM, (COL_X + 28, y + 2))
+        # 번호는 안 보인다 (숫자키는 그대로 동작). 고른 줄만 ▸ 표시와 테두리
+        if on: text(c, m.f_mono_b, "▸", SEN, (COL_X, y + 2))
+        text(c, m.f_sans, l, INK if on else INK_DIM, (COL_X + 22, y + 2))
         y += 44
     mini_status(c, H - 100)
-    footer(c, [("↑↓", "고르기"), ("Enter", "결정"), ("0", "직접 입력")])
+    footer(c, [("↑↓", "고르기"), ("Enter", "결정"), ("클릭", "")])
     save(c, "h2_story")
 
 def h3():
