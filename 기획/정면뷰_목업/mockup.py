@@ -105,6 +105,26 @@ COMBAT_ACTS = [("Q", "공격", "act_attack"), ("E", "바리케이드", "act_barr
 def save(c, name):
     pygame.image.save(c, f"{OUT}_{name}.png")
 
+def mini_status(c, y, alert=48):
+    for i, (lab, v, col) in enumerate((("HP", p.hp / p.max_hp, GREEN if p.hp / p.max_hp > 0.5 else RED), ("허기", 0.72, AMBER), ("갈증", 0.58, TEAL))):
+        x = 40 + i * 180
+        text(c, m.f_mono, lab, INK_DIM, (x, y)); pygame.draw.rect(c, (40, 36, 32), (x + 40, y + 6, 120, 4)); pygame.draw.rect(c, col, (x + 40, y + 6, int(120 * v), 4))
+    text(c, m.f_mono, f"경보 {alert}", AMBER if alert < 70 else RED, (W - 40, y), "tr")
+
+def slim_actions(c, y, acts, sel):
+    """한 줄 행동: 키 · 아이콘 · 이름 (글자 버튼, 테두리는 고른 것만)."""
+    x = 40
+    for i, (k, l, ic) in enumerate(acts):
+        on = i == sel
+        wdt = 34 + 30 + m.f_sans.size(l)[0] + 14
+        r = pygame.Rect(x - 8, y - 6, wdt, 36)
+        if on:
+            panel(c, r, 150, None); m._sensor_frame(c, r, SEN, 5)
+        text(c, m.f_mono_b, k, SEN if on else AMBER, (x, y + 2))
+        c.blit(m.crt_icon(ic, 22, SEN if on else m.SENSOR_DIM), (x + 18, y))
+        text(c, m.f_sans, l, INK if on else INK_DIM, (x + 46, y + 2))
+        x += wdt + 6
+
 # 1) 랜드마크 탐색 — 새벽 대성당, 랜드마크 발견 배너
 def m1():
     c = pygame.Surface((W, H)); c.blit(art("lm_cathedral/lm_cathedral_dawn_smog_0.jpg", 0.35), (0, 0)); grade(c)
@@ -229,26 +249,6 @@ for f in (m1, m2, m3, m4, m5, m6):
 sys.__stdout__.write("ok\n")
 
 # ── 6번(최소 HUD) 톤으로 전투·대화 ─────────────────────────────────────────
-def mini_status(c, y, alert=48):
-    for i, (lab, v, col) in enumerate((("HP", p.hp / p.max_hp, GREEN if p.hp / p.max_hp > 0.5 else RED), ("허기", 0.72, AMBER), ("갈증", 0.58, TEAL))):
-        x = 40 + i * 180
-        text(c, m.f_mono, lab, INK_DIM, (x, y)); pygame.draw.rect(c, (40, 36, 32), (x + 40, y + 6, 120, 4)); pygame.draw.rect(c, col, (x + 40, y + 6, int(120 * v), 4))
-    text(c, m.f_mono, f"경보 {alert}", AMBER if alert < 70 else RED, (W - 40, y), "tr")
-
-def slim_actions(c, y, acts, sel):
-    """한 줄 행동: 키 · 아이콘 · 이름 (글자 버튼, 테두리는 고른 것만)."""
-    x = 40
-    for i, (k, l, ic) in enumerate(acts):
-        on = i == sel
-        wdt = 34 + 30 + m.f_sans.size(l)[0] + 14
-        r = pygame.Rect(x - 8, y - 6, wdt, 36)
-        if on:
-            panel(c, r, 150, None); m._sensor_frame(c, r, SEN, 5)
-        text(c, m.f_mono_b, k, SEN if on else AMBER, (x, y + 2))
-        c.blit(m.crt_icon(ic, 22, SEN if on else m.SENSOR_DIM), (x + 18, y))
-        text(c, m.f_sans, l, INK if on else INK_DIM, (x + 46, y + 2))
-        x += wdt + 6
-
 def m7():
     c = pygame.Surface((W, H)); c.blit(art("enemy_drones/" + sorted(f for f in os.listdir(S + "enemy_drones") if f.endswith(".jpg"))[0]), (0, 0))
     grade(c, top=120, bottom=0.74)
