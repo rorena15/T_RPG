@@ -106,6 +106,8 @@ SFX_VOL = {
     "atk_fist": 0.5, "atk_blade": 0.5, "atk_eblade": 0.5, "atk_blunt": 0.6, "atk_saw": 0.5, "atk_shock": 0.5,
     "atk_flame": 0.55, "atk_gun": 0.55, "atk_shotgun": 0.65, "atk_heavy": 0.7, "atk_energy": 0.55, "atk_toxin": 0.5,
     "crit": 0.6, "sub": 0.7,
+    # 적 종류별 공격 (enemy_attack())
+    "enemy_drone": 0.5, "enemy_hound": 0.6, "enemy_boss": 0.75,
     "hurt": 0.6, "hurt_heavy": 0.75, "barricade": 0.55, "hack": 0.45, "deny": 0.35, "escape": 0.45,
     "heal": 0.4, "eat": 0.4, "skill": 0.5, "win": 0.5, "alert": 0.45, "phase2": 0.7, "death": 0.7,
     "anvil": 0.55, "clunk": 0.5, "drop": 0.55, "repair": 0.45,
@@ -162,9 +164,25 @@ def _free_sfx_channel():
     return chans[_sfx_rr[0]]
 
 
-def sfx(name, vol=1.0):
-    """효과음 한 번. 음소거·사용자 음량을 따른다. 없는 이름이나 초기화 전이면 조용히 넘어간다."""
+# 적 종류 -> (공격음, 맞는 순간까지 초)
+ENEMY_SFX = {"drone": ("enemy_drone", 0.25), "bio_hound": ("enemy_hound", 0.6), "boss": ("enemy_boss", 0.7)}
+
+
+def enemy_attack(enemy, heavy=False):
+    """적의 공격음을 내고, 맞는 순간에 피격음을 잇는다. enemy: drone / bio_hound / boss."""
+    name, hit_at = ENEMY_SFX.get(enemy, ENEMY_SFX["drone"])
+    sfx(name)
+    sfx("hurt_heavy" if heavy else "hurt", delay=hit_at)
+
+
+def sfx(name, vol=1.0, delay=0.0):
+    """효과음 한 번 (delay초 뒤). 음소거·사용자 음량을 따른다. 없는 이름이나 초기화 전이면 조용히 넘어간다."""
     if not _ready or _muted:
+        return
+    if delay > 0:
+        t = threading.Timer(delay, sfx, args=(name, vol))
+        t.daemon = True
+        t.start()
         return
     try:
         variants = _sfx_sound(name)

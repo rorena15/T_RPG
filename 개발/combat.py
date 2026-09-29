@@ -386,7 +386,7 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
                 elif res in ["NORMAL", "1.5X", "2.0X"]:
                     dmg_calc = atk if res == "NORMAL" else int(atk * 1.5) if res == "1.5X" else int(atk * 2.0)
                     disp_dmg_calc, _, _ = apply_dynamic_scaling(dmg_calc, 0, tier)
-                    sound.sfx("hurt_heavy" if res != "NORMAL" else "hurt")
+                    sound.enemy_attack(enemy_type, heavy=res != "NORMAL")
                     print(t('combat_escape_hit', dmg=f"{disp_dmg_calc:,}"))
                     _sleep(1)
                     player.hp -= dmg_calc
@@ -516,7 +516,7 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
             dmg_taken = max(1, curr_atk - total_def)
             dmg_taken = _skills.apply_incoming_buffs(player, dmg_taken, action_logs, combat_ctx)
             disp_dmg_taken, _, _ = apply_dynamic_scaling(dmg_taken, 0, tier)
-            sound.sfx("hurt_heavy" if dmg_taken >= player.max_hp * 0.2 else "hurt")
+            sound.enemy_attack("boss" if is_boss else enemy_type, heavy=dmg_taken >= player.max_hp * 0.2)
             print(Fore.RED + Style.BRIGHT + t('combat_enemy_attack', name=name, dmg=f"{disp_dmg_taken:,}"))
             _sleep(1)
             player.hp -= dmg_taken
