@@ -426,7 +426,7 @@ def run_event(player, grid, event):
         while True:
             menu = view.add("choices", items=[(str(i + 1), o[0]) for i, o in enumerate(options)]
                             + [("0", t('gm_custom_choice'))])
-            view.footer = [(f"1-{len(options)}", t('gm_foot_choose')), ("0", t('gm_foot_custom'))]
+            view.footer = [("↑↓", t('ui_select')), ("Enter", t('ui_confirm'))]
             key = view.choose(menu, len(options))
             view.log.remove(menu)
             if key == "0":

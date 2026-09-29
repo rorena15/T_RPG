@@ -894,7 +894,8 @@ class EventView:
                     start += len(ln) + 1
             return len(lines) * 32 + 10, draw
         if k == "choices":
-            rows = [(key, self._wrap(self.f_sans, text, width - 34)) for key, text in e["items"]]
+            # 번호는 보이지 않는다: 방향키·클릭으로 고르고 숫자키는 보이지 않는 단축키로 남는다. 고른 줄만 ▸
+            rows = [(key, self._wrap(self.f_sans, text, width - 22)) for key, text in e["items"]]
 
             def draw(c, x, y):
                 sel = e.get("sel")
@@ -910,10 +911,11 @@ class EventView:
                         c.blit(band, (x - 12, y - 4))
                         pygame.draw.line(c, TEAL if custom else AMBER, (x - 12, y - 4), (x - 12, y + h + 1), 2)
                     dx = 6 if on else 0
-                    c.blit(self.f_mono_b.render(f"{key}.", True, TEAL if custom else AMBER), (x + dx, y + 2))
+                    if on:
+                        c.blit(self.f_mono_b.render("▸", True, TEAL if custom else AMBER), (x + dx, y + 2))
                     ink = (TEAL if custom else INK) if on or sel is None else (_lerp(TEAL, BG, 0.35) if custom else INK_DIM)
                     for i, ln in enumerate(lines):
-                        c.blit(self.f_sans.render(ln, True, ink), (x + 34 + dx, y + i * 26))
+                        c.blit(self.f_sans.render(ln, True, ink), (x + 22 + dx, y + i * 26))
                     y += h + 8
             return sum(len(r[1]) * 26 + 8 for r in rows) + 6, draw
         if k == "you":
