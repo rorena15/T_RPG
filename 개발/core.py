@@ -124,9 +124,10 @@ def grant_gear_drop(player):
     return t('loot_gear', name=db_t(d, 'name'), tier=constants.tier_tag(d.get('tier', 4)))
 
 
-@track
 def get_equipment_data(item_id):
-    """장비 데이터는 세션 내 캐시 우선, 미등록 시 SQLite 쿼리."""
+    """장비 데이터는 세션 내 캐시 우선, 미등록 시 SQLite 쿼리.
+    호출 기록(@track)은 붙이지 않는다: 화면이 매 프레임 부르는 단순 조회라 events 기록의 87%를 차지했다.
+    여기서 난 예외는 부른 쪽(기록되는 함수)이나 전역 예외 기록에 그대로 남는다."""
     if item_id in _eq_cache:
         return _eq_cache[item_id]
     if item_id in constants.SPECIAL_ITEMS:
