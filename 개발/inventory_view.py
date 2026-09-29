@@ -160,18 +160,9 @@ class InventoryView(EventView):
             else:
                 self.msg = [t('inv_slot_empty', slot=row['label'])]
         elif row["kind"] == "cons":
-            item, key = row["d"], row["key"]
-            p.consumables[key] -= 1
-            if item["type"] == "hp":
-                amt = int(p.max_hp * item["val"]) if item["is_percent"] else item["val"]
-                p.hp = min(p.max_hp, p.hp + amt)
-                sound.sfx("heal")
-                self.msg = [t('consumable_used_hp', name=db_t(item, 'name'), amt=amt)]
-            else:
-                p.hunger = min(100, p.hunger + item["hunger"])
-                p.thirst = min(100, p.thirst + item["thirst"])
-                sound.sfx("eat")
-                self.msg = [t('consumable_used_food', name=db_t(item, 'name'))]
+            msg = p.use_consumable(row["key"])
+            if msg:
+                self.msg = [msg]
 
     # ── 그리기 (오른쪽 칸) ─────────────────────────────────────────────────
     def _draw_column(self, c, W, H):
@@ -242,7 +233,11 @@ class InventoryView(EventView):
             c.blit(info, (x + width - info.get_width() - 10, y + 3))
         else:
             d = row["d"]
-            c.blit(self.f_sans.render(db_t(d, 'name'), True, ink), (x, y))
+            slots = [ch for ch, k in zip(self.player.QUICK_KEYS, self.player.quickslots) if k == row["key"]]
+            if slots:   # 등록된 퀵슬롯 번호
+                badge = self.f_mono_b.render(f"[{slots[0]}]", True, AMBER)
+                c.blit(badge, (x, y + 1))
+            c.blit(self.f_sans.render(db_t(d, 'name'), True, ink), (x + 34, y))
             n = self.f_mono.render(f"x{row['n']}", True, INK_DIM)
             c.blit(n, (x + width - n.get_width() - 10, y + 3))
 
@@ -256,7 +251,7 @@ class InventoryView(EventView):
             else:
                 eff = (t('consumable_hunger', val=d['hunger']) if d['hunger'] > 0 else "") + \
                       (t('consumable_thirst', val=d['thirst']) if d['thirst'] > 0 else "")
-            return [(db_t(d, 'name'), INK), (eff.strip(), INK_DIM), (t('inv_hint_use'), INK_FAINT)]
+            return [(db_t(d, 'name'), INK), (eff.strip(), INK_DIM), (t('inv_hint_use'), INK_FAINT), (t('qs_hint'), AMBER)]
         slot = constants.slot_label(d.get("slot", ""))
         iid = row.get("id")
         lines = [(self._label(d, iid), TIER_COLOR.get(d.get("tier", 4), INK)),
@@ -283,6 +278,19 @@ class InventoryView(EventView):
         return lines
 
     # ── 입력 루프 ─────────────────────────────────────────────────────────
+    def assign_quick(self, row, ch):
+        """소모품 줄에서 숫자키: 그 칸에 등록 (같은 칸이면 해제)."""
+        if not row or row.get("kind") != "cons":
+            if self.tab != "consumables":
+                self.msg, self.msg_warn = [t('qs_hint')], True
+            return
+        if self.player.set_quickslot(ch, row["key"]):
+            self.msg, self.msg_warn = [t('qs_set', name=db_t(row["d"], 'name'), n=ch)], False
+            sound.sfx("ui_ok")
+        else:
+            self.msg, self.msg_warn = [t('qs_unset', n=ch)], False
+            sound.sfx("ui_back")
+
     def _hit(self, rects, pos):
         cx, cy = self.to_canvas(pos)
         return next((k for k, r in rects if r.collidepoint(cx, cy)), None)
@@ -324,12 +332,15 @@ class InventoryView(EventView):
         return False
 
     def run(self):
-        # 고르기 ↑↓(W/S)·휠, 탭 ←→(A/D·Tab), 장착·사용 Enter·Space·더블 클릭, 분해 X(Delete), 강화 R, 수리 F, 닫기 Esc·0
+        # 고르기 ↑↓(W/S)·휠, 탭 ←→(A/D·Tab), 장착·사용 Enter·Space·더블 클릭, 분해 X(Delete), 강화 R, 수리 F,
+        # 퀵슬롯 등록 1~0 (소모품 탭), 닫기 Esc·I
         # (예전엔 D가 분해라 WASD로 탭을 넘기다 분해 확인이 떴다)
-        self.footer = [("↑↓", t('ui_select')), ("←→", t('inv_key_tab')), ("Enter", t('inv_key_act')), ("X", t('inv_key_dismantle'))]
+        self.footer = [("←→", t('inv_key_tab')), ("Enter", t('inv_key_act')), ("X", t('inv_key_dismantle'))]
         if self.forge:
             self.footer += [("R", t('upg_key')), ("F", t('rep_key'))]
         self.footer.append(("Esc", t('inv_key_back'), "0"))
+        if not self.forge:
+            self.footer.insert(-1, ("1~0", t('qs_key')))
         sound.sfx("inv_open")
         self.open()
         try:
@@ -343,9 +354,12 @@ class InventoryView(EventView):
                         continue
                     if ev.type != pygame.KEYDOWN:
                         continue
-                    if ev.key in (pygame.K_ESCAPE, pygame.K_0, pygame.K_KP0):
+                    if ev.key in (pygame.K_ESCAPE, pygame.K_i):
                         sound.sfx("ui_back")
                         return
+                    if ev.unicode and ev.unicode in self.player.QUICK_KEYS:
+                        self.assign_quick(cur, ev.unicode)
+                        continue
                     if ev.key in (pygame.K_UP, pygame.K_w):
                         self.sel[self.tab] = max(0, self.sel[self.tab] - 1)
                         self.confirm = None

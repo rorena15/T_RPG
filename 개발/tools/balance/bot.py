@@ -167,18 +167,19 @@ def bot_read_key(_depth=1):
             return "A" if x > 0 and k == "D" else "S"   # 문이 잠겼고 칸도 다 뒤졌으면 옆 칸으로
         return k
     if fn == "combat_loop" and line.startswith("cmd = read_key()"):
+        # 전투 키: Q 공격 · E 바리케이드 · R 패킷 우회 · X 후퇴 · I 소모품 목록 · Z 스킬 (combat.py)
         pl = lv["player"]
         if pl.hp < pl.max_hp * 0.35 and best_heal(pl):
-            pending.append(key_for_consumable_menu_combat(pl)); M["heals_used"] += 1; return "5"
+            pending.append(key_for_consumable_menu_combat(pl)); M["heals_used"] += 1; return "I"
         boss = lv.get("is_boss")
         # 사람처럼: 일반 전투에서 체력이 반 밑이고 회복약이 없으면 후퇴한다 (FLEE=1일 때)
-        if FLEE and not boss and pl.hp < pl.max_hp * 0.5: return "4"
+        if FLEE and not boss and pl.hp < pl.max_hp * 0.5: return "X"
         if boss:  # 사람처럼: 보스 학습 지수가 쌓이면 패킷 우회·바리케이드로 끊는다
             L = lv.get("learning_index", 0)
-            if L >= 9 and pl.max_ram >= 2: return "3"
-            if L >= 11: return "2"
-        if pl.skill_slots and random.random() < 0.3: return "S"
-        return "1"
+            if L >= 9 and pl.max_ram >= 2: return "R"
+            if L >= 11: return "E"
+        if pl.skill_slots and random.random() < 0.3: return "Z"
+        return "Q"
     if line.startswith("item_cmd"): return "1"
     if line.startswith("scmd"): return "1"
     if line.startswith("save_choice"): return "N"

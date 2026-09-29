@@ -94,7 +94,7 @@ class CombatView(EventView):
         # 전투 기록 (터미널 버퍼, 아스키 그림·테두리 제외)
         pygame.draw.line(c, (40, 38, 36), (x, y), (x + width, y))
         y += 14
-        bottom = H - 70 - self._menu_h() - 16
+        bottom = H - 70 - self._menu_h() - self.QB_H - 30
         per = max(1, (bottom - y) // 28)
         for i, surf in enumerate(self._log_surfaces(width, per)):
             c.blit(surf, (x, y))
@@ -129,6 +129,7 @@ class CombatView(EventView):
             c.blit(g, (bx + 38, by + (self.BTN_H - g.get_height()) // 2))
             hits.append((ret, rect))
         self._foot_hits = hits
+        self._draw_quickbar(c, x, top - self.QB_H - 10, width)
         hint = self.f_sans.render(t('combat_hint_keys'), True, INK_FAINT)
         c.blit(hint, (x, H - 40))
 

@@ -44,6 +44,8 @@ class Player:
         if "FOOD_ONLY" in self.consumables: self.consumables["FOOD_ONLY"] = 2
         if "WATER_ONLY" in self.consumables: self.consumables["WATER_ONLY"] = 2
         if "MED_FIX_100" in self.consumables: self.consumables["MED_FIX_100"] = 2
+        # 퀵슬롯 1~0 (칸마다 소모품 id 또는 None). 인벤토리 소모품 탭에서 숫자키로 바꾼다. 처음엔 시작 소모품만
+        self.quickslots = ["MED_FIX_100", "FOOD_ONLY", "WATER_ONLY"] + [None] * 7
 
         self.weights = {"kinetic": 0, "scrap": 0, "cyber": 0}
         self.enemies_defeated = 0
@@ -139,7 +141,7 @@ class Player:
             "inventory": self.inventory, "equipment": self.equipment, "reputation": self.reputation,
             "turn_count": self.turn_count, "difficulty": self.difficulty,
             "enemies_defeated": self.enemies_defeated, "diary": self.diary, "upgrades": self.upgrades,
-            "active_quest": self.active_quest,
+            "active_quest": self.active_quest, "quickslots": self.quickslots,
         }
 
     def from_dict(self, data):
@@ -172,6 +174,44 @@ class Player:
         self.upgrades = data.get("upgrades", {})
         self.diary = data.get("diary", [])
         self.active_quest = data.get("active_quest", None)
+        qs = list(data.get("quickslots", [None] * 10))[:10]
+        self.quickslots = [k if k in constants.CONSUMABLES_DB else None for k in qs] + [None] * (10 - len(qs))
+
+    # ── 퀵슬롯 (1~0) ────────────────────────────────────────────────────────
+    QUICK_KEYS = "1234567890"
+
+    def quick_item(self, ch):
+        """숫자키 ch의 퀵슬롯 소모품 id. 비었으면 None."""
+        i = self.QUICK_KEYS.find(str(ch))
+        return self.quickslots[i] if i >= 0 else None
+
+    def set_quickslot(self, ch, key):
+        """숫자키 ch 칸에 소모품을 등록 (다른 칸에 있으면 옮긴다). 이미 그 칸이면 뺀다. 등록했으면 True."""
+        i = self.QUICK_KEYS.find(str(ch))
+        if i < 0:
+            return False
+        if self.quickslots[i] == key:
+            self.quickslots[i] = None
+            return False
+        self.quickslots = [None if k == key else k for k in self.quickslots]
+        self.quickslots[i] = key
+        return True
+
+    def use_consumable(self, key):
+        """소모품 하나를 쓴다 (인벤토리·퀵슬롯 공용). 결과 문장, 없으면 None."""
+        item = constants.CONSUMABLES_DB.get(key)
+        if not item or self.consumables.get(key, 0) <= 0:
+            return None
+        self.consumables[key] -= 1
+        if item["type"] == "hp":
+            amt = int(self.max_hp * item["val"]) if item["is_percent"] else item["val"]
+            self.hp = min(self.max_hp, self.hp + amt)
+            sound.sfx("heal")
+            return t('consumable_used_hp', name=db_t(item, 'name'), amt=amt)
+        self.hunger = min(100, self.hunger + item["hunger"])
+        self.thirst = min(100, self.thirst + item["thirst"])
+        sound.sfx("eat")
+        return t('consumable_used_food', name=db_t(item, 'name'))
 
     def get_attack_power(self):
         """주무기 위력 + 강화 추가 위력 ΔP(k) (내구도 반영)."""

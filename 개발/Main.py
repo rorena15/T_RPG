@@ -357,9 +357,9 @@ def run_game():
 
     # 그림 화면 발밑 버튼: (보이는 키, 설명, 쓸 수 있음, 누르면 보낼 키). 글자 키(WASD·F·I·J·C·Q·U)도 그대로 된다 (map_view.KEYMAP)
     _EXPLORE_ACTIONS = [
-        ("←↑↓→", t('act_move'),      True, None),
-        ("Space", t('act_search'),   True, "F"),
-        ("Tab",  t('act_inventory'), True, "I"),
+        ("WASD", t('act_move'),      True, None),
+        ("F",    t('act_search'),    True, "F"),
+        ("I",    t('act_inventory'), True, "I"),
         ("J",    t('act_diary'),     True, "J"),
         ("F5",   t('act_save'),      True, "C"),
         ("Esc",  t('act_quit'),      True, "Q"),
@@ -400,12 +400,29 @@ def run_game():
             if grid.at_forge() and grid.forge_known():
                 print(f"  {t('cmd_forge') if forge.built(grid) else t('cmd_forge_npc')}")
             print(f"  {t('cmd_diary')}")
+            print(f"  {t('cmd_quick')}")
             print(f"  {t('cmd_save')}")
             print(f"  {t('cmd_quit')}")
             print_divider()
 
         move = read_key()
 
+        if move in Player.QUICK_KEYS:  # 퀵슬롯 1~0: 바로 먹고 마시고 치료 (턴은 쓰지 않는다)
+            _qk = player.quick_item(move)
+            _qmsg = player.use_consumable(_qk) if _qk else None
+            if _qmsg:
+                print(f"\n  {_qmsg}")
+            elif _qk:
+                print(f"\n  {t('qs_none_left', name=db_t(constants.CONSUMABLES_DB[_qk], 'name'))}")
+            else:
+                print(f"\n  {t('qs_empty', n=move)}")
+            if not _ui_mgr:
+                time.sleep(0.8)
+            continue
+        if move == "\x1b":   # 글 화면에서 Esc
+            move = "Q"
+        elif move == "E":     # 글 화면: E = 강화소 (그림 화면은 map_view.KEYMAP이 바꿔 준다)
+            move = "U"
         if move == "I":
             _off()
             player.manage_inventory()

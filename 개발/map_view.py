@@ -139,10 +139,12 @@ class MapView(EventView):
         self.footer = [(a[0], a[1], a[3] if len(a) > 3 else (a[0] if len(a[0]) == 1 else None)) for a in actions if a[2]]
 
     # ── 입력: 방향키·마우스 ───────────────────────────────────────────────
-    # 이동 ←↑↓→(또는 WASD), 탐색 Space(F), 인벤토리 Tab(I), 강화소 E(U), 일지 J, 저장 F5(C), 나가기 Esc(Q).
-    # 미니맵에서 옆 칸을 누르면 그쪽으로 한 칸 간다. 결과는 Main.py가 원래 받던 글자 키로 돌려준다.
+    # 이동 WASD(←↑↓→), 탐색 F(Space), 인벤토리 I(Tab), 강화소 E, 일지 J, 저장 F5, 나가기 Esc, 퀵슬롯 1~0.
+    # Q는 전투의 공격 키라 맵에선 아무 일도 하지 않는다 (예전엔 종료). C도 예전 저장 키라 막는다.
+    # 미니맵에서 옆 칸을 누르면 그쪽으로 한 칸 간다. 결과는 Main.py가 받던 글자 키로 돌려준다.
     KEYMAP = {pygame.K_UP: "W", pygame.K_DOWN: "S", pygame.K_LEFT: "A", pygame.K_RIGHT: "D",
-              pygame.K_SPACE: "F", pygame.K_TAB: "I", pygame.K_e: "U", pygame.K_F5: "C", pygame.K_ESCAPE: "Q"}
+              pygame.K_SPACE: "F", pygame.K_TAB: "I", pygame.K_e: "U", pygame.K_F5: "C", pygame.K_ESCAPE: "Q",
+              pygame.K_q: "?", pygame.K_c: "?", pygame.K_u: "U"}
     _iso = None          # 미니맵 좌표계 (가운데 x, 시작 칸 y, 반칸 폭, 반칸 높이) — 그릴 때 채운다
     _tile_hover = None   # 마우스가 올라간 옆 칸 (이동 방향 키)
 
@@ -230,7 +232,9 @@ class MapView(EventView):
         for i in (-18, 0, 18):
             pygame.draw.circle(c, INK_FAINT, (mid + i, y), 2)
         y += 20
-        bottom = H - 70
+        qy = H - 64 - self.QB_H           # 퀵슬롯 줄 (발밑 안내 바로 위)
+        self._draw_quickbar(c, x, qy, width)
+        bottom = qy - 40
         recent = self._recent_lines()
         max_lines = max(0, (bottom - y) // 30)
         for text in recent[-max_lines:]:

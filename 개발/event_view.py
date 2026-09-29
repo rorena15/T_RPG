@@ -1385,6 +1385,59 @@ class EventView:
             return bool(rets) and rets[self.foot_sel % len(rets)] == ret
         return False
 
+    # ── 퀵슬롯 줄 (맵·전투 공용): 1~0 칸, 누르면 그 숫자키 ─────────────────────
+    QB_H = 46
+    _quick_hits = ()
+    _quick_hover = None
+
+    @staticmethod
+    def quick_label(key):
+        """칸에 들어갈 짧은 글: 회복은 양(10% / +300), 먹을 것은 식량·식수."""
+        import constants
+        d = constants.CONSUMABLES_DB.get(key)
+        if not d:
+            return "", INK_FAINT
+        if d["type"] == "hp":
+            return (f"{int(d['val'] * 100)}%" if d["is_percent"] else f"+{d['val']}"), RED
+        if d["type"] == "food":
+            return i18n.t('qs_food'), AMBER
+        return i18n.t('qs_water'), TEAL
+
+    def _draw_quickbar(self, c, x, y, width):
+        """퀵슬롯 10칸. 비었으면 흐린 칸, 개수가 0이면 흐리게. 마우스를 올린 칸 이름은 위에 띄운다."""
+        import constants
+        p = self.player
+        slots = getattr(p, "quickslots", None) or [None] * 10
+        gap = 6
+        bw = (width - gap * 9) // 10
+        hits = []
+        for i, key in enumerate(slots):
+            ch = "1234567890"[i]
+            rect = pygame.Rect(x + i * (bw + gap), y, bw, self.QB_H)
+            n = p.consumables.get(key, 0) if key else 0
+            hov = self._quick_hover == ch
+            box = pygame.Surface(rect.size, pygame.SRCALPHA)
+            box.fill((*AMBER, 36) if hov else (255, 255, 255, 12 if key else 5))
+            c.blit(box, rect.topleft)
+            pygame.draw.rect(c, AMBER if hov else ((70, 66, 60) if key else (40, 38, 36)), rect, 1)
+            c.blit(self.f_mono.render(ch, True, AMBER if key else INK_FAINT), (rect.x + 4, rect.y + 2))
+            if key:
+                label, col = self.quick_label(key)
+                col = col if n else INK_FAINT
+                g = self.f_mono_b.render(label, True, col)
+                c.blit(g, (rect.centerx - g.get_width() // 2, rect.y + 17))
+                cnt = self.f_mono.render(f"x{n}", True, INK_DIM if n else INK_FAINT)
+                c.blit(cnt, (rect.right - cnt.get_width() - 4, rect.y + 2))
+            hits.append((ch, rect))
+            if hov and key:
+                name = self.f_sans.render(i18n.db_t(constants.CONSUMABLES_DB[key], 'name') + f"  x{n}", True, INK)
+                c.blit(name, (x, y - 26))
+        self._quick_hits = hits
+
+    def quick_at(self, pos):
+        cx, cy = self.to_canvas(pos)
+        return next((k for k, r in self._quick_hits if r.collidepoint(cx, cy)), None)
+
     def to_canvas(self, pos):
         """창 좌표 → 캔버스 좌표 (gui의 레터박스 스케일과 같게)."""
         sw, sh = self._term.screen.get_size()
@@ -1406,8 +1459,12 @@ class EventView:
             if hit != self._foot_hover and hit is not None:
                 sound.sfx("ui_move")
             self._foot_hover = hit
+            self._quick_hover = self.quick_at(ev.pos)
             return None
         if ev.type == pygame.MOUSEBUTTONDOWN and ev.button == 1:
+            q = self.quick_at(ev.pos)
+            if q is not None:
+                return q
             hit = self.foot_at(ev.pos)
             if hit is not None:
                 sound.sfx("ui_ok")

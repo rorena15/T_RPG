@@ -253,17 +253,17 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
         has_consumable = any(v > 0 for v in player.consumables.values())
         if _ui:
             # ActionPanel에 현재 전투 선택지 표시
+            # 기술 Q 공격 · E 바리케이드 · R 패킷 우회 · F 보조화기 / 스킬 Z·C / X 후퇴 / I 소모품 목록 / 1~0 퀵슬롯
             _acts = [
-                ("1", t('combat_act_attack'),    True),
-                ("2", t('combat_act_barricade'), True),
-                ("3", t('combat_act_jam'),       True),
-                ("4", t('combat_act_retreat'),   True),
-                ("5", t('combat_act_item'),      has_consumable),
+                ("Q", t('combat_act_attack'),    True),
+                ("E", t('combat_act_barricade'), True),
+                ("R", t('combat_act_jam'),       True),
             ]
-            if sub_charges > 0:  # 보조무기는 6 (예전엔 화면에 S로 나와 눌러도 스킬로 갔다)
-                _acts.append(("6", t('combat_act_sub', n=sub_charges), True))
-            for _i, _sid in enumerate(player.skill_slots):  # 스킬 칸 1·2 = 7·8 (글 화면의 S·S1·S2도 그대로 된다)
-                _acts.append((str(7 + _i), _skills.skill_name(_sid, short=True), True))
+            if sub_charges > 0:
+                _acts.append(("F", t('combat_act_sub', n=sub_charges), True))
+            for _i, _sid in enumerate(player.skill_slots[:2]):
+                _acts.append(("ZC"[_i], _skills.skill_name(_sid, short=True), True))
+            _acts += [("X", t('combat_act_retreat'), True), ("I", t('combat_act_item'), has_consumable)]
             _ui.set_actions(_acts)
         else:
             print()
@@ -276,14 +276,29 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
             if sub_charges > 0:
                 print(f"  {Fore.MAGENTA + Style.BRIGHT}{t('combat_sub_wpn_option', name=sub_wpn_name, charges=sub_charges)}{Style.RESET_ALL}")
             if player.skill_slots:
-                for _i, _sid in enumerate(player.skill_slots):
+                for _i, _sid in enumerate(player.skill_slots[:2]):
                     _sk = _skills.SKILL_DEFS.get(_sid, {})
-                    print(f"  {Fore.YELLOW + Style.BRIGHT}S{'12'[_i] if len(player.skill_slots) > 1 else ''}. {_skills.skill_name(_sid)} — {db_t(_sk, 'desc')}{Style.RESET_ALL}")
+                    print(f"  {Fore.YELLOW + Style.BRIGHT}{'ZC'[_i]}. {_skills.skill_name(_sid)} — {db_t(_sk, 'desc')}{Style.RESET_ALL}")
+            _qs = "  ".join(f"[{'1234567890'[i]}] {db_t(constants.CONSUMABLES_DB[k], 'name')} x{player.consumables.get(k, 0)}"
+                            for i, k in enumerate(player.quickslots) if k)
+            if _qs:
+                print(f"  {Fore.CYAN}{t('qs_line', slots=_qs)}{Style.RESET_ALL}")
 
         cmd = read_key()
+        # 키 → 안쪽 행동 번호 (1 공격, 2 바리케이드, 3 패킷 우회, 4 후퇴, 5 소모품, 6 보조화기, S 스킬)
         _skill_idx = None
-        if cmd in ("7", "8") and len(player.skill_slots) > int(cmd) - 7:  # 그림 화면의 스킬 칸 버튼
-            _skill_idx, cmd = int(cmd) - 7, "S"
+        _quick_key = None
+        if cmd in ("Z", "C") and len(player.skill_slots) > "ZC".index(cmd):
+            _skill_idx, cmd = "ZC".index(cmd), "S"
+        elif cmd and cmd in player.QUICK_KEYS:  # 퀵슬롯 (누른 숫자키 그대로, 행동 번호로 바꾸기 전에): 그 소모품을 쓰는 데 한 턴
+            _quick_key = player.quick_item(cmd)
+            if not _quick_key or player.consumables.get(_quick_key, 0) <= 0:
+                action_logs.append(t('qs_empty', n=cmd) if not _quick_key else
+                                   t('qs_none_left', name=db_t(constants.CONSUMABLES_DB[_quick_key], 'name')))
+                continue   # 빈 칸은 턴을 쓰지 않는다
+            cmd = "5"
+        else:
+            cmd = {"Q": "1", "E": "2", "R": "3", "X": "4", "I": "5", "F": "6"}.get(cmd, cmd)
 
         if cmd == "1":
             consecutive_attacks += 1
@@ -413,6 +428,17 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
                     escape_log = t('combat_escape_lucky')
                 break
 
+        elif cmd == "5" and _quick_key:
+            consecutive_attacks = 0
+            item = constants.CONSUMABLES_DB[_quick_key]
+            _before = player.hp
+            player.use_consumable(_quick_key)
+            if item["type"] == "hp":
+                _, disp_heal, _ = apply_dynamic_scaling(player.hp - _before, 0, tier)
+                action_logs.append(t('combat_recover_log', name=db_t(item, 'name'), hp=f"{disp_heal:,}"))
+            else:
+                action_logs.append(t('combat_eat_log', name=db_t(item, 'name')))
+
         elif cmd == "5" and has_consumable:
             consecutive_attacks = 0
             avail = [k for k, v in player.consumables.items() if v > 0]
@@ -503,7 +529,7 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
             else:
                 print(t('combat_skill_select'))
                 scmd = read_key()
-                idx = 0 if scmd in ("s", "S", "1") else (1 if scmd == "2" else -1)
+                idx = 0 if scmd in ("S", "Z", "1") else (1 if scmd in ("C", "2") else -1)
                 if 0 <= idx < len(slots):
                     _skills.execute(player, slots[idx], combat_ctx)
                 else:
