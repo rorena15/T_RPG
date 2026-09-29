@@ -107,4 +107,4 @@ GM 모델 코드·도구·문서는 이 저장소의 `stigma-gm/`에 있다 (학
 - 처음 한 번, 개발 PC에서: `python tools/diag/diag_tool.py genkey` → 개인키는 `~/.stigma/diag_key.json`(저장소 밖, **백업 필수**), 공개키는 `diag_pubkey.py`에 채워진다 → 커밋
 - 공개키가 비어 있거나 `cryptography`를 못 쓰면 진단 기록을 아예 쓰지 않는다 (평문으로 남기지 않는다)
 - 버그 제보를 받으면: `python tools/diag/diag_tool.py read 받은파일.sdg` (`--kind log`/`trace`, `--json`)
-- 보관 기간(오래된 파일 정리)은 아직 정하지 않았다: 파일은 실행마다 하나씩 쌓인다
+- 보관: **계속 보관한다** (게임이 진단 파일을 지우지 않는다). 실행마다 파일이 하나씩 쌓인다 (한 판 약 250KB)
