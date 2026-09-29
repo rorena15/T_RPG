@@ -455,19 +455,23 @@ def run_game():
                     gained = random.randint(10, 25)
                     player.materials += gained
                     advance_quest(player, "scrap", gained)
+                    sound.sfx("loot")
                     print(t('farm_scrap', gained=gained))
                 elif item_roll <= 0.60:
                     if random.random() < 0.5:
                         it = roll_food()
                         player.consumables[it] += 1
+                        sound.sfx("loot", 0.7)
                         print(t('farm_food', name=db_t(constants.CONSUMABLES_DB[it], 'name')))
                     else:
                         it = roll_water()
                         player.consumables[it] += 1
+                        sound.sfx("loot", 0.7)
                         print(t('farm_water', name=db_t(constants.CONSUMABLES_DB[it], 'name')))
                 else:
                     it = roll_medkit()
                     player.consumables[it] += 1
+                    sound.sfx("loot", 0.7)
                     print(t('farm_medkit', name=db_t(constants.CONSUMABLES_DB[it], 'name')))
                 wait_for_keypress()
             # 탐색 퀘스트 진행 및 돌발 퀘스트 (전투 미조우 시)
@@ -516,6 +520,7 @@ def run_game():
             current_loc = tuple(grid.player_pos)
             is_new_tile = current_loc not in grid.visited_tiles
             grid.visited_tiles.add(current_loc)
+            sound.sfx("step")
             if _ui_mgr:  # 그림 화면: 장면이 옮겨 가는 연출 (map_view.py)
                 _ui_mgr.update(player, grid)
                 _ui_mgr.play_move()

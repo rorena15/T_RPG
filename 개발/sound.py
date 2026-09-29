@@ -5,6 +5,7 @@
 #   0: 맵 환경음(바람) — 한 번 틀면 계속 돈다. 전투·서사 때는 소리만 줄였다가 되돌린다 (처음부터 다시 시작하지 않게)
 #   1, 2: 음악(서사·전투) — 두 채널을 번갈아 써서 곡을 겹쳐 바꾼다 (크로스페이드)
 #   3: 심장박동 경보
+#   4~7: 효과음 (sfx_synth.py가 코드로 만든 타격·피격·모루·발소리 등, 맵의 먼 소리)
 # 곡은 처음 쓸 때 한 번 풀어 두고, 앞뒤 무음을 잘라 반복 이음매가 끊기지 않게 한다.
 # (예전 mixer.music 방식: 전투곡이 25초마다 0.5초씩 끊기고, 곡을 바꿀 때 뚝 끊겼다.)
 
@@ -40,6 +41,11 @@ _ch_music = []        # [채널 A, 채널 B]
 _music_ch = {}        # 곡 이름 -> 지금 그 곡을 튼 채널
 _hb_channel = None
 _hb_sound = None
+
+_sfx = {}            # 효과음 이름 -> Sound
+_sfx_lock = threading.Lock()
+_next_amb = 0.0      # 다음 먼 소리(맵) 시각
+AMB_GAP = (14.0, 30.0)
 
 # 음량 흐름: 채널 -> [지금 크기, 목표 크기, 초당 변화량, 목표 0이면 멈출지]
 _ramps = {}
@@ -79,9 +85,73 @@ def init():
         _thread = threading.Thread(target=_ramp_loop, daemon=True)
         _thread.start()
         # 곡은 미리 풀어 둔다 (전투가 처음 시작될 때 잠깐 멈추지 않게)
-        threading.Thread(target=lambda: [_load(n) for n in ("wind", "combat", "typing")], daemon=True).start()
+        threading.Thread(target=_preload, daemon=True).start()
     except Exception:
         _ready = False
+
+
+def _preload():
+    for n in ("wind", "combat", "typing"):
+        _load(n)
+    try:
+        import sfx_synth
+        for n in list(sfx_synth.SOUNDS) + list(sfx_synth.AMBIENT):
+            _sfx_sound(n)
+    except Exception:
+        pass
+
+
+def _sfx_sound(name):
+    with _sfx_lock:
+        if name not in _sfx:
+            try:
+                import sfx_synth
+                _sfx[name] = pygame.mixer.Sound(buffer=sfx_synth.build(name))
+            except Exception:
+                _sfx[name] = None
+        return _sfx[name]
+
+
+_sfx_rr = [0]
+
+
+def _free_sfx_channel():
+    """효과음 채널(4~7) 중 쉬는 것, 다 바쁘면 차례로 돌려 쓴다 (음악·경보 채널은 건드리지 않는다)."""
+    chans = [pygame.mixer.Channel(i) for i in range(4, 8)]
+    for ch in chans:
+        if not ch.get_busy():
+            return ch
+    _sfx_rr[0] = (_sfx_rr[0] + 1) % len(chans)
+    return chans[_sfx_rr[0]]
+
+
+def sfx(name, vol=1.0):
+    """효과음 한 번. 음소거·사용자 음량을 따른다. 없는 이름이나 초기화 전이면 조용히 넘어간다."""
+    if not _ready or _muted:
+        return
+    try:
+        import sfx_synth
+        snd = _sfx_sound(name)
+        if snd is None:
+            return
+        ch = _free_sfx_channel()
+        ch.set_volume(max(0.0, min(1.0, sfx_synth.volume(name) * vol * _user_gain() * 1.4)))
+        ch.play(snd)
+    except Exception:
+        pass
+
+
+def _ambient_tick(now):
+    """맵에서 바람만 불 때 가끔 먼 소리를 얹는다 (고철 산 신음, 지나가는 드론, 먼 천둥, 떨어지는 고철)."""
+    global _next_amb
+    if _current is not None or _ch_wind is None or not _ch_wind.get_busy() or _muted:
+        _next_amb = max(_next_amb, now + 6.0)
+        return
+    if now < _next_amb:
+        return
+    import random as _r
+    _next_amb = now + _r.uniform(*AMB_GAP)
+    sfx(_r.choice(["amb_creak", "amb_drone", "amb_thunder", "amb_clang"]), vol=_r.uniform(0.6, 1.0))
 
 
 def _load(name):
@@ -139,6 +209,10 @@ def _ramp_loop():
     while True:
         time.sleep(0.02)
         now = time.perf_counter()
+        try:
+            _ambient_tick(now)
+        except Exception:
+            pass
         dt, last = now - last, now
         with _lock:
             for ch, r in list(_ramps.items()):

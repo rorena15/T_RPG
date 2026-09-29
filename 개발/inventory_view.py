@@ -10,10 +10,13 @@ import pygame
 
 import constants
 import upgrade
+import sound
 from core import get_equipment_data
 from event_view import AMBER, BG, EventView, GREEN, INK, INK_DIM, INK_FAINT, JUNKYARD, RED, TEAL, VIOLET, _lerp
 from i18n import db_t, t
 from quest import advance_quest
+
+_UPG_SFX = {"ok": "anvil", "fail": "clunk", "drop": "drop"}   # 강화 결과 -> 효과음 (그 밖은 거부음)
 
 TABS = ["slots", "bag", "consumables"]
 TAB_KEY = {"slots": "inv_tab_slots", "bag": "inv_tab_bag", "consumables": "inv_tab_cons"}
@@ -81,6 +84,7 @@ class InventoryView(EventView):
             self.msg = [t('upg_only_weapon')]
             return
         res, k, spent = upgrade.try_upgrade(self.player, iid, d.get("tier", 4))
+        sound.sfx(_UPG_SFX.get(res, "deny"))
         if res == "ok":
             self.msg_warn = False
             self.msg = [t('upg_ok', name=db_t(d, 'name'), k=k, pw=self._power(d, iid), cost=spent)]
@@ -109,6 +113,7 @@ class InventoryView(EventView):
             self.msg = [t('upg_only_weapon')]
             return
         res, spent = upgrade.repair(self.player, iid)
+        sound.sfx("repair" if res == "ok" else "deny")
         if res == "ok":
             self.msg_warn = False
             self.msg = [t('rep_ok', name=db_t(d, 'name'), cost=spent)]
@@ -160,10 +165,12 @@ class InventoryView(EventView):
             if item["type"] == "hp":
                 amt = int(p.max_hp * item["val"]) if item["is_percent"] else item["val"]
                 p.hp = min(p.max_hp, p.hp + amt)
+                sound.sfx("heal")
                 self.msg = [t('consumable_used_hp', name=db_t(item, 'name'), amt=amt)]
             else:
                 p.hunger = min(100, p.hunger + item["hunger"])
                 p.thirst = min(100, p.thirst + item["thirst"])
+                sound.sfx("eat")
                 self.msg = [t('consumable_used_food', name=db_t(item, 'name'))]
 
     # ── 그리기 (오른쪽 칸) ─────────────────────────────────────────────────

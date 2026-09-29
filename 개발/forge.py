@@ -7,6 +7,7 @@
 import time
 
 import constants
+import sound
 from i18n import t
 from ui import clear_screen, print_divider, print_header, read_key, type_text, wait_for_keypress, log_diary
 
@@ -98,6 +99,7 @@ def visit(player, grid):
         return
     player.materials -= NEED_SCRAP
     grid.forge = {"stage": 2}
+    sound.sfx("anvil")
     log_diary(player, t('forge_log_built'))
     _talk(player, grid, t('forge_built_title'), [t('forge_built_1'), t('forge_built_2')], [("1", t('forge_built_ok'))])
 

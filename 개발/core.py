@@ -119,6 +119,8 @@ def grant_gear_drop(player):
         return None
     player.inventory.append(iid)
     d = get_equipment_data(iid)
+    import sound
+    sound.sfx("gear")
     return t('loot_gear', name=db_t(d, 'name'), tier=constants.tier_tag(d.get('tier', 4)))
 
 

@@ -6,6 +6,7 @@ import random
 import sqlite3
 import sys
 import constants
+import sound
 from core import get_equipment_data
 from ui import (clear_screen, print_header, print_divider,
                 safe_input, wait_for_keypress, read_key, ea_rpad, glitch_str)
@@ -443,6 +444,7 @@ class Player:
                 wid = self.equipment.get("main_weapon")
                 wd = get_equipment_data(wid)
                 res, k, spent = upgrade.try_upgrade(self, wid, wd.get("tier", 4))
+                sound.sfx({"ok": "anvil", "fail": "clunk", "drop": "drop"}.get(res, "deny"))
                 name = db_t(wd, 'name')
                 if res == "ok":
                     print(t('upg_ok', name=name, k=k, pw=self.get_attack_power(), cost=spent))
@@ -462,6 +464,7 @@ class Player:
                 wid = self.equipment.get("main_weapon")
                 name = db_t(get_equipment_data(wid), 'name')
                 res, spent = upgrade.repair(self, wid)
+                sound.sfx("repair" if res == "ok" else "deny")
                 if res == "ok":
                     print(t('rep_ok', name=name, cost=spent))
                 elif res == "scrap":
@@ -552,9 +555,11 @@ class Player:
             if item["type"] == "hp":
                 heal_amt = int(self.max_hp * item["val"]) if item["is_percent"] else item["val"]
                 self.hp = min(self.max_hp, self.hp + heal_amt)
+                sound.sfx("heal")
                 print(t('consumable_used_hp', name=db_t(item, 'name'), amt=heal_amt))
             else:
                 self.hunger = min(100, self.hunger + item["hunger"])
                 self.thirst = min(100, self.thirst + item["thirst"])
+                sound.sfx("eat")
                 print(t('consumable_used_food', name=db_t(item, 'name')))
             wait_for_keypress()

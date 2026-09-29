@@ -14,6 +14,7 @@ from ui import (clear_screen, print_header, print_divider, type_text,
                 _log_color, roll_medkit, roll_food, roll_water,
                 glitch_flash)
 import skills as _skills
+import sound
 from quest import advance_quest
 from sys_log import track
 from gui import get_terminal, get_ui_manager
@@ -145,6 +146,7 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
     escaped = False
     escape_log = ""
     action_logs = [t('combat_encounter_alert', name=name)]
+    sound.sfx("alert")
 
     def _summary(msg):
         """방금 화면에 찍은 행동의 요약. 터미널 모드는 화면을 지우고 다음 턴에 요약만 다시 보여 주지만,
@@ -167,12 +169,14 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
     while hp > 0 and player.hp > 0:
         if is_boss and turn > constants.BOSS_TURN_LIMIT:
             clear_screen()
+            sound.sfx("death")
             type_text(Fore.RED + Style.BRIGHT + t('combat_timeout'))
             sys.exit()
 
         # 보스 페이즈 2 전환 (HP 50% 이하)
         if is_boss and not phase2_triggered and hp <= boss_max_hp * constants.BOSS_PHASE2_RATIO:
             phase2_triggered = True
+            sound.sfx("phase2")
             atk = int(base_atk * constants.BOSS_PHASE2_ATK_MULT)
             learning_index += constants.BOSS_PHASE2_LI_BONUS
             clear_screen()
@@ -311,6 +315,7 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
             disp_dmg, _, _ = apply_dynamic_scaling(dmg, 0, tier)
             crit_tag = Fore.YELLOW + Style.BRIGHT + " [CRITICAL!]" + Style.RESET_ALL if is_crit else ""
 
+            sound.sfx("crit" if is_crit else "hit")
             print(Fore.GREEN + Style.BRIGHT + t('combat_attack_hit', dmg=f"{disp_dmg:,}") + crit_tag)
             _sleep(1)
             hp = max(0, hp - dmg)
@@ -327,6 +332,7 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
             learning_index = max(0, learning_index - 4)
             atk = int(atk * 0.5)
 
+            sound.sfx("barricade")
             print(t('combat_defense_msg'))
             _sleep(1)
             _summary(t('combat_defense_log'))
@@ -338,16 +344,19 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
                 learning_index = 0
                 player.max_ram -= 2
 
+                sound.sfx("hack")
                 print(t('combat_hack_msg'))
                 _sleep(1)
                 _summary(t('combat_hack_log'))
             else:
+                sound.sfx("deny")
                 print(t('combat_hack_no_ram'))
                 _sleep(0.5)
                 action_logs.append(t('combat_hack_no_ram_log'))
 
         elif cmd == "4":
             if is_boss:
+                sound.sfx("deny")
                 print(t('combat_escape_boss'))
                 _sleep(0.5)
                 action_logs.append(t('combat_escape_boss_log'))
@@ -369,11 +378,13 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
                     res = random.choices(["SAFE", "NORMAL", "1.5X", "2.0X", "LUCKY"], weights=weights, k=1)[0]
 
                 escaped = True
+                sound.sfx("escape")
                 if res == "SAFE":
                     escape_log = t('combat_escape_safe')
                 elif res in ["NORMAL", "1.5X", "2.0X"]:
                     dmg_calc = atk if res == "NORMAL" else int(atk * 1.5) if res == "1.5X" else int(atk * 2.0)
                     disp_dmg_calc, _, _ = apply_dynamic_scaling(dmg_calc, 0, tier)
+                    sound.sfx("hurt_heavy" if res != "NORMAL" else "hurt")
                     print(t('combat_escape_hit', dmg=f"{disp_dmg_calc:,}"))
                     _sleep(1)
                     player.hp -= dmg_calc
@@ -413,10 +424,12 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
                     heal = int(player.max_hp * item["val"]) if item["is_percent"] else item["val"]
                     player.hp = min(player.max_hp, player.hp + heal)
                     _, disp_heal, _ = apply_dynamic_scaling(heal, 0, tier)
+                    sound.sfx("heal")
                     action_logs.append(t('combat_recover_log', name=db_t(item, 'name'), hp=f"{disp_heal:,}"))
                 else:
                     player.hunger = min(100, player.hunger + item["hunger"])
                     player.thirst = min(100, player.thirst + item["thirst"])
+                    sound.sfx("eat")
                     action_logs.append(t('combat_eat_log', name=db_t(item, 'name')))
             else:
                 action_logs.append(t('combat_cancel_log'))
@@ -444,6 +457,7 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
                 disp_sub_dmg, _, _ = apply_dynamic_scaling(sub_dmg, 0, tier)
                 crit_tag = Fore.YELLOW + Style.BRIGHT + " [CRITICAL!]" + Style.RESET_ALL if is_crit else ""
                 charges_tag = t('combat_sub_ammo_remaining', charges=sub_charges) if sub_charges > 0 else t('combat_sub_ammo_empty')
+                sound.sfx("sub")
                 print(Fore.MAGENTA + Style.BRIGHT + t('combat_sub_wpn_hit', name=sub_wpn_name, dmg=f"{disp_sub_dmg:,}") + crit_tag)
                 _sleep(1)
                 hp = max(0, hp - sub_dmg)
@@ -454,6 +468,7 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
                 _summary(t('combat_sub_wpn_log', name=sub_wpn_name, dmg=f"{disp_sub_dmg:,}", charges_tag=charges_tag))
                 _sleep(1)
             else:
+                sound.sfx("deny")
                 print(t('combat_sub_no_ram_msg'))
                 _sleep(0.5)
                 _summary(t('combat_sub_no_ram_log'))
@@ -478,6 +493,7 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
                 if _ui: _ui.scene_update_hp(hp)
                 disp_aux, _, _ = apply_dynamic_scaling(aux_dmg, 0, tier)
                 _, disp_ehp_aux, _ = apply_dynamic_scaling(0, hp, tier)
+                sound.sfx("skill")
                 print(Fore.YELLOW + Style.BRIGHT + t('combat_skill_dmg_msg', dmg=f"{disp_aux:,}") + Style.RESET_ALL)
                 print(t('combat_enemy_hp', name=name, hp=f"{disp_ehp_aux:,}"))
                 _summary(t('combat_skill_dmg_log', dmg=f"{disp_aux:,}"))
@@ -498,6 +514,7 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
             dmg_taken = max(1, curr_atk - total_def)
             dmg_taken = _skills.apply_incoming_buffs(player, dmg_taken, action_logs, combat_ctx)
             disp_dmg_taken, _, _ = apply_dynamic_scaling(dmg_taken, 0, tier)
+            sound.sfx("hurt_heavy" if dmg_taken >= player.max_hp * 0.2 else "hurt")
             print(Fore.RED + Style.BRIGHT + t('combat_enemy_attack', name=name, dmg=f"{disp_dmg_taken:,}"))
             _sleep(1)
             player.hp -= dmg_taken
@@ -519,6 +536,7 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
     if player.hp <= 0:
         clear_screen()
         if escape_log: type_text(escape_log, 0.02)
+        sound.sfx("death")
         type_text(Fore.RED + Style.BRIGHT + t('combat_fatal'), 0.03)
         wait_for_keypress()
         sys.exit()
@@ -564,6 +582,7 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
         return hp, enemy_type
 
     clear_screen()
+    sound.sfx("win")
     print_header(t('combat_win_header'))
     print(f"\n{Fore.GREEN + Style.BRIGHT}" + t('combat_win_msg', name=name))
     player.enemies_defeated += 1
