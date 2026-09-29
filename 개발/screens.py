@@ -97,6 +97,55 @@ def show_diary_view(player):
         v.close()
 
 
+def show_text_view(title, text, scene="forge"):
+    """긴 글을 위에서부터 읽는 화면 (크레딧·라이선스 전문). ↑↓·휠 한 줄, PgUp/PgDn 한 쪽, Home/End, Enter·0으로 닫는다."""
+    import pygame
+    from event_view import AMBER, INK, INK_DIM, INK_FAINT
+
+    class TextView(EventView):
+        def _draw_column(self, c, W, H):
+            x, width, y = self._col_x, W - self._col_x - 36, 40
+            c.blit(self.f_mono.render(title, True, AMBER), (x, y))
+            y += 40
+            if self._wrapped is None or self._wrapped[0] != width:   # 수백 줄이라 폭이 바뀔 때만 다시 자른다
+                lines = []
+                for para in text.split("\n"):
+                    lines += self._wrap(self.f_serif, para.strip(), width) if para.strip() else [""]
+                self._wrapped = (width, lines)
+            lines = self._wrapped[1]
+            self.per = max(1, (H - 140 - y) // 30)
+            self.max_off = max(0, len(lines) - self.per)
+            self.off = max(0, min(self.off, self.max_off))
+            for ln in lines[self.off:self.off + self.per]:
+                c.blit(self.f_serif.render(ln, True, INK_DIM if ln.startswith("─") else INK), (x, y))
+                y += 30
+            if self.max_off:
+                pos = f"{self.off + min(self.per, len(lines))}/{len(lines)}"
+                c.blit(self.f_mono.render(pos, True, INK_FAINT), (x, H - 132))
+
+    v = TextView(get_terminal(), None, None, JUNKYARD, scene=scene)
+    v.card = False
+    v.off, v.max_off, v.per, v._wrapped = 0, 0, 20, None
+    v.footer = [("↑↓", t('ui_select')), ("PgUp/PgDn", t('diary_page')), ("Enter", t('ui_back'))]
+    v.open()
+    try:
+        while True:
+            for ev in v._events():
+                if ev.type == pygame.MOUSEWHEEL:
+                    v.off = max(0, min(v.max_off, v.off - ev.y * 3))
+                    continue
+                if ev.type != pygame.KEYDOWN:
+                    continue
+                if ev.key in (pygame.K_RETURN, pygame.K_KP_ENTER, pygame.K_0, pygame.K_KP0):
+                    return
+                step = {pygame.K_UP: -1, pygame.K_w: -1, pygame.K_DOWN: 1, pygame.K_s: 1,
+                        pygame.K_PAGEUP: -v.per, pygame.K_PAGEDOWN: v.per, pygame.K_SPACE: v.per,
+                        pygame.K_HOME: -10 ** 6, pygame.K_END: 10 ** 6}.get(ev.key, 0)
+                v.off = max(0, min(v.max_off, v.off + step))
+    finally:
+        v.close()
+
+
 def story_page(scene, title, lines, tag="", location=JUNKYARD, player=None, footer_label=None):
     """그림 + 이야기 칸 한 페이지: 제목, 문단을 하나씩 타자로 보여 주고 Enter를 기다린다 (프롤로그·엔딩 등)."""
     v = EventView(get_terminal(), player, None, location, scene=scene)

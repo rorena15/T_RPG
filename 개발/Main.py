@@ -27,6 +27,7 @@ from quest import handle_random_event, handle_trader, advance_quest, trigger_sud
 from story import handle_session, run_prologue, run_boss_core_choice, run_ending
 from gui import get_terminal
 import gm_bridge
+import credits
 import forge
 import scene_art
 
@@ -177,6 +178,7 @@ def run_game():
                           ("5", f"{t('opt_gm')}   [{t(f'opt_gm_{_gm_mode}')}]")]
                     if _need_data:
                         _o.append(("6", t('opt_gm_download')))
+                    _o.append(("8", t('opt_credits')))
                     _o.append(("0", t('diff_back')))
                     _cur = getattr(_opt_scr, "last", "1")
                     ok = _opt_scr.ask(t('menu_options'), _o, lines=[t(f'opt_gm_desc_{_gm_mode}')], back="0",
@@ -217,6 +219,7 @@ def run_game():
                     _need_data = _gm_mode != "off" and not gm_bridge.mode_installed(_gm_mode)
                     if _need_data:
                         print(f"  6. {t('opt_gm_download')}")
+                    print(f"  8. {t('opt_credits')}")
                     print_divider()
                     print(f"  0. {t('diff_back')}")
                     print_divider()
@@ -264,6 +267,8 @@ def run_game():
                     save_settings(_settings)
                 elif ok == "6" and _need_data:
                     _offer_extra_data(_settings, force=True)
+                elif ok == "8":
+                    credits.menu(_opt_scr)
             continue
 
         # ── 세이브 로드 ───────────────────────────────────────────────────

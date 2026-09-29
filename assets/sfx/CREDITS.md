@@ -9,7 +9,7 @@
 | Freesound — FFeller "impact_big" (#532873), dorian.mastin "impact_small" (#381626), dotY21 "Static" (#335203) (Godot demo projects 경유) | 몸 충돌음, 잡음 | CC0 1.0 |
 | uisfx (https://www.npmjs.com/package/uisfx) | scifi·mechanical·cinematic·organic 테마의 UI 음 (메뉴 이동·확인·뒤로, 퀘스트, 상인, 저장, 스캔, 이벤트 판정, 경고 등) | CC0 1.0 |
 
-CC BY 3.0 음원은 원작자 표기가 필요하다: 게임 크레딧과 README에 위 표를 그대로 둔다.
+CC BY 3.0 음원은 원작자 표기가 필요하다: 게임 안 크레딧(옵션 → 크레딧 · 라이선스, 내용은 `assets/licenses/CREDITS.txt`)과 README에 둔다. 음원을 더하면 CREDITS.txt도 함께 고친다.
 
 ## 음악 (`assets/`)
 
