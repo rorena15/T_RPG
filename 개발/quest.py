@@ -99,10 +99,12 @@ def handle_random_event(player, event):
         if result.get("hp_loss", 0) > 0:
             player.hp = max(1, player.hp - result["hp_loss"])
             print(t('event_hp_loss', val=result['hp_loss']))
+            sound.sfx("hurt")
         if result.get("materials", 0) != 0:
             player.materials = max(0, player.materials + result["materials"])
             sign = "+" if result["materials"] > 0 else ""
             print(t('event_scrap', sign=sign, val=result['materials']))
+            sound.sfx("loot" if result["materials"] > 0 else "res_spend", delay=0.2)
             if result["materials"] > 0:
                 advance_quest(player, "scrap", result["materials"])
         if result.get("hunger", 0) < 0:
@@ -114,6 +116,7 @@ def handle_random_event(player, event):
             if key in player.consumables:
                 player.consumables[key] += 1
                 print(t('event_item_gain', name=db_t(constants.CONSUMABLES_DB[key], 'name')))
+                sound.sfx("gear", delay=0.4)
         log_diary(player, t('event_log_simple', title=db_t(event, 'title')))
         wait_for_keypress()
 
@@ -131,6 +134,7 @@ def handle_random_event(player, event):
             player.inventory.append(wid)
             player.temp_weapon_uses[wid] = uses
             print(f"\n  {Fore.MAGENTA + Style.BRIGHT}" + t('event_weapon_gain', uses=uses) + Style.RESET_ALL)
+            sound.sfx("gear")
         else:
             print("\n  " + t('event_weapon_dup'))
         log_diary(player, t('event_log_weapon', title=db_t(event, 'title')))
@@ -157,11 +161,13 @@ def handle_random_event(player, event):
         if c.get("hp_loss", 0) > 0:
             player.hp = max(1, player.hp - c["hp_loss"])
             print(t('event_hp_loss', val=c['hp_loss']))
+            sound.sfx("hurt")
         mat = c.get("materials", 0)
         if mat != 0:
             player.materials = max(0, player.materials + mat)
             sign = "+" if mat > 0 else ""
             print(t('event_scrap', sign=sign, val=mat))
+            sound.sfx("loot" if mat > 0 else "res_spend", delay=0.2)
             if mat > 0:
                 advance_quest(player, "scrap", mat)
         if c.get("hunger", 0) > 0:
@@ -171,11 +177,13 @@ def handle_random_event(player, event):
         if c.get("ram_bonus", 0) > 0:
             player.max_ram += c["ram_bonus"]
             print(t('event_ram_gain', val=c['ram_bonus']))
+            sound.sfx("res_gain", delay=0.3)
         if c.get("consumable"):
             key = c["consumable"]
             if key in player.consumables:
                 player.consumables[key] += 1
                 print(t('event_item_gain', name=db_t(constants.CONSUMABLES_DB[key], 'name')))
+                sound.sfx("gear", delay=0.4)
         _ew_label = {
             "kinetic": t('weight_label_kinetic'),
             "scrap":   t('weight_label_scrap'),

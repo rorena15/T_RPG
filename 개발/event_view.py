@@ -938,6 +938,8 @@ class EventView:
                 c.blit(self.f_mono_b.render(text, True, _lerp(AMBER, INK, 0.45)), (x + 26 + lw, y))
             return 34, draw
         if k == "result":
+            if "t0" not in e:  # 처음 보일 때 결과마다 소리 (하나씩 떠오르는 간격에 맞춰)
+                sound.results(e.get("sfx", []))
             t0 = e.setdefault("t0", pygame.time.get_ticks())
 
             def draw(c, x, y):

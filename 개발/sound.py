@@ -5,7 +5,8 @@
 #   0: 맵 환경음(바람) — 한 번 틀면 계속 돈다. 전투·서사 때는 소리만 줄였다가 되돌린다 (처음부터 다시 시작하지 않게)
 #   1, 2: 음악(서사·전투) — 두 채널을 번갈아 써서 곡을 겹쳐 바꾼다 (크로스페이드)
 #   3: 심장박동 경보
-#   4~7: 효과음 (assets/sfx/ 음원: 무기별 공격·피격·강화소·발소리 등, 맵의 먼 소리. 출처는 assets/sfx/CREDITS.md)
+#   4, 5: 날씨 환경음 (스모그·안개·먼지 폭풍·재·산성비) — 날씨가 바뀌면 겹쳐 바꾼다
+#   6~10: 효과음 (assets/sfx/ 음원: 무기별 공격·피격·강화소·발소리 등, 맵의 먼 소리. 출처는 assets/sfx/CREDITS.md)
 # 곡은 처음 쓸 때 한 번 풀어 두고, 앞뒤 무음을 잘라 반복 이음매가 끊기지 않게 한다.
 # (예전 mixer.music 방식: 전투곡이 25초마다 0.5초씩 끊기고, 곡을 바꿀 때 뚝 끊겼다.)
 
@@ -29,6 +30,9 @@ _TRACKS = {
     "boss":   ("bgm_boss.ogg", 0.6),      # Godot TPS Demo 음악 (CC BY 3.0, Christian Fernando Perucchi)
     "night":  ("bgm_night.ogg", 0.4),     # "House In a Forest Loop" (CC BY 3.0, HorrorPen)
     "ending": ("bgm_ending.ogg", 0.55),   # Godot TPS Demo 메뉴 음악 (CC BY 3.0, Christian Fernando Perucchi)
+    # 날씨 (assets/weather_*.wav, 10초 반복)
+    "wx_smog": ("weather_smog.wav", 0.22), "wx_fog": ("weather_fog.wav", 0.25), "wx_dust": ("weather_dust.wav", 0.4),
+    "wx_ash": ("weather_ash.wav", 0.3), "wx_acid": ("weather_acid.wav", 0.4),
 }
 _FADE_MS = 700        # 곡 바꿀 때 겹치는 시간
 _DUCK = {"typing": 0.45, "combat": 0.0, "boss": 0.0, "night": 0.75, "ending": 0.0}   # 음악이 나올 때 바람 소리 크기 (기본 대비)
@@ -75,11 +79,12 @@ def init():
     try:
         pygame.mixer.pre_init(44100, -16, 2, 1024)
         pygame.mixer.init()
-        pygame.mixer.set_num_channels(8)
-        pygame.mixer.set_reserved(4)
+        pygame.mixer.set_num_channels(11)
+        pygame.mixer.set_reserved(6)
         _ch_wind = pygame.mixer.Channel(0)
         _ch_music = [pygame.mixer.Channel(1), pygame.mixer.Channel(2)]
         _hb_channel = pygame.mixer.Channel(3)
+        _ch_weather[:] = [pygame.mixer.Channel(4), pygame.mixer.Channel(5)]
         p = _asset("heartbeat4.wav")
         if os.path.exists(p):
             _hb_sound = pygame.mixer.Sound(p)
@@ -120,6 +125,8 @@ SFX_VOL = {
     "quest_new": 0.4, "quest_done": 0.5, "quest_fail": 0.45, "buy": 0.4, "scan": 0.4, "job": 0.55,
     "evt_good": 0.45, "evt_great": 0.55, "evt_bad": 0.45,
     "search": 0.35, "search_empty": 0.3, "bunker_door": 0.6,
+    # 선택지 결과
+    "res_spend": 0.35, "res_gain": 0.4, "res_weight": 0.35,
     "amb_creak": 0.22, "amb_drone": 0.15, "amb_thunder": 0.3, "amb_clang": 0.14,
 }
 SFX_SYNTH_FALLBACK = False   # 음원 파일이 없을 때 코드로 만든 소리를 쓸지 (합성음은 거칠어서 기본은 끔)
@@ -163,8 +170,8 @@ _sfx_rr = [0]
 
 
 def _free_sfx_channel():
-    """효과음 채널(4~7) 중 쉬는 것, 다 바쁘면 차례로 돌려 쓴다 (음악·경보 채널은 건드리지 않는다)."""
-    chans = [pygame.mixer.Channel(i) for i in range(4, 8)]
+    """효과음 채널(6~10) 중 쉬는 것, 다 바쁘면 차례로 돌려 쓴다 (음악·경보 채널은 건드리지 않는다)."""
+    chans = [pygame.mixer.Channel(i) for i in range(6, 11)]
     for ch in chans:
         if not ch.get_busy():
             return ch
@@ -174,6 +181,20 @@ def _free_sfx_channel():
 
 # 적 종류 -> (공격음, 맞는 순간까지 초)
 ENEMY_SFX = {"drone": ("enemy_drone", 0.25), "bio_hound": ("enemy_hound", 0.6), "boss": ("enemy_boss", 0.7)}
+
+
+# 결과 종류 -> 효과음 (고철은 늘면 줍는 소리, 줄면 내주는 소리)
+_RESULT_SFX = {"hp_loss": "hurt", "hp_gain": "heal", "scrap+": "loot", "scrap-": "res_spend", "item": "gear",
+               "gain": "res_gain", "weight": "res_weight", "alert": "alert"}
+
+
+def results(kinds, gap=0.22):
+    """선택지 결과를 하나씩 소리로 (화면에서 결과가 하나씩 떠오르는 간격에 맞춘다).
+    kinds: hp_loss / hp_gain / scrap+ / scrap- / item / gain / weight / alert 중 몇 개."""
+    for i, k in enumerate(kinds):
+        name = _RESULT_SFX.get(k)
+        if name:
+            sfx(name, vol=0.8, delay=i * gap)
 
 
 def enemy_attack(enemy, heavy=False):
@@ -294,6 +315,42 @@ def _ramp_loop():
                     _ramps.pop(ch, None)
 
 
+_ch_weather = []     # [채널 A, 채널 B]
+_weather = None      # 지금 날씨 이름
+_weather_ch = None   # 지금 날씨를 튼 채널
+
+
+def _weather_level():
+    if not _weather:
+        return 0.0
+    return _TRACKS["wx_" + _weather][1] * _user_gain() * _DUCK.get(_current, 1.0)
+
+
+def map_weather(weather):
+    """맵에서 부른다: 날씨 환경음을 그 날씨로 (바뀌면 1.5초 겹쳐 바꾼다). None이면 끈다."""
+    global _weather, _weather_ch
+    if not _ready or weather == _weather:
+        return
+    try:
+        old = _weather_ch
+        if old is not None:
+            _ramp(old, 0.0, 1500, stop_at_zero=True)
+        _weather, _weather_ch = weather, None
+        snd = _load("wx_" + weather) if weather and ("wx_" + weather) in _TRACKS else None
+        if snd is None:
+            return
+        ch = next((c for c in _ch_weather if c is not old and not c.get_busy()), None) or \
+            next(c for c in _ch_weather if c is not old)
+        with _lock:
+            _ramps.pop(ch, None)
+        ch.set_volume(0.0)
+        ch.play(snd, loops=-1)
+        _weather_ch = ch
+        _ramp(ch, _weather_level(), 1500)
+    except Exception:
+        pass
+
+
 def _wind_level():
     base = _TRACKS["wind"][1] * _user_gain()
     return base * _DUCK.get(_current, 1.0)
@@ -323,6 +380,8 @@ def _apply_levels(ms=150):
         return
     if _ch_wind.get_busy():
         _ramp(_ch_wind, _wind_level(), ms)
+    if _weather_ch is not None:
+        _ramp(_weather_ch, _weather_level(), ms)
     for name, ch in _music_ch.items():
         if name == _current:
             _ramp(ch, _music_level(name), ms)
@@ -351,6 +410,8 @@ def _play_music(name):
         _current = name
         _ramp(ch, _music_level(name), _FADE_MS)
         _ramp(_ch_wind, _wind_level(), _FADE_MS)
+        if _weather_ch is not None:
+            _ramp(_weather_ch, _weather_level(), _FADE_MS)
     except Exception:
         pass
 
@@ -374,6 +435,8 @@ def play_map_ambient():
             _ch_wind.set_volume(0.0)
             _ch_wind.play(snd, loops=-1)
         _ramp(_ch_wind, _wind_level(), _FADE_MS * 2)
+        if _weather_ch is not None:
+            _ramp(_weather_ch, _weather_level(), _FADE_MS * 2)
     except Exception:
         pass
 
@@ -415,14 +478,15 @@ def resume_map_ambient():
 
 def stop_all(fade_ms=800):
     """모든 사운드 정지 (게임 종료·엔딩 시)"""
-    global _current
+    global _current, _weather, _weather_ch
     if not _ready:
         return
     try:
-        for ch in [_ch_wind] + _ch_music:
+        for ch in [_ch_wind] + _ch_music + _ch_weather:
             if ch.get_busy():
                 _ramp(ch, 0.0, fade_ms, stop_at_zero=True)
         _music_ch.clear()
+        _weather, _weather_ch = None, None
         if _hb_channel:
             _hb_channel.stop()
         _current = None

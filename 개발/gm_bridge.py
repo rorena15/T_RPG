@@ -348,7 +348,28 @@ def _show(view, narration, tokens, out=None):
     if check.get("outcome") == "crit_fail" or big_hit:
         view.shake(9 if check.get("outcome") == "crit_fail" else 6)
     if tokens:
-        view.add("result", tokens=tokens)
+        view.add("result", tokens=tokens, sfx=_result_sfx(tokens))
+
+
+def _result_sfx(tokens):
+    """결과 표시(글자, 종류)를 결과 효과음 종류로 (sound.results)."""
+    hp_up = t('gm_tok_hp', sign="+", val=0)[:-1]
+    alert_up = t('gm_tok_alert', sign="+", val=0)[:-1]
+    kinds = []
+    for text, kind in tokens:
+        if kind == "hp_loss":
+            kinds.append("hp_loss")
+        elif kind == "scrap":
+            kinds.append("scrap+" if "+" in text else "scrap-")
+        elif kind == "gain":
+            kinds.append("hp_gain" if text.startswith(hp_up) else "gain")
+        elif kind in ("item", "weight"):
+            kinds.append(kind)
+        elif kind == "info" and text.startswith(alert_up):
+            kinds.append("alert")
+        else:
+            kinds.append(None)   # 소리 없이 간격만
+    return kinds
 
 
 def _followups(view, player, grid, history, scene=""):

@@ -360,6 +360,7 @@ def run_game():
             clear_screen()
 
         sound.map_mood(scene_art.world_time(player.turn_count))  # 밤·새벽엔 바람 밑에 어두운 음악
+        sound.map_weather(scene_art.world_weather(player.turn_count))  # 날씨 환경음 (산성비·먼지 폭풍 등)
         _actions = _EXPLORE_ACTIONS
         if grid.at_forge() and grid.forge_known():  # 강화소 칸: U로 발칸 게이츠 / 강화소 (forge.py)
             _flabel = t('act_forge') if forge.built(grid) else t('act_forge_npc')

@@ -64,8 +64,10 @@ def handle_session(player, session):
         if ans in ["1", "2", "3"]:
             choice_data = session['choices'][int(ans) - 1]
             choice_weight = choice_data.get('weight')
+            _res = []   # 결과 효과음 (sound.results)
             if choice_weight:
                 player.weights[choice_weight] += 1
+                _res.append("weight")
 
             if choice_data.get("reward"):
                 if choice_data["reward"] == "SCRAP_MAT":
@@ -73,16 +75,19 @@ def handle_session(player, session):
                     player.materials += mat_gain
                     advance_quest(player, "scrap", mat_gain)
                     _say(t('session_scrap_gain', mat=mat_gain))
+                    _res.append("scrap+")
                 else:
                     player.inventory.append(choice_data["reward"])
                     item_data = get_equipment_data(choice_data["reward"])
                     _say(t('session_item_gain', name=db_t(item_data, 'name')))
+                    _res.append("item")
 
             if choice_data.get("consumable"):
                 key = choice_data["consumable"]
                 if key in player.consumables:
                     player.consumables[key] += 1
                     _say(t('session_consumable_gain', name=db_t(constants.CONSUMABLES_DB.get(key, {}), 'name') or key))
+                    _res.append("item")
 
             raw_mat = choice_data.get("materials", 0)
             if raw_mat != 0 and not choice_data.get("reward") == "SCRAP_MAT":
@@ -90,12 +95,15 @@ def handle_session(player, session):
                 if raw_mat > 0:
                     advance_quest(player, "scrap", raw_mat)
                     _say(t('session_scrap_add', val=raw_mat))
+                    _res.append("scrap+")
                 else:
                     _say(t('session_scrap_use', val=raw_mat))
+                    _res.append("scrap-")
 
             if choice_data.get("hp_loss", 0):
                 player.hp = max(1, player.hp - choice_data["hp_loss"])
                 _say(t('session_hp_loss', val=choice_data['hp_loss']))
+                _res.append("hp_loss")
             if choice_data.get("thirst", 0):
                 player.thirst = min(100, player.thirst + choice_data["thirst"])
             if choice_data.get("hunger", 0):
@@ -103,6 +111,8 @@ def handle_session(player, session):
             if choice_data.get("ram_bonus", 0):
                 player.max_ram += choice_data["ram_bonus"]
                 _say(t('session_ram_gain', val=choice_data['ram_bonus']))
+                _res.append("gain")
+            sound.results(_res)
 
             if not view:
                 time.sleep(0.6)

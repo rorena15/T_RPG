@@ -18,3 +18,8 @@ CC BY 3.0 음원은 원작자 표기가 필요하다: 게임 크레딧과 README
 | `bgm_boss.ogg` (보스전) | Godot TPS Demo 레벨 음악 — © 2018 Christian Fernando Perucchi (https://github.com/godotengine/tps-demo) | CC BY 3.0 |
 | `bgm_ending.ogg` (엔딩) | Godot TPS Demo 메뉴 음악 — © 2018 Christian Fernando Perucchi | CC BY 3.0 |
 | `bgm_night.ogg` (밤·새벽 탐색) | "Loop - House in a Forest" — © 2012 HorrorPen (https://opengameart.org/content/loop-house-in-a-forest) | CC BY 3.0 |
+
+## 날씨 환경음 (`assets/weather_*.wav`)
+
+게임에 있던 바람 소리(`wind.mp3`)와 위 표의 음원(Kenney 엔진음 CC0, Freesound 잡음·충돌음 CC0)을 늘이고 거르고 겹쳐 10초 반복음으로 만들었다.
+스모그(저음 윙윙), 안개(먼 울림), 먼지 폭풍(돌풍·모래), 재(타닥거림·우르릉), 산성비(빗줄기·빗방울·쉿 소리).
