@@ -54,6 +54,7 @@ def main():
         "--windows-console-mode=" + ("force" if a.console else "disable"),
         "--include-package-data=pygame",
         "--include-package=rich._unicode_data",  # rich가 importlib로 불러 정적 분석에 안 잡힌다
+        "--include-package=cryptography.hazmat.primitives",  # 진단 기록 암호화 (diag.py가 함수 안에서 불러온다)
         "--nofollow-import-to=pygments",  # 게임은 rich.console만 쓴다. pygments C 파일에서 cl 출력 디코딩이 깨졌다
         f"--include-data-files={os.path.join(HERE, 'database.json')}=database.json",
         f"--include-data-files={os.path.join(HERE, 'master_formulas.json')}=master_formulas.json",

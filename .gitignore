@@ -545,3 +545,8 @@ db_editor.py
 # stigma-gm: 학습 데이터는 비공개 (공개되면 누구나 같은 모델을 다시 학습할 수 있고, train.jsonl에 워터마크 비밀 문구가 들어 있다)
 stigma-gm/data/
 stigma-gm/unsloth_compiled_cache/
+
+# 진단 기록 (암호화, 개발자만 읽음 — 개발/diag.py). 게임 폴더(소스 실행은 개발/)에 생긴다
+/diag/
+/개발/diag/
+*.sdg

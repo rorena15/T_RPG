@@ -26,7 +26,7 @@ import threading
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 HERE = os.path.dirname(os.path.abspath(__file__))
 GAME = os.path.normpath(os.path.join(HERE, "..", ".."))          # 개발/
-SKIP = shutil.ignore_patterns("*.db", "log.txt", "__pycache__", "tools", "runtime", "dist", "build", "*.gguf", "*.bin")
+SKIP = shutil.ignore_patterns("*.db", "log.txt", "__pycache__", "tools", "diag", "*.sdg", "runtime", "dist", "build", "*.gguf", "*.bin")
 
 
 def make_copies(n):

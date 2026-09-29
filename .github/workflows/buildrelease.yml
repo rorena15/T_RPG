@@ -92,7 +92,7 @@ jobs:
 
       # Windows는 Nuitka로 빌드한다 (개발/build_exe.py 참고: PyInstaller exe는 소스가 거의 그대로 복원된다)
       - name: 의존성 설치
-        run: pip install rich colorama nuitka ordered-set zstandard pygame-ce
+        run: pip install rich colorama nuitka ordered-set zstandard pygame-ce cryptography
 
       # ── 동적 서사 준비 ─────────────────────────────────────────────────────
       # 실행기는 공개 릴리스 자산에서, 모델 키 절반은 Secret에서 만든다 (공개 저장소에 넣지 않는다).
@@ -236,7 +236,7 @@ jobs:
           python-version: ${{ github.event.inputs.python_version }}
 
       - name: 의존성 설치
-        run: pip install rich colorama pyinstaller pygame-ce
+        run: pip install rich colorama pyinstaller pygame-ce cryptography
 
       - name: 버전 주입
         if: ${{ github.event.inputs.inject_version == 'true' }}

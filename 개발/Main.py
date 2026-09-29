@@ -62,6 +62,8 @@ def _offer_extra_data(settings, force=False):
 
 @track
 def run_game():
+    import diag
+    diag.purge_plain_logs()   # 예전 버전의 평문 기록(log.txt, DB events 표)은 지운다 — 진단 기록은 이제 암호화
     if not get_terminal():
         if os.name == 'nt':
             os.system('title PROTOCOL: STIGMA — 1막: 낙인')

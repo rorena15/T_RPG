@@ -2,7 +2,6 @@ import functools
 import datetime
 import json
 import os
-import sqlite3
 import time
 import uuid
 
@@ -10,33 +9,25 @@ import uuid
 # 텍스트 로그 (기존 기능 유지)
 # ====================================================================
 def sys_log(message, level="INFO", event_type=None, show=False):
-    # 디버그 및 시스템 로그를 화면에 출력하고 'log.txt' 파일에 누적 저장합니다.
-    # show=False 로 설정하면 게임 화면에는 보이지 않고 로그 파일에만 조용히 기록됩니다.
+    # 디버그 및 시스템 로그. 암호화 진단 기록(diag.py, 개발자만 읽음)에 남긴다 (예전: 평문 log.txt).
+    # show=True 면 게임 화면에도 출력한다.
     if show:
         print(message)
 
     # 현재 시간을 [YYYY-MM-DD HH:MM:SS] 포맷으로 기록
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    clean_msg = message.replace("\n", " ").strip()  # 줄바꿈 등을 정리해서 한 줄로 기록
     tag = event_type if event_type else level
-    log_line = f"[{timestamp}] [{tag}] {clean_msg}\n"
-
-    # 'a' 모드(Append)로 열어서 기존 로그를 지우지 않고 밑에 계속 이어붙임
-    try:
-        with open("log.txt", "a", encoding="utf-8") as f:
-            f.write(log_line)
-    except Exception:
-        pass
+    import diag
+    diag.write("log", {"t": timestamp, "lv": tag, "msg": str(message).strip()}, SESSION_ID)
 
 
 # ====================================================================
-# 플레이 데이터 텔레메트리 (SQLite events 테이블 적재)
+# 함수 호출 추적 (암호화 진단 기록에 적재, diag.py)
 # ====================================================================
 # 프로세스(게임 1회 실행) 단위로 고정되는 세션 식별자.
 # 같은 세션 내 발생한 모든 이벤트를 session_id로 묶어 시계열/퍼널 분석이 가능하다.
 SESSION_ID = str(uuid.uuid4())
 
-_DB_PATH = "stigma_data.db"
 
 # Player 클래스처럼 게임 핵심 상태를 들고 다니는 객체를 자동 인식하기 위한
 # 속성 이름 목록. 인자/반환값에서 이 속성들을 가진 객체를 발견하면 to_dict() 또는
@@ -141,35 +132,14 @@ def _event_writer():
 
 
 def _write_event_now(record):
-    """events 테이블에 1행 적재. DB 쓰기 실패는 게임 흐름에 영향을 주지 않도록 항상 흡수한다."""
-    try:
-        conn = sqlite3.connect(_DB_PATH, timeout=2.0)
-        try:
-            cursor = conn.cursor()
-            cursor.execute('''
-                INSERT INTO events (
-                    session_id, timestamp, func_name, args_json, kwargs_json,
-                    result_json, duration_ms, success, error_type, error_message,
-                    player_hp, player_turn_context
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ''', (
-                record["session_id"], record["timestamp"], record["func_name"],
-                record["args_json"], record["kwargs_json"], record["result_json"],
-                record["duration_ms"], record["success"], record["error_type"],
-                record["error_message"], record["player_hp"], record["player_turn_context"],
-            ))
-            conn.commit()
-        finally:
-            conn.close()
-    except Exception:
-        # events 테이블이 아직 없는 시점(부팅 극초반)이거나 DB 파일이 잠겨 있는 경우 등.
-        # 텔레메트리 손실은 허용하되, 원인 파악용으로 텍스트 로그에만 조용히 남긴다.
-        sys_log(f"[TELEMETRY WARN] 이벤트 적재 실패: {record.get('func_name')}", level="WARN")
+    """호출 기록 1건을 암호화 진단 기록에 남긴다. 실패해도 게임 흐름에는 영향을 주지 않는다."""
+    import diag
+    diag.write("trace", record, SESSION_ID)
 
 
 def track(func):
     """
-    함수 호출을 SQLite events 테이블에 풍부하게 기록하는 데코레이터.
+    함수 호출을 암호화 진단 기록(diag.py)에 풍부하게 기록하는 데코레이터.
     수집 항목: 세션ID, 타임스탬프, 함수명, 인자/반환값(직렬화), 실행시간(ms),
               성공 여부, 예외 종류/메시지, 호출 시점 플레이어 HP 및 상태 스냅샷.
     텔레메트리 수집 자체에서 발생하는 어떤 예외도 원본 함수의 실행이나 반환을 막지 않는다.
@@ -271,7 +241,7 @@ def track_event(event_name):
 import traceback as _traceback
 
 def log_error(exc: Exception, context: str = "", show: bool = False):
-    """예외를 [ERROR] 레벨로 log.txt에 기록한다.
+    """예외를 [ERROR] 레벨로 진단 기록(diag.py)에 남긴다.
     context: 어느 함수/모듈에서 발생했는지 식별 문자열 (예: "combat_loop")
     show=True 이면 화면에도 간략하게 출력한다.
     """
@@ -282,7 +252,7 @@ def log_error(exc: Exception, context: str = "", show: bool = False):
 
 
 def setup_global_exception_hook():
-    """잡히지 않은 예외(uncaught exception)를 log.txt에 자동 기록하는
+    """잡히지 않은 예외(uncaught exception)를 진단 기록(diag.py)에 자동으로 남기는
     전역 핸들러를 설치한다. Main.py 진입점에서 1회 호출하면 된다.
     기존 sys.excepthook 동작(표준 에러 출력)은 유지한다.
     """
