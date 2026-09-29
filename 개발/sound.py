@@ -101,14 +101,40 @@ def _preload():
         pass
 
 
+SFX_SYNTH_FALLBACK = False   # 음원 파일이 없을 때 코드로 만든 소리를 쓸지 (합성음은 거칠어서 기본은 끔)
+_SFX_EXT = (".ogg", ".wav", ".mp3")
+
+
+def _sfx_files(name):
+    """assets/sfx/ 에서 이 효과음의 파일들: <이름>.ogg 또는 변형 <이름>_1.ogg, <이름>_2.ogg … (wav·mp3도 된다)."""
+    d = _asset("sfx")
+    if not os.path.isdir(d):
+        return []
+    out = []
+    for f in sorted(os.listdir(d)):
+        stem, ext = os.path.splitext(f)
+        if ext.lower() in _SFX_EXT and (stem == name or (stem.startswith(name + "_") and stem[len(name) + 1:].isdigit())):
+            out.append(os.path.join(d, f))
+    return out
+
+
 def _sfx_sound(name):
+    """효과음 변형 목록 (없으면 None). 칠 때마다 이 중 하나를 골라 같은 소리 반복을 줄인다."""
     with _sfx_lock:
         if name not in _sfx:
-            try:
-                import sfx_synth
-                _sfx[name] = pygame.mixer.Sound(buffer=sfx_synth.build(name))
-            except Exception:
-                _sfx[name] = None
+            sounds = []
+            for p in _sfx_files(name):
+                try:
+                    sounds.append(pygame.mixer.Sound(p))
+                except Exception:
+                    pass
+            if not sounds and SFX_SYNTH_FALLBACK:
+                try:
+                    import sfx_synth
+                    sounds.append(pygame.mixer.Sound(buffer=sfx_synth.build(name)))
+                except Exception:
+                    pass
+            _sfx[name] = sounds or None
         return _sfx[name]
 
 
@@ -131,9 +157,11 @@ def sfx(name, vol=1.0):
         return
     try:
         import sfx_synth
-        snd = _sfx_sound(name)
-        if snd is None:
+        variants = _sfx_sound(name)
+        if not variants:
             return
+        import random as _r
+        snd = _r.choice(variants)
         ch = _free_sfx_channel()
         ch.set_volume(max(0.0, min(1.0, sfx_synth.volume(name) * vol * _user_gain() * 1.4)))
         ch.play(snd)
