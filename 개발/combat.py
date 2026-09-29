@@ -111,6 +111,9 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
         atk = base_atk
         player.alert_level = min(100, player.alert_level + constants.ALERT_INC_DRONE)
 
+    base_atk = int(base_atk * constants.ENEMY_ATK_MULT)  # 적 공격력 일괄 조정 (보스 페이즈 2도 이 값을 기준으로 오른다)
+    atk = base_atk
+
     scene = "enemy_collector" if is_boss else ("enemy_hound" if enemy_type == "bio_hound" else "enemy_drones")
     if current_hp is None:  # 새 교전일 때만 적 그림 카드
         from event_view import scene_card
