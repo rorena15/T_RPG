@@ -127,21 +127,21 @@ class CombatView(EventView):
             rect = pygame.Rect(bx, by, bw, self.BTN_H)
             on = self._foot_on(i, ret)
             box = pygame.Surface(rect.size, pygame.SRCALPHA)
-            box.fill((*self.NEON_CYAN, 22) if on else (8, 10, 16, 190))
+            box.fill((12, 10, 8, 190))
             c.blit(box, rect.topleft)
-            if on:   # 고른 버튼: 네온 테두리
-                self._neon_frame(c, rect, self.NEON_CYAN, 1.0)
+            if on:   # 고른 버튼: 주황 센서 테두리 (가끔 지직)
+                self._sensor_frame(c, rect, self.SENSOR, i + 20)
             else:
-                pygame.draw.rect(c, (34, 44, 52), rect, 1, border_radius=2)
-            k = self.f_mono_b.render(key, True, self.NEON_AMBER if on else AMBER)
+                pygame.draw.rect(c, (52, 44, 36), rect, 1)
+            k = self.f_mono_b.render(key, True, self.SENSOR if on else AMBER)
             c.blit(k, (bx + 12, by + (self.BTN_H - k.get_height()) // 2))
             lx = bx + 34
             name = getattr(self, "_act_icons", {}).get(ret)
-            ic, pad = self.neon_icon(name, 24, self.NEON_CYAN, 1.0 if on else 0.45) if name else (None, 0)
-            if ic:   # 네온 아이콘: 평소엔 은은하게, 고르면 환하게
-                c.blit(ic, (lx - pad, by + (self.BTN_H - 24) // 2 - pad))
+            ic = self.crt_icon(name, 24, self.SENSOR if on else self.SENSOR_DIM) if name else None
+            if ic:
+                self.blit_static(c, ic, (lx, by + (self.BTN_H - 24) // 2), i + 20, 1.6 if on else 0.5)
                 lx += 32
-            g = self.f_sans.render(label, True, _lerp(self.NEON_CYAN, (255, 255, 255), 0.6) if on else INK_DIM)
+            g = self.f_sans.render(label, True, INK if on else INK_DIM)
             c.blit(g, (lx, by + (self.BTN_H - g.get_height()) // 2))
             hits.append((ret, rect))
         self._foot_hits = hits

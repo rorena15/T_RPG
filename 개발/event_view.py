@@ -1391,60 +1391,6 @@ class EventView:
     _quick_hover = None
 
     _ICONS = {}
-    # 네온 색 (아이콘 전용): 네오 아크 간판처럼 채도 높은 빛
-    NEON_CYAN = (70, 235, 255)
-    NEON_PINK = (255, 70, 150)
-    NEON_AMBER = (255, 184, 64)
-    NEON_RED = (255, 72, 88)
-    NEON_OFF = (70, 66, 60)
-
-    @classmethod
-    def neon_icon(cls, name, size, color, glow=1.0):
-        """네온관처럼: 하얗게 달아오른 심 + 색 번짐(두 겹 블러). (그림, 여백) — 그림은 size + 여백*2 크기.
-        glow 0이면 번짐 없이 흐린 단색 (꺼진 간판)."""
-        k = ("neon", name, size, tuple(color), round(glow, 2))
-        if k in cls._ICONS:
-            return cls._ICONS[k]
-        base = cls.icon(name, size, color)
-        if base is None:
-            cls._ICONS[k] = (None, 0)
-            return cls._ICONS[k]
-        pad = max(6, size // 2)
-        W = size + pad * 2
-        out = pygame.Surface((W, W), pygame.SRCALPHA)
-        if glow > 0:
-            layer = pygame.Surface((W, W), pygame.SRCALPHA)
-            layer.blit(base, (pad, pad))
-            # 번짐: 가까운 빛(작은 반경) + 넓은 빛(큰 반경). 흐리게 하면 옅어지므로 여러 번 겹쳐 세기를 올린다
-            for radius, times in ((max(2, size // 8), 2), (max(4, size // 3), 3)):
-                if hasattr(pygame.transform, "gaussian_blur"):
-                    blur = pygame.transform.gaussian_blur(layer, radius)
-                else:
-                    small = pygame.transform.smoothscale(layer, (max(1, W // radius), max(1, W // radius)))
-                    blur = pygame.transform.smoothscale(small, (W, W))
-                blur.fill((*color[:3], 0), special_flags=pygame.BLEND_RGBA_MAX)   # 흐리면 색이 검게 섞이므로 빛 색으로 다시 칠한다
-                blur.fill((255, 255, 255, min(255, int(255 * glow))), special_flags=pygame.BLEND_RGBA_MULT)
-                for _ in range(times):
-                    out.blit(blur, (0, 0))
-            core = cls.icon(name, size, _lerp(color, (255, 255, 255), 0.45))
-            out.blit(base, (pad, pad))
-            core.set_alpha(int(170 * min(1.0, glow)))
-            out.blit(core, (pad, pad))
-        else:
-            out.blit(base, (pad, pad))
-        cls._ICONS[k] = (out, pad)
-        return cls._ICONS[k]
-
-    def _neon_frame(self, c, rect, color, strength=1.0):
-        """네온 테두리: 겹겹이 퍼지는 빛 + 밝은 선. 네온관처럼 아주 약하게 떨린다."""
-        t_ = pygame.time.get_ticks()
-        strength *= 0.88 + 0.12 * math.sin(t_ / 90) * math.sin(t_ / 37)
-        for i, a in ((6, 14), (5, 22), (4, 34), (3, 50), (2, 75), (1, 110)):
-            g = pygame.Surface((rect.w + i * 2, rect.h + i * 2), pygame.SRCALPHA)
-            pygame.draw.rect(g, (*color, int(a * strength)), g.get_rect(), 1, border_radius=3)
-            c.blit(g, (rect.x - i, rect.y - i))
-        pygame.draw.rect(c, _lerp(color, (255, 255, 255), 0.35), rect, 1, border_radius=2)
-
     @classmethod
     def icon(cls, name, size, color):
         """assets/icons/<name>.png (흰 실루엣, game-icons.net)를 size로 줄이고 color로 칠한다. 없으면 None."""
@@ -1460,6 +1406,54 @@ class EventView:
             cls._ICONS[k] = surf
         return cls._ICONS[k]
 
+    # 아이콘 톤: N-404 시각 센서(미니맵)처럼 주황빛 단색 + 주사선 + 가끔 신호가 지직 튄다
+    SENSOR = (255, 170, 72)          # 켜진 칸·고른 버튼
+    SENSOR_DIM = (190, 120, 52)      # 평소
+    SENSOR_OFF = (70, 62, 54)        # 비었거나 다 떨어짐 (꺼진 화면)
+
+    @classmethod
+    def crt_icon(cls, name, size, color):
+        """주사선이 들어간 주황 아이콘 (한 번만 만들어 둔다). 없으면 None."""
+        k = ("crt", name, size, tuple(color))
+        if k not in cls._ICONS:
+            base = cls.icon(name, size, color)
+            out = None
+            if base is not None:
+                out = base.copy()
+                for yy in range(1, size, 2):   # 한 줄 걸러 어둡게 (주사선)
+                    out.fill((255, 255, 255, 120), pygame.Rect(0, yy, size, 1), special_flags=pygame.BLEND_RGBA_MULT)
+            cls._ICONS[k] = out
+        return cls._ICONS[k]
+
+    @staticmethod
+    def blit_static(c, surf, pos, seed, strength=1.0):
+        """아이콘을 그리고, 가끔(짧은 순간) 한 줄 띠가 옆으로 밀리며 잡음 점이 튄다 — 신호가 지직거리는 느낌."""
+        now = pygame.time.get_ticks()
+        rng = random.Random(seed * 7919 + now // 60)
+        c.blit(surf, pos)
+        w, h = surf.get_size()
+        if rng.random() < 0.10 * strength:   # 지직: 가로 띠 하나가 2~4px 밀림
+            y0 = rng.randrange(h)
+            hh = min(h - y0, rng.randint(1, max(2, h // 5)))
+            strip = surf.subsurface((0, y0, w, hh))
+            c.blit(strip, (pos[0] + rng.choice((-4, -3, -2, 2, 3, 4)), pos[1] + y0))
+        for _ in range(rng.randint(0, int(3 * strength))):   # 잡음 점
+            px, py = pos[0] + rng.randrange(w), pos[1] + rng.randrange(h)
+            c.fill(_lerp(BG, (255, 170, 72), rng.uniform(0.25, 0.7)), (px, py, rng.choice((1, 2)), 1))
+
+    def _sensor_frame(self, c, rect, color, seed=0):
+        """고른 칸 테두리: 주황 선 + 아주 약한 깜박임, 가끔 한 변이 끊긴다."""
+        now = pygame.time.get_ticks()
+        rng = random.Random(seed * 31 + now // 80)
+        col = _lerp(BG, color, 0.82 + 0.18 * rng.random())
+        pygame.draw.rect(c, col, rect, 1)
+        glow = pygame.Surface(rect.size, pygame.SRCALPHA)
+        glow.fill((*color, 18))
+        c.blit(glow, rect.topleft)
+        if rng.random() < 0.12:   # 지직: 윗변 일부가 끊김
+            gx = rect.x + rng.randrange(max(1, rect.w - 20))
+            c.fill(BG, (gx, rect.y, rng.randint(6, 20), 1))
+
     @staticmethod
     def quick_label(key):
         """(짧은 이름, 종류 색): 치료는 붉게, 식량은 호박, 물은 청록."""
@@ -1472,12 +1466,6 @@ class EventView:
         label = i18n.t(k) if i18n.has(k) else i18n.db_t(d, 'name').split()[-1]
         col = RED if d["type"] == "hp" else (AMBER if d["type"] == "food" else TEAL)
         return label, col
-
-    @classmethod
-    def quick_neon(cls, key):
-        import constants
-        d = constants.CONSUMABLES_DB.get(key) or {}
-        return cls.NEON_PINK if d.get("type") == "hp" else (cls.NEON_AMBER if d.get("type") == "food" else cls.NEON_CYAN)
 
     @staticmethod
     def quick_effect(key):
@@ -1503,23 +1491,27 @@ class EventView:
             n = p.consumables.get(key, 0) if key else 0
             hov = self._quick_hover == ch
             box = pygame.Surface(rect.size, pygame.SRCALPHA)
-            box.fill((8, 10, 16, 200) if key else (255, 255, 255, 4))
+            box.fill((12, 10, 8, 200) if key else (255, 255, 255, 4))
             c.blit(box, rect.topleft)
-            ncol = self.quick_neon(key) if key else self.NEON_OFF
-            if key and n and hov:
-                self._neon_frame(c, rect, ncol, 1.0)
+            lit = bool(key and n)
+            if lit and hov:
+                self._sensor_frame(c, rect, self.SENSOR, i)
             else:
-                pygame.draw.rect(c, _lerp(BG, ncol, 0.35) if key and n else (40, 38, 36), rect, 1, border_radius=2)
-            c.blit(self.f_mono.render(ch, True, _lerp(BG, ncol, 0.9) if key else (70, 66, 60)), (rect.x + 4, rect.y + 2))
+                pygame.draw.rect(c, _lerp(BG, self.SENSOR_DIM, 0.45) if lit else (40, 36, 32), rect, 1)
+            c.blit(self.f_mono.render(ch, True, self.SENSOR if lit else self.SENSOR_OFF), (rect.x + 4, rect.y + 2))
             if key:
-                ic, pad = self.neon_icon(key, 26, ncol if n else self.NEON_OFF, (1.25 if hov else 0.8) if n else 0)
-                if ic:   # 네온 아이콘 (game-icons.net) — 치료 분홍 · 식량 호박 · 물 청록, 떨어지면 꺼진 간판
-                    c.blit(ic, (rect.centerx - ic.get_width() // 2, rect.y + 23 - ic.get_height() // 2))
+                ic = self.crt_icon(key, 26, (self.SENSOR if hov else self.SENSOR_DIM) if n else self.SENSOR_OFF)
+                if ic:   # 주황 센서 아이콘 (game-icons.net) — 켜진 칸은 가끔 지직, 다 떨어지면 꺼진 화면
+                    pos = (rect.centerx - 13, rect.y + 11)
+                    if n:
+                        self.blit_static(c, ic, pos, i + 1, 1.6 if hov else 1.0)
+                    else:
+                        c.blit(ic, pos)
                 else:
                     label, _ = self.quick_label(key)
                     g = self.f_mono.render(label, True, INK if n else INK_FAINT)
                     c.blit(g, (rect.centerx - g.get_width() // 2, rect.y + 20))
-                cnt = self.f_mono.render(str(n), True, INK if n else self.NEON_RED)
+                cnt = self.f_mono.render(str(n), True, INK if n else RED)
                 c.blit(cnt, (rect.right - cnt.get_width() - 3, rect.bottom - cnt.get_height() - 1))
             hits.append((ch, rect))
             if hov and key:
