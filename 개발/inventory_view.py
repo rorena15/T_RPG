@@ -64,7 +64,7 @@ class InventoryView(EventView):
         return db_t(d, "name") + (f" +{k}" if k else "")
 
     def _power(self, d, iid):
-        return d["power"] + upgrade.delta_power(upgrade.level(self.player, iid))
+        return d["power"] + upgrade.effective_delta(self.player, iid)
 
     def upgrade_row(self, row):
         """R: 고른 장비(주무기)를 강화 1회 시도한다."""
@@ -80,12 +80,35 @@ class InventoryView(EventView):
         if res == "ok":
             self.msg_warn = False
             self.msg = [t('upg_ok', name=db_t(d, 'name'), k=k, pw=self._power(d, iid), cost=spent)]
-        elif res == "fail":
-            self.msg = [t('upg_fail', name=db_t(d, 'name'), k=k, pct=upgrade.chance(self.player, iid) * 100, cost=spent)]
+        elif res in ("fail", "drop"):
+            key = 'upg_drop' if res == "drop" else ('upg_fail_dur' if k + 1 >= upgrade.RISK_FROM else 'upg_fail')
+            self.msg = [t(key, name=db_t(d, 'name'), k=k, dur=upgrade.durability(self.player, iid),
+                          pct=upgrade.chance(self.player, iid) * 100, cost=spent)]
+        elif res == "scrap":
+            self.msg = [t('upg_scrap', need=spent, have=self.player.materials)]
+        elif res == "broken":
+            self.msg = [t('upg_broken', need=spent)]
+        else:
+            self.msg = [t('upg_max', name=db_t(d, 'name'))]
+
+    def repair_row(self, row):
+        """F: 고른 주무기의 내구도를 수리한다."""
+        self.confirm = None
+        if row is None or row["kind"] not in ("slot", "item") or not row.get("d"):
+            return
+        d, iid = row["d"], row["id"]
+        self.msg_warn = True
+        if not upgrade.can_upgrade(d.get("slot")):
+            self.msg = [t('upg_only_weapon')]
+            return
+        res, spent = upgrade.repair(self.player, iid)
+        if res == "ok":
+            self.msg_warn = False
+            self.msg = [t('rep_ok', name=db_t(d, 'name'), cost=spent)]
         elif res == "scrap":
             self.msg = [t('upg_scrap', need=spent, have=self.player.materials)]
         else:
-            self.msg = [t('upg_max', name=db_t(d, 'name'))]
+            self.msg = [t('rep_full', name=db_t(d, 'name'))]
 
     def act(self, row, dismantle=False):
         p = self.player
@@ -229,11 +252,16 @@ class InventoryView(EventView):
             lines.append((t('upg_hint_max') if k >= upgrade.MAX_LEVEL else
                           t('upg_hint', k=k, n=k + 1, cost=upgrade.cost(d.get("tier", 4), k),
                             pct=upgrade.chance(self.player, iid) * 100), AMBER))
+            dur = upgrade.durability(self.player, iid)
+            if dur < upgrade.DUR_MAX:
+                lines.append((t('upg_dur', dur=dur, pct=50 + dur // 2, cost=upgrade.repair_cost(self.player, iid)), RED))
+            if upgrade.RISK_FROM <= k + 1 <= upgrade.MAX_LEVEL:
+                lines.append((t('upg_risk', loss=upgrade.DUR_LOSS, drop=int(upgrade.DROP_CHANCE[k + 1] * 100)), INK_DIM))
         return lines
 
     # ── 입력 루프 ─────────────────────────────────────────────────────────
     def run(self):
-        self.footer = [("↑↓", t('ui_select')), ("←→", t('inv_key_tab')), ("Enter", t('inv_key_act')), ("D", t('inv_key_dismantle')), ("R", t('upg_key')), ("0", t('inv_key_back'))]
+        self.footer = [("↑↓", t('ui_select')), ("←→", t('inv_key_tab')), ("Enter", t('inv_key_act')), ("D", t('inv_key_dismantle')), ("R", t('upg_key')), ("F", t('rep_key')), ("0", t('inv_key_back'))]
         self.open()
         try:
             while True:
@@ -260,6 +288,8 @@ class InventoryView(EventView):
                         self.act(cur, dismantle=True)
                     elif ev.key == pygame.K_r:
                         self.upgrade_row(cur)
+                    elif ev.key == pygame.K_f:
+                        self.repair_row(cur)
         finally:
             self.close()
 

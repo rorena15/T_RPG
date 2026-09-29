@@ -810,5 +810,14 @@
   "upg_scrap": "[DENIED] Not enough scrap (need {need}, have {have})",
   "upg_max": "[NOTICE] '{name}' is already at max upgrade (+10)",
   "upg_only_weapon": "[NOTICE] Only the main weapon can be upgraded in Act 1",
-  "inv_cmd_line4": "   R            : Upgrade equipped main weapon (uses scrap)"
+  "inv_cmd_line4": "   R            : Upgrade equipped main weapon (uses scrap)",
+  "upg_drop": "[FAILED] '{name}' dropped to +{k} — Durability {dur} · next chance {pct:.0f}% (Scrap -{cost})",
+  "upg_fail_dur": "[FAILED] '{name}' stays +{k} — Durability {dur} · next chance {pct:.0f}% (Scrap -{cost})",
+  "upg_broken": "[DENIED] Durability is 0 — repair with F before upgrading (Scrap {need})",
+  "upg_risk": "Failing at +8 or higher: Durability -{loss}, {drop}% chance to drop one level",
+  "upg_dur": "Durability {dur}/100 — upgrade power at {pct}% · F: Repair (Scrap {cost})",
+  "rep_key": "Repair",
+  "rep_ok": "[REPAIRED] '{name}' Durability 100 (Scrap -{cost})",
+  "rep_full": "[NOTICE] '{name}' does not need repair",
+  "inv_cmd_line5": "   F            : Repair equipped main weapon durability (uses scrap)"
 }

@@ -173,10 +173,10 @@ class Player:
         self.active_quest = data.get("active_quest", None)
 
     def get_attack_power(self):
-        """주무기 위력 + 강화 추가 위력 ΔP(k)."""
+        """주무기 위력 + 강화 추가 위력 ΔP(k) (내구도 반영)."""
         import upgrade
         wid = self.equipment["main_weapon"]
-        return get_equipment_data(wid).get("power", 10) + upgrade.delta_power(upgrade.level(self, wid))
+        return get_equipment_data(wid).get("power", 10) + upgrade.effective_delta(self, wid)
 
     def get_armor_bonus(self):
         """상의+하의 → (HP 보너스, 방어력 보너스)
@@ -386,6 +386,7 @@ class Player:
             print(t('inv_cmd_line2'))
             print(t('inv_cmd_line3'))
             print(t('inv_cmd_line4'))
+            print(t('inv_cmd_line5'))
             print_divider()
             try:
                 cmd = safe_input(t('inv_prompt')).strip().upper()
@@ -440,12 +441,28 @@ class Player:
                 name = db_t(wd, 'name')
                 if res == "ok":
                     print(t('upg_ok', name=name, k=k, pw=self.get_attack_power(), cost=spent))
-                elif res == "fail":
-                    print(t('upg_fail', name=name, k=k, pct=upgrade.chance(self, wid) * 100, cost=spent))
+                elif res in ("fail", "drop"):
+                    key = 'upg_drop' if res == "drop" else ('upg_fail_dur' if k + 1 >= upgrade.RISK_FROM else 'upg_fail')
+                    print(t(key, name=name, k=k, dur=upgrade.durability(self, wid),
+                            pct=upgrade.chance(self, wid) * 100, cost=spent))
+                elif res == "scrap":
+                    print(t('upg_scrap', need=spent, have=self.materials))
+                elif res == "broken":
+                    print(t('upg_broken', need=spent))
+                else:
+                    print(t('upg_max', name=name))
+                wait_for_keypress()
+            elif cmd == "F":  # 장착한 주무기 내구도 수리 (upgrade.py)
+                import upgrade
+                wid = self.equipment.get("main_weapon")
+                name = db_t(get_equipment_data(wid), 'name')
+                res, spent = upgrade.repair(self, wid)
+                if res == "ok":
+                    print(t('rep_ok', name=name, cost=spent))
                 elif res == "scrap":
                     print(t('upg_scrap', need=spent, have=self.materials))
                 else:
-                    print(t('upg_max', name=name))
+                    print(t('rep_full', name=name))
                 wait_for_keypress()
             elif cmd == "C":
                 self.use_consumable_menu()

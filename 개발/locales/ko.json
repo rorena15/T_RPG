@@ -810,5 +810,14 @@
   "upg_scrap": "[거부] 고철이 부족하다 (필요 {need}, 보유 {have})",
   "upg_max": "[안내] '{name}'은(는) 이미 최대 강화(+10)다",
   "upg_only_weapon": "[안내] 1막에서는 주무기만 강화할 수 있다",
-  "inv_cmd_line4": "   R            : 장착한 주무기 강화 (고철 사용)"
+  "inv_cmd_line4": "   R            : 장착한 주무기 강화 (고철 사용)",
+  "upg_drop": "[강화 실패] '{name}' +{k}로 하락 — 내구도 {dur} · 다음 성공률 {pct:.0f}% (고철 -{cost})",
+  "upg_fail_dur": "[강화 실패] '{name}' +{k} 유지 — 내구도 {dur} · 다음 성공률 {pct:.0f}% (고철 -{cost})",
+  "upg_broken": "[거부] 내구도가 0이다 — F로 수리해야 강화할 수 있다 (고철 {need})",
+  "upg_risk": "+8 이상 실패 시 내구도 -{loss}, {drop}% 확률로 한 단계 하락",
+  "upg_dur": "내구도 {dur}/100 — 강화 위력 {pct}% 발휘 · F: 수리 (고철 {cost})",
+  "rep_key": "수리",
+  "rep_ok": "[수리 완료] '{name}' 내구도 100 (고철 -{cost})",
+  "rep_full": "[안내] '{name}'은(는) 수리할 필요가 없다",
+  "inv_cmd_line5": "   F            : 장착한 주무기 내구도 수리 (고철 사용)"
 }
