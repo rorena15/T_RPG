@@ -142,7 +142,6 @@ SFX_VOL = {
     "res_spend": 0.35, "res_gain": 0.4, "res_weight": 0.35,
     "amb_creak": 0.22, "amb_drone": 0.15, "amb_thunder": 0.3, "amb_clang": 0.14,
 }
-SFX_SYNTH_FALLBACK = False   # 음원 파일이 없을 때 코드로 만든 소리를 쓸지 (합성음은 거칠어서 기본은 끔)
 _SFX_EXT = (".ogg", ".wav", ".mp3")
 
 
@@ -167,12 +166,6 @@ def _sfx_sound(name):
             for p in _sfx_files(name):
                 try:
                     sounds.append(pygame.mixer.Sound(p))
-                except Exception:
-                    pass
-            if not sounds and SFX_SYNTH_FALLBACK:
-                try:
-                    import sfx_synth
-                    sounds.append(pygame.mixer.Sound(buffer=sfx_synth.build(name)))
                 except Exception:
                     pass
             _sfx[name] = sounds or None
