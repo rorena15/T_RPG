@@ -860,5 +860,6 @@
   "forge_report_hint": "\n  [JOB] Requirements met — press U to report to Vulkan Gates",
   "forge_arrive_site": "\n  [FORGE] Vulkan waits by the cold furnace. (U: Talk)",
   "map_at_vulkan": "Vulkan Gates — U: Talk",
-  "map_vulkan_dist": "Vulkan Gates: {n} tiles"
+  "map_vulkan_dist": "Vulkan Gates: {n} tiles",
+  "map_scan_header": "OPTIC SENSOR // SECTOR SCAN"
 }

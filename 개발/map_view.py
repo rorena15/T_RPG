@@ -5,15 +5,17 @@
 Main.py의 _ui_mgr 자리에 들어간다: update(player, grid)로 상태를 받고, 입력은 원래대로 read_key()가 받는다.
 인벤토리·일지·전투처럼 자기 화면이 있는 기능 앞에서는 deactivate()로 내려 원래 화면이 나오게 한다.
 """
+import random
+
 import pygame
 
 import constants
 import forge
 import scene_art
-from event_view import AMBER, BG, BUNKER, EventView, INK, INK_DIM, INK_FAINT, JUNKYARD, RED, TEAL, GREEN, _lerp, place_label
+from event_view import AMBER, BG, BUNKER, EventView, INK, INK_DIM, INK_FAINT, JUNKYARD, RED, TEAL, GREEN, VIOLET, _lerp, place_label
 from i18n import db_t, t
 
-CELL, GAP = 26, 5
+ISO_W, ISO_H = 32, 16   # 2.5D 미니맵 마름모 한 칸 (가로, 세로)
 
 
 class MapView(EventView):
@@ -127,41 +129,150 @@ class MapView(EventView):
         g = self.grid
         n = g.size
         x0, y0 = 22, 22
-        c.blit(self.f_mono.render("SECTOR GRID", True, INK_DIM), (x0, y0))
+        c.blit(self.f_mono.render(t('map_scan_header'), True, INK_DIM), (x0, y0))
         y0 += 22
-        panel = pygame.Surface((n * (CELL + GAP) + 10, n * (CELL + GAP) + 10), pygame.SRCALPHA)
-        panel.fill((*BG, 150))
-        c.blit(panel, (x0 - 5, y0 - 5))
-        for gy in range(n):
-            for gx in range(n):
-                rect = pygame.Rect(x0 + gx * (CELL + GAP), y0 + (n - 1 - gy) * (CELL + GAP), CELL, CELL)
-                pos = (gx, gy)
-                if [gx, gy] == list(g.player_pos):
-                    pygame.draw.rect(c, _lerp(BG, AMBER, 0.35), rect)
-                    pygame.draw.rect(c, AMBER, rect, 2)
-                    pygame.draw.circle(c, AMBER, rect.center, 4)
-                elif [gx, gy] == list(g.bunker_pos):
-                    pygame.draw.rect(c, _lerp(BG, TEAL, 0.25), rect)
-                    pygame.draw.rect(c, TEAL, rect, 1)
-                    pygame.draw.rect(c, TEAL, rect.inflate(-12, -12))
-                elif [gx, gy] == list(g.forge_pos) and g.forge_known():  # 강화소: 호박색 모루 (완공 전엔 흐리게)
-                    col = AMBER if forge.built(g) else _lerp(BG, AMBER, 0.55)
-                    pygame.draw.rect(c, _lerp(BG, AMBER, 0.18), rect)
-                    pygame.draw.rect(c, col, rect, 1)
-                    cx, cy = rect.center
-                    pygame.draw.rect(c, col, (cx - 7, cy - 3, 14, 4))
-                    pygame.draw.rect(c, col, (cx - 3, cy + 1, 6, 5))
-                else:
-                    seen = pos in g.visited_tiles
-                    pygame.draw.rect(c, (34, 33, 31) if seen else (14, 14, 15), rect)
-                    pygame.draw.rect(c, (70, 66, 60) if seen else (40, 39, 37), rect, 1)
+        grid_h = self._draw_iso_grid(c, x0, y0)
         # 생체 지표 (미니맵 아래): 이벤트 화면의 HUD를 아래로 옮겨 그린다
-        hud_top = y0 + n * (CELL + GAP) + 14
+        hud_top = y0 + grid_h + 10
         c.set_clip(pygame.Rect(0, hud_top, 340, 90))
         c.blit(self._hud_surface(), (0, hud_top - 22))
         c.set_clip(None)
         c.blit(self.f_place.render(place_label(self.location), True, INK), (22, H - 118))
         c.blit(self.f_mono.render(t('place_turn', sub=t(self._sc['sub']), turn=self.player.turn_count), True, INK_DIM), (24, H - 78))
+
+    def _draw_iso_grid(self, c, x0, y0):
+        """2.5D 섹터 미니맵 — N-404의 손상된 시각 센서가 비춘 쓰레기 바다.
+        안 가 본 칸은 신호 없는 잡음, 가 본 칸은 드론 사체·고철 더미, 맨 위는 반쯤 묻힌 지하 방공호,
+        그 너머로 네오 아크 상층의 불빛. 시작 칸이 맨 아래이고 W(북)는 왼쪽 위, D(동)는 오른쪽 위.
+        그린 높이를 돌려준다."""
+        g, p = self.grid, self.player
+        n = g.size
+        hw, hh = ISO_W // 2, ISO_H // 2
+        top_pad = 34                                   # 네오 아크 불빛·방공호 안테나 자리
+        width, height = n * ISO_W + 10, (2 * n - 1) * hh + 2 * hh + top_pad + 8
+        now = pygame.time.get_ticks()
+        pulse = (now % 1400) / 1400
+        panel = pygame.Surface((width, height), pygame.SRCALPHA)
+        panel.fill((*BG, 215))
+        # 네오 아크 상층: 지평선 너머 빌딩 윤곽과 창 불빛
+        sky = random.Random(404)
+        for _ in range(16):
+            bw, bh = sky.randint(4, 9), sky.randint(8, 26)
+            bx = sky.randint(0, width - bw)
+            pygame.draw.rect(panel, (28, 30, 38, 110), (bx, top_pad + 10 - bh, bw, bh))
+            if sky.random() < 0.7:
+                lit = VIOLET if sky.random() < 0.4 else TEAL
+                blink = 90 if (now // 900 + bx) % 5 else 40
+                pygame.draw.rect(panel, (*lit, blink), (bx + 1, top_pad + 12 - bh, 2, 1))
+        glow = pygame.Surface((width, 14), pygame.SRCALPHA)
+        for yy in range(14):
+            pygame.draw.line(glow, (*VIOLET, int(26 * (1 - yy / 14))), (0, yy), (width, yy))
+        panel.blit(glow, (0, top_pad - 2))
+        c.blit(panel, (x0 - 5, y0 - 5))
+        ox, oy = x0 - 5, y0 - 5
+        cx = ox + width // 2
+        base = y0 + top_pad + (2 * n - 2) * hh + hh       # 시작 칸(0,0) 윗면 가운데
+        known_forge = g.forge_known()
+        alarm = p.alert_level >= 70
+        noise = random.Random(now // 110)               # 신호 없는 칸의 잡음 (조금씩 바뀐다)
+
+        def prism(sx, sy, h, top, side, edge):
+            t_ = (sx, sy - h - hh); r_ = (sx + hw, sy - h); b_ = (sx, sy - h + hh); l_ = (sx - hw, sy - h)
+            pygame.draw.polygon(c, _lerp(side, BG, 0.3), [l_, b_, (sx, sy + hh), (sx - hw, sy)])
+            pygame.draw.polygon(c, side, [b_, r_, (sx + hw, sy), (sx, sy + hh)])
+            pygame.draw.polygon(c, top, [t_, r_, b_, l_])
+            if edge:
+                pygame.draw.lines(c, edge, True, [t_, r_, b_, l_], 1)
+
+        def box(bx, by, w, d, h, col):
+            """작은 상자 (고철 조각·드론 사체). (bx, by)는 바닥 가운데."""
+            q = [(bx, by - h - d), (bx + w, by - h), (bx, by - h + d), (bx - w, by - h)]
+            pygame.draw.polygon(c, _lerp(col, BG, 0.45), [q[3], q[2], (bx, by + d), (bx - w, by)])
+            pygame.draw.polygon(c, _lerp(col, BG, 0.25), [q[2], q[1], (bx + w, by), (bx, by + d)])
+            pygame.draw.polygon(c, col, q)
+
+        # 먼 칸(x+y가 큰 칸)부터 그려야 앞 칸이 뒤 칸을 가린다
+        for gx, gy in sorted(((a, b) for a in range(n) for b in range(n)), key=lambda q: -(q[0] + q[1])):
+            sx = cx + (gx - gy) * hw
+            sy = base - (gx + gy) * hh
+            pos = [gx, gy]
+            rng = random.Random(gx * 97 + gy * 13 + 7)
+            if pos == list(g.bunker_pos):
+                # 쓰레기 바다 속 반쯤 묻힌 지하 방공호: 콘크리트 둔덕, 녹슨 무쇠 문 틈의 불빛, 안테나
+                prism(sx, sy, 7, (66, 66, 63), (44, 44, 42), _lerp(BG, TEAL, 0.75))
+                pygame.draw.ellipse(c, (84, 82, 77), (sx - 11, sy - 17, 22, 11))
+                pygame.draw.ellipse(c, (104, 101, 95), (sx - 11, sy - 17, 22, 11), 1)
+                door = [(sx - 5, sy - 11), (sx + 5, sy - 11), (sx + 4, sy - 5), (sx - 4, sy - 5)]
+                pygame.draw.polygon(c, (110, 72, 46), door)
+                lamp = pygame.Surface((20, 10), pygame.SRCALPHA)
+                pygame.draw.ellipse(lamp, (*TEAL, int(60 + 40 * pulse)), (0, 0, 20, 10))
+                c.blit(lamp, (sx - 10, sy - 10))
+                pygame.draw.line(c, TEAL, (sx - 3, sy - 8), (sx + 3, sy - 8), 1)
+                pygame.draw.line(c, (130, 126, 118), (sx + 7, sy - 14), (sx + 7, sy - 32), 1)
+                pygame.draw.line(c, (130, 126, 118), (sx + 4, sy - 28), (sx + 10, sy - 28), 1)
+                blink = (now // 500) % 2 == 0
+                pygame.draw.circle(c, RED if blink else _lerp(BG, RED, 0.4), (sx + 7, sy - 33), 2)
+            elif pos == list(g.forge_pos) and known_forge:
+                built = forge.built(g)
+                prism(sx, sy, 4, (54, 44, 36), (36, 30, 25), _lerp(BG, AMBER, 0.7 if built else 0.35))
+                # 벽돌 용광로와 굴뚝
+                box(sx - 3, sy - 4, 6, 3, 8, (104, 70, 48) if built else (70, 58, 50))
+                pygame.draw.rect(c, (60, 52, 46), (sx + 3, sy - 22, 3, 10))
+                mouth = AMBER if built else (40, 34, 30)
+                pygame.draw.rect(c, mouth, (sx - 5, sy - 10, 4, 3))
+                if built:  # 불꽃과 연기
+                    fire = pygame.Surface((14, 10), pygame.SRCALPHA)
+                    pygame.draw.ellipse(fire, (*AMBER, int(70 + 50 * pulse)), (0, 0, 14, 10))
+                    c.blit(fire, (sx - 10, sy - 14))
+                    for k in range(3):
+                        ph = ((now / 1800) + k / 3) % 1
+                        pygame.draw.circle(c, (90, 86, 80), (sx + 4 + int(ph * 4), sy - 24 - int(ph * 12)), 1 + int(ph * 2))
+            elif (gx, gy) in g.visited_tiles:
+                # 스캔한 칸: 드론 사체와 메인보드 파편이 쌓인 고철 더미
+                prism(sx, sy, 3, (48, 45, 41), (30, 28, 26), (96, 89, 79))
+                for _ in range(rng.randint(2, 3)):
+                    ux, uy = rng.uniform(-0.45, 0.45), rng.uniform(-0.45, 0.45)
+                    bx = sx + int((ux - uy) * hw * 0.9)
+                    by = sy - 3 + int((ux + uy) * hh * 0.9)
+                    col = rng.choice([(96, 64, 42), (78, 74, 68), (64, 60, 56), (110, 76, 50)])
+                    box(bx, by, rng.randint(2, 4), rng.randint(1, 2), rng.randint(2, 7), col)
+            else:
+                # 스캔 안 된 칸: 신호 없음 (잡음)
+                prism(sx, sy, 1, (24, 24, 25), (14, 14, 15), (64, 62, 58) if not alarm else _lerp((64, 62, 58), RED, 0.4))
+                for _ in range(1):
+                    ux, uy = noise.uniform(-0.8, 0.8), noise.uniform(-0.8, 0.8)
+                    if abs(ux) + abs(uy) < 0.9:
+                        nx, ny = sx + int(ux * hw * 0.8), sy - 1 + int(uy * hh * 0.8)
+                        c.set_at((nx, ny), (46, 45, 42) if not alarm else (96, 52, 46))
+            if pos == list(g.player_pos):
+                # N-404: 스캔 핑 고리 + 낙인 표식
+                ty = sy - 4
+                ring = pygame.Surface((ISO_W + 10, ISO_H + 10), pygame.SRCALPHA)
+                rw = int(8 + pulse * (ISO_W + 2))
+                pygame.draw.ellipse(ring, (*AMBER, int(210 * (1 - pulse))),
+                                    (ring.get_width() // 2 - rw // 2, ring.get_height() // 2 - rw // 4, rw, rw // 2), 1)
+                c.blit(ring, (sx - ring.get_width() // 2, ty - ring.get_height() // 2))
+                pygame.draw.polygon(c, AMBER, [(sx - 4, ty - 12), (sx + 4, ty - 12), (sx, ty - 5)])
+                pygame.draw.line(c, _lerp(BG, AMBER, 0.6), (sx, ty - 5), (sx, ty), 1)
+
+        # 시각 센서 느낌: 주사선 + 천천히 내려가는 스캔 띠 + 비
+        fx = pygame.Surface((width, height), pygame.SRCALPHA)
+        for yy in range(0, height, 4):
+            pygame.draw.line(fx, (0, 0, 0, 14), (0, yy), (width, yy))
+        band = int((now / 30) % (height + 20)) - 10
+        for k in range(10):
+            pygame.draw.line(fx, (*AMBER, int(7 * (1 - k / 10))), (0, band - k), (width, band - k))
+        rain = random.Random(now // 70)
+        for _ in range(4):
+            rx, ry = rain.randint(0, width), rain.randint(0, top_pad + 10)   # 비는 하늘(네오 아크 쪽)에만
+            pygame.draw.line(fx, (150, 160, 170, 30), (rx, ry), (rx - 2, ry + 6))
+        c.blit(fx, (ox, oy))
+        # 손상된 센서 테두리: 모서리 꺾쇠
+        col = _lerp(BG, RED, 0.7) if alarm else _lerp(BG, AMBER, 0.55)
+        for (ax, ay, dx, dy) in ((ox, oy, 1, 1), (ox + width - 1, oy, -1, 1), (ox, oy + height - 1, 1, -1), (ox + width - 1, oy + height - 1, -1, -1)):
+            pygame.draw.line(c, col, (ax, ay), (ax + 9 * dx, ay), 1)
+            pygame.draw.line(c, col, (ax, ay), (ax, ay + 9 * dy), 1)
+        return height
 
     def _hud_surface(self):
         """EventView의 생체 지표(숫자 굴림·피해 번쩍임 포함)를 투명 판에 그린다."""

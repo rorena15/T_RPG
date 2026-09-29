@@ -860,5 +860,6 @@
   "forge_report_hint": "\n  [의뢰] 조건을 채웠다 — U로 발칸 게이츠에게 보고한다",
   "forge_arrive_site": "\n  [대장간] 발칸이 식은 화로 앞에서 기다린다. (U: 대화)",
   "map_at_vulkan": "발칸 게이츠 — U: 대화",
-  "map_vulkan_dist": "발칸 게이츠까지 {n}칸"
+  "map_vulkan_dist": "발칸 게이츠까지 {n}칸",
+  "map_scan_header": "시각 센서 // 섹터 스캔"
 }
