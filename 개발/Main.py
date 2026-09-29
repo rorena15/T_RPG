@@ -356,9 +356,12 @@ def run_game():
             time.sleep(1.5)
             clear_screen()
 
+        _actions = _EXPLORE_ACTIONS
+        if grid.at_forge():  # 강화소 칸: U로 강화·수리
+            _actions = _EXPLORE_ACTIONS[:3] + [("U", t('act_forge'), True)] + _EXPLORE_ACTIONS[3:]
         if _ui_mgr:
             _ui_mgr.update(player, grid)
-            _ui_mgr.set_actions(_EXPLORE_ACTIONS)
+            _ui_mgr.set_actions(_actions)
             _ui_mgr.activate()
         else:
             grid.draw()
@@ -367,6 +370,8 @@ def run_game():
             print(f"  {t('cmd_move')}")
             print(f"  {t('cmd_search')}")
             print(f"  {t('cmd_inventory')}")
+            if grid.at_forge():
+                print(f"  {t('cmd_forge')}")
             print(f"  {t('cmd_diary')}")
             print(f"  {t('cmd_save')}")
             print(f"  {t('cmd_quit')}")
@@ -377,6 +382,10 @@ def run_game():
         if move == "I":
             _off()
             player.manage_inventory()
+            continue
+        elif move == "U" and grid.at_forge():
+            _off()
+            player.manage_inventory(forge=True)
             continue
         elif move == "J":
             _off()
@@ -544,6 +553,9 @@ def run_game():
                 run_ending(player)
                 break
             else:
+                if grid.at_forge():
+                    print(t('forge_arrive_first') if is_new_tile else t('forge_arrive'))
+                    time.sleep(0.8)
                 session_triggered = False
                 if is_new_tile and constants.SESSIONS_DB and grid.session_index < len(constants.SESSIONS_DB) - 1:
                     _s_base = 0.40 if grid.session_index < 3 else 0.10

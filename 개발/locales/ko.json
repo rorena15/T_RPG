@@ -100,7 +100,7 @@
   "consumable_used_hp": "\n[치료] '{name}' 주입 완료. 생체 신호가 안정화됩니다. (HP +{amt})",
   "consumable_used_food": "\n[섭취] '{name}' 섭취 완료. 바이오 연료가 보충되었습니다.",
   "map_header": " [ 데드존 섹터 그리드 스캐너 ]",
-  "map_legend": "  (P: 현재 위치 | B: 방공호 목표)\n",
+  "map_legend": "  (P: 현재 위치 | B: 방공호 목표 | U: 강화소)\n",
   "tile_exhausted": [
     "손가락이 고철 더미를 훑는다. 건질 게 없다.",
     "이미 뒤진 곳이다. 허탕이다.",
@@ -819,5 +819,16 @@
   "rep_key": "수리",
   "rep_ok": "[수리 완료] '{name}' 내구도 100 (고철 -{cost})",
   "rep_full": "[안내] '{name}'은(는) 수리할 필요가 없다",
-  "inv_cmd_line5": "   F            : 장착한 주무기 내구도 수리 (고철 사용)"
+  "inv_cmd_line5": "   F            : 장착한 주무기 내구도 수리 (고철 사용)",
+  "act_forge": "강화소",
+  "cmd_forge": "U           : 강화소 이용 (주무기 강화·수리)",
+  "forge_header": "스크랩 연합 강화소",
+  "forge_view_header": "강화소  ·  고철 {n}",
+  "forge_arrive_first": "\n  [발견] 스크랩 연합 강화소 — 용접 불꽃 너머로 늙은 기술자가 고개를 든다. (U: 강화·수리)",
+  "forge_arrive": "\n  [강화소] 발전기 소리가 반긴다. (U: 강화·수리)",
+  "upg_need_forge": "[안내] 강화와 수리는 강화소에서만 할 수 있다 (지도의 U 칸)",
+  "upg_hint_forge": "강화·수리는 강화소에서 (지도의 U 칸)",
+  "map_forge_dist": "강화소까지 {n}칸",
+  "map_at_forge": "강화소 — U: 강화·수리",
+  "upg_dur_plain": "내구도 {dur}/100 — 강화 위력 {pct}% 발휘"
 }

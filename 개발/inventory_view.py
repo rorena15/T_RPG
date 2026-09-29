@@ -23,9 +23,10 @@ VISIBLE = 13
 
 
 class InventoryView(EventView):
-    def __init__(self, term, player, tab="bag"):
+    def __init__(self, term, player, tab="bag", forge=False):
         super().__init__(term, player, None, JUNKYARD, scene="forge")
         self.tab = tab
+        self.forge = forge      # 강화소에 있을 때만 강화(R)·수리(F)
         self.sel = {k: 0 for k in TABS}
         self.msg = []           # 방금 한 일
         self.confirm = None     # 분해 확인 중인 항목 id
@@ -73,6 +74,9 @@ class InventoryView(EventView):
             return
         d, iid = row["d"], row["id"]
         self.msg_warn = True
+        if not self.forge:
+            self.msg = [t('upg_need_forge')]
+            return
         if not upgrade.can_upgrade(d.get("slot")):
             self.msg = [t('upg_only_weapon')]
             return
@@ -98,6 +102,9 @@ class InventoryView(EventView):
             return
         d, iid = row["d"], row["id"]
         self.msg_warn = True
+        if not self.forge:
+            self.msg = [t('upg_need_forge')]
+            return
         if not upgrade.can_upgrade(d.get("slot")):
             self.msg = [t('upg_only_weapon')]
             return
@@ -164,7 +171,7 @@ class InventoryView(EventView):
         x = self._col_x
         width = W - x - 36
         y = 40
-        c.blit(self.f_mono.render(t('inv_view_header', n=self.player.materials), True, AMBER), (x, y))
+        c.blit(self.f_mono.render(t('forge_view_header' if self.forge else 'inv_view_header', n=self.player.materials), True, AMBER), (x, y))
         y += 26
         tx = x
         for tab in TABS:
@@ -247,12 +254,17 @@ class InventoryView(EventView):
             lines.append((db_t(d, "desc"), INK_DIM))
         hint = {"item": t('inv_hint_item'), "slot": t('inv_hint_slot')}.get(row["kind"], "")
         lines.append((hint, INK_FAINT))
-        if upgrade.can_upgrade(d.get("slot")):  # 주무기: 다음 강화 비용·확률
+        if upgrade.can_upgrade(d.get("slot")):  # 주무기: 강화소에선 다음 강화 비용·확률, 밖에선 안내만
             k = upgrade.level(self.player, iid)
+            dur = upgrade.durability(self.player, iid)
+            if not self.forge:
+                lines.append((t('upg_hint_forge'), INK_FAINT))
+                if dur < upgrade.DUR_MAX:
+                    lines.append((t('upg_dur_plain', dur=dur, pct=50 + dur // 2), RED))
+                return lines
             lines.append((t('upg_hint_max') if k >= upgrade.MAX_LEVEL else
                           t('upg_hint', k=k, n=k + 1, cost=upgrade.cost(d.get("tier", 4), k),
                             pct=upgrade.chance(self.player, iid) * 100), AMBER))
-            dur = upgrade.durability(self.player, iid)
             if dur < upgrade.DUR_MAX:
                 lines.append((t('upg_dur', dur=dur, pct=50 + dur // 2, cost=upgrade.repair_cost(self.player, iid)), RED))
             if upgrade.RISK_FROM <= k + 1 <= upgrade.MAX_LEVEL:
@@ -261,7 +273,10 @@ class InventoryView(EventView):
 
     # ── 입력 루프 ─────────────────────────────────────────────────────────
     def run(self):
-        self.footer = [("↑↓", t('ui_select')), ("←→", t('inv_key_tab')), ("Enter", t('inv_key_act')), ("D", t('inv_key_dismantle')), ("R", t('upg_key')), ("F", t('rep_key')), ("0", t('inv_key_back'))]
+        self.footer = [("↑↓", t('ui_select')), ("←→", t('inv_key_tab')), ("Enter", t('inv_key_act')), ("D", t('inv_key_dismantle'))]
+        if self.forge:
+            self.footer += [("R", t('upg_key')), ("F", t('rep_key'))]
+        self.footer.append(("0", t('inv_key_back')))
         self.open()
         try:
             while True:
@@ -294,6 +309,6 @@ class InventoryView(EventView):
             self.close()
 
 
-def run_inventory(player, tab="bag"):
+def run_inventory(player, tab="bag", forge=False):
     from gui import get_terminal
-    InventoryView(get_terminal(), player, tab).run()
+    InventoryView(get_terminal(), player, tab, forge).run()

@@ -14,6 +14,7 @@ class GameMap:
         self.size = 5
         self.player_pos = [0, 0]
         self.bunker_pos = [4, 4]
+        self.forge_pos = self._pick_forge_pos()   # 강화소 (주무기 강화·수리는 여기서만)
         self.visited_tiles: set = {(0, 0)}
         self.session_index = 0
         self.escaped_enemy_hp = None
@@ -21,6 +22,19 @@ class GameMap:
         self.tile_data: dict = {}          # {(x,y): {"remaining": int, "cooldown_until": int}}
         self.layout:   dict = {}          # {(x,y): str} — "blocked"|"wreck"|"checkpoint"|"market"|""
         self.landmark_visited: dict = {}  # {landmark_key: True}
+
+    def _pick_forge_pos(self) -> list:
+        """시작 칸·방공호에서 떨어진 가운데쯤 칸 하나 (시작에서 2~5칸, 방공호에서 2칸 이상)."""
+        start, bunker = (0, 0), tuple(self.bunker_pos)
+        cands = [[x, y] for x in range(self.size) for y in range(self.size)
+                 if 2 <= x + y <= 5 and abs(x - bunker[0]) + abs(y - bunker[1]) >= 2 and (x, y) != start]
+        return random.choice(cands)
+
+    def at_forge(self) -> bool:
+        return list(self.player_pos) == list(self.forge_pos)
+
+    def forge_dist(self) -> int:
+        return abs(self.forge_pos[0] - self.player_pos[0]) + abs(self.forge_pos[1] - self.player_pos[1])
 
     # ── 수색 시스템 ─────────────────────────────────────────────────────────
 
@@ -84,6 +98,7 @@ class GameMap:
     def to_dict(self):
         return {
             "player_pos": self.player_pos,
+            "forge_pos": self.forge_pos,
             "visited_tiles": list(self.visited_tiles),
             "session_index": self.session_index,
             "escaped_enemy_hp": self.escaped_enemy_hp,
@@ -95,6 +110,7 @@ class GameMap:
 
     def from_dict(self, data):
         self.player_pos = data.get("player_pos", [0, 0])
+        self.forge_pos = data.get("forge_pos", self.forge_pos)
         self.visited_tiles = {tuple(x) for x in data.get("visited_tiles", [(0, 0)])}
         self.session_index = data.get("session_index", 0)
         self.escaped_enemy_hp = data.get("escaped_enemy_hp", None)
@@ -128,6 +144,8 @@ class GameMap:
                     row += Fore.CYAN + Style.BRIGHT + "[ P ]" + RST
                 elif [x, y] == self.bunker_pos:
                     row += Fore.YELLOW + Style.BRIGHT + "[ B ]" + RST
+                elif [x, y] == self.forge_pos:
+                    row += Fore.MAGENTA + Style.BRIGHT + "[ U ]" + RST
                 elif (x, y) in self.visited_tiles:
                     row += Fore.WHITE + Style.DIM + "[ ■ ]" + RST
                 else:

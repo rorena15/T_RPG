@@ -64,6 +64,9 @@ class MapView(EventView):
         c.blit(self.f_title.render(head, True, INK), (x, y + 22))
         sky = t('map_sky', time=t(f'time_{scene_art.world_time(turn)}'), weather=t(f'weather_{scene_art.world_weather(turn)}'), turn=turn)
         c.blit(self.f_sans.render(sky, True, INK_DIM), (x, y + 66))
+        fd = g.forge_dist()
+        forge = self.f_sans.render(t('map_at_forge') if fd == 0 else t('map_forge_dist', n=fd), True, AMBER)
+        c.blit(forge, (x + width - forge.get_width(), y + 66))
         y += 104
 
         mw = 0
@@ -132,6 +135,12 @@ class MapView(EventView):
                     pygame.draw.rect(c, _lerp(BG, TEAL, 0.25), rect)
                     pygame.draw.rect(c, TEAL, rect, 1)
                     pygame.draw.rect(c, TEAL, rect.inflate(-12, -12))
+                elif [gx, gy] == list(g.forge_pos):  # 강화소: 호박색 모루 표시
+                    pygame.draw.rect(c, _lerp(BG, AMBER, 0.18), rect)
+                    pygame.draw.rect(c, AMBER, rect, 1)
+                    cx, cy = rect.center
+                    pygame.draw.rect(c, AMBER, (cx - 7, cy - 3, 14, 4))
+                    pygame.draw.rect(c, AMBER, (cx - 3, cy + 1, 6, 5))
                 else:
                     seen = pos in g.visited_tiles
                     pygame.draw.rect(c, (34, 33, 31) if seen else (14, 14, 15), rect)

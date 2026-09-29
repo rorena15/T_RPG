@@ -100,7 +100,7 @@
   "consumable_used_hp": "\n[TREATMENT] '{name}' injected. Bio-signal stabilizing. (HP +{amt})",
   "consumable_used_food": "\n[CONSUMED] '{name}' ingested. Bio-fuel replenished.",
   "map_header": " [ DEAD ZONE SECTOR GRID SCANNER ]",
-  "map_legend": "  (P: Current Position | B: Bunker Target)\n",
+  "map_legend": "  (P: Current Position | B: Bunker Target | U: Forge)\n",
   "tile_exhausted": [
     "Fingers rake through the scrap heap. Nothing left to find.",
     "Already picked clean. Dead end.",
@@ -819,5 +819,16 @@
   "rep_key": "Repair",
   "rep_ok": "[REPAIRED] '{name}' Durability 100 (Scrap -{cost})",
   "rep_full": "[NOTICE] '{name}' does not need repair",
-  "inv_cmd_line5": "   F            : Repair equipped main weapon durability (uses scrap)"
+  "inv_cmd_line5": "   F            : Repair equipped main weapon durability (uses scrap)",
+  "act_forge": "Forge",
+  "cmd_forge": "U           : Use the forge (upgrade / repair main weapon)",
+  "forge_header": "Scrap Coalition Forge",
+  "forge_view_header": "FORGE  ·  Scrap {n}",
+  "forge_arrive_first": "\n  [FOUND] Scrap Coalition Forge — past the welding sparks, an old technician looks up. (U: Upgrade / Repair)",
+  "forge_arrive": "\n  [FORGE] The generator hums a welcome. (U: Upgrade / Repair)",
+  "upg_need_forge": "[NOTICE] Upgrades and repairs are only available at the forge (U on the map)",
+  "upg_hint_forge": "Upgrade / repair at the forge (U on the map)",
+  "map_forge_dist": "Forge: {n} tiles",
+  "map_at_forge": "Forge — U: Upgrade / Repair",
+  "upg_dur_plain": "Durability {dur}/100 — upgrade power at {pct}%"
 }

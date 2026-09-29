@@ -327,16 +327,17 @@ class Player:
         print_divider()
         print()
 
-    def manage_inventory(self):
+    def manage_inventory(self, forge=False):
+        """forge=True: 강화소에서 연 인벤토리 (주무기 강화 R·수리 F 가능)."""
         from gui import get_terminal
         if get_terminal():  # 그림 화면 인벤토리 (방향키, inventory_view.py)
             from inventory_view import run_inventory
-            return run_inventory(self)
+            return run_inventory(self, forge=forge)
         slot_keys = list(constants.SLOT_DISPLAY.keys())
 
         while True:
             clear_screen()
-            print_header(t('inv_header'))
+            print_header(t('forge_header') if forge else t('inv_header'))
 
             print(t('inv_slot_header'))
             print_divider()
@@ -385,8 +386,9 @@ class Player:
             print(t('inv_cmd_line1'))
             print(t('inv_cmd_line2'))
             print(t('inv_cmd_line3'))
-            print(t('inv_cmd_line4'))
-            print(t('inv_cmd_line5'))
+            if forge:
+                print(t('inv_cmd_line4'))
+                print(t('inv_cmd_line5'))
             print_divider()
             try:
                 cmd = safe_input(t('inv_prompt')).strip().upper()
@@ -433,6 +435,9 @@ class Player:
                     print(t('inv_unequip_usage'))
                 wait_for_keypress()
 
+            elif cmd in ("R", "F") and not forge:
+                print(t('upg_need_forge'))
+                wait_for_keypress()
             elif cmd == "R":  # 장착한 주무기 강화 (upgrade.py)
                 import upgrade
                 wid = self.equipment.get("main_weapon")
