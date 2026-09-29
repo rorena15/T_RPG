@@ -1026,13 +1026,24 @@ class EventView:
         y = H - FOOT_H + 14
         x = self._col_x
         pygame.draw.line(c, (40, 38, 36), (x, H - FOOT_H), (W - 36, H - FOOT_H))
-        for key, label in self.footer:
-            k = self.f_mono_b.render(key, True, AMBER)
-            c.blit(k, (x, y))
-            x += k.get_width() + 10
-            s = self.f_sans.render(label, True, INK_FAINT)
-            c.blit(s, (x, y))
-            x += s.get_width() + 30
+        hits = []
+        items = self._foot_items()
+        gap = 30 if sum(self.f_mono_b.size(k)[0] + self.f_sans.size(l)[0] + 40 for k, l, _ in items) <= W - 36 - x else 16
+        for i, (key, label, ret) in enumerate(items):
+            kw, lw = self.f_mono_b.size(key)[0], self.f_sans.size(label)[0]
+            rect = pygame.Rect(x - 8, y - 7, kw + 10 + lw + 16, 32)
+            on = ret is not None and self._foot_on(i, ret)
+            if on:
+                band = pygame.Surface(rect.size, pygame.SRCALPHA)
+                band.fill((*AMBER, 34))
+                c.blit(band, rect.topleft)
+                pygame.draw.line(c, AMBER, rect.bottomleft, (rect.right - 1, rect.bottom), 1)
+            c.blit(self.f_mono_b.render(key, True, AMBER), (x, y))
+            c.blit(self.f_sans.render(label, True, INK if on else INK_FAINT), (x + kw + 10, y))
+            if ret is not None:
+                hits.append((ret, rect))
+            x += kw + 10 + lw + gap
+        self._foot_hits = hits
 
     def _hero_font(self):
         if not hasattr(self, "_f_hero"):
@@ -1114,14 +1125,23 @@ class EventView:
             _, draw = self._layout(menu, mw)
             draw(canvas, (W - mw) // 2, max(y + 40, int(H * 0.56)))
         fx = W - 60  # 오른쪽에서 왼쪽으로 차례로 놓는다
-        for key, label in reversed(self.footer):
-            g = self.f_sans.render(label, True, INK_FAINT)
+        hits = []
+        items = self._foot_items()
+        for i, (key, label, ret) in reversed(list(enumerate(items))):
+            on = ret is not None and self._foot_on(i, ret)
+            g = self.f_sans.render(label, True, INK if on else INK_FAINT)
             k = self.f_mono_b.render(key, True, AMBER)
             fx -= g.get_width()
             canvas.blit(g, (fx, H - 44))
             fx -= k.get_width() + 10
             canvas.blit(k, (fx, H - 44))
+            rect = pygame.Rect(fx - 8, H - 51, k.get_width() + 10 + g.get_width() + 16, 32)
+            if on:
+                pygame.draw.line(canvas, AMBER, rect.bottomleft, (rect.right - 1, rect.bottom), 1)
+            if ret is not None:
+                hits.append((ret, rect))
             fx -= 30
+        self._foot_hits = hits
         if self._overlay is None:
             self._build_overlay(W, H)
         canvas.blit(self._overlay, (0, 0))
@@ -1176,8 +1196,6 @@ class EventView:
             if ev.type == pygame.KEYDOWN and ev.key == pygame.K_F11:
                 self._term.toggle_fullscreen()
                 continue
-            if ev.type == pygame.KEYDOWN and ev.key == pygame.K_ESCAPE:  # ESC는 게임 전체에서 무시한다
-                continue
             out.append(ev)
         self.refresh()
         self._clock.tick(self.FPS)
@@ -1191,9 +1209,20 @@ class EventView:
 
     def wait_key(self, keys):
         """keys 안의 키가 눌릴 때까지 기다린다. Enter는 'ENTER', Esc는 'ESC'."""
-        pygame.event.clear(pygame.KEYDOWN)  # 연출 중에 미리 누른 키로 넘어가지 않게
+        pygame.event.clear((pygame.KEYDOWN, pygame.MOUSEBUTTONDOWN))  # 연출 중에 미리 누른 키·클릭으로 넘어가지 않게
         while True:
             for ev in self._events():
+                if ev.type == pygame.MOUSEBUTTONDOWN and ev.button == 1:  # 클릭 = Enter (발밑 버튼이면 그 키)
+                    hit = self.foot_at(ev.pos)
+                    if hit in keys:
+                        return hit
+                    # 고를 게 따로 있으면(예: 0 더 묻기 / Enter 떠나기) 빈 곳 클릭으로 넘어가지 않는다
+                    if not (set(keys) - {"ENTER", "ESC", " "}):
+                        k = "ENTER" if "ENTER" in keys else (" " if " " in keys else None)
+                        if k:
+                            return k
+                if ev.type == pygame.MOUSEMOTION:
+                    self._foot_hover = self.foot_at(ev.pos)
                 if ev.type != pygame.KEYDOWN:
                     continue
                 if ev.key in (pygame.K_RETURN, pygame.K_KP_ENTER):
@@ -1288,16 +1317,16 @@ class EventView:
         def _picked(k):  # 고른 소리: 0·ESC는 뒤로, 나머지는 확인
             sound.sfx("ui_back" if k in ("0", "ESC") else "ui_ok")
             return k
-        pygame.event.clear(pygame.KEYDOWN)  # 연출 중에 미리 누른 키로 넘어가지 않게
+        pygame.event.clear((pygame.KEYDOWN, pygame.MOUSEBUTTONDOWN))  # 연출 중에 미리 누른 키·클릭으로 넘어가지 않게
         menu["sel"] = menu.get("start", 0)
         try:
             while True:
                 for ev in self._events():
                     if ev.type == pygame.KEYDOWN:
-                        if ev.key in (pygame.K_UP, pygame.K_w):
+                        if ev.key in (pygame.K_UP, pygame.K_w, pygame.K_LEFT):
                             menu["sel"] = (menu["sel"] - 1) % len(keys)
                             sound.sfx("ui_move")
-                        elif ev.key in (pygame.K_DOWN, pygame.K_s, pygame.K_TAB):
+                        elif ev.key in (pygame.K_DOWN, pygame.K_s, pygame.K_TAB, pygame.K_RIGHT):
                             menu["sel"] = (menu["sel"] + 1) % len(keys)
                             sound.sfx("ui_move")
                         elif ev.key in (pygame.K_RETURN, pygame.K_KP_ENTER, pygame.K_SPACE):
@@ -1307,6 +1336,13 @@ class EventView:
                         elif ev.unicode and ev.unicode in keys:
                             return _picked(ev.unicode)
                     elif ev.type in (pygame.MOUSEMOTION, pygame.MOUSEBUTTONDOWN):
+                        fh = self.foot_at(ev.pos)
+                        self._foot_hover = fh
+                        if ev.type == pygame.MOUSEBUTTONDOWN and ev.button == 1 and fh:
+                            if fh in keys:
+                                return _picked(fh)
+                            if fh == "ESC" and "ESC" in extra:
+                                return _picked("ESC")
                         hit = self._row_at(ev.pos)
                         if hit is not None:
                             if keys.index(hit) != menu["sel"]:
@@ -1317,13 +1353,86 @@ class EventView:
         finally:
             menu.pop("sel", None)
 
-    def _row_at(self, pos):
-        """창 좌표 → 캔버스 좌표 (gui의 레터박스 스케일과 같게) → 선택지 줄."""
+    # ── 마우스·방향키 공용 ────────────────────────────────────────────────
+    # 발밑 안내(footer)는 버튼이다: 마우스를 올리면 밝아지고 누르면 그 키를 누른 것과 같다.
+    # footer 항목: (보이는 키, 설명) 또는 (보이는 키, 설명, 돌려줄 키). 돌려줄 키가 없으면 보이는 키가
+    # 한 글자일 때 그 글자, Enter/Esc면 "ENTER"/"ESC", 그 밖(↑↓, WASD …)은 누를 수 없는 안내.
+    # foot_nav=True면 (전투처럼) 방향키로 발밑 행동을 고르고 Enter·Space로 실행한다 (foot_sel = 고른 칸).
+    foot_nav = False
+    foot_sel = 0
+    nav_cols = 1         # 버튼이 격자면 한 줄 칸 수 (↑↓가 이만큼 건너뛴다)
+    _foot_hover = None
+    _foot_hits = ()
+
+    def _foot_items(self):
+        out = []
+        for item in self.footer:
+            key, label = item[0], item[1]
+            if len(item) > 2:
+                ret = item[2]
+            elif len(key) == 1:
+                ret = key.upper()
+            else:
+                ret = {"enter": "ENTER", "esc": "ESC"}.get(key.lower())
+            out.append((key, label, ret))
+        return out
+
+    def _foot_on(self, i, ret):
+        if ret == self._foot_hover:
+            return True
+        if self.foot_nav:
+            rets = [r for _, _, r in self._foot_items() if r is not None]
+            return bool(rets) and rets[self.foot_sel % len(rets)] == ret
+        return False
+
+    def to_canvas(self, pos):
+        """창 좌표 → 캔버스 좌표 (gui의 레터박스 스케일과 같게)."""
         sw, sh = self._term.screen.get_size()
         cw, ch = self._term._canvas.get_size()
         scale = min(sw / cw, sh / ch)
-        cx = (pos[0] - (sw - cw * scale) / 2) / scale
-        cy = (pos[1] - (sh - ch * scale) / 2) / scale
+        return (pos[0] - (sw - cw * scale) / 2) / scale, (pos[1] - (sh - ch * scale) / 2) / scale
+
+    def foot_at(self, pos):
+        cx, cy = self.to_canvas(pos)
+        for ret, rect in self._foot_hits:
+            if rect.collidepoint(cx, cy):
+                return ret
+        return None
+
+    def on_input(self, ev):
+        """gui.read_key가 이 화면이 떠 있을 때 부른다. 키 하나(문자열)를 돌려주면 그 키를 누른 것으로 친다."""
+        if ev.type == pygame.MOUSEMOTION:
+            hit = self.foot_at(ev.pos)
+            if hit != self._foot_hover and hit is not None:
+                sound.sfx("ui_move")
+            self._foot_hover = hit
+            return None
+        if ev.type == pygame.MOUSEBUTTONDOWN and ev.button == 1:
+            hit = self.foot_at(ev.pos)
+            if hit is not None:
+                sound.sfx("ui_ok")
+                if self.foot_nav:
+                    rets = [r for _, _, r in self._foot_items() if r is not None]
+                    self.foot_sel = rets.index(hit) if hit in rets else self.foot_sel
+            return hit
+        if ev.type == pygame.KEYDOWN and self.foot_nav:
+            rets = [r for _, _, r in self._foot_items() if r is not None]
+            if not rets:
+                return None
+            if ev.key in (pygame.K_LEFT, pygame.K_UP, pygame.K_RIGHT, pygame.K_DOWN):
+                step = {pygame.K_LEFT: -1, pygame.K_RIGHT: 1, pygame.K_UP: -self.nav_cols, pygame.K_DOWN: self.nav_cols}[ev.key]
+                n = self.foot_sel + step
+                self.foot_sel = n % len(rets) if abs(step) == 1 else (n if 0 <= n < len(rets) else self.foot_sel)
+                self._foot_hover = None
+                sound.sfx("ui_move")
+                return None
+            if ev.key in (pygame.K_RETURN, pygame.K_KP_ENTER, pygame.K_SPACE):
+                return rets[self.foot_sel % len(rets)]
+        return None
+
+    def _row_at(self, pos):
+        """창 좌표 → 캔버스 좌표 (gui의 레터박스 스케일과 같게) → 선택지 줄."""
+        cx, cy = self.to_canvas(pos)
         for key, rect in self._rows:
             if rect.collidepoint(cx, cy):
                 return key

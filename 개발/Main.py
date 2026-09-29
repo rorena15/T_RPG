@@ -355,13 +355,14 @@ def run_game():
         if _ui_mgr:
             _ui_mgr.deactivate()
 
+    # 그림 화면 발밑 버튼: (보이는 키, 설명, 쓸 수 있음, 누르면 보낼 키). 글자 키(WASD·F·I·J·C·Q·U)도 그대로 된다 (map_view.KEYMAP)
     _EXPLORE_ACTIONS = [
-        ("WASD", t('act_move'),      True),
-        ("F",    t('act_search'),    True),
-        ("I",    t('act_inventory'), True),
-        ("J",    t('act_diary'),     True),
-        ("C",    t('act_save'),      True),
-        ("Q",    t('act_quit'),      True),
+        ("←↑↓→", t('act_move'),      True, None),
+        ("Space", t('act_search'),   True, "F"),
+        ("Tab",  t('act_inventory'), True, "I"),
+        ("J",    t('act_diary'),     True, "J"),
+        ("F5",   t('act_save'),      True, "C"),
+        ("Esc",  t('act_quit'),      True, "Q"),
     ]
 
     while True:
@@ -382,7 +383,7 @@ def run_game():
         _actions = _EXPLORE_ACTIONS
         if grid.at_forge() and grid.forge_known():  # 강화소 칸: U로 발칸 게이츠 / 강화소 (forge.py)
             _flabel = t('act_forge') if forge.built(grid) else t('act_forge_npc')
-            _actions = _EXPLORE_ACTIONS[:3] + [("U", _flabel, True)] + _EXPLORE_ACTIONS[3:]
+            _actions = _EXPLORE_ACTIONS[:3] + [("E", _flabel, True, "U")] + _EXPLORE_ACTIONS[3:]
         if _ui_mgr:
             _ui_mgr.update(player, grid)
             _ui_mgr.set_actions(_actions)
@@ -507,12 +508,24 @@ def run_game():
         elif move == "Q":
             _off()
             clear_screen()
-            print_header(t("quit_header"))
-            print()
-            type_text(t("quit_prompt"), 0.02)
-            print()
-            print(t("quit_yn"), end="", flush=True)
-            save_choice = read_key()
+            if _ui_mgr:  # 그림 화면: 저장하고 종료 / 저장 없이 종료 / 취소 (방향키·마우스)
+                from screens import MenuScreen
+                _q = MenuScreen(scene="bunker_inside")
+                _qa = _q.ask(t("quit_header"), [("1", t('quit_opt_save')), ("2", t('quit_opt_nosave')), ("0", t('quit_opt_cancel'))],
+                             lines=[t("quit_prompt").strip()], back="0")
+                _q.close()
+                if _qa not in ("1", "2"):
+                    continue
+                save_choice = "Y" if _qa == "1" else "N"
+            else:
+                print_header(t("quit_header"))
+                print()
+                type_text(t("quit_prompt"), 0.02)
+                print()
+                print(t("quit_yn"), end="", flush=True)
+                save_choice = read_key()
+                if save_choice not in ("Y", "N"):  # 예전엔 다른 키면 저장 없이 꺼졌다: 이제는 취소
+                    continue
             if save_choice == 'Y':
                 save_data(player, grid)
                 print(t("quit_saved"))
@@ -526,6 +539,8 @@ def run_game():
             time.sleep(0.8)
             sys.exit()
 
+        if move not in ("W", "A", "S", "D"):  # 모르는 키는 조용히 무시 (예전엔 "이동 불가"를 띄우고 멈췄다)
+            continue
         px, py = grid.player_pos[0], grid.player_pos[1]
         valid_move = False
         if move == "W" and py < grid.size - 1: py += 1; valid_move = True

@@ -2,9 +2,9 @@
 
 combat.py는 UI 관리자가 있으면 화면을 지우거나 메뉴를 찍지 않고 전투 기록만 남기며, 아래 신호를 보낸다:
   set_state("combat"/"exploration"), scene_set_enemy(이름, hp, 최대hp, 아스키아트), scene_update_hp(hp),
-  set_actions([(키, 이름, 쓸 수 있음)]), scene_set_idle()
+  set_actions([(키, 이름, 쓸 수 있음[, 누르면 보낼 키])]), scene_set_idle()
 왼쪽: 적 그림 + 내 생체 지표 + 적 이름·HP.  오른쪽: 큰 적 HP 바, 전투 기록.  아래: 행동 키.
-입력은 원래대로 combat.py의 read_key()가 받는다.
+입력은 원래대로 combat.py의 read_key()가 받는다 (방향키·마우스는 EventView.on_input이 키로 바꿔 준다).
 """
 import re
 
@@ -42,9 +42,14 @@ class CombatView(EventView):
             self.shake(4, 220)
         self.enemy_hp = hp
 
+    # 행동은 발밑 버튼: ←→(↑↓)로 고르고 Enter·Space로 실행, 마우스로 누르거나 숫자키. 고른 칸은 턴이 바뀌어도 남는다.
+    foot_nav = True
+    nav_cols = 2
+
     def set_actions(self, actions):
         self.actions = actions
-        self.footer = [(k, label) for k, label, ok in actions if ok]
+        self.footer = [(a[0], a[1], a[3] if len(a) > 3 else a[0]) for a in actions if a[2]]
+        self.foot_sel = min(self.foot_sel, max(0, len(self.footer) - 1))
 
     def scene_set_idle(self):
         pass
@@ -89,11 +94,43 @@ class CombatView(EventView):
         # 전투 기록 (터미널 버퍼, 아스키 그림·테두리 제외)
         pygame.draw.line(c, (40, 38, 36), (x, y), (x + width, y))
         y += 14
-        bottom = H - 70
+        bottom = H - 70 - self._menu_h() - 16
         per = max(1, (bottom - y) // 28)
         for i, surf in enumerate(self._log_surfaces(width, per)):
             c.blit(surf, (x, y))
             y += 28
+
+    # ── 행동 버튼 (오른쪽 칸 아래, 두 줄씩) ──────────────────────────────────
+    BTN_H = 40
+
+    def _menu_h(self):
+        n = len(self._foot_items())
+        return ((n + 1) // 2) * (self.BTN_H + 6) if n else 0
+
+    def _draw_footer(self, c, W, H):
+        """발밑 안내 대신: 행동을 버튼 격자로 그리고(누를 자리 = _foot_hits), 맨 아래엔 조작 안내만."""
+        x = self._col_x
+        width = W - x - 36
+        items = self._foot_items()
+        top = H - 62 - self._menu_h()
+        bw = (width - 10) // 2
+        hits = []
+        for i, (key, label, ret) in enumerate(items):
+            bx, by = x + (i % 2) * (bw + 10), top + (i // 2) * (self.BTN_H + 6)
+            rect = pygame.Rect(bx, by, bw, self.BTN_H)
+            on = self._foot_on(i, ret)
+            box = pygame.Surface(rect.size, pygame.SRCALPHA)
+            box.fill((*AMBER, 40) if on else (255, 255, 255, 10))
+            c.blit(box, rect.topleft)
+            pygame.draw.rect(c, AMBER if on else (58, 55, 50), rect, 1)
+            k = self.f_mono_b.render(key, True, AMBER)
+            c.blit(k, (bx + 12, by + (self.BTN_H - k.get_height()) // 2))
+            g = self.f_sans.render(label, True, INK if on else INK_DIM)
+            c.blit(g, (bx + 38, by + (self.BTN_H - g.get_height()) // 2))
+            hits.append((ret, rect))
+        self._foot_hits = hits
+        hint = self.f_sans.render(t('combat_hint_keys'), True, INK_FAINT)
+        c.blit(hint, (x, H - 40))
 
     def _log_surfaces(self, width, per):
         """전투 기록 줄 그림. 터미널 기록이 바뀔 때만 다시 거르고 그린다

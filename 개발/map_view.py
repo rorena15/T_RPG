@@ -134,8 +134,38 @@ class MapView(EventView):
         c.set_clip(prev_clip)
 
     def set_actions(self, actions):
+        """[(보이는 키, 설명, 쓸 수 있음[, 누르면 보낼 키])]. 발밑 버튼은 마우스로도 누른다."""
         self.actions = actions
-        self.footer = [(k, label) for k, label, enabled in actions if enabled]
+        self.footer = [(a[0], a[1], a[3] if len(a) > 3 else (a[0] if len(a[0]) == 1 else None)) for a in actions if a[2]]
+
+    # ── 입력: 방향키·마우스 ───────────────────────────────────────────────
+    # 이동 ←↑↓→(또는 WASD), 탐색 Space(F), 인벤토리 Tab(I), 강화소 E(U), 일지 J, 저장 F5(C), 나가기 Esc(Q).
+    # 미니맵에서 옆 칸을 누르면 그쪽으로 한 칸 간다. 결과는 Main.py가 원래 받던 글자 키로 돌려준다.
+    KEYMAP = {pygame.K_UP: "W", pygame.K_DOWN: "S", pygame.K_LEFT: "A", pygame.K_RIGHT: "D",
+              pygame.K_SPACE: "F", pygame.K_TAB: "I", pygame.K_e: "U", pygame.K_F5: "C", pygame.K_ESCAPE: "Q"}
+    _iso = None          # 미니맵 좌표계 (가운데 x, 시작 칸 y, 반칸 폭, 반칸 높이) — 그릴 때 채운다
+    _tile_hover = None   # 마우스가 올라간 옆 칸 (이동 방향 키)
+
+    def _tile_at(self, pos):
+        """창 좌표 → 미니맵 칸 → 지금 칸의 옆이면 그쪽 방향 키 (W/A/S/D)."""
+        if not self._iso:
+            return None
+        cx, cy = self.to_canvas(pos)
+        mx, base, hw, hh = self._iso
+        u, v = (cx - mx) / hw, (base - cy - 3) / hh   # 윗면은 바닥보다 3px 위
+        gx, gy = round((u + v) / 2), round((v - u) / 2)
+        px, py = self.grid.player_pos
+        return {(0, 1): "W", (0, -1): "S", (-1, 0): "A", (1, 0): "D"}.get((gx - px, gy - py))
+
+    def on_input(self, ev):
+        if ev.type == pygame.KEYDOWN and ev.key in self.KEYMAP:
+            return self.KEYMAP[ev.key]
+        if ev.type in (pygame.MOUSEMOTION, pygame.MOUSEBUTTONDOWN):
+            d = self._tile_at(ev.pos)
+            self._tile_hover = d
+            if d and ev.type == pygame.MOUSEBUTTONDOWN and ev.button == 1:
+                return d
+        return super().on_input(ev)
 
     # ── 오른쪽 칸 ─────────────────────────────────────────────────────────
     def _draw_column(self, c, W, H):
@@ -340,6 +370,13 @@ class MapView(EventView):
                                         (wave_.get_width() // 2 - rw // 2, wave_.get_height() // 2 - rw // 4, rw, rw // 2), 1)
                     c.blit(wave_, (sx - wave_.get_width() // 2, sy - 2 - wave_.get_height() // 2))
                 pygame.draw.circle(c, _lerp(BG, AMBER, 0.7), (sx, sy - 2), 2)
+        self._iso = (cx, base, hw, hh)
+        if self._tile_hover and self._move_progress() is None:   # 마우스가 올라간 옆 칸: 갈 수 있는 곳 테두리
+            ddx, ddy = {"W": (0, 1), "S": (0, -1), "A": (-1, 0), "D": (1, 0)}[self._tile_hover]
+            hx, hy = g.player_pos[0] + ddx, g.player_pos[1] + ddy
+            if 0 <= hx < n and 0 <= hy < n:
+                sx, sy = cx + (hx - hy) * hw, base - (hx + hy) * hh
+                pygame.draw.polygon(c, AMBER, [(sx, sy - hh - 3), (sx + hw, sy - 3), (sx, sy + hh - 3), (sx - hw, sy - 3)], 1)
         # N-404: 스캔 핑 고리 + 낙인 표식 (이동 중이면 이전 칸에서 미끄러져 온다)
         px, py = g.player_pos
         e = self._move_progress()

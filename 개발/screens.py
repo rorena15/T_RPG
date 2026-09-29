@@ -3,10 +3,11 @@
 두 가지 모양:
   card=True   그림을 화면 전체에 깔고 가운데에 제목·설명·선택지 (타이틀처럼)
   card=False  왼쪽 장면 그림 + 오른쪽 이야기 칸에 제목·설명·선택지
-선택: 방향키/W·S + Enter, 숫자키, 마우스. ESC는 쓰지 않는다 (뒤로 가기는 back 키, 보통 0).
+선택: 방향키/W·S + Enter, 숫자키, 마우스 (발밑 안내도 버튼). ESC = 뒤로 가기 (back 키가 있는 메뉴만).
 값이 바뀌는 메뉴(설정)는 같은 화면을 두고 ask()만 다시 불러 글자만 바꾼다 (그림이 깜박이지 않게).
 그림 화면을 못 여는 환경이면 get_terminal()이 None이라 쓰지 않는다 (Main.py가 터미널 메뉴로 대체).
 """
+import sound
 from event_view import EventView, JUNKYARD
 from gui import get_terminal
 from i18n import t
@@ -56,7 +57,7 @@ class MenuScreen:
 
 
 def show_diary_view(player):
-    """항법 일지 (이벤트 화면 틀). ↑↓ 한 줄, PgUp/PgDn 한 쪽, Enter·0으로 닫는다. 최신 기록부터."""
+    """항법 일지 (이벤트 화면 틀). ↑↓·휠 한 줄, PgUp/PgDn 한 쪽, Esc·Enter·0·클릭(뒤로)으로 닫는다. 최신 기록부터."""
     import pygame
     from event_view import AMBER, INK, INK_DIM, INK_FAINT
 
@@ -81,14 +82,23 @@ def show_diary_view(player):
     entries = list(player.diary)
     v = DiaryView(get_terminal(), player, None, JUNKYARD, scene="bunker_inside")
     v.off, v.max_off = 0, 0
-    v.footer = [("↑↓", t('ui_select')), ("PgUp/PgDn", t('diary_page')), ("Enter", t('ui_back'))]
+    v.footer = [("↑↓", t('ui_select')), ("PgUp/PgDn", t('diary_page')), ("Esc", t('ui_back'), "ENTER")]
     v.open()
     try:
         while True:
             for ev in v._events():
+                if ev.type == pygame.MOUSEWHEEL:   # 휠 위 = 예전 기록 쪽
+                    v.off = max(0, min(v.max_off, v.off + ev.y * 3))
+                    continue
+                if ev.type == pygame.MOUSEMOTION:
+                    v._foot_hover = v.foot_at(ev.pos)
+                    continue
+                if ev.type == pygame.MOUSEBUTTONDOWN and ev.button == 1 and v.foot_at(ev.pos) == "ENTER":
+                    sound.sfx("ui_back")
+                    return
                 if ev.type != pygame.KEYDOWN:
                     continue
-                if ev.key in (pygame.K_ESCAPE, pygame.K_RETURN, pygame.K_0, pygame.K_j):
+                if ev.key in (pygame.K_ESCAPE, pygame.K_RETURN, pygame.K_KP_ENTER, pygame.K_0, pygame.K_j):
                     return
                 step = {pygame.K_UP: 1, pygame.K_w: 1, pygame.K_DOWN: -1, pygame.K_s: -1,
                         pygame.K_PAGEUP: 10, pygame.K_PAGEDOWN: -10}.get(ev.key, 0)
@@ -98,7 +108,7 @@ def show_diary_view(player):
 
 
 def show_text_view(title, text, scene="forge"):
-    """긴 글을 위에서부터 읽는 화면 (크레딧·라이선스 전문, 그림 없이 글만). ↑↓·휠 한 줄, PgUp/PgDn 한 쪽, Home/End, Enter·0으로 닫는다."""
+    """긴 글을 위에서부터 읽는 화면 (크레딧·라이선스 전문, 그림 없이 글만). ↑↓·휠 한 줄, PgUp/PgDn 한 쪽, Home/End, Esc·Enter·0·클릭(뒤로)으로 닫는다."""
     import pygame
     from event_view import AMBER, BG, INK, INK_DIM, INK_FAINT
 
@@ -134,7 +144,7 @@ def show_text_view(title, text, scene="forge"):
     v = TextView(get_terminal(), None, None, JUNKYARD, scene=scene)
     v.card = False
     v.off, v.max_off, v.per, v._wrapped = 0, 0, 20, None
-    v.footer = [("↑↓", t('ui_select')), ("PgUp/PgDn", t('diary_page')), ("Enter", t('ui_back'))]
+    v.footer = [("↑↓", t('ui_select')), ("PgUp/PgDn", t('diary_page')), ("Esc", t('ui_back'), "ENTER")]
     v.open()
     try:
         while True:
@@ -142,9 +152,15 @@ def show_text_view(title, text, scene="forge"):
                 if ev.type == pygame.MOUSEWHEEL:
                     v.off = max(0, min(v.max_off, v.off - ev.y * 3))
                     continue
+                if ev.type == pygame.MOUSEMOTION:
+                    v._foot_hover = v.foot_at(ev.pos)
+                    continue
+                if ev.type == pygame.MOUSEBUTTONDOWN and ev.button == 1 and v.foot_at(ev.pos) == "ENTER":
+                    sound.sfx("ui_back")
+                    return
                 if ev.type != pygame.KEYDOWN:
                     continue
-                if ev.key in (pygame.K_RETURN, pygame.K_KP_ENTER, pygame.K_0, pygame.K_KP0):
+                if ev.key in (pygame.K_ESCAPE, pygame.K_RETURN, pygame.K_KP_ENTER, pygame.K_0, pygame.K_KP0):
                     return
                 step = {pygame.K_UP: -1, pygame.K_w: -1, pygame.K_DOWN: 1, pygame.K_s: 1,
                         pygame.K_PAGEUP: -v.per, pygame.K_PAGEDOWN: v.per, pygame.K_SPACE: v.per,

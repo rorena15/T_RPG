@@ -519,9 +519,16 @@ class PygameTerminal:
             n_lines = len(self._buf)
             start   = max(0, n_lines - visible)
             y = self.PAD_Y
+            self._vis_lines = []   # (버퍼 줄 번호, y) — 글 화면 선택지를 마우스·방향키로 고를 때 쓴다
 
             for i, line in enumerate(self._buf[start:], start=start):
                 is_current = (i == n_lines - 1)
+                self._vis_lines.append((i, y))
+                if self._opt_line == i:   # 고른 선택지 줄 강조
+                    band = pygame.Surface((w - self.PAD_X * 2 + 8, self._ch + 4), pygame.SRCALPHA)
+                    band.fill((236, 196, 92, 38))
+                    self._canvas.blit(band, (self.PAD_X - 4, y - 2))
+                    pygame.draw.line(self._canvas, (236, 196, 92), (self.PAD_X - 4, y - 2), (self.PAD_X - 4, y + self._ch + 1), 2)
                 if line:
                     surf = self._get_line_surf(line, is_current)
                     self._canvas.blit(surf, (self.PAD_X, y))
@@ -661,21 +668,91 @@ class PygameTerminal:
         else:
             pygame.time.wait(10)
 
+    # ── 글 화면 선택지 (마우스·방향키) ───────────────────────────────────────
+    # 그림 화면이 아닌 글 화면(행상인, 소모품, 선택 이벤트 …)에 찍힌 "[1] …", "1. …" 줄을 선택지로 본다.
+    # 마우스를 올리면 강조, 누르면 그 키. ↑↓로 고르고 Enter·Space로 누른다. 숫자키는 그대로.
+    _OPT_RE = re.compile(r"^\s*(?:\[\s*([0-9A-Za-z]{1,2})\s*\]|([0-9])[.)])\s+\S")
+    _opt_line = None
+
+    def _text_options(self):
+        out = []
+        for i, y in getattr(self, "_vis_lines", ()):
+            if i >= len(self._buf):
+                continue
+            m = self._OPT_RE.match("".join(seg[0] for seg in self._buf[i]))
+            if m:
+                out.append(((m.group(1) or m.group(2)).upper(), i, y))
+        return out
+
+    def _to_canvas(self, pos):
+        sw, sh = self.screen.get_size()
+        cw, ch = self._canvas_size
+        scale = min(sw / cw, sh / ch)
+        return (pos[0] - (sw - cw * scale) / 2) / scale, (pos[1] - (sh - ch * scale) / 2) / scale
+
+    def _text_input(self, event):
+        """글 화면에서 선택지 마우스·방향키 처리. 키를 돌려주면 그 키를 누른 것."""
+        opts = self._text_options()
+        if not opts:
+            return None
+        lines = [i for _, i, _ in opts]
+        sel = lines.index(self._opt_line) if self._opt_line in lines else None
+        new = sel
+        if event.type in (pygame.MOUSEMOTION, pygame.MOUSEBUTTONDOWN):
+            cx, cy = self._to_canvas(event.pos)
+            hit = next((n for n, (_, _, y) in enumerate(opts) if y - 2 <= cy < y + self._ch + 2
+                        and self.PAD_X - 4 <= cx <= self._canvas_size[0] - self.PAD_X), None)
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and hit is not None:
+                self._opt_line = None
+                return opts[hit][0]
+            if event.type == pygame.MOUSEMOTION:
+                new = hit
+        elif event.type == pygame.KEYDOWN:
+            if event.key in (pygame.K_UP, pygame.K_DOWN):
+                step = -1 if event.key == pygame.K_UP else 1
+                new = (0 if step > 0 else len(opts) - 1) if sel is None else (sel + step) % len(opts)
+            elif event.key in (pygame.K_RETURN, pygame.K_KP_ENTER, pygame.K_SPACE) and sel is not None:
+                self._opt_line = None
+                return opts[sel][0]
+        if new != sel:
+            self._opt_line = lines[new] if new is not None else None
+            try:
+                import sound
+                sound.sfx("ui_move")
+            except Exception:
+                pass
+            self._dirty = True
+            self._render()
+        return None
+
     def read_key(self) -> str:
+        """키 하나. 그림 화면이 떠 있으면 그 화면의 on_input(마우스·방향키·발밑 버튼)을 먼저,
+        글 화면이면 찍힌 선택지를 마우스·방향키로 고를 수 있다."""
         # 입력을 받기 시작하기 전에 쌓인 키는 버린다: 연출·대기 중에 누른 키가 다음 행동으로 이어지면
         # 전투에서 공방이 두 번씩 오갔다. 이제부터 누르는 키만 받는다.
-        pygame.event.clear(pygame.KEYDOWN)
+        pygame.event.clear((pygame.KEYDOWN, pygame.MOUSEBUTTONDOWN))
+        self._opt_line = None
         self._dirty = True
         self._render()
         while True:
+            mgr = self._ui_manager
+            active = mgr is not None and getattr(mgr, "_active", False)
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     sys.exit()
+                if event.type == pygame.KEYDOWN and event.key == pygame.K_F11:
+                    self.toggle_fullscreen()
+                    continue
+                if active and hasattr(mgr, "on_input"):
+                    r = mgr.on_input(event)
+                elif not active:
+                    r = self._text_input(event)
+                else:
+                    r = None
+                if r:
+                    return r
                 if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_ESCAPE:  # 예전엔 게임이 바로 꺼졌다. 종료는 창 닫기·메뉴로만
-                        continue
-                    if event.key == pygame.K_F11:
-                        self.toggle_fullscreen()
+                    if event.key == pygame.K_ESCAPE:  # 화면이 뜻을 주지 않은 ESC는 무시 (예전엔 게임이 바로 꺼졌다)
                         continue
                     ch = self._resolve_key(event)
                     if ch:
@@ -724,11 +801,14 @@ class PygameTerminal:
                         self._render()
 
     def wait_keypress_silent(self):
-        """메시지 없이 아무 키나 대기. 화면을 다시 그리지 않으므로 배너 표시 유지."""
+        """메시지 없이 아무 키나(마우스 클릭도) 대기. 화면을 다시 그리지 않으므로 배너 표시 유지."""
+        pygame.event.clear(pygame.MOUSEBUTTONDOWN)  # 연출 중에 누른 클릭으로 넘어가지 않게
         while True:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     sys.exit()
+                if event.type == pygame.MOUSEBUTTONDOWN and event.button in (1, 3):
+                    return
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_F11:
                         self.toggle_fullscreen()

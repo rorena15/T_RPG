@@ -64,19 +64,44 @@ class DownloadView:
             if ev.type == pygame.KEYDOWN and ev.key == pygame.K_F11:
                 self._term.toggle_fullscreen()
                 continue
-            if ev.type == pygame.KEYDOWN and ev.key == pygame.K_ESCAPE:  # ESC는 무시
-                continue
             out.append(ev)
         self._term._dirty = True
         self._term._render()
         self._clock.tick(30)
         return out
 
+    sel = 0
+    _opt_rects = ()
+
+    def _hit(self, pos):
+        sw, sh = self._term.screen.get_size()
+        cw, ch = self._term._canvas.get_size()
+        scale = min(sw / cw, sh / ch)
+        cx, cy = (pos[0] - (sw - cw * scale) / 2) / scale, (pos[1] - (sh - ch * scale) / 2) / scale
+        return next((i for i, r in enumerate(self._opt_rects) if r.collidepoint(cx, cy)), None)
+
     def _wait_key(self, keys):
+        """선택지가 있으면 ↑↓·마우스로 고르고 Enter·Space·클릭, 숫자키 그대로. 없으면 Enter·Space·클릭으로 넘어간다."""
+        pygame.event.clear((pygame.KEYDOWN, pygame.MOUSEBUTTONDOWN))
         while True:
             for ev in self._frame():
+                if ev.type in (pygame.MOUSEMOTION, pygame.MOUSEBUTTONDOWN):
+                    i = self._hit(ev.pos) if self.options else None
+                    if i is not None:
+                        self.sel = i
+                    if ev.type == pygame.MOUSEBUTTONDOWN and ev.button == 1:
+                        if i is not None:
+                            return self.options[i][0]
+                        if not self.options and "ENTER" in keys:
+                            return "ENTER"
+                    continue
                 if ev.type != pygame.KEYDOWN:
                     continue
+                if self.options and ev.key in (pygame.K_UP, pygame.K_DOWN):
+                    self.sel = (self.sel + (1 if ev.key == pygame.K_DOWN else -1)) % len(self.options)
+                    continue
+                if self.options and ev.key in (pygame.K_RETURN, pygame.K_KP_ENTER, pygame.K_SPACE):
+                    return self.options[self.sel][0]
                 if ev.key in (pygame.K_RETURN, pygame.K_KP_ENTER):
                     k = "ENTER"
                 elif ev.key == pygame.K_ESCAPE:
@@ -99,10 +124,19 @@ class DownloadView:
                 c.blit(self.f_serif.render(ln, True, color), (x, y))
                 y += 34
         y += 18
-        for key, text in self.options:
+        rects = []
+        for i, (key, text) in enumerate(self.options):
+            rect = pygame.Rect(x - 12, y - 6, W_TEXT + 12, 32)
+            if i == self.sel:
+                band = pygame.Surface(rect.size, pygame.SRCALPHA)
+                band.fill((*AMBER, 30))
+                c.blit(band, rect.topleft)
+                pygame.draw.line(c, AMBER, rect.topleft, (rect.left, rect.bottom - 1), 2)
             c.blit(self.f_mono.render(f"{key}.", True, AMBER if key != "0" else INK_FAINT), (x, y + 2))
-            c.blit(self.f_sans.render(text, True, INK if key != "0" else INK_DIM), (x + 30, y))
+            c.blit(self.f_sans.render(text, True, INK if key != "0" or i == self.sel else INK_DIM), (x + 30, y))
+            rects.append(rect)
             y += 34
+        self._opt_rects = rects
         if self.progress is not None:
             y += 10
             pygame.draw.line(c, (46, 44, 42), (x, y), (x + W_TEXT, y), 4)
@@ -126,7 +160,7 @@ class DownloadView:
         self.options = [("1", t('dl_full', size=_fmt_size(m["full"]["size"]))),
                         ("2", t('dl_lite', size=_fmt_size(m["lite"]["size"]))),
                         ("0", t('dl_later'))]
-        self.footer = [("1-2", t('gm_foot_choose')), ("0", t('dl_later'))]
+        self.footer = [("↑↓", t('ui_select')), ("Enter", t('ui_confirm')), ("0", t('dl_later'))]
         k = self._wait_key({"1", "2", "0", "ESC"})
         return {"1": "full", "2": "lite"}.get(k)
 
@@ -143,7 +177,7 @@ class DownloadView:
         th = threading.Thread(target=job.run, daemon=True)
         th.start()
         while th.is_alive():
-            if any(ev.type == pygame.KEYDOWN and ev.key in (pygame.K_0, pygame.K_KP0) for ev in self._frame()):
+            if any(ev.type == pygame.KEYDOWN and ev.key in (pygame.K_0, pygame.K_KP0, pygame.K_ESCAPE) for ev in self._frame()):
                 job.cancel = True
             self.progress = job.done / max(1, job.total)
             if job.phase == "verify":

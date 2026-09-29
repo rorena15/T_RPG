@@ -181,11 +181,14 @@ class InventoryView(EventView):
         c.blit(self.f_mono.render(t('forge_view_header' if self.forge else 'inv_view_header', n=self.player.materials), True, AMBER), (x, y))
         y += 26
         tx = x
+        self._tab_rects, self._row_rects = [], []   # 마우스로 누를 자리 (탭, 줄)
         for tab in TABS:
             on = tab == self.tab
+            hov = tab == getattr(self, "_tab_hover", None)
             g = self.f_title.render(t(TAB_KEY[tab]), True, INK if on else INK_FAINT) if on else \
-                self.f_sans.render(t(TAB_KEY[tab]), True, INK_FAINT)
+                self.f_sans.render(t(TAB_KEY[tab]), True, INK if hov else INK_FAINT)
             c.blit(g, (tx, y + (0 if on else 10)))
+            self._tab_rects.append((tab, pygame.Rect(tx - 6, y - 4, g.get_width() + 12, 50)))
             if on:
                 pygame.draw.line(c, AMBER, (tx, y + 42), (tx + g.get_width(), y + 42), 2)
             tx += g.get_width() + 26
@@ -201,6 +204,7 @@ class InventoryView(EventView):
         for i, row in enumerate(rows[top:top + VISIBLE], start=top):
             ry = y + (i - top) * ROW_H
             on = i == sel
+            self._row_rects.append((i, pygame.Rect(x - 12, ry - 3, width + 12, ROW_H - 2)))
             if on:
                 band = pygame.Surface((width + 12, ROW_H - 2), pygame.SRCALPHA)
                 band.fill((*AMBER, 24))
@@ -279,20 +283,66 @@ class InventoryView(EventView):
         return lines
 
     # ── 입력 루프 ─────────────────────────────────────────────────────────
+    def _hit(self, rects, pos):
+        cx, cy = self.to_canvas(pos)
+        return next((k for k, r in rects if r.collidepoint(cx, cy)), None)
+
+    def _mouse(self, ev, cur):
+        """마우스: 탭을 누르면 탭, 줄을 누르면 고르고 고른 줄을 한 번 더 누르면 장착·사용, 발밑 버튼은 그 키. 끝내려면 True."""
+        tab = self._hit(getattr(self, "_tab_rects", ()), ev.pos)
+        row = self._hit(getattr(self, "_row_rects", ()), ev.pos)
+        foot = self.foot_at(ev.pos)
+        if ev.type == pygame.MOUSEMOTION:
+            self._tab_hover, self._foot_hover = tab, foot
+            return False
+        if ev.type == pygame.MOUSEWHEEL:
+            rows = self.rows()
+            self.sel[self.tab] = max(0, min(max(0, len(rows) - 1), self.sel[self.tab] - ev.y))
+            return False
+        if ev.button != 1:
+            return False
+        if tab and tab != self.tab:
+            self.tab, self.msg, self.confirm = tab, [], None
+            sound.sfx("ui_tab")
+        elif row is not None:
+            if row == self.sel[self.tab]:
+                self.act(cur)
+            else:
+                self.sel[self.tab], self.confirm = row, None
+                sound.sfx("ui_move")
+        elif foot == "0":
+            sound.sfx("ui_back")
+            return True
+        elif foot == "ENTER":
+            self.act(cur)
+        elif foot == "X":
+            self.act(cur, dismantle=True)
+        elif foot == "R":
+            self.upgrade_row(cur)
+        elif foot == "F":
+            self.repair_row(cur)
+        return False
+
     def run(self):
-        self.footer = [("↑↓", t('ui_select')), ("←→", t('inv_key_tab')), ("Enter", t('inv_key_act')), ("D", t('inv_key_dismantle'))]
+        # 고르기 ↑↓(W/S)·휠, 탭 ←→(A/D·Tab), 장착·사용 Enter·Space·더블 클릭, 분해 X(Delete), 강화 R, 수리 F, 닫기 Esc·0
+        # (예전엔 D가 분해라 WASD로 탭을 넘기다 분해 확인이 떴다)
+        self.footer = [("↑↓", t('ui_select')), ("←→", t('inv_key_tab')), ("Enter", t('inv_key_act')), ("X", t('inv_key_dismantle'))]
         if self.forge:
             self.footer += [("R", t('upg_key')), ("F", t('rep_key'))]
-        self.footer.append(("0", t('inv_key_back')))
+        self.footer.append(("Esc", t('inv_key_back'), "0"))
         sound.sfx("inv_open")
         self.open()
         try:
             while True:
                 for ev in self._events():
-                    if ev.type != pygame.KEYDOWN:
-                        continue
                     rows = self.rows()
                     cur = rows[self.sel[self.tab]] if rows and self.sel[self.tab] < len(rows) else None
+                    if ev.type in (pygame.MOUSEMOTION, pygame.MOUSEBUTTONDOWN, pygame.MOUSEWHEEL):
+                        if self._mouse(ev, cur):
+                            return
+                        continue
+                    if ev.type != pygame.KEYDOWN:
+                        continue
                     if ev.key in (pygame.K_ESCAPE, pygame.K_0, pygame.K_KP0):
                         sound.sfx("ui_back")
                         return
@@ -304,14 +354,14 @@ class InventoryView(EventView):
                         self.sel[self.tab] = min(max(0, len(rows) - 1), self.sel[self.tab] + 1)
                         self.confirm = None
                         sound.sfx("ui_move")
-                    elif ev.key in (pygame.K_LEFT, pygame.K_a, pygame.K_RIGHT, pygame.K_TAB):
+                    elif ev.key in (pygame.K_LEFT, pygame.K_a, pygame.K_RIGHT, pygame.K_d, pygame.K_TAB):
                         step = -1 if ev.key in (pygame.K_LEFT, pygame.K_a) else 1
                         self.tab = TABS[(TABS.index(self.tab) + step) % len(TABS)]
                         self.msg, self.confirm = [], None
                         sound.sfx("ui_tab")
                     elif ev.key in (pygame.K_RETURN, pygame.K_KP_ENTER, pygame.K_SPACE):
                         self.act(cur)
-                    elif ev.key == pygame.K_d:
+                    elif ev.key in (pygame.K_x, pygame.K_DELETE):
                         self.act(cur, dismantle=True)
                     elif ev.key == pygame.K_r:
                         self.upgrade_row(cur)

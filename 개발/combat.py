@@ -260,12 +260,10 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
                 ("4", t('combat_act_retreat'),   True),
                 ("5", t('combat_act_item'),      has_consumable),
             ]
-            if sub_charges > 0:
-                _acts.append(("S", t('combat_act_sub', n=sub_charges), True))
-            for _i, _sid in enumerate(player.skill_slots):
-                _sk = _skills.SKILL_DEFS.get(_sid, {})
-                _key = f"S{'12'[_i] if len(player.skill_slots) > 1 else ''}"
-                _acts.append((_key, _skills.skill_name(_sid, short=True), True))
+            if sub_charges > 0:  # 보조무기는 6 (예전엔 화면에 S로 나와 눌러도 스킬로 갔다)
+                _acts.append(("6", t('combat_act_sub', n=sub_charges), True))
+            for _i, _sid in enumerate(player.skill_slots):  # 스킬 칸 1·2 = 7·8 (글 화면의 S·S1·S2도 그대로 된다)
+                _acts.append((str(7 + _i), _skills.skill_name(_sid, short=True), True))
             _ui.set_actions(_acts)
         else:
             print()
@@ -283,6 +281,9 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
                     print(f"  {Fore.YELLOW + Style.BRIGHT}S{'12'[_i] if len(player.skill_slots) > 1 else ''}. {_skills.skill_name(_sid)} — {db_t(_sk, 'desc')}{Style.RESET_ALL}")
 
         cmd = read_key()
+        _skill_idx = None
+        if cmd in ("7", "8") and len(player.skill_slots) > int(cmd) - 7:  # 그림 화면의 스킬 칸 버튼
+            _skill_idx, cmd = int(cmd) - 7, "S"
 
         if cmd == "1":
             consecutive_attacks += 1
@@ -428,7 +429,13 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
                 name_disp = f"{icon} {db_t(item, 'name')}" if icon else db_t(item, 'name')
                 print(f"  [{i+1}] {name_disp} x{player.consumables[key]} — {desc}")
             print(t('combat_cancel_item'))
+            if _ui:
+                _prev_sel, _ui.foot_sel = _ui.foot_sel, 0
+                _ui.set_actions([(str(i + 1), f"{db_t(constants.CONSUMABLES_DB[k], 'name')} x{player.consumables[k]}", True)
+                                 for i, k in enumerate(avail[:9])] + [("0", t('ui_back'), True)])
             item_cmd = read_key()
+            if _ui:
+                _ui.foot_sel = _prev_sel   # 다음 턴엔 원래 고르던 행동(아이템 칸)으로
             if item_cmd.isdigit() and 0 < int(item_cmd) <= len(avail):
                 key = avail[int(item_cmd) - 1]
                 item = constants.CONSUMABLES_DB[key]
@@ -489,7 +496,9 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
         elif cmd.upper() == "S" and player.skill_slots:
             slots = player.skill_slots
             consecutive_attacks = 0
-            if len(slots) == 1:
+            if _skill_idx is not None:
+                _skills.execute(player, slots[_skill_idx], combat_ctx)
+            elif len(slots) == 1:
                 _skills.execute(player, slots[0], combat_ctx)
             else:
                 print(t('combat_skill_select'))
