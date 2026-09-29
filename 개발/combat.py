@@ -457,7 +457,7 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
             print(t('combat_cancel_item'))
             if _ui:
                 _prev_sel, _ui.foot_sel = _ui.foot_sel, 0
-                _ui.set_actions([(str(i + 1), f"{db_t(constants.CONSUMABLES_DB[k], 'name')} x{player.consumables[k]}", True)
+                _ui.set_actions([(str(i + 1), f"{db_t(constants.CONSUMABLES_DB[k], 'name')} x{player.consumables[k]}", True, None, k)
                                  for i, k in enumerate(avail[:9])] + [("0", t('ui_back'), True)])
             item_cmd = read_key()
             if _ui:

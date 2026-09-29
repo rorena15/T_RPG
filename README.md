@@ -259,7 +259,7 @@ python Main.py
 
 맵 환경음(밤·새벽엔 어두운 음악, 날씨마다 스모그·안개·먼지 폭풍·재·산성비 소리), 타이틀·서사·전투·보스·엔딩 BGM, 허기·갈증 경보음이 상황에 따라 재생됩니다. 선택지 결과(체력·고철·아이템·능력치·성향·경계)마다 소리가 납니다. 옵션에서 BGM 음량과 효과음 음량을 따로 조절할 수 있습니다. 사운드 장치가 없으면 무음으로 진행됩니다.
 
-전투·강화·탐색 효과음과 맵의 먼 소리는 Kenney(CC0), Godot TPS Demo(© 2018 Juan Linietsky, Fernando Miguel Calabró, CC BY 3.0), Freesound(CC0), uisfx(CC0) 음원으로 만들었습니다. 보스전·타이틀·엔딩 음악은 Christian Fernando Perucchi(Godot TPS Demo, CC BY 3.0), 밤 탐색 음악은 HorrorPen "Loop - House in a Forest"(CC BY 3.0)입니다. 전체 출처(음원·글꼴 D2Coding·Noto Emoji(SIL OFL 1.1)·GM 베이스 모델 Kakao Kanana 1.5(Apache 2.0)·llama.cpp(MIT)·pygame-ce(LGPL 2.1) 등 라이브러리)와 라이선스 전문은 게임의 **옵션 → 크레딧 · 라이선스**와 `assets/licenses/`에 있습니다.
+전투·강화·탐색 효과음과 맵의 먼 소리는 Kenney(CC0), Godot TPS Demo(© 2018 Juan Linietsky, Fernando Miguel Calabró, CC BY 3.0), Freesound(CC0), uisfx(CC0) 음원으로 만들었습니다. 보스전·타이틀·엔딩 음악은 Christian Fernando Perucchi(Godot TPS Demo, CC BY 3.0), 밤 탐색 음악은 HorrorPen "Loop - House in a Forest"(CC BY 3.0)입니다. 퀵슬롯·전투 버튼 아이콘은 game-icons.net(Lorc, Delapouite, Sbed, Rihlsul, CC BY 3.0)입니다. 전체 출처(음원·아이콘·글꼴 D2Coding·Noto Emoji(SIL OFL 1.1)·GM 베이스 모델 Kakao Kanana 1.5(Apache 2.0)·llama.cpp(MIT)·pygame-ce(LGPL 2.1) 등 라이브러리)와 라이선스 전문은 게임의 **옵션 → 크레딧 · 라이선스**와 `assets/licenses/`에 있습니다.
 
 ---
 

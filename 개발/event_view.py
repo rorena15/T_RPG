@@ -1390,6 +1390,23 @@ class EventView:
     _quick_hits = ()
     _quick_hover = None
 
+    _ICONS = {}
+
+    @classmethod
+    def icon(cls, name, size, color):
+        """assets/icons/<name>.png (흰 실루엣, game-icons.net)를 size로 줄이고 color로 칠한다. 없으면 None."""
+        k = (name, size, tuple(color))
+        if k not in cls._ICONS:
+            surf = None
+            try:
+                raw = pygame.image.load(sound._asset(os.path.join("icons", f"{name}.png"))).convert_alpha()
+                surf = pygame.transform.smoothscale(raw, (size, size))
+                surf.fill((*color[:3], 255), special_flags=pygame.BLEND_RGBA_MULT)
+            except (pygame.error, FileNotFoundError, OSError):
+                pass
+            cls._ICONS[k] = surf
+        return cls._ICONS[k]
+
     @staticmethod
     def quick_label(key):
         """(짧은 이름, 종류 색): 치료는 붉게, 식량은 호박, 물은 청록."""
@@ -1433,15 +1450,14 @@ class EventView:
             c.blit(self.f_mono.render(ch, True, AMBER if key else (70, 66, 60)), (rect.x + 4, rect.y + 2))
             if key:
                 label, col = self.quick_label(key)
-                if n:   # 종류 색 띠 (아래)
-                    pygame.draw.line(c, col, (rect.x + 3, rect.bottom - 3), (rect.right - 4, rect.bottom - 3), 2)
-                font = self.f_mono if self.f_mono.size(label)[0] <= bw - 4 else self.f_mono
-                g = font.render(label, True, INK if n else INK_FAINT)
-                if g.get_width() > bw - 4:
-                    g = pygame.transform.smoothscale(g, (bw - 4, g.get_height()))
-                c.blit(g, (rect.centerx - g.get_width() // 2, rect.y + 20))
-                cnt = self.f_mono.render(str(n), True, INK_DIM if n else RED)
-                c.blit(cnt, (rect.right - cnt.get_width() - 4, rect.y + 2))
+                ic = self.icon(key, 28, col if n else (70, 66, 60))
+                if ic:   # 아이콘 (game-icons.net) — 종류 색: 치료 붉게 · 식량 호박 · 물 청록
+                    c.blit(ic, (rect.centerx - 14, rect.y + 10))
+                else:
+                    g = self.f_mono.render(label, True, INK if n else INK_FAINT)
+                    c.blit(g, (rect.centerx - g.get_width() // 2, rect.y + 20))
+                cnt = self.f_mono.render(str(n), True, INK if n else RED)
+                c.blit(cnt, (rect.right - cnt.get_width() - 3, rect.bottom - cnt.get_height() - 1))
             hits.append((ch, rect))
             if hov and key:
                 d = constants.CONSUMABLES_DB[key]

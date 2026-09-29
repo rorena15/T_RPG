@@ -36,6 +36,17 @@ CC BY 3.0: https://creativecommons.org/licenses/by/3.0/
 CC0 1.0: https://creativecommons.org/publicdomain/zero/1.0/
 
 ────────────────────────────────
+아이콘 · Icons (CC BY 3.0)
+
+Icons made by Lorc, Delapouite, Sbed and Rihlsul — game-icons.net
+https://game-icons.net · https://github.com/game-icons/icons
+퀵슬롯 소모품과 전투 행동 버튼에 사용. 배경을 지우고 흰 실루엣 PNG로 바꾼 뒤 게임에서 색을 입혔다.
+Used for quick-slot items and combat action buttons. Modified: background removed, rasterized to PNG and recolored in game.
+  Lorc: sticking-plaster, bandage-roll, syringe, pill, gunshot, circuitry, laser-blast, lightning-helix, power-lightning, run
+  Delapouite: health-capsule, opened-food-can, water-flask, water-bottle, barricade, first-aid-kit
+  Sbed: medical-pack, vial · Rihlsul: chocolate-bar
+
+────────────────────────────────
 글꼴 · Fonts (SIL Open Font License 1.1)
 
 D2Coding — Copyright (c) 2015-2016 NHN Corporation (NAVER). Font designed by FONTRIX Inc.

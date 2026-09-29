@@ -46,9 +46,16 @@ class CombatView(EventView):
     foot_nav = True
     nav_cols = 2
 
+    # 행동 버튼 아이콘 (assets/icons, game-icons.net). 소모품 고르기 때는 set_actions의 다섯째 값(소모품 id)
+    ACT_ICONS = {"Q": "act_attack", "E": "act_barricade", "R": "act_jam", "F": "act_sub",
+                 "Z": "act_skill", "C": "act_skill2", "X": "act_retreat", "I": "act_item"}
+
     def set_actions(self, actions):
+        """[(키, 이름, 쓸 수 있음[, 누르면 보낼 키[, 아이콘]])]"""
         self.actions = actions
-        self.footer = [(a[0], a[1], a[3] if len(a) > 3 else a[0]) for a in actions if a[2]]
+        self.footer = [(a[0], a[1], a[3] if len(a) > 3 and a[3] else a[0]) for a in actions if a[2]]
+        self._act_icons = {(a[3] if len(a) > 3 and a[3] else a[0]): (a[4] if len(a) > 4 else self.ACT_ICONS.get(a[0]))
+                           for a in actions if a[2]}
         self.foot_sel = min(self.foot_sel, max(0, len(self.footer) - 1))
 
     def scene_set_idle(self):
@@ -125,8 +132,14 @@ class CombatView(EventView):
             pygame.draw.rect(c, AMBER if on else (58, 55, 50), rect, 1)
             k = self.f_mono_b.render(key, True, AMBER)
             c.blit(k, (bx + 12, by + (self.BTN_H - k.get_height()) // 2))
+            lx = bx + 34
+            name = getattr(self, "_act_icons", {}).get(ret)
+            ic = self.icon(name, 24, AMBER if on else INK_DIM) if name else None
+            if ic:
+                c.blit(ic, (lx, by + (self.BTN_H - 24) // 2))
+                lx += 32
             g = self.f_sans.render(label, True, INK if on else INK_DIM)
-            c.blit(g, (bx + 38, by + (self.BTN_H - g.get_height()) // 2))
+            c.blit(g, (lx, by + (self.BTN_H - g.get_height()) // 2))
             hits.append((ret, rect))
         self._foot_hits = hits
         self._draw_quickbar(c, x, top - self.QB_H - 10, width)
