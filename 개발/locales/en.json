@@ -100,7 +100,7 @@
   "consumable_used_hp": "\n[TREATMENT] '{name}' injected. Bio-signal stabilizing. (HP +{amt})",
   "consumable_used_food": "\n[CONSUMED] '{name}' ingested. Bio-fuel replenished.",
   "map_header": " [ DEAD ZONE SECTOR GRID SCANNER ]",
-  "map_legend": "  (P: Current Position | B: Bunker Target | U: Forge)\n",
+  "map_legend": "  (P: Current Position | B: Bunker Target | U: Forge | ?: Hammering)\n",
   "tile_exhausted": [
     "Fingers rake through the scrap heap. Nothing left to find.",
     "Already picked clean. Dead end.",
@@ -861,5 +861,18 @@
   "forge_arrive_site": "\n  [FORGE] Vulkan waits by the cold furnace. (U: Talk)",
   "map_at_vulkan": "Vulkan Gates — U: Talk",
   "map_vulkan_dist": "Vulkan Gates: {n} tiles",
-  "map_scan_header": "OPTIC SENSOR // SECTOR SCAN"
+  "map_scan_header": "OPTIC SENSOR // SECTOR SCAN",
+  "opt_sfx_volume": "SFX Volume",
+  "forge_hint": "\n  [SIGNAL] Between the gusts, the ring of a hammer on steel — {dir}, about {d} tiles. Someone is still tending a furnace.",
+  "forge_hint_diary": "[SIGNAL] A hammer ringing somewhere — marked on the map",
+  "map_hint_dist": "Hammering · {dir} {n} tiles",
+  "dir_n": "north",
+  "dir_s": "south",
+  "dir_e": "east",
+  "dir_w": "west",
+  "dir_ne": "northeast",
+  "dir_nw": "northwest",
+  "dir_se": "southeast",
+  "dir_sw": "southwest",
+  "dir_here": "right here"
 }

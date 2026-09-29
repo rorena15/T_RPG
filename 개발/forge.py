@@ -13,6 +13,31 @@ from ui import clear_screen, print_divider, print_header, read_key, type_text, w
 
 NEED_KILLS = 3
 NEED_SCRAP = 40
+HINT_TURN = 12   # 이때까지 발칸을 못 만났으면 쇠 두드리는 소리로 방향을 알려 준다 (강화 없이는 보스를 못 이기니까)
+
+
+def hinted(grid):
+    return bool(grid.forge.get("hint")) and not grid.forge_known()
+
+
+def direction(grid):
+    """지금 자리에서 발칸 쪽 방위 (W가 북, D가 동)."""
+    dx = grid.forge_pos[0] - grid.player_pos[0]
+    dy = grid.forge_pos[1] - grid.player_pos[1]
+    ns = "n" if dy > 0 else ("s" if dy < 0 else "")
+    ew = "e" if dx > 0 else ("w" if dx < 0 else "")
+    return t(f"dir_{ns + ew}") if ns or ew else t("dir_here")
+
+
+def check_hint(player, grid):
+    """맵에서 매 턴 부른다: HINT_TURN이 지나도 못 만났으면 한 번 소리를 들려주고 미니맵에 흐리게 표시한다."""
+    if grid.forge_known() or grid.forge.get("hint") or player.turn_count < HINT_TURN:
+        return False
+    grid.forge["hint"] = True
+    sound.sfx("amb_clang")
+    print(t('forge_hint', dir=direction(grid), d=grid.forge_dist()))
+    log_diary(player, t('forge_hint_diary'))
+    return True
 
 
 def stage(grid):

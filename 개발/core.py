@@ -33,7 +33,7 @@ def get_settings_path():
 
 
 def load_settings() -> dict:
-    defaults = {"bgm_volume": 0.5, "mute": False, "text_speed": 1.0, "gm_mode": "full"}
+    defaults = {"bgm_volume": 0.5, "sfx_volume": 0.5, "mute": False, "text_speed": 1.0, "gm_mode": "full"}
     try:
         with open(get_settings_path(), encoding="utf-8") as f:
             return {**defaults, **json.load(f)}

@@ -156,6 +156,9 @@ class MapView(EventView):
             key = ('map_at_forge' if fs >= 2 else 'map_at_vulkan') if fd == 0 else ('map_forge_dist' if fs >= 2 else 'map_vulkan_dist')
             fsurf = self.f_sans.render(t(key, n=fd), True, AMBER)
             c.blit(fsurf, (x + width - fsurf.get_width(), y + 66))
+        elif forge.hinted(g):  # 아직 못 만났지만 소리는 들었다: 방향과 거리만
+            fsurf = self.f_sans.render(t('map_hint_dist', dir=forge.direction(g), n=g.forge_dist()), True, _lerp(BG, AMBER, 0.75))
+            c.blit(fsurf, (x + width - fsurf.get_width(), y + 66))
         y += 104
 
         mw = 0
@@ -327,6 +330,16 @@ class MapView(EventView):
                     if abs(ux) + abs(uy) < 0.9:
                         nx, ny = sx + int(ux * hw * 0.8), sy - 1 + int(uy * hh * 0.8)
                         c.set_at((nx, ny), (46, 45, 42) if not alarm else (96, 52, 46))
+            if pos == list(g.forge_pos) and forge.hinted(g):
+                # 쇠 두드리는 소리가 나는 곳: 흐린 호박색 파동 두 겹 (정확한 모습은 가 봐야 안다)
+                for k in (0.0, 0.5):
+                    ph = (pulse + k) % 1.0
+                    rw = int(6 + ph * (ISO_W - 2))
+                    wave_ = pygame.Surface((ISO_W + 6, ISO_H + 6), pygame.SRCALPHA)
+                    pygame.draw.ellipse(wave_, (*AMBER, int(150 * (1 - ph))),
+                                        (wave_.get_width() // 2 - rw // 2, wave_.get_height() // 2 - rw // 4, rw, rw // 2), 1)
+                    c.blit(wave_, (sx - wave_.get_width() // 2, sy - 2 - wave_.get_height() // 2))
+                pygame.draw.circle(c, _lerp(BG, AMBER, 0.7), (sx, sy - 2), 2)
         # N-404: 스캔 핑 고리 + 낙인 표식 (이동 중이면 이전 칸에서 미끄러져 온다)
         px, py = g.player_pos
         e = self._move_progress()

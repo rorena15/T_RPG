@@ -90,7 +90,7 @@ class Intro:
         self._played.add(key)
         try:
             s = pygame.mixer.Sound(sound._asset(name))
-            s.set_volume(vol * min(1.0, getattr(sound, "_vol_mult", 0.5) * 2))
+            s.set_volume(vol * min(1.0, getattr(sound, "_sfx_mult", 0.5) * 2))   # 효과음 음량을 따른다
             s.play(fade_ms=fade_ms)
             return s
         except Exception:

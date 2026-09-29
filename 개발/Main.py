@@ -75,6 +75,7 @@ def run_game():
 
     _settings = load_settings()
     sound.set_bgm_volume(_settings["bgm_volume"])
+    sound.set_sfx_volume(_settings.get("sfx_volume", 0.5))
     sound.set_mute(_settings["mute"])
     constants.TEXT_SPEED_MULT = _settings["text_speed"]
     gm_bridge.set_mode(_settings["gm_mode"])
@@ -168,6 +169,7 @@ def run_game():
                     _gm_mode = gm_bridge.get_mode()
                     _need_data = _gm_mode != "off" and not gm_bridge.mode_installed(_gm_mode)
                     _o = [("1", t('lang_header')), ("2", f"{t('opt_volume')}   ◀ {_vol_pct}% ▶"),
+                          ("7", f"{t('opt_sfx_volume')}   ◀ {int(_settings.get('sfx_volume', 0.5) * 100)}% ▶"),
                           ("3", f"{t('opt_mute')}   [{t('opt_mute_on') if _settings['mute'] else t('opt_mute_off')}]"),
                           ("4", f"{t('opt_text_speed')}   [{t(_spd_key)}]"),
                           ("5", f"{t('opt_gm')}   [{t(f'opt_gm_{_gm_mode}')}]")]
@@ -203,6 +205,7 @@ def run_game():
                     _spd_str  = t(_spd_key)
                     print(f"  1. {t('lang_header')}")
                     print(f"  2. {t('opt_volume')}  ◀ {_vol_pct}% ▶")
+                    print(f"  7. {t('opt_sfx_volume')}  ◀ {int(_settings.get('sfx_volume', 0.5) * 100)}% ▶")
                     print(f"  3. {t('opt_mute')}  [{_mute_str}]")
                     print(f"  4. {t('opt_text_speed')}  [{_spd_str}]")
                     _gm_mode = gm_bridge.get_mode()
@@ -236,6 +239,12 @@ def run_game():
                     cur = _vol_steps.index(_settings["bgm_volume"]) if _settings["bgm_volume"] in _vol_steps else 2
                     _settings["bgm_volume"] = _vol_steps[(cur + 1) % len(_vol_steps)]
                     sound.set_bgm_volume(_settings["bgm_volume"])
+                    save_settings(_settings)
+                elif ok == "7":
+                    cur = _vol_steps.index(_settings.get("sfx_volume", 0.5)) if _settings.get("sfx_volume", 0.5) in _vol_steps else 2
+                    _settings["sfx_volume"] = _vol_steps[(cur + 1) % len(_vol_steps)]
+                    sound.set_sfx_volume(_settings["sfx_volume"])
+                    sound.sfx("ui_ok")   # 바뀐 크기를 바로 들려준다
                     save_settings(_settings)
                 elif ok == "3":
                     _settings["mute"] = not _settings["mute"]
@@ -361,6 +370,8 @@ def run_game():
 
         sound.map_mood(scene_art.world_time(player.turn_count))  # 밤·새벽엔 바람 밑에 어두운 음악
         sound.map_weather(scene_art.world_weather(player.turn_count))  # 날씨 환경음 (산성비·먼지 폭풍 등)
+        if forge.check_hint(player, grid):  # 발칸을 오래 못 만났으면 방향 힌트 (forge.py)
+            time.sleep(1.2)
         _actions = _EXPLORE_ACTIONS
         if grid.at_forge() and grid.forge_known():  # 강화소 칸: U로 발칸 게이츠 / 강화소 (forge.py)
             _flabel = t('act_forge') if forge.built(grid) else t('act_forge_npc')

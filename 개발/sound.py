@@ -72,6 +72,19 @@ def _user_gain():
     return 0.0 if _muted else min(1.0, _vol_mult * 2)
 
 
+_sfx_mult = 0.5      # 사용자 효과음 음량 (0.0~1.0, 음악과 따로)
+
+
+def _sfx_gain():
+    return 0.0 if _muted else min(1.0, _sfx_mult * 2)
+
+
+def set_sfx_volume(vol: float):
+    """사용자 효과음 음량 설정 (0.0~1.0). 다음 효과음부터 반영."""
+    global _sfx_mult
+    _sfx_mult = max(0.0, min(1.0, vol))
+
+
 def init():
     global _ready, _ch_wind, _ch_music, _hb_channel, _hb_sound, _thread
     if not _OK:
@@ -220,7 +233,7 @@ def sfx(name, vol=1.0, delay=0.0):
         import random as _r
         snd = _r.choice(variants)
         ch = _free_sfx_channel()
-        ch.set_volume(max(0.0, min(1.0, SFX_VOL.get(name, 0.5) * vol * _user_gain() * 1.4)))
+        ch.set_volume(max(0.0, min(1.0, SFX_VOL.get(name, 0.5) * vol * _sfx_gain() * 1.4)))
         ch.play(snd)
     except Exception:
         pass

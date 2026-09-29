@@ -100,7 +100,7 @@
   "consumable_used_hp": "\n[치료] '{name}' 주입 완료. 생체 신호가 안정화됩니다. (HP +{amt})",
   "consumable_used_food": "\n[섭취] '{name}' 섭취 완료. 바이오 연료가 보충되었습니다.",
   "map_header": " [ 데드존 섹터 그리드 스캐너 ]",
-  "map_legend": "  (P: 현재 위치 | B: 방공호 목표 | U: 강화소)\n",
+  "map_legend": "  (P: 현재 위치 | B: 방공호 목표 | U: 강화소 | ?: 쇠 두드리는 소리)\n",
   "tile_exhausted": [
     "손가락이 고철 더미를 훑는다. 건질 게 없다.",
     "이미 뒤진 곳이다. 허탕이다.",
@@ -861,5 +861,18 @@
   "forge_arrive_site": "\n  [대장간] 발칸이 식은 화로 앞에서 기다린다. (U: 대화)",
   "map_at_vulkan": "발칸 게이츠 — U: 대화",
   "map_vulkan_dist": "발칸 게이츠까지 {n}칸",
-  "map_scan_header": "시각 센서 // 섹터 스캔"
+  "map_scan_header": "시각 센서 // 섹터 스캔",
+  "opt_sfx_volume": "효과음 음량",
+  "forge_hint": "\n  [신호] 바람 사이로 쇠를 두드리는 소리가 들린다 — {dir}, 약 {d}칸. 누군가 아직 화로를 지키고 있다.",
+  "forge_hint_diary": "[신호] 어딘가에서 쇠 두드리는 소리 — 지도에 표시",
+  "map_hint_dist": "쇠 두드리는 소리 · {dir} {n}칸",
+  "dir_n": "북쪽",
+  "dir_s": "남쪽",
+  "dir_e": "동쪽",
+  "dir_w": "서쪽",
+  "dir_ne": "북동쪽",
+  "dir_nw": "북서쪽",
+  "dir_se": "남동쪽",
+  "dir_sw": "남서쪽",
+  "dir_here": "바로 여기"
 }
