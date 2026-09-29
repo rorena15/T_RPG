@@ -127,18 +127,21 @@ class CombatView(EventView):
             rect = pygame.Rect(bx, by, bw, self.BTN_H)
             on = self._foot_on(i, ret)
             box = pygame.Surface(rect.size, pygame.SRCALPHA)
-            box.fill((*AMBER, 40) if on else (255, 255, 255, 10))
+            box.fill((*self.NEON_CYAN, 22) if on else (8, 10, 16, 190))
             c.blit(box, rect.topleft)
-            pygame.draw.rect(c, AMBER if on else (58, 55, 50), rect, 1)
-            k = self.f_mono_b.render(key, True, AMBER)
+            if on:   # 고른 버튼: 네온 테두리
+                self._neon_frame(c, rect, self.NEON_CYAN, 1.0)
+            else:
+                pygame.draw.rect(c, (34, 44, 52), rect, 1, border_radius=2)
+            k = self.f_mono_b.render(key, True, self.NEON_AMBER if on else AMBER)
             c.blit(k, (bx + 12, by + (self.BTN_H - k.get_height()) // 2))
             lx = bx + 34
             name = getattr(self, "_act_icons", {}).get(ret)
-            ic = self.icon(name, 24, AMBER if on else INK_DIM) if name else None
-            if ic:
-                c.blit(ic, (lx, by + (self.BTN_H - 24) // 2))
+            ic, pad = self.neon_icon(name, 24, self.NEON_CYAN, 1.0 if on else 0.45) if name else (None, 0)
+            if ic:   # 네온 아이콘: 평소엔 은은하게, 고르면 환하게
+                c.blit(ic, (lx - pad, by + (self.BTN_H - 24) // 2 - pad))
                 lx += 32
-            g = self.f_sans.render(label, True, INK if on else INK_DIM)
+            g = self.f_sans.render(label, True, _lerp(self.NEON_CYAN, (255, 255, 255), 0.6) if on else INK_DIM)
             c.blit(g, (lx, by + (self.BTN_H - g.get_height()) // 2))
             hits.append((ret, rect))
         self._foot_hits = hits

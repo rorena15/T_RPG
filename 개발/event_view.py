@@ -1391,6 +1391,59 @@ class EventView:
     _quick_hover = None
 
     _ICONS = {}
+    # 네온 색 (아이콘 전용): 네오 아크 간판처럼 채도 높은 빛
+    NEON_CYAN = (70, 235, 255)
+    NEON_PINK = (255, 70, 150)
+    NEON_AMBER = (255, 184, 64)
+    NEON_RED = (255, 72, 88)
+    NEON_OFF = (70, 66, 60)
+
+    @classmethod
+    def neon_icon(cls, name, size, color, glow=1.0):
+        """네온관처럼: 하얗게 달아오른 심 + 색 번짐(두 겹 블러). (그림, 여백) — 그림은 size + 여백*2 크기.
+        glow 0이면 번짐 없이 흐린 단색 (꺼진 간판)."""
+        k = ("neon", name, size, tuple(color), round(glow, 2))
+        if k in cls._ICONS:
+            return cls._ICONS[k]
+        base = cls.icon(name, size, color)
+        if base is None:
+            cls._ICONS[k] = (None, 0)
+            return cls._ICONS[k]
+        pad = max(6, size // 2)
+        W = size + pad * 2
+        out = pygame.Surface((W, W), pygame.SRCALPHA)
+        if glow > 0:
+            layer = pygame.Surface((W, W), pygame.SRCALPHA)
+            layer.blit(base, (pad, pad))
+            # 번짐: 가까운 빛(작은 반경) + 넓은 빛(큰 반경). 흐리게 하면 옅어지므로 여러 번 겹쳐 세기를 올린다
+            for radius, times in ((max(2, size // 8), 2), (max(4, size // 3), 3)):
+                if hasattr(pygame.transform, "gaussian_blur"):
+                    blur = pygame.transform.gaussian_blur(layer, radius)
+                else:
+                    small = pygame.transform.smoothscale(layer, (max(1, W // radius), max(1, W // radius)))
+                    blur = pygame.transform.smoothscale(small, (W, W))
+                blur.fill((*color[:3], 0), special_flags=pygame.BLEND_RGBA_MAX)   # 흐리면 색이 검게 섞이므로 빛 색으로 다시 칠한다
+                blur.fill((255, 255, 255, min(255, int(255 * glow))), special_flags=pygame.BLEND_RGBA_MULT)
+                for _ in range(times):
+                    out.blit(blur, (0, 0))
+            core = cls.icon(name, size, _lerp(color, (255, 255, 255), 0.45))
+            out.blit(base, (pad, pad))
+            core.set_alpha(int(170 * min(1.0, glow)))
+            out.blit(core, (pad, pad))
+        else:
+            out.blit(base, (pad, pad))
+        cls._ICONS[k] = (out, pad)
+        return cls._ICONS[k]
+
+    def _neon_frame(self, c, rect, color, strength=1.0):
+        """네온 테두리: 겹겹이 퍼지는 빛 + 밝은 선. 네온관처럼 아주 약하게 떨린다."""
+        t_ = pygame.time.get_ticks()
+        strength *= 0.88 + 0.12 * math.sin(t_ / 90) * math.sin(t_ / 37)
+        for i, a in ((6, 14), (5, 22), (4, 34), (3, 50), (2, 75), (1, 110)):
+            g = pygame.Surface((rect.w + i * 2, rect.h + i * 2), pygame.SRCALPHA)
+            pygame.draw.rect(g, (*color, int(a * strength)), g.get_rect(), 1, border_radius=3)
+            c.blit(g, (rect.x - i, rect.y - i))
+        pygame.draw.rect(c, _lerp(color, (255, 255, 255), 0.35), rect, 1, border_radius=2)
 
     @classmethod
     def icon(cls, name, size, color):
@@ -1420,6 +1473,12 @@ class EventView:
         col = RED if d["type"] == "hp" else (AMBER if d["type"] == "food" else TEAL)
         return label, col
 
+    @classmethod
+    def quick_neon(cls, key):
+        import constants
+        d = constants.CONSUMABLES_DB.get(key) or {}
+        return cls.NEON_PINK if d.get("type") == "hp" else (cls.NEON_AMBER if d.get("type") == "food" else cls.NEON_CYAN)
+
     @staticmethod
     def quick_effect(key):
         """마우스를 올렸을 때 보여 줄 효과 (HP +100 / HP 50% / 허기 +30 …)."""
@@ -1444,19 +1503,23 @@ class EventView:
             n = p.consumables.get(key, 0) if key else 0
             hov = self._quick_hover == ch
             box = pygame.Surface(rect.size, pygame.SRCALPHA)
-            box.fill((*AMBER, 36) if hov else (255, 255, 255, 12 if key else 4))
+            box.fill((8, 10, 16, 200) if key else (255, 255, 255, 4))
             c.blit(box, rect.topleft)
-            pygame.draw.rect(c, AMBER if hov else ((70, 66, 60) if key else (36, 34, 32)), rect, 1)
-            c.blit(self.f_mono.render(ch, True, AMBER if key else (70, 66, 60)), (rect.x + 4, rect.y + 2))
+            ncol = self.quick_neon(key) if key else self.NEON_OFF
+            if key and n and hov:
+                self._neon_frame(c, rect, ncol, 1.0)
+            else:
+                pygame.draw.rect(c, _lerp(BG, ncol, 0.35) if key and n else (40, 38, 36), rect, 1, border_radius=2)
+            c.blit(self.f_mono.render(ch, True, _lerp(BG, ncol, 0.9) if key else (70, 66, 60)), (rect.x + 4, rect.y + 2))
             if key:
-                label, col = self.quick_label(key)
-                ic = self.icon(key, 28, col if n else (70, 66, 60))
-                if ic:   # 아이콘 (game-icons.net) — 종류 색: 치료 붉게 · 식량 호박 · 물 청록
-                    c.blit(ic, (rect.centerx - 14, rect.y + 10))
+                ic, pad = self.neon_icon(key, 26, ncol if n else self.NEON_OFF, (1.25 if hov else 0.8) if n else 0)
+                if ic:   # 네온 아이콘 (game-icons.net) — 치료 분홍 · 식량 호박 · 물 청록, 떨어지면 꺼진 간판
+                    c.blit(ic, (rect.centerx - ic.get_width() // 2, rect.y + 23 - ic.get_height() // 2))
                 else:
+                    label, _ = self.quick_label(key)
                     g = self.f_mono.render(label, True, INK if n else INK_FAINT)
                     c.blit(g, (rect.centerx - g.get_width() // 2, rect.y + 20))
-                cnt = self.f_mono.render(str(n), True, INK if n else RED)
+                cnt = self.f_mono.render(str(n), True, INK if n else self.NEON_RED)
                 c.blit(cnt, (rect.right - cnt.get_width() - 3, rect.bottom - cnt.get_height() - 1))
             hits.append((ch, rect))
             if hov and key:
