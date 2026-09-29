@@ -9,6 +9,7 @@ import random
 import pygame
 
 import constants
+import upgrade
 from core import get_equipment_data
 from event_view import AMBER, BG, EventView, GREEN, INK, INK_DIM, INK_FAINT, JUNKYARD, RED, TEAL, VIOLET, _lerp
 from i18n import db_t, t
@@ -57,6 +58,35 @@ class InventoryView(EventView):
                 for k, v in p.consumables.items() if v > 0 and k in constants.CONSUMABLES_DB]
 
     # ── 동작 ─────────────────────────────────────────────────────────────
+    def _label(self, d, iid):
+        """장비 이름 + 강화 단계 (+k)."""
+        k = upgrade.level(self.player, iid)
+        return db_t(d, "name") + (f" +{k}" if k else "")
+
+    def _power(self, d, iid):
+        return d["power"] + upgrade.delta_power(upgrade.level(self.player, iid))
+
+    def upgrade_row(self, row):
+        """R: 고른 장비(주무기)를 강화 1회 시도한다."""
+        self.confirm = None
+        if row is None or row["kind"] not in ("slot", "item") or not row.get("d"):
+            return
+        d, iid = row["d"], row["id"]
+        self.msg_warn = True
+        if not upgrade.can_upgrade(d.get("slot")):
+            self.msg = [t('upg_only_weapon')]
+            return
+        res, k, spent = upgrade.try_upgrade(self.player, iid, d.get("tier", 4))
+        if res == "ok":
+            self.msg_warn = False
+            self.msg = [t('upg_ok', name=db_t(d, 'name'), k=k, pw=self._power(d, iid), cost=spent)]
+        elif res == "fail":
+            self.msg = [t('upg_fail', name=db_t(d, 'name'), k=k, pct=upgrade.chance(self.player, iid) * 100, cost=spent)]
+        elif res == "scrap":
+            self.msg = [t('upg_scrap', need=spent, have=self.player.materials)]
+        else:
+            self.msg = [t('upg_max', name=db_t(d, 'name'))]
+
     def act(self, row, dismantle=False):
         p = self.player
         if row is None:
@@ -160,14 +190,14 @@ class InventoryView(EventView):
         ink = INK if on else _lerp(INK, BG, 0.15)
         if row["kind"] == "slot":
             c.blit(self.f_sans.render(row["label"], True, INK_DIM), (x, y))
-            name = db_t(row["d"], "name") if row["d"] else t('inv_not_equipped').strip()
+            name = self._label(row["d"], row["id"]) if row["d"] else t('inv_not_equipped').strip()
             col = TIER_COLOR.get(row["d"].get("tier", 4), ink) if row["d"] else INK_FAINT
             c.blit(self.f_sans.render(name, True, col), (x + 110, y))
         elif row["kind"] == "item":
             d = row["d"]
             mark = "★ " if row["eq"] else "   "
-            c.blit(self.f_sans.render(mark + db_t(d, "name"), True, TIER_COLOR.get(d.get("tier", 4), ink)), (x, y))
-            info = self.f_mono.render(f"{constants.tier_tag(d.get('tier', 4))}   {t('inv_power', pw=d['power'])}", True, INK_DIM)
+            c.blit(self.f_sans.render(mark + self._label(d, row["id"]), True, TIER_COLOR.get(d.get("tier", 4), ink)), (x, y))
+            info = self.f_mono.render(f"{constants.tier_tag(d.get('tier', 4))}   {t('inv_power', pw=self._power(d, row['id']))}", True, INK_DIM)
             c.blit(info, (x + width - info.get_width() - 10, y + 3))
         else:
             d = row["d"]
@@ -187,17 +217,23 @@ class InventoryView(EventView):
                       (t('consumable_thirst', val=d['thirst']) if d['thirst'] > 0 else "")
             return [(db_t(d, 'name'), INK), (eff.strip(), INK_DIM), (t('inv_hint_use'), INK_FAINT)]
         slot = constants.slot_label(d.get("slot", ""))
-        lines = [(db_t(d, "name"), TIER_COLOR.get(d.get("tier", 4), INK)),
-                 (t('inv_detail', tier=constants.tier_tag(d.get('tier', 4)), slot=slot, pw=d['power'], w=d.get('slot_weight', 1.0)), INK_DIM)]
+        iid = row.get("id")
+        lines = [(self._label(d, iid), TIER_COLOR.get(d.get("tier", 4), INK)),
+                 (t('inv_detail', tier=constants.tier_tag(d.get('tier', 4)), slot=slot, pw=self._power(d, iid), w=d.get('slot_weight', 1.0)), INK_DIM)]
         if db_t(d, "desc"):
             lines.append((db_t(d, "desc"), INK_DIM))
         hint = {"item": t('inv_hint_item'), "slot": t('inv_hint_slot')}.get(row["kind"], "")
         lines.append((hint, INK_FAINT))
+        if upgrade.can_upgrade(d.get("slot")):  # 주무기: 다음 강화 비용·확률
+            k = upgrade.level(self.player, iid)
+            lines.append((t('upg_hint_max') if k >= upgrade.MAX_LEVEL else
+                          t('upg_hint', k=k, n=k + 1, cost=upgrade.cost(d.get("tier", 4), k),
+                            pct=upgrade.chance(self.player, iid) * 100), AMBER))
         return lines
 
     # ── 입력 루프 ─────────────────────────────────────────────────────────
     def run(self):
-        self.footer = [("↑↓", t('ui_select')), ("←→", t('inv_key_tab')), ("Enter", t('inv_key_act')), ("D", t('inv_key_dismantle')), ("0", t('inv_key_back'))]
+        self.footer = [("↑↓", t('ui_select')), ("←→", t('inv_key_tab')), ("Enter", t('inv_key_act')), ("D", t('inv_key_dismantle')), ("R", t('upg_key')), ("0", t('inv_key_back'))]
         self.open()
         try:
             while True:
@@ -222,6 +258,8 @@ class InventoryView(EventView):
                         self.act(cur)
                     elif ev.key == pygame.K_d:
                         self.act(cur, dismantle=True)
+                    elif ev.key == pygame.K_r:
+                        self.upgrade_row(cur)
         finally:
             self.close()
 

@@ -46,6 +46,7 @@ class Player:
 
         self.weights = {"kinetic": 0, "scrap": 0, "cyber": 0}
         self.enemies_defeated = 0
+        self.upgrades = {}           # 장비 강화 단계 {item_id: {"k": 단계, "pity": 천장}} (upgrade.py)
 
         # --- 진행 턴 기반 적 스케일링용 상태 ---
         # turn_count : 이동/탐색(consume_resources 호출) 1회당 1씩 누적되는 전체 진행 턴.
@@ -136,7 +137,7 @@ class Player:
             "consumables": self.consumables, "weights": self.weights,
             "inventory": self.inventory, "equipment": self.equipment, "reputation": self.reputation,
             "turn_count": self.turn_count, "difficulty": self.difficulty,
-            "enemies_defeated": self.enemies_defeated, "diary": self.diary,
+            "enemies_defeated": self.enemies_defeated, "diary": self.diary, "upgrades": self.upgrades,
             "active_quest": self.active_quest,
         }
 
@@ -167,12 +168,15 @@ class Player:
         self.turn_count = data.get("turn_count", 0)
         self.difficulty = data.get("difficulty", "normal")
         self.enemies_defeated = data.get("enemies_defeated", 0)
+        self.upgrades = data.get("upgrades", {})
         self.diary = data.get("diary", [])
         self.active_quest = data.get("active_quest", None)
 
     def get_attack_power(self):
-        item_data = get_equipment_data(self.equipment["main_weapon"])
-        return item_data.get("power", 10)
+        """주무기 위력 + 강화 추가 위력 ΔP(k)."""
+        import upgrade
+        wid = self.equipment["main_weapon"]
+        return get_equipment_data(wid).get("power", 10) + upgrade.delta_power(upgrade.level(self, wid))
 
     def get_armor_bonus(self):
         """상의+하의 → (HP 보너스, 방어력 보너스)
@@ -381,6 +385,7 @@ class Player:
             print(t('inv_cmd_line1'))
             print(t('inv_cmd_line2'))
             print(t('inv_cmd_line3'))
+            print(t('inv_cmd_line4'))
             print_divider()
             try:
                 cmd = safe_input(t('inv_prompt')).strip().upper()
@@ -427,6 +432,21 @@ class Player:
                     print(t('inv_unequip_usage'))
                 wait_for_keypress()
 
+            elif cmd == "R":  # 장착한 주무기 강화 (upgrade.py)
+                import upgrade
+                wid = self.equipment.get("main_weapon")
+                wd = get_equipment_data(wid)
+                res, k, spent = upgrade.try_upgrade(self, wid, wd.get("tier", 4))
+                name = db_t(wd, 'name')
+                if res == "ok":
+                    print(t('upg_ok', name=name, k=k, pw=self.get_attack_power(), cost=spent))
+                elif res == "fail":
+                    print(t('upg_fail', name=name, k=k, pct=upgrade.chance(self, wid) * 100, cost=spent))
+                elif res == "scrap":
+                    print(t('upg_scrap', need=spent, have=self.materials))
+                else:
+                    print(t('upg_max', name=name))
+                wait_for_keypress()
             elif cmd == "C":
                 self.use_consumable_menu()
 

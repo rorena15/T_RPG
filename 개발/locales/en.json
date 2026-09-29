@@ -801,5 +801,14 @@
   "trader_key_buy": "Buy",
   "trader_key_leave": "Leave",
   "diary_turn": "[Turn {n:>4d}]",
-  "loot_gear": "  [LOOTED] Gear '{name}' ({tier}) — equip it from the inventory."
+  "loot_gear": "  [LOOTED] Gear '{name}' ({tier}) — equip it from the inventory.",
+  "upg_key": "Upgrade",
+  "upg_hint": "R: Upgrade +{k} → +{n} · Scrap {cost} · {pct:.0f}% success",
+  "upg_hint_max": "Max upgrade (+10)",
+  "upg_ok": "[UPGRADED] '{name}' +{k} — Power {pw} (Scrap -{cost})",
+  "upg_fail": "[FAILED] '{name}' stays +{k} — next chance {pct:.0f}% (Scrap -{cost})",
+  "upg_scrap": "[DENIED] Not enough scrap (need {need}, have {have})",
+  "upg_max": "[NOTICE] '{name}' is already at max upgrade (+10)",
+  "upg_only_weapon": "[NOTICE] Only the main weapon can be upgraded in Act 1",
+  "inv_cmd_line4": "   R            : Upgrade equipped main weapon (uses scrap)"
 }

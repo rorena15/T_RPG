@@ -801,5 +801,14 @@
   "trader_key_buy": "구매",
   "trader_key_leave": "떠난다",
   "diary_turn": "[턴 {n:>4d}]",
-  "loot_gear": "  [획득] 장비 '{name}' ({tier}) — 인벤토리에서 장착하세요."
+  "loot_gear": "  [획득] 장비 '{name}' ({tier}) — 인벤토리에서 장착하세요.",
+  "upg_key": "강화",
+  "upg_hint": "R: 강화 +{k} → +{n} · 고철 {cost} · 성공 {pct:.0f}%",
+  "upg_hint_max": "최대 강화 (+10)",
+  "upg_ok": "[강화 성공] '{name}' +{k} — 위력 {pw} (고철 -{cost})",
+  "upg_fail": "[강화 실패] '{name}' +{k} 유지 — 다음 성공률 {pct:.0f}% (고철 -{cost})",
+  "upg_scrap": "[거부] 고철이 부족하다 (필요 {need}, 보유 {have})",
+  "upg_max": "[안내] '{name}'은(는) 이미 최대 강화(+10)다",
+  "upg_only_weapon": "[안내] 1막에서는 주무기만 강화할 수 있다",
+  "inv_cmd_line4": "   R            : 장착한 주무기 강화 (고철 사용)"
 }
