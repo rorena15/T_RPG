@@ -103,6 +103,8 @@ KOREAN_RE  = re.compile(r'[가-힣]')
 T_CALL_RE  = re.compile(r"\bt\(\s*['\"]([^'\"]+)['\"]")
 # 동적 키(f-string): t(f'...')  — 정적 추출 불가, 별도 수집
 T_DYN_RE   = re.compile(r"\bt\(f['\"]([^'\"]+)['\"]")
+# 적 종류별 문구: enemy_line('키', ...) → 기본 키 + '키_<적>' 변형 (combat.py)
+ENEMY_LINE_RE = re.compile(r"\benemy_line\(\s*['\"]([^'\"]+)['\"]")
 
 used_keys  = set()
 dyn_prefixes = set()
@@ -116,6 +118,9 @@ for fname in TARGET_FILES:
 
     # 정적 t() 키 수집
     used_keys.update(T_CALL_RE.findall(src))
+    for k in ENEMY_LINE_RE.findall(src):
+        used_keys.add(k)
+        dyn_prefixes.add(k + "_")
 
     # 동적 t(f'...{var}...') 키 프리픽스 수집 (누락 오탐 방지)
     for m in T_DYN_RE.findall(src):

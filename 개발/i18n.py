@@ -25,6 +25,31 @@ def set_lang(lang: str) -> bool:
     return True
 
 
+_JOSA_RE = None
+
+
+def _josa(text: str) -> str:
+    """'이(가)·을(를)·은(는)·과(와)·(으)로'를 앞 글자 받침에 맞게 하나로 (한국어만)."""
+    global _JOSA_RE
+    import re
+    if _JOSA_RE is None:
+        _JOSA_RE = re.compile(r"([가-힣A-Za-z0-9\]\)'\"])(이\(가\)|을\(를\)|은\(는\)|과\(와\)|\(으\)로)")
+
+    def pick(m):
+        ch, pat = m.group(1), m.group(2)
+        if "가" <= ch <= "힣":
+            jong = (ord(ch) - 0xAC00) % 28
+        elif ch.isdigit():   # 숫자는 읽는 소리로: 영·일·삼·육·칠·팔은 받침, 일·칠·팔은 ㄹ
+            jong = {"0": 21, "1": 8, "3": 16, "6": 1, "7": 8, "8": 8}.get(ch, 0)
+        else:
+            return m.group(0)   # 한글·숫자가 아니면 받침을 모르니 그대로
+        if pat == "(으)로":
+            return ch + ("로" if jong in (0, 8) else "으로")   # 받침 없음·ㄹ → 로
+        a, b = {"이(가)": ("이", "가"), "을(를)": ("을", "를"), "은(는)": ("은", "는"), "과(와)": ("과", "와")}[pat]
+        return ch + (a if jong else b)
+    return _JOSA_RE.sub(pick, text)
+
+
 def t(key: str, **kw) -> str:
     val = _strings.get(key, key)
     if kw:
@@ -32,7 +57,14 @@ def t(key: str, **kw) -> str:
             val = val.format(**kw)
         except Exception:
             pass
+        if LANG == "ko" and "(" in val:
+            val = _josa(val)
     return val
+
+
+def has(key: str) -> bool:
+    """이 언어에 문구가 있는지 (적 종류별 문구처럼 없으면 기본 문구로 돌아갈 때)."""
+    return key in _strings
 
 
 def db_t(obj: dict, field: str) -> str:

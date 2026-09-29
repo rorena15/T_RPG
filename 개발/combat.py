@@ -53,6 +53,14 @@ def apply_dynamic_scaling(raw_dmg, raw_hp, highest_equip_tier):
         return int(raw_dmg * constants.SCALE_MULT_T01_DMG), int(raw_hp * constants.SCALE_MULT_T01_HP), t('scale_log_t01')
 
 
+def enemy_line(key, enemy_type, is_boss=False, **kw):
+    """적 종류별 문구: <key>_<drone|bio|dogs|sec|boss>가 있으면 그것, 없으면 기본 문구 (드론·보스는 대개 기본)."""
+    import i18n
+    tag = "boss" if is_boss else (constants.ENEMY_TYPES.get(enemy_type) or constants.ENEMY_TYPES["drone"])["key"]
+    k = f"{key}_{tag}"
+    return t(k, **kw) if i18n.has(k) else t(key, **kw)
+
+
 def pick_enemy(player):
     """탐색 중 만날 적 종류. 경계가 높으면 네오 아크 청소 부대가 끼어든다 (constants.ENEMY_TYPES)."""
     if player.alert_level >= constants.SEC_ALERT and random.random() < constants.SEC_CHANCE:
@@ -321,7 +329,7 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
             sound.sfx(constants.weapon_sfx(player.equipment.get("main_weapon")))  # 무기 종류별 공격음
             if is_crit:
                 sound.sfx("crit")
-            print(Fore.GREEN + Style.BRIGHT + t('combat_attack_hit', dmg=f"{disp_dmg:,}") + crit_tag)
+            print(Fore.GREEN + Style.BRIGHT + enemy_line('combat_attack_hit', enemy_type, is_boss, dmg=f"{disp_dmg:,}") + crit_tag)
             _sleep(1)
             hp = max(0, hp - dmg)
             if _ui: _ui.scene_update_hp(hp)
@@ -350,7 +358,7 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
                 player.max_ram -= 2
 
                 sound.sfx("hack")
-                print(t('combat_hack_msg'))
+                print(enemy_line('combat_hack_msg', enemy_type, is_boss))
                 _sleep(1)
                 _summary(t('combat_hack_log'))
             else:
@@ -520,7 +528,7 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
             dmg_taken = _skills.apply_incoming_buffs(player, dmg_taken, action_logs, combat_ctx)
             disp_dmg_taken, _, _ = apply_dynamic_scaling(dmg_taken, 0, tier)
             sound.enemy_attack("boss" if is_boss else enemy_type, heavy=dmg_taken >= player.max_hp * 0.2)
-            print(Fore.RED + Style.BRIGHT + t('combat_enemy_attack', name=name, dmg=f"{disp_dmg_taken:,}"))
+            print(Fore.RED + Style.BRIGHT + enemy_line('combat_enemy_attack', enemy_type, is_boss, name=name, dmg=f"{disp_dmg_taken:,}"))
             _sleep(1)
             player.hp -= dmg_taken
             if cyber_regen > 0 and player.hp > 0:
@@ -589,7 +597,7 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
     clear_screen()
     sound.sfx("win")
     print_header(t('combat_win_header'))
-    print(f"\n{Fore.GREEN + Style.BRIGHT}" + t('combat_win_msg', name=name))
+    print(f"\n{Fore.GREEN + Style.BRIGHT}" + enemy_line('combat_win_msg', enemy_type, is_boss, name=name))
     player.enemies_defeated += 1
 
     if not is_boss:
@@ -597,11 +605,11 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
         if drop_roll < 0.25:
             it = roll_food()
             player.consumables[it] += 1
-            print(t('combat_farm_food', name=db_t(constants.CONSUMABLES_DB[it], 'name')))
+            print(enemy_line('combat_farm_food', enemy_type, name=db_t(constants.CONSUMABLES_DB[it], 'name')))
         elif drop_roll < 0.50:
             it = roll_water()
             player.consumables[it] += 1
-            print(t('combat_farm_water', name=db_t(constants.CONSUMABLES_DB[it], 'name')))
+            print(enemy_line('combat_farm_water', enemy_type, name=db_t(constants.CONSUMABLES_DB[it], 'name')))
         elif drop_roll < 0.60:
             it = roll_medkit()
             player.consumables[it] += 1
