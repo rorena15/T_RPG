@@ -25,6 +25,7 @@
 ├── sys_log.py           # 시스템 로그 · 에러 추적
 ├── database.json        # 서사 텍스트 · 소모품 · 이벤트 데이터
 ├── master_formulas.json # 데미지 · 스케일링 · 확률 밸런스 수식
+├── tools/balance/       # 밸런스 검증 봇 · 실행기 (난이도별 승률 표, README 참고)
 └── locales/
     ├── ko.json          # 한국어 텍스트 (524키)
     └── en.json          # 영어 텍스트 (524키)
