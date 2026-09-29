@@ -384,9 +384,9 @@
   "enemy_bio_header": "ENCOUNTER: Biological Mechanical Beast",
   "enemy_bio_name_wounded": "Wounded Bio Hound",
   "enemy_bio_header_wounded": "ENCOUNTER: Tracked Mutant",
-  "enemy_drone_name": "Corrupted Scrab Drone",
+  "enemy_drone_name": "Corrupted Scav Drone",
   "enemy_drone_header": "ENCOUNTER: Predator Encountered",
-  "enemy_drone_name_wounded": "Wounded Scrab Drone",
+  "enemy_drone_name_wounded": "Wounded Scav Drone",
   "enemy_drone_header_wounded": "ENCOUNTER: Tracked Unit",
   "sub_wpn_name": "Dead AI's Service Firearm",
   "neoarc_destroyed": "\n  [WARNING] Dead AI's Service Firearm — Heat damage threshold exceeded. Auto-destroyed.",
@@ -874,5 +874,14 @@
   "dir_nw": "northwest",
   "dir_se": "southeast",
   "dir_sw": "southwest",
-  "dir_here": "right here"
+  "dir_here": "right here",
+  "enemy_dogs_name": "Starving Feral Pack",
+  "enemy_dogs_header": "ENCOUNTER: Starving Pack",
+  "enemy_dogs_name_wounded": "Scattered Feral Pack",
+  "enemy_dogs_header_wounded": "ENCOUNTER: The Pack Regroups",
+  "enemy_sec_name": "Neo Ark Sweeper Squad",
+  "enemy_sec_header": "ENCOUNTER: Alert Trace — Suppression Squad",
+  "enemy_sec_name_wounded": "Broken-Line Sweeper Squad",
+  "enemy_sec_header_wounded": "ENCOUNTER: Regrouped Suppression Squad",
+  "combat_sec_scrap": "  [SPOILS] Scrap +{val} stripped from the squad's gear"
 }

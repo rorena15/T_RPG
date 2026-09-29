@@ -874,5 +874,14 @@
   "dir_nw": "북서쪽",
   "dir_se": "남동쪽",
   "dir_sw": "남서쪽",
-  "dir_here": "바로 여기"
+  "dir_here": "바로 여기",
+  "enemy_dogs_name": "굶주린 들개 무리",
+  "enemy_dogs_header": "ENCOUNTER: 굶주린 무리",
+  "enemy_dogs_name_wounded": "흩어진 들개 무리",
+  "enemy_dogs_header_wounded": "ENCOUNTER: 다시 모인 무리",
+  "enemy_sec_name": "네오 아크 청소 부대",
+  "enemy_sec_header": "ENCOUNTER: 경계 신호 추적 — 진압 부대",
+  "enemy_sec_name_wounded": "전열이 흐트러진 청소 부대",
+  "enemy_sec_header_wounded": "ENCOUNTER: 재집결한 진압 부대",
+  "combat_sec_scrap": "  [전리품] 청소 부대 장비에서 고철 +{val}"
 }

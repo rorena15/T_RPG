@@ -158,6 +158,21 @@ ENEMY_ART = {
     / |  |  | \\
         """,
     ],
+    "DOGS": [
+        """
+     __      __      __
+    (oo)    (oo)    (oo)   <-- [굶주린 눈 여섯 개]
+    /  \\    /  \\    /  \\
+   ^^  ^^  ^^  ^^  ^^  ^^
+""",
+    ],
+    "SECURITY": [
+        """
+      [==]    [==]    [==]
+      /||\\    /||\\    /||\\   <-- [네오 아크 청소 부대 — 진압 대형]
+     _/  \\_  _/  \\_  _/  \\_
+""",
+    ],
     "BIOHOUND": [
         """
        _____     _____
@@ -237,6 +252,25 @@ DRONE_DEF            = 5
 DRONE_BASE_ATK       = 175
 DRONE_HP_MIN         = 8000
 DRONE_HP_MAX         = 16000
+
+# ── 일반 적 종류 (combat.py가 이 표로 만든다) ────────────────────────────────
+# key: 이름 문구 키(enemy_<key>_name 등), art: ENEMY_ART 묶음, scene: 전투 그림, alert: 조우 시 경계 상승
+# bonus_scrap / gear_drop: 이기면 더 주는 고철 / 장비 드롭 확률 (없으면 GEAR_DROP_COMBAT)
+ENEMY_TYPES = {
+    "drone":     {"key": "drone", "def": DRONE_DEF, "atk": DRONE_BASE_ATK, "hp": (DRONE_HP_MIN, DRONE_HP_MAX),
+                  "alert": 10, "art": "NORMAL", "scene": "enemy_drones"},
+    "bio_hound": {"key": "bio", "def": BIO_DEF, "atk": BIO_BASE_ATK, "hp": (BIO_HP_MIN, BIO_HP_MAX),
+                  "alert": 20, "art": "BIOHOUND", "scene": "enemy_hound"},
+    # 들개 무리: 체력은 낮지만 떼로 물어뜯어 한 번에 아프다 (빨리 끝나는 싸움)
+    "dogs":      {"key": "dogs", "def": 0, "atk": 210, "hp": (5000, 9000),
+                  "alert": 5, "art": "DOGS", "scene": "enemy_dogs"},
+    # 네오 아크 청소 부대: 경계가 높을 때만 온다. 단단하고 아프지만 장비를 떨어뜨린다
+    "security":  {"key": "sec", "def": 25, "atk": 230, "hp": (13000, 20000),
+                  "alert": 5, "art": "SECURITY", "scene": "enemy_security", "bonus_scrap": 25, "gear_drop": 0.5},
+}
+ENEMY_SPAWN = {"bio_hound": 0.20, "dogs": 0.15}   # 나머지는 드론
+SEC_ALERT = 60        # 경계가 이 이상이면
+SEC_CHANCE = 0.35     # 이 확률로 청소 부대가 대신 온다
 
 SUB_WPN_POWER        = 100
 

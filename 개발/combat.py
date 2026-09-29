@@ -53,6 +53,18 @@ def apply_dynamic_scaling(raw_dmg, raw_hp, highest_equip_tier):
         return int(raw_dmg * constants.SCALE_MULT_T01_DMG), int(raw_hp * constants.SCALE_MULT_T01_HP), t('scale_log_t01')
 
 
+def pick_enemy(player):
+    """탐색 중 만날 적 종류. 경계가 높으면 네오 아크 청소 부대가 끼어든다 (constants.ENEMY_TYPES)."""
+    if player.alert_level >= constants.SEC_ALERT and random.random() < constants.SEC_CHANCE:
+        return "security"
+    r = random.random()
+    for etype, p in constants.ENEMY_SPAWN.items():
+        if r < p:
+            return etype
+        r -= p
+    return "drone"
+
+
 def get_turn_scale_multiplier(player):
     """진행 턴수와 난이도에 따른 적 스탯 배율을 계산한다. 플레이어 체력이 위험 수준이면 완화한다."""
     rate = constants.DIFFICULTY_SCALING_RATE.get(player.difficulty, constants.DIFFICULTY_SCALING_RATE["normal"])
@@ -83,41 +95,29 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
         boss_max_hp = hp
         atk = base_atk
         player.alert_level = min(100, player.alert_level + constants.ALERT_INC_BOSS)
-    elif enemy_type == "bio_hound":
-        e_def, base_atk = constants.BIO_DEF, constants.BIO_BASE_ATK
-        art = random.choice(constants.ENEMY_ART["BIOHOUND"])
-        base_atk = int(base_atk * scale_mult)
-        if current_hp is not None:
-            hp           = current_hp
-            name         = t('enemy_bio_name_wounded')
-            header_title = t('enemy_bio_header_wounded')
-        else:
-            hp           = int(random.randint(constants.BIO_HP_MIN, constants.BIO_HP_MAX) * scale_mult)
-            name         = t('enemy_bio_name')
-            header_title = t('enemy_bio_header')
-        atk = base_atk
-        player.alert_level = min(100, player.alert_level + constants.ALERT_INC_BIO)
     else:
-        e_def, base_atk = constants.DRONE_DEF, constants.DRONE_BASE_ATK
-        art = random.choice(constants.ENEMY_ART["NORMAL"])
+        spec = constants.ENEMY_TYPES.get(enemy_type) or constants.ENEMY_TYPES["drone"]
+        e_def, base_atk = spec["def"], spec["atk"]
+        art = random.choice(constants.ENEMY_ART[spec["art"]])
         base_atk = int(base_atk * scale_mult)
+        k = spec["key"]
         if current_hp is not None:
             hp           = current_hp
-            name         = t('enemy_drone_name_wounded')
-            header_title = t('enemy_drone_header_wounded')
+            name         = t(f'enemy_{k}_name_wounded')
+            header_title = t(f'enemy_{k}_header_wounded')
         else:
-            hp           = int(random.randint(constants.DRONE_HP_MIN, constants.DRONE_HP_MAX) * scale_mult)
-            name         = t('enemy_drone_name')
-            header_title = t('enemy_drone_header')
+            hp           = int(random.randint(*spec["hp"]) * scale_mult)
+            name         = t(f'enemy_{k}_name')
+            header_title = t(f'enemy_{k}_header')
         atk = base_atk
-        player.alert_level = min(100, player.alert_level + constants.ALERT_INC_DRONE)
+        player.alert_level = min(100, player.alert_level + spec["alert"])
 
     base_atk = int(base_atk * constants.ENEMY_ATK_MULT)  # 적 공격력 일괄 조정 (보스 페이즈 2도 이 값을 기준으로 오른다)
     if not is_boss:  # 탐색 중 만나는 적은 난이도별로 한 번 더 (보스는 BOSS_DIFF_ATK로 따로 맞춘다)
         base_atk = int(base_atk * constants.ENEMY_DIFF_ATK.get(player.difficulty, 1.0))
     atk = base_atk
 
-    scene = "enemy_collector" if is_boss else ("enemy_hound" if enemy_type == "bio_hound" else "enemy_drones")
+    scene = "enemy_collector" if is_boss else (constants.ENEMY_TYPES.get(enemy_type) or constants.ENEMY_TYPES["drone"])["scene"]
     if current_hp is None:  # 새 교전일 때만 적 그림 카드
         from event_view import scene_card
         scene_card(scene, header_title, tag=t('tag_combat'), line=name, player=player)
@@ -610,7 +610,12 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
             player.materials += 20
             advance_quest(player, "scrap", 20)
             print(t('combat_farm_scrap'))
-        if random.random() < constants.GEAR_DROP_COMBAT:  # 장비 드롭은 위 보상과 따로 굴린다
+        spec = constants.ENEMY_TYPES.get(enemy_type) or {}
+        if spec.get("bonus_scrap"):  # 청소 부대: 장비를 뜯어낸 고철
+            player.materials += spec["bonus_scrap"]
+            advance_quest(player, "scrap", spec["bonus_scrap"])
+            print(t('combat_sec_scrap', val=spec["bonus_scrap"]))
+        if random.random() < spec.get("gear_drop", constants.GEAR_DROP_COMBAT):  # 장비 드롭은 위 보상과 따로 굴린다
             msg = grant_gear_drop(player)
             if msg:
                 print(msg)

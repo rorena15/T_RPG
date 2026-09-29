@@ -128,7 +128,7 @@ SFX_VOL = {
     "atk_flame": 0.55, "atk_gun": 0.55, "atk_shotgun": 0.65, "atk_heavy": 0.7, "atk_energy": 0.55, "atk_toxin": 0.5,
     "crit": 0.6, "sub": 0.7,
     # 적 종류별 공격 (enemy_attack())
-    "enemy_drone": 0.5, "enemy_hound": 0.6, "enemy_boss": 0.75,
+    "enemy_drone": 0.5, "enemy_hound": 0.6, "enemy_boss": 0.75, "enemy_dogs": 0.55, "enemy_sec": 0.6,
     "hurt": 0.6, "hurt_heavy": 0.75, "barricade": 0.55, "hack": 0.45, "deny": 0.35, "escape": 0.45,
     "heal": 0.4, "eat": 0.4, "skill": 0.5, "win": 0.5, "alert": 0.45, "phase2": 0.7, "death": 0.7,
     "anvil": 0.55, "clunk": 0.5, "drop": 0.55, "repair": 0.45,
@@ -186,7 +186,8 @@ def _free_sfx_channel():
 
 
 # 적 종류 -> (공격음, 맞는 순간까지 초)
-ENEMY_SFX = {"drone": ("enemy_drone", 0.25), "bio_hound": ("enemy_hound", 0.6), "boss": ("enemy_boss", 0.7)}
+ENEMY_SFX = {"drone": ("enemy_drone", 0.25), "bio_hound": ("enemy_hound", 0.6), "boss": ("enemy_boss", 0.7),
+             "dogs": ("enemy_dogs", 0.35), "security": ("enemy_sec", 0.3)}
 
 
 # 결과 종류 -> 효과음 (고철은 늘면 줍는 소리, 줄면 내주는 소리)
@@ -204,7 +205,7 @@ def results(kinds, gap=0.22):
 
 
 def enemy_attack(enemy, heavy=False):
-    """적의 공격음을 내고, 맞는 순간에 피격음을 잇는다. enemy: drone / bio_hound / boss."""
+    """적의 공격음을 내고, 맞는 순간에 피격음을 잇는다. enemy: drone / bio_hound / dogs / security / boss."""
     name, hit_at = ENEMY_SFX.get(enemy, ENEMY_SFX["drone"])
     sfx(name)
     sfx("hurt_heavy" if heavy else "hurt", delay=hit_at)

@@ -22,7 +22,7 @@ from ui import (clear_screen, type_text, print_header, print_divider,
                 roll_medkit, roll_food, roll_water)
 from player import Player
 from map import GameMap
-from combat import combat_loop, get_encounter_chance, apply_dynamic_scaling
+from combat import combat_loop, get_encounter_chance, apply_dynamic_scaling, pick_enemy
 from quest import handle_random_event, handle_trader, advance_quest, trigger_sudden_quest
 from story import handle_session, run_prologue, run_boss_core_choice, run_ending
 from gui import get_terminal
@@ -439,11 +439,11 @@ def run_game():
                 # 전투 조우 (encounter_chance%)
                 print(t('encounter_warning'))
                 wait_for_keypress()
-                # 바이오 하운드 20% 확률 등장 (재조우 시 이전 타입 유지)
+                # 적 종류는 combat.pick_enemy (재조우 시 이전 타입 유지)
                 if grid.escaped_enemy_hp is not None:
                     etype = grid.escaped_enemy_type or "drone"
                 else:
-                    etype = "bio_hound" if random.random() < 0.20 else "drone"
+                    etype = pick_enemy(player)
                 _off()
                 sound.play_combat_bgm()
                 result_hp, result_type = combat_loop(player, is_boss=False, current_hp=grid.escaped_enemy_hp, enemy_type=etype)
@@ -606,7 +606,7 @@ def run_game():
                         if grid.escaped_enemy_hp is not None:
                             etype = grid.escaped_enemy_type or "drone"
                         else:
-                            etype = "bio_hound" if random.random() < 0.20 else "drone"
+                            etype = pick_enemy(player)
                         _off()
                         sound.play_combat_bgm()
                         result_hp, result_type = combat_loop(player, is_boss=False, current_hp=grid.escaped_enemy_hp, enemy_type=etype)
