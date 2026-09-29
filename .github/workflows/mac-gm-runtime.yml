@@ -1,0 +1,93 @@
+name: Mac GM 실행기 (llama-server, Metal)
+
+# 복호화 패치를 넣은 llama-server를 Mac(Apple Silicon)에서 빌드한다. 손으로만 돌린다.
+# 1) smoke: 시험용 키로 빌드 → 작은 무작위 모델을 암호화해 복호화·생성까지 확인 (진짜 키·모델은 쓰지 않는다)
+# 2) publish(선택): 진짜 서버 키 절반(Secret STIGMA_SERVER_KEY_INC)으로 빌드 → 실행기 릴리스 태그에 올린다
+# 자세한 내용: stigma-gm/MAC_GM.md
+
+on:
+  workflow_dispatch:
+    inputs:
+      llama_commit:
+        description: 'llama.cpp 커밋 (stigma.patch를 만든 기준)'
+        required: true
+        default: 'ba0ba54d93b25faf1e149f4ccedd3e9d84798563'
+      publish:
+        description: '진짜 키로 빌드해 실행기 릴리스에 올리기 (Secret STIGMA_SERVER_KEY_INC 필요)'
+        required: true
+        default: false
+        type: boolean
+      runtime_tag:
+        description: '올릴 실행기 릴리스 태그 (Windows llama-server.exe가 있는 곳)'
+        required: true
+        default: 'runtime-v1'
+
+jobs:
+  smoke:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-14, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: llama.cpp 받기 + 패치
+        run: |
+          git init llama && cd llama
+          git remote add origin https://github.com/ggml-org/llama.cpp
+          git fetch --depth 1 origin ${{ github.event.inputs.llama_commit }}
+          git checkout FETCH_HEAD
+          git apply ../stigma-gm/tools/llama_patch/stigma.patch
+
+      - name: 시험용 키 + 빌드
+        run: |
+          pip install numpy cryptography
+          python stigma-gm/tools/llama_patch/smoke_test.py genkey --src llama --out testkey.json
+          bash stigma-gm/tools/llama_patch/build_server.sh llama
+
+      # GitHub Mac 러너는 가상 머신이라 Metal 가속을 기대하지 않는다: -ngl 0 (CPU)으로 복호화·생성만 확인
+      - name: 복호화 확인
+        run: python stigma-gm/tools/llama_patch/smoke_test.py run --src llama --server llama/build-stigma/bin/llama-server --key testkey.json
+
+  publish:
+    needs: smoke
+    if: ${{ github.event.inputs.publish == 'true' }}
+    runs-on: macos-14
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: llama.cpp 받기 + 패치
+        run: |
+          git init llama && cd llama
+          git remote add origin https://github.com/ggml-org/llama.cpp
+          git fetch --depth 1 origin ${{ github.event.inputs.llama_commit }}
+          git checkout FETCH_HEAD
+          git apply ../stigma-gm/tools/llama_patch/stigma.patch
+
+      - name: 서버 키 절반 (Secret)
+        env:
+          STIGMA_SERVER_KEY_INC: ${{ secrets.STIGMA_SERVER_KEY_INC }}
+        run: |
+          if [ -z "$STIGMA_SERVER_KEY_INC" ]; then
+            echo "::error::STIGMA_SERVER_KEY_INC Secret 없음 (model_crypt.py emit이 만든 stigma-key.inc 내용)"
+            exit 1
+          fi
+          printf '%s' "$STIGMA_SERVER_KEY_INC" > llama/ggml/src/stigma-key.inc
+
+      - name: 빌드
+        run: bash stigma-gm/tools/llama_patch/build_server.sh llama
+
+      - name: 실행기 릴리스에 올리기
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp llama/build-stigma/bin/llama-server llama-server-macos-arm64
+          rm -f llama/ggml/src/stigma-key.inc
+          gh release upload "${{ github.event.inputs.runtime_tag }}" llama-server-macos-arm64 --clobber -R "${{ github.repository }}"

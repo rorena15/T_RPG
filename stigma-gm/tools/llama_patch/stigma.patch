@@ -48,10 +48,10 @@ index 9477320..af24423 100644
      target_compile_definitions(ggml-base PUBLIC GGML_BACKEND_DL)
  endif()
 diff --git a/ggml/src/gguf.cpp b/ggml/src/gguf.cpp
-index 0eb9fb7..1df4be9 100644
+index 5c26f75..e8324ce 100644
 --- a/ggml/src/gguf.cpp
 +++ b/ggml/src/gguf.cpp
-@@ -926,6 +926,8 @@ struct gguf_context * gguf_init_from_callback(gguf_reader_callback_t callback, v
+@@ -927,6 +927,8 @@ struct gguf_context * gguf_init_from_callback(gguf_reader_callback_t callback, v
  struct gguf_file_reader {
      FILE * file;
      uint64_t offset;
@@ -60,7 +60,7 @@ index 0eb9fb7..1df4be9 100644
  };
  
  static size_t gguf_file_reader_callback(void * userdata, void * output, uint64_t offset, size_t len) {
-@@ -942,6 +944,9 @@ static size_t gguf_file_reader_callback(void * userdata, void * output, uint64_t
+@@ -943,6 +945,9 @@ static size_t gguf_file_reader_callback(void * userdata, void * output, uint64_t
      }
  
      const size_t nread = fread(static_cast<uint8_t *>(output), 1, len, reader.file);
@@ -70,7 +70,7 @@ index 0eb9fb7..1df4be9 100644
      reader.offset += nread;
      return nread;
  }
-@@ -959,7 +964,23 @@ struct gguf_context * gguf_init_from_file_ptr(FILE * file, struct gguf_init_para
+@@ -960,7 +965,23 @@ struct gguf_context * gguf_init_from_file_ptr(FILE * file, struct gguf_init_para
      gguf_file_reader reader = {
          /*.file   = */ file,
          /*.offset = */ static_cast<uint64_t>(cur),
@@ -96,10 +96,10 @@ index 0eb9fb7..1df4be9 100644
  }
 diff --git a/ggml/src/stigma-crypt.cpp b/ggml/src/stigma-crypt.cpp
 new file mode 100644
-index 0000000..a5db802
+index 0000000..c201f9a
 --- /dev/null
 +++ b/ggml/src/stigma-crypt.cpp
-@@ -0,0 +1,172 @@
+@@ -0,0 +1,386 @@
 +// stigma: at-rest model encryption for PROTOCOL: STIGMA
 +//
 +// AES-256-CTR over the whole .gguf, counter block = [file_size (be64) | block_index (be64)].
@@ -262,18 +262,232 @@ index 0000000..a5db802
 +    }
 +}
 +
-+#else
++#else // POSIX (macOS, Linux): same format and key split as the Windows build
 +
-+bool gguf_stigma_is_encrypted(const uint8_t *, uint64_t) {
-+    return false;
++#include <unistd.h>
++
++#if defined(__APPLE__)
++#include <CommonCrypto/CommonCryptor.h>   // hardware AES on Apple silicon / Intel
++#endif
++
++#include "stigma-key.inc" // defines stigma_bin_half(uint8_t out[32])
++
++namespace {
++
++void secure_zero(void * p, size_t n) {
++    volatile uint8_t * v = static_cast<volatile uint8_t *>(p);
++    while (n--) {
++        *v++ = 0;
++    }
 +}
 +
-+void gguf_stigma_xor(void *, size_t, uint64_t, uint64_t) {
++#if !defined(__APPLE__)
++// portable AES-256 (encrypt only, FIPS-197). Used where no OS crypto is linked (Linux test builds).
++const uint8_t SBOX[256] = {
++    0x63,0x7c,0x77,0x7b,0xf2,0x6b,0x6f,0xc5,0x30,0x01,0x67,0x2b,0xfe,0xd7,0xab,0x76,0xca,0x82,0xc9,0x7d,0xfa,0x59,0x47,0xf0,0xad,0xd4,0xa2,0xaf,0x9c,0xa4,0x72,0xc0,
++    0xb7,0xfd,0x93,0x26,0x36,0x3f,0xf7,0xcc,0x34,0xa5,0xe5,0xf1,0x71,0xd8,0x31,0x15,0x04,0xc7,0x23,0xc3,0x18,0x96,0x05,0x9a,0x07,0x12,0x80,0xe2,0xeb,0x27,0xb2,0x75,
++    0x09,0x83,0x2c,0x1a,0x1b,0x6e,0x5a,0xa0,0x52,0x3b,0xd6,0xb3,0x29,0xe3,0x2f,0x84,0x53,0xd1,0x00,0xed,0x20,0xfc,0xb1,0x5b,0x6a,0xcb,0xbe,0x39,0x4a,0x4c,0x58,0xcf,
++    0xd0,0xef,0xaa,0xfb,0x43,0x4d,0x33,0x85,0x45,0xf9,0x02,0x7f,0x50,0x3c,0x9f,0xa8,0x51,0xa3,0x40,0x8f,0x92,0x9d,0x38,0xf5,0xbc,0xb6,0xda,0x21,0x10,0xff,0xf3,0xd2,
++    0xcd,0x0c,0x13,0xec,0x5f,0x97,0x44,0x17,0xc4,0xa7,0x7e,0x3d,0x64,0x5d,0x19,0x73,0x60,0x81,0x4f,0xdc,0x22,0x2a,0x90,0x88,0x46,0xee,0xb8,0x14,0xde,0x5e,0x0b,0xdb,
++    0xe0,0x32,0x3a,0x0a,0x49,0x06,0x24,0x5c,0xc2,0xd3,0xac,0x62,0x91,0x95,0xe4,0x79,0xe7,0xc8,0x37,0x6d,0x8d,0xd5,0x4e,0xa9,0x6c,0x56,0xf4,0xea,0x65,0x7a,0xae,0x08,
++    0xba,0x78,0x25,0x2e,0x1c,0xa6,0xb4,0xc6,0xe8,0xdd,0x74,0x1f,0x4b,0xbd,0x8b,0x8a,0x70,0x3e,0xb5,0x66,0x48,0x03,0xf6,0x0e,0x61,0x35,0x57,0xb9,0x86,0xc1,0x1d,0x9e,
++    0xe1,0xf8,0x98,0x11,0x69,0xd9,0x8e,0x94,0x9b,0x1e,0x87,0xe9,0xce,0x55,0x28,0xdf,0x8c,0xa1,0x89,0x0d,0xbf,0xe6,0x42,0x68,0x41,0x99,0x2d,0x0f,0xb0,0x54,0xbb,0x16,
++};
++
++uint8_t xtime(uint8_t x) {
++    return (uint8_t) ((x << 1) ^ ((x & 0x80) ? 0x1b : 0));
++}
++
++struct aes256 {
++    uint8_t rk[240];
++
++    void set_key(const uint8_t key[32]) {
++        memcpy(rk, key, 32);
++        uint8_t rcon = 1;
++        for (int i = 8; i < 60; i++) {
++            uint8_t t[4] = { rk[4*(i-1)], rk[4*(i-1)+1], rk[4*(i-1)+2], rk[4*(i-1)+3] };
++            if (i % 8 == 0) {
++                const uint8_t t0 = t[0];
++                t[0] = (uint8_t) (SBOX[t[1]] ^ rcon); t[1] = SBOX[t[2]]; t[2] = SBOX[t[3]]; t[3] = SBOX[t0];
++                rcon = xtime(rcon);
++            } else if (i % 8 == 4) {
++                for (int j = 0; j < 4; j++) t[j] = SBOX[t[j]];
++            }
++            for (int j = 0; j < 4; j++) rk[4*i + j] = (uint8_t) (rk[4*(i-8) + j] ^ t[j]);
++        }
++    }
++
++    void encrypt_block(uint8_t b[16]) const {
++        for (int i = 0; i < 16; i++) b[i] ^= rk[i];
++        for (int r = 1; r <= 14; r++) {
++            uint8_t s[16];
++            for (int i = 0; i < 16; i++) s[i] = SBOX[b[i]];
++            // ShiftRows (column-major state)
++            uint8_t t[16];
++            for (int c = 0; c < 4; c++)
++                for (int row = 0; row < 4; row++)
++                    t[4*c + row] = s[4*((c + row) % 4) + row];
++            if (r != 14) {  // MixColumns
++                for (int c = 0; c < 4; c++) {
++                    uint8_t * col = t + 4*c;
++                    const uint8_t a0 = col[0], a1 = col[1], a2 = col[2], a3 = col[3], all = (uint8_t) (a0 ^ a1 ^ a2 ^ a3);
++                    col[0] ^= (uint8_t) (all ^ xtime((uint8_t) (a0 ^ a1)));
++                    col[1] ^= (uint8_t) (all ^ xtime((uint8_t) (a1 ^ a2)));
++                    col[2] ^= (uint8_t) (all ^ xtime((uint8_t) (a2 ^ a3)));
++                    col[3] ^= (uint8_t) (all ^ xtime((uint8_t) (a3 ^ a0)));
++                }
++            }
++            for (int i = 0; i < 16; i++) b[i] = (uint8_t) (t[i] ^ rk[16*r + i]);
++        }
++    }
++};
++#endif
++
++struct stigma_state {
++    std::once_flag once;
++    std::mutex     mtx;
++    bool           ok = false;
++#if defined(__APPLE__)
++    CCCryptorRef   cryptor = nullptr;
++#else
++    aes256         aes;
++#endif
++};
++
++stigma_state & state() {
++    static stigma_state s;
++    return s;
++}
++
++int hexval(char c) {
++    if (c >= '0' && c <= '9') return c - '0';
++    if (c >= 'a' && c <= 'f') return c - 'a' + 10;
++    if (c >= 'A' && c <= 'F') return c - 'A' + 10;
++    return -1;
++}
++
++// the game writes 64 hex chars to our stdin right after spawning us, then closes the pipe
++bool read_game_half(uint8_t out[32]) {
++    char   buf[64];
++    size_t got = 0;
++    while (got < sizeof(buf)) {
++        const ssize_t n = read(STDIN_FILENO, buf + got, sizeof(buf) - got);
++        if (n <= 0) {
++            secure_zero(buf, sizeof(buf));
++            return false;
++        }
++        got += (size_t) n;
++    }
++    for (int i = 0; i < 32; i++) {
++        const int hi = hexval(buf[2*i]);
++        const int lo = hexval(buf[2*i + 1]);
++        if (hi < 0 || lo < 0) {
++            secure_zero(buf, sizeof(buf));
++            return false;
++        }
++        out[i] = (uint8_t) ((hi << 4) | lo);
++    }
++    secure_zero(buf, sizeof(buf));
++    return true;
++}
++
++void init() {
++    stigma_state & s = state();
++
++    uint8_t a[32];
++    uint8_t b[32];
++    if (!read_game_half(b)) {
++        return;
++    }
++    stigma_bin_half(a);
++    for (int i = 0; i < 32; i++) {
++        a[i] ^= b[i];
++    }
++    secure_zero(b, sizeof(b));
++#if defined(__APPLE__)
++    s.ok = CCCryptorCreate(kCCEncrypt, kCCAlgorithmAES, kCCOptionECBMode, a, sizeof(a), nullptr, &s.cryptor) == kCCSuccess;
++#else
++    s.aes.set_key(a);
++    s.ok = true;
++#endif
++    secure_zero(a, sizeof(a));
++}
++
++bool ready() {
++    stigma_state & s = state();
++    std::call_once(s.once, init);
++    return s.ok;
++}
++
++void put_be64(uint8_t * p, uint64_t v) {
++    for (int i = 7; i >= 0; i--) {
++        p[i] = (uint8_t) (v & 0xff);
++        v >>= 8;
++    }
++}
++
++} // namespace
++
++bool gguf_stigma_is_encrypted(const uint8_t head[4], uint64_t file_size) {
++    if (memcmp(head, GGUF_MAGIC, 4) == 0) {
++        return false; // plain gguf (dev builds, other models)
++    }
++    if (!ready()) {
++        return false;
++    }
++    uint8_t probe[4];
++    memcpy(probe, head, 4);
++    gguf_stigma_xor(probe, 4, 0, file_size);
++    return memcmp(probe, GGUF_MAGIC, 4) == 0;
++}
++
++void gguf_stigma_xor(void * data, size_t len, uint64_t file_offset, uint64_t file_size) {
++    if (len == 0 || !ready()) {
++        return;
++    }
++    stigma_state & s = state();
++
++    constexpr size_t CHUNK_BLOCKS = 1u << 16; // 1 MiB of keystream per call
++    static thread_local uint8_t ks[CHUNK_BLOCKS * 16];
++
++    uint8_t * p     = static_cast<uint8_t *>(data);
++    uint64_t  block = file_offset / 16;
++    size_t    skip  = (size_t) (file_offset % 16);
++
++    while (len > 0) {
++        const size_t need   = skip + len;
++        const size_t blocks = std::min<size_t>((need + 15) / 16, CHUNK_BLOCKS);
++        for (size_t i = 0; i < blocks; i++) {
++            put_be64(ks + i*16,     file_size);
++            put_be64(ks + i*16 + 8, block + i);
++        }
++#if defined(__APPLE__)
++        {
++            std::lock_guard<std::mutex> lock(s.mtx);
++            size_t moved = 0;
++            CCCryptorUpdate(s.cryptor, ks, blocks*16, ks, blocks*16, &moved);
++        }
++#else
++        for (size_t i = 0; i < blocks; i++) {
++            s.aes.encrypt_block(ks + i*16);   // the key schedule is read-only after init: no lock needed
++        }
++#endif
++        const size_t n = std::min(len, blocks*16 - skip);
++        const uint8_t * k = ks + skip;
++        for (size_t i = 0; i < n; i++) {
++            p[i] ^= k[i];
++        }
++        secure_zero(ks, blocks*16); // only what was used: header parsing does thousands of tiny reads
++        p     += n;
++        len   -= n;
++        block += blocks;
++        skip   = 0;
++    }
 +}
 +
 +#endif
 diff --git a/src/llama-mmap.cpp b/src/llama-mmap.cpp
-index 715a6e3..b5d8e91 100644
+index 715a6e3..328f37c 100644
 --- a/src/llama-mmap.cpp
 +++ b/src/llama-mmap.cpp
 @@ -3,6 +3,7 @@
@@ -332,15 +546,85 @@ index 715a6e3..b5d8e91 100644
          size_t bytes_read = 0;
          while (bytes_read < len) {
              size_t chunk_size = std::min<size_t>(len - bytes_read, 64*1024*1024);
-@@ -434,6 +461,12 @@ void llama_file::read_raw_unsafe(void * ptr, size_t len) { pimpl->read_raw_unsaf
+@@ -182,9 +209,12 @@ struct llama_file::impl {
+     }
+ #else
+     impl(const char * fname, const char * mode, [[maybe_unused]] const bool use_direct_io = false) : fname(fname) {
++        if (strchr(mode, 'r') != nullptr && strchr(mode, '+') == nullptr) {
++            probe_encryption();  // stigma: before choosing O_DIRECT (a 4-byte unaligned read would break it)
++        }
+ #ifdef __linux__
+-        // Try unbuffered I/O for read only
+-        if (use_direct_io && std::strcmp(mode, "rb") == 0) {
++        // Try unbuffered I/O for read only (never for an encrypted model: it is decrypted through the buffered path)
++        if (use_direct_io && !enc && std::strcmp(mode, "rb") == 0) {
+             if (init_fd()) {
+                 return;
+             }
+@@ -228,9 +258,34 @@ struct llama_file::impl {
+ 
+     impl(FILE * file) : fname("(file*)"), owns_fp(false) {
+         fp = file;
++        const size_t cur = tell();
+         seek(0, SEEK_END);
+         size = tell();
+         seek(0, SEEK_SET);
++        uint8_t head[4];
++        if (size >= sizeof(head) && std::fread(head, 1, sizeof(head), fp) == sizeof(head)) {
++            enc = gguf_stigma_is_encrypted(head, size);
++        }
++        seek(cur, SEEK_SET);
++    }
++
++    // stigma: encrypted models are decrypted in read_raw_unsafe, keyed by absolute offset
++    bool enc = false;
++
++    void probe_encryption() {
++        FILE * f = ggml_fopen(fname.c_str(), "rb");
++        if (f == NULL) {
++            return;  // init_fp reports the error
++        }
++        uint8_t head[4];
++        if (llama_mmap_fseek(f, 0, SEEK_END) == 0) {
++            const off_t fsize = llama_mmap_ftell(f);
++            if (fsize >= (off_t) sizeof(head) && llama_mmap_fseek(f, 0, SEEK_SET) == 0 &&
++                std::fread(head, 1, sizeof(head), f) == sizeof(head)) {
++                enc = gguf_stigma_is_encrypted(head, (uint64_t) fsize);
++            }
++        }
++        std::fclose(f);
+     }
+ 
+     size_t tell() const {
+@@ -263,6 +318,14 @@ struct llama_file::impl {
+     }
+ 
+     void read_raw_unsafe(void * ptr, size_t len) {
++        const size_t pos = enc ? tell() : 0;
++        read_plain_unsafe(ptr, len);
++        if (enc) {
++            gguf_stigma_xor(ptr, len, pos, size);
++        }
++    }
++
++    void read_plain_unsafe(void * ptr, size_t len) {
+         if (len == 0) {
+             return;
+         }
+@@ -297,7 +360,7 @@ struct llama_file::impl {
+                         alignment = 1;
+                         init_fp("rb");
+                         seek(curr_off, SEEK_SET);
+-                        read_raw_unsafe(ptr, len);
++                        read_plain_unsafe(ptr, len);
+                         return;
+                     }
+                     throw std::runtime_error(format("read error: %s", strerror(errno)));
+@@ -434,6 +497,8 @@ void llama_file::read_raw_unsafe(void * ptr, size_t len) { pimpl->read_raw_unsaf
  
  uint32_t llama_file::read_u32() { return pimpl->read_u32(); }
  
-+#if defined(_WIN32)
 +bool llama_file::encrypted() const { return pimpl->enc; }
-+#else
-+bool llama_file::encrypted() const { return false; }
-+#endif
 +
  void llama_file::write_raw(const void * ptr, size_t len) const { pimpl->write_raw(ptr, len); }
  void llama_file::write_u32(uint32_t val) const { pimpl->write_u32(val); }
