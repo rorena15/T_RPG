@@ -303,3 +303,40 @@ STAT_DEFAULT_VIT = 10
 STAT_DEFAULT_INT = 10
 STAT_DEFAULT_DEX = 10
 STAT_DEFAULT_LV  = 1
+
+
+# ── 무기 공격음 (sound.py의 atk_<종류>) ──────────────────────────────────────
+# 무기 데이터에 종류 칸이 없어 이름·설명으로 나눴다. 없는 무기는 맨손 소리.
+WEAPON_SFX = {
+    "WEAPON_NONE": "fist",
+    # 칼·창·단검
+    "WEAPON_SCRAP_01": "blade", "WEAPON_SCRAP_06": "blade", "WEAPON_STD_02": "blade", "WEAPON_STD_10": "blade",
+    "WEAPON_REF_01": "blade", "WEAPON_CORP_06": "blade", "WEAPON_LEGACY_06": "blade",
+    # 에너지 검
+    "WEAPON_STD_05": "eblade", "WEAPON_REF_06": "eblade", "WEAPON_CORP_01": "eblade", "WEAPON_LEGACY_01": "eblade",
+    # 둔기·도끼·압착
+    "WEAPON_SCRAP_05": "blunt", "WEAPON_SCRAP_10": "blunt", "WEAPON_STD_04": "blunt", "WEAPON_REF_04": "blunt", "WEAPON_REF_08": "blunt",
+    # 톱날
+    "WEAPON_SCRAP_07": "saw",
+    # 전기 충격
+    "WEAPON_SCRAP_03": "shock", "WEAPON_SCRAP_08": "shock", "WEAPON_REF_02": "shock",
+    # 화염
+    "WEAPON_SCRAP_04": "flame",
+    # 총 (소총·권총·저격총·리벳 건)
+    "WEAPON_SCRAP_02": "gun", "WEAPON_STD_01": "gun", "WEAPON_STD_07": "gun", "WEAPON_STD_08": "gun",
+    "WEAPON_REF_10": "gun", "WEAPON_CORP_05": "gun",
+    # 산탄
+    "WEAPON_SCRAP_09": "shotgun", "WEAPON_STD_06": "shotgun",
+    # 폭발 (유탄기·파일 벙커·파쇄포)
+    "WEAPON_STD_09": "heavy", "WEAPON_REF_05": "heavy", "WEAPON_REF_09": "heavy",
+    # 레일·플라즈마·전자기
+    "WEAPON_STD_03": "energy", "WEAPON_REF_03": "energy", "WEAPON_REF_07": "energy", "WEAPON_CORP_02": "energy",
+    "WEAPON_CORP_03": "energy", "WEAPON_LEGACY_02": "energy", "WEAPON_LEGACY_03": "energy",
+    # 신경독소·나노 분사
+    "WEAPON_CORP_04": "toxin", "WEAPON_LEGACY_04": "toxin", "WEAPON_LEGACY_05": "toxin",
+}
+
+
+def weapon_sfx(item_id):
+    """주무기의 공격 효과음 이름 (atk_fist 등)."""
+    return "atk_" + WEAPON_SFX.get(item_id, "fist")

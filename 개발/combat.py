@@ -315,7 +315,9 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
             disp_dmg, _, _ = apply_dynamic_scaling(dmg, 0, tier)
             crit_tag = Fore.YELLOW + Style.BRIGHT + " [CRITICAL!]" + Style.RESET_ALL if is_crit else ""
 
-            sound.sfx("crit" if is_crit else "hit")
+            sound.sfx(constants.weapon_sfx(player.equipment.get("main_weapon")))  # 무기 종류별 공격음
+            if is_crit:
+                sound.sfx("crit")
             print(Fore.GREEN + Style.BRIGHT + t('combat_attack_hit', dmg=f"{disp_dmg:,}") + crit_tag)
             _sleep(1)
             hp = max(0, hp - dmg)

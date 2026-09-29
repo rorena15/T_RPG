@@ -5,7 +5,7 @@
 #   0: 맵 환경음(바람) — 한 번 틀면 계속 돈다. 전투·서사 때는 소리만 줄였다가 되돌린다 (처음부터 다시 시작하지 않게)
 #   1, 2: 음악(서사·전투) — 두 채널을 번갈아 써서 곡을 겹쳐 바꾼다 (크로스페이드)
 #   3: 심장박동 경보
-#   4~7: 효과음 (sfx_synth.py가 코드로 만든 타격·피격·모루·발소리 등, 맵의 먼 소리)
+#   4~7: 효과음 (assets/sfx/ 음원: 무기별 공격·피격·강화소·발소리 등, 맵의 먼 소리. 출처는 assets/sfx/CREDITS.md)
 # 곡은 처음 쓸 때 한 번 풀어 두고, 앞뒤 무음을 잘라 반복 이음매가 끊기지 않게 한다.
 # (예전 mixer.music 방식: 전투곡이 25초마다 0.5초씩 끊기고, 곡을 바꿀 때 뚝 끊겼다.)
 
@@ -94,13 +94,24 @@ def _preload():
     for n in ("wind", "combat", "typing"):
         _load(n)
     try:
-        import sfx_synth
-        for n in list(sfx_synth.SOUNDS) + list(sfx_synth.AMBIENT):
+        for n in SFX_VOL:
             _sfx_sound(n)
     except Exception:
         pass
 
 
+# 효과음 이름 -> 기본 크기 (파일은 모두 같은 최대 크기로 맞춰 두었다)
+SFX_VOL = {
+    # 무기별 공격 (constants.WEAPON_SFX로 무기마다 고른다)
+    "atk_fist": 0.5, "atk_blade": 0.5, "atk_eblade": 0.5, "atk_blunt": 0.6, "atk_saw": 0.5, "atk_shock": 0.5,
+    "atk_flame": 0.55, "atk_gun": 0.55, "atk_shotgun": 0.65, "atk_heavy": 0.7, "atk_energy": 0.55, "atk_toxin": 0.5,
+    "crit": 0.6, "sub": 0.7,
+    "hurt": 0.6, "hurt_heavy": 0.75, "barricade": 0.55, "hack": 0.45, "deny": 0.35, "escape": 0.45,
+    "heal": 0.4, "eat": 0.4, "skill": 0.5, "win": 0.5, "alert": 0.45, "phase2": 0.7, "death": 0.7,
+    "anvil": 0.55, "clunk": 0.5, "drop": 0.55, "repair": 0.45,
+    "step": 0.25, "loot": 0.35, "gear": 0.4,
+    "amb_creak": 0.22, "amb_drone": 0.15, "amb_thunder": 0.3, "amb_clang": 0.14,
+}
 SFX_SYNTH_FALLBACK = False   # 음원 파일이 없을 때 코드로 만든 소리를 쓸지 (합성음은 거칠어서 기본은 끔)
 _SFX_EXT = (".ogg", ".wav", ".mp3")
 
@@ -156,14 +167,13 @@ def sfx(name, vol=1.0):
     if not _ready or _muted:
         return
     try:
-        import sfx_synth
         variants = _sfx_sound(name)
         if not variants:
             return
         import random as _r
         snd = _r.choice(variants)
         ch = _free_sfx_channel()
-        ch.set_volume(max(0.0, min(1.0, sfx_synth.volume(name) * vol * _user_gain() * 1.4)))
+        ch.set_volume(max(0.0, min(1.0, SFX_VOL.get(name, 0.5) * vol * _user_gain() * 1.4)))
         ch.play(snd)
     except Exception:
         pass
