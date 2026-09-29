@@ -251,6 +251,8 @@ def grant_awakening_skill(player) -> tuple[str, list[str]]:
     """직업 판별 → 특화 스킬 2개 슬롯 장착. 특수 스킬은 별도 조건 언락."""
     job = get_job(player)
     player.job_class = job
+    import sound
+    sound.sfx("job")
     granted = []
     for sid in JOB_STARTER.get(job, []):
         if sid not in player.skill_slots and len(player.skill_slots) < 2:

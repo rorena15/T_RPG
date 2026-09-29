@@ -4,6 +4,7 @@
 import random
 import time
 import constants
+import sound
 from colorama import Fore, Style
 from i18n import t, db_t
 from ui import (clear_screen, print_header, print_divider, type_text,
@@ -32,6 +33,7 @@ def trigger_sudden_quest(player):
     if "reward_id"     in tpl: q["reward_id"]     = tpl["reward_id"]
     if "reward_amount" in tpl: q["reward_amount"] = tpl["reward_amount"]
     player.active_quest = q
+    sound.sfx("quest_new")
     clear_screen()
     print_header(t('quest_trigger_header', title=db_t(tpl, 'title')))
     type_text(f"  {db_t(tpl, 'desc')}", 0.022)
@@ -50,6 +52,7 @@ def _complete_quest(player):
     if q is None:
         return
     clear_screen()
+    sound.sfx("quest_done")
     print_header(t('quest_complete_header', title=db_t(q, 'title')))
     print()
     print(t('quest_reward_header', reward=db_t(q, 'reward_desc')))
@@ -211,6 +214,7 @@ def _trader_view(player):
             if player.materials >= chosen["cost"]:
                 player.materials -= chosen["cost"]
                 player.consumables[chosen["id"]] += 1
+                sound.sfx("buy")
                 note = [" ".join(t('trader_bought', name=db_t(chosen, 'name'), scrap=player.materials).split())]
                 log_diary(player, t('trader_log_bought', name=db_t(chosen, 'name'), cost=chosen['cost']))
             else:
@@ -254,6 +258,7 @@ def handle_trader(player):
                 player.materials -= chosen["cost"]
                 key = chosen["id"]
                 player.consumables[key] += 1
+                sound.sfx("buy")
                 print(t('trader_bought', name=db_t(chosen, 'name'), scrap=player.materials))
                 log_diary(player, t('trader_log_bought', name=db_t(chosen, 'name'), cost=chosen['cost']))
                 time.sleep(1)

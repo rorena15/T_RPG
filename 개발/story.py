@@ -390,6 +390,7 @@ def _banner_path() -> str:
 def run_ending(player):
     clear_screen()
     sound.stop_all()
+    sound.play_ending_bgm()
     from gui import get_terminal
     _term = get_terminal()
     if _term:

@@ -341,6 +341,10 @@ def _show(view, narration, tokens, out=None):
     view.hud_hold = False
     check = (out or {}).get("check") or {}
     big_hit = any(kind == "hp_loss" for _, kind in tokens) and         view.player.max_hp and (view._hud.get("hp", view.player.hp) - view.player.hp) >= view.player.max_hp * 0.05
+    outcome = check.get("outcome")
+    if outcome:
+        import sound
+        sound.sfx({"crit_success": "evt_great", "success": "evt_good", "partial": "evt_good"}.get(outcome, "evt_bad"))
     if check.get("outcome") == "crit_fail" or big_hit:
         view.shake(9 if check.get("outcome") == "crit_fail" else 6)
     if tokens:

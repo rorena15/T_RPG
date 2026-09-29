@@ -284,6 +284,7 @@ class InventoryView(EventView):
         if self.forge:
             self.footer += [("R", t('upg_key')), ("F", t('rep_key'))]
         self.footer.append(("0", t('inv_key_back')))
+        sound.sfx("inv_open")
         self.open()
         try:
             while True:
@@ -293,17 +294,21 @@ class InventoryView(EventView):
                     rows = self.rows()
                     cur = rows[self.sel[self.tab]] if rows and self.sel[self.tab] < len(rows) else None
                     if ev.key in (pygame.K_ESCAPE, pygame.K_0, pygame.K_KP0):
+                        sound.sfx("ui_back")
                         return
                     if ev.key in (pygame.K_UP, pygame.K_w):
                         self.sel[self.tab] = max(0, self.sel[self.tab] - 1)
                         self.confirm = None
+                        sound.sfx("ui_move")
                     elif ev.key in (pygame.K_DOWN, pygame.K_s):
                         self.sel[self.tab] = min(max(0, len(rows) - 1), self.sel[self.tab] + 1)
                         self.confirm = None
+                        sound.sfx("ui_move")
                     elif ev.key in (pygame.K_LEFT, pygame.K_a, pygame.K_RIGHT, pygame.K_TAB):
                         step = -1 if ev.key in (pygame.K_LEFT, pygame.K_a) else 1
                         self.tab = TABS[(TABS.index(self.tab) + step) % len(TABS)]
                         self.msg, self.confirm = [], None
+                        sound.sfx("ui_tab")
                     elif ev.key in (pygame.K_RETURN, pygame.K_KP_ENTER, pygame.K_SPACE):
                         self.act(cur)
                     elif ev.key == pygame.K_d:

@@ -26,9 +26,12 @@ _TRACKS = {
     "wind":   ("wind.mp3", 0.35),
     "typing": ("typing_bgm.mp3", 0.50),
     "combat": ("combat.mp3", 0.65),
+    "boss":   ("bgm_boss.ogg", 0.6),      # Godot TPS Demo 음악 (CC BY 3.0, Christian Fernando Perucchi)
+    "night":  ("bgm_night.ogg", 0.4),     # "House In a Forest Loop" (CC BY 3.0, HorrorPen)
+    "ending": ("bgm_ending.ogg", 0.55),   # Godot TPS Demo 메뉴 음악 (CC BY 3.0, Christian Fernando Perucchi)
 }
 _FADE_MS = 700        # 곡 바꿀 때 겹치는 시간
-_DUCK = {"typing": 0.45, "combat": 0.0}   # 음악이 나올 때 바람 소리 크기 (기본 대비)
+_DUCK = {"typing": 0.45, "combat": 0.0, "boss": 0.0, "night": 0.75, "ending": 0.0}   # 음악이 나올 때 바람 소리 크기 (기본 대비)
 
 _vol_mult = 0.5       # 사용자 BGM 음량 (0.0~1.0)
 _muted    = False     # 음소거 상태
@@ -91,7 +94,7 @@ def init():
 
 
 def _preload():
-    for n in ("wind", "combat", "typing"):
+    for n in ("wind", "combat", "typing", "night"):   # 보스·엔딩 곡은 길어서 쓸 때 푼다
         _load(n)
     try:
         for n in SFX_VOL:
@@ -112,6 +115,11 @@ SFX_VOL = {
     "heal": 0.4, "eat": 0.4, "skill": 0.5, "win": 0.5, "alert": 0.45, "phase2": 0.7, "death": 0.7,
     "anvil": 0.55, "clunk": 0.5, "drop": 0.55, "repair": 0.45,
     "step": 0.25, "loot": 0.35, "gear": 0.4,
+    # 메뉴·진행
+    "ui_move": 0.18, "ui_ok": 0.3, "ui_back": 0.28, "ui_tab": 0.25, "inv_open": 0.35, "diary": 0.3, "save": 0.35,
+    "quest_new": 0.4, "quest_done": 0.5, "quest_fail": 0.45, "buy": 0.4, "scan": 0.4, "job": 0.55,
+    "evt_good": 0.45, "evt_great": 0.55, "evt_bad": 0.45,
+    "search": 0.35, "search_empty": 0.3, "bunker_door": 0.6,
     "amb_creak": 0.22, "amb_drone": 0.15, "amb_thunder": 0.3, "amb_clang": 0.14,
 }
 SFX_SYNTH_FALLBACK = False   # 음원 파일이 없을 때 코드로 만든 소리를 쓸지 (합성음은 거칠어서 기본은 끔)
@@ -378,6 +386,26 @@ def play_typing_bgm():
 def play_combat_bgm():
     """전투 BGM (바람은 잦아든다)"""
     _play_music("combat")
+
+
+def play_boss_bgm():
+    """보스전 BGM"""
+    _play_music("boss")
+
+
+def play_ending_bgm():
+    """엔딩 BGM"""
+    _play_music("ending")
+
+
+def map_mood(time_of_day):
+    """맵에서 부른다: 밤·새벽에는 바람 밑으로 어두운 음악을 깔고, 낮에는 걷어낸다."""
+    if _current not in (None, "night"):
+        return   # 전투·서사 음악 중에는 건드리지 않는다
+    if time_of_day in ("night", "dawn"):
+        _play_music("night")
+    elif _current == "night":
+        play_map_ambient()
 
 
 def resume_map_ambient():

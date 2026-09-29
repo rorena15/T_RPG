@@ -163,6 +163,8 @@ def save_data(player, grid):
     try:
         with open(get_save_path(), "w", encoding="utf-8") as f:
             json.dump(save_file, f, ensure_ascii=False, indent=4)
+        import sound
+        sound.sfx("save")
         print(t('save_success'))
     except Exception as e:
         print(t('save_fail', e=e))

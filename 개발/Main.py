@@ -28,6 +28,7 @@ from story import handle_session, run_prologue, run_boss_core_choice, run_ending
 from gui import get_terminal
 import gm_bridge
 import forge
+import scene_art
 
 _console = Console(highlight=False)
 
@@ -351,12 +352,14 @@ def run_game():
         clear_screen()
         if player.active_quest and player.turn_count > player.active_quest["deadline"]:
             q = player.active_quest
+            sound.sfx("quest_fail")
             print(t('quest_failed', title=db_t(q, 'title')))
             log_diary(player, t('quest_fail_diary', title=db_t(q, 'title')))
             player.active_quest = None
             time.sleep(1.5)
             clear_screen()
 
+        sound.map_mood(scene_art.world_time(player.turn_count))  # 밤·새벽엔 바람 밑에 어두운 음악
         _actions = _EXPLORE_ACTIONS
         if grid.at_forge() and grid.forge_known():  # 강화소 칸: U로 발칸 게이츠 / 강화소 (forge.py)
             _flabel = t('act_forge') if forge.built(grid) else t('act_forge_npc')
@@ -393,6 +396,7 @@ def run_game():
             continue
         elif move == "J":
             _off()
+            sound.sfx("diary")
             show_diary(player)
             continue
         elif move == "C":
@@ -408,6 +412,7 @@ def run_game():
                 continue
             player.consume_resources()
             grid.use_search(player.turn_count)
+            sound.sfx("search")
             print(t('search_start'))
             time.sleep(0.5)
 
@@ -442,6 +447,7 @@ def run_game():
             elif roll < 0.08 + encounter_chance + 0.20 + 0.30:
                 # 공탐색 (30%) — 로컬 GM이 서술, GM을 못 쓰면 분위기 로그
                 if not gm_bridge.run_search(player, grid):
+                    sound.sfx("search_empty")
                     _empty = random.choice(t('empty_search_msgs'))
                     print(f"\n  {_empty}")
                     print_ambient_lore()
@@ -526,6 +532,7 @@ def run_game():
                 _ui_mgr.play_move()
 
             if current_loc == tuple(grid.bunker_pos):
+                sound.sfx("bunker_door")   # 녹슨 무쇠 문
                 if constants.SESSIONS_DB and len(constants.SESSIONS_DB) > 6:
                     _off()
                     handle_session(player, constants.SESSIONS_DB[6])
@@ -559,7 +566,7 @@ def run_game():
                         save_data(player, grid)
                     elif prep_cmd == "3":
                         break
-                sound.play_combat_bgm()
+                sound.play_boss_bgm()
                 combat_loop(player, is_boss=True)
                 run_boss_core_choice(player)
                 run_ending(player)
@@ -572,6 +579,7 @@ def run_game():
                     _s_base = 0.40 if grid.session_index < 3 else 0.10
                     _s_prob = max(0.05, _s_base * (1.0 - player.turn_count / 100.0))
                     if random.random() < _s_prob:
+                        sound.sfx("scan")
                         print(t('scan_detected'))
                         time.sleep(1.2)
                         _off()

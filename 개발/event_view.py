@@ -15,6 +15,7 @@ import threading
 import pygame
 
 import scene_art
+import sound
 import i18n
 
 # 장소 ID. 장면 그림(SCENES, scene_art)을 찾는 키라서 바꾸지 않는다. 화면에는 place_label()로 번역해 그린다
@@ -1281,6 +1282,10 @@ class EventView:
         """선택지 고르기: 숫자키, 방향키+Enter, 마우스(올리면 강조, 누르면 선택). 고른 키('1'..'n', '0')를 돌려준다.
         extra: 추가로 받는 키 (예: 'ESC')."""
         keys = [k for k, _ in menu["items"]]  # 화면에 보이는 선택지 키 그대로 (타이틀처럼 0이 없는 메뉴도 있다)
+
+        def _picked(k):  # 고른 소리: 0·ESC는 뒤로, 나머지는 확인
+            sound.sfx("ui_back" if k in ("0", "ESC") else "ui_ok")
+            return k
         pygame.event.clear(pygame.KEYDOWN)  # 연출 중에 미리 누른 키로 넘어가지 않게
         menu["sel"] = menu.get("start", 0)
         try:
@@ -1289,20 +1294,24 @@ class EventView:
                     if ev.type == pygame.KEYDOWN:
                         if ev.key in (pygame.K_UP, pygame.K_w):
                             menu["sel"] = (menu["sel"] - 1) % len(keys)
+                            sound.sfx("ui_move")
                         elif ev.key in (pygame.K_DOWN, pygame.K_s, pygame.K_TAB):
                             menu["sel"] = (menu["sel"] + 1) % len(keys)
+                            sound.sfx("ui_move")
                         elif ev.key in (pygame.K_RETURN, pygame.K_KP_ENTER, pygame.K_SPACE):
-                            return keys[menu["sel"]]
+                            return _picked(keys[menu["sel"]])
                         elif ev.key == pygame.K_ESCAPE and "ESC" in extra:
-                            return "ESC"
+                            return _picked("ESC")
                         elif ev.unicode and ev.unicode in keys:
-                            return ev.unicode
+                            return _picked(ev.unicode)
                     elif ev.type in (pygame.MOUSEMOTION, pygame.MOUSEBUTTONDOWN):
                         hit = self._row_at(ev.pos)
                         if hit is not None:
+                            if keys.index(hit) != menu["sel"]:
+                                sound.sfx("ui_move")
                             menu["sel"] = keys.index(hit)
                             if ev.type == pygame.MOUSEBUTTONDOWN and ev.button == 1:
-                                return hit
+                                return _picked(hit)
         finally:
             menu.pop("sel", None)
 
