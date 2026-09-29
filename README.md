@@ -250,6 +250,8 @@ python Main.py
 
 맵 환경음, 서사·전투 BGM, 허기·갈증 경보음이 상황에 따라 재생됩니다. 사운드 장치가 없으면 무음으로 진행됩니다.
 
+전투·강화·탐색 효과음과 맵의 먼 소리는 Kenney(CC0), Godot TPS Demo(© 2018 Juan Linietsky, Fernando Miguel Calabró, CC BY 3.0), Freesound(CC0), uisfx(CC0) 음원으로 만들었습니다. 자세한 출처는 `assets/sfx/CREDITS.md`에 있습니다.
+
 ---
 
 ## 저장 / 로드
