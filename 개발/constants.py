@@ -199,19 +199,26 @@ ENEMY_ART = {
 
 
 DIFFICULTY_SCALING_RATE = {"easy": 0.01, "normal": 0.02, "hard": 0.035}
+ENEMY_TURN_SCALE_CAP    = 20   # 일반 적은 이 턴까지만 강해진다: 오래 파밍해도 손해가 끝없이 쌓이지 않게
 
 # ── 전투 균형 상수 ────────────────────────────────────────────────────────────
 BOSS_DEF             = 45
-BOSS_BASE_ATK        = 200
-BOSS_HP              = 20000
+BOSS_BASE_ATK        = 100
+BOSS_HP              = 100000
 BOSS_TURN_LIMIT      = 15
 BOSS_PHASE2_RATIO    = 0.5    # HP 이 비율 이하 → Phase 2 전환
 BOSS_PHASE2_ATK_MULT = 1.6
 BOSS_PHASE2_LI_BONUS = 5
-# 난이도별 보스 체력·공격력 배율 (목표 클리어율: 쉬움 약 70% / 보통 약 40% / 어려움 약 20%, 봇 시뮬레이션으로 맞춤)
-# 기준 플레이어: 체력이 반 밑이면 후퇴, 탐색 20회, 가장 좋은 장비 장착. 보스는 턴 성장을 받지 않는다 (combat.py)
-# 검증 (타일 수색 한도 포함, 300~400판씩): 쉬움 70.8% / 보통 41.7% / 어려움 21.1%
-BOSS_DIFF_MULT       = {"easy": 0.92, "normal": 1.13, "hard": 1.32}
+# 보스는 강해야 이긴다 (combat.py):
+#   체력 = max(BOSS_HP × 난이도 배율, BOSS_HP × 내 실효 공격력 / BOSS_POWER_REF)
+#   - 난이도 배율(BOSS_DIFF_MULT): 이만큼 강해지기 전에는 15턴 안에 못 잡는다 → 파밍 없이 0%
+#   - 공격력이 기준을 넘으면 체력이 같이 늘어 잡는 데 늘 약 11타가 든다 → 끝없이 쉬워지지 않는다
+#   - 공격력 배율(BOSS_DIFF_ATK): 강한 플레이어의 최대 성공률 (쉬움 약 70% / 보통 약 40% / 어려움 약 20%)
+# 어려움은 일반 전투가 치명적이라(탐색 90회면 보스 도달 40%) 보스 공격력은 보통보다 낮다
+BOSS_DIFF_MULT       = {"easy": 1.25, "normal": 1.30, "hard": 1.30}
+BOSS_DIFF_ATK        = {"easy": 1.78, "normal": 1.88, "hard": 1.74}
+BOSS_POWER_REF       = 180
+# 검증 (봇 150판씩, 탐색 0 / 20 / 45 / 90회): 쉬움 0 / 7 / 33 / 68%, 보통 0 / 3 / 20 / 44%, 어려움 0 / 1 / 12 / 19%
 ALERT_INC_BOSS       = 40
 ALERT_INC_BIO        = 20
 ALERT_INC_DRONE      = 10
@@ -232,6 +239,9 @@ SUB_WPN_POWER        = 100
 GEAR_DROP_COMBAT     = 0.30
 GEAR_DROP_SEARCH     = 0.15
 GEAR_DROP_TIER_WEIGHTS = {4: 80, 3: 19, 2: 1}
+
+# 강화 (upgrade.py): 시도 1회 고철 = max(1, floor(α·(k+1)^1.2)) × 이 배율
+UPGRADE_COST_MULT    = 3
 ESCAPE_WEIGHTS       = (60, 20, 10, 5, 5)  # SAFE / NORMAL / 1.5X / 2.0X / LUCKY
 
 # 고티어 장비의 '숫자가 커지는' 연출 배율. 피해와 체력에 같은 배율을 써야 표시된 피해만큼 표시된 체력이 줄어든다

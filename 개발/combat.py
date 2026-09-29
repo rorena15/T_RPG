@@ -55,7 +55,7 @@ def apply_dynamic_scaling(raw_dmg, raw_hp, highest_equip_tier):
 def get_turn_scale_multiplier(player):
     """진행 턴수와 난이도에 따른 적 스탯 배율을 계산한다. 플레이어 체력이 위험 수준이면 완화한다."""
     rate = constants.DIFFICULTY_SCALING_RATE.get(player.difficulty, constants.DIFFICULTY_SCALING_RATE["normal"])
-    growth = player.turn_count * rate
+    growth = min(player.turn_count, constants.ENEMY_TURN_SCALE_CAP) * rate
 
     hp_ratio = player.hp / player.max_hp if player.max_hp > 0 else 1.0
     if hp_ratio < constants.LOW_HP_RELIEF_THRESHOLD:
@@ -74,8 +74,9 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
         name        = t('enemy_boss_name')
         header_title = t('enemy_boss_header')
         e_def, base_atk, hp = constants.BOSS_DEF, constants.BOSS_BASE_ATK, constants.BOSS_HP
-        diff_mult = constants.BOSS_DIFF_MULT.get(player.difficulty, 1.0)
-        base_atk, hp = int(base_atk * diff_mult), int(hp * diff_mult)
+        eff_power = player.get_attack_power() + player.get_gear_atk_bonus()
+        hp = int(max(hp * constants.BOSS_DIFF_MULT.get(player.difficulty, 1.0), hp * eff_power / constants.BOSS_POWER_REF))
+        base_atk = int(base_atk * constants.BOSS_DIFF_ATK.get(player.difficulty, 1.0))
         art = constants.ENEMY_ART["BOSS"]
         # 보스는 턴 성장을 받지 않는다: 받으면 준비 없이 곧장 달려가는 쪽이 가장 쉬웠다 (시뮬레이션 보통 81% vs 탐색 44%)
         boss_max_hp = hp
