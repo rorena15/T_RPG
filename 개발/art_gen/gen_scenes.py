@@ -13,6 +13,7 @@
   python gen_scenes.py pick camp camp_dusk_1 camp_night_0     # 고른 후보 -> assets/scenes/camp/ (게임이 무작위로 씀)
   <학습 venv>/python gen_scenes.py layers [--only camp]         # 고른 그림을 깊이로 3층 분리 (패럴랙스용)
   <학습 venv>/python gen_scenes.py enemy [--only enemy_hound] [--per 4]   # 적 교전 그림 (가로, 적이 가운데에 선명하게) -> art/cand_enemy/
+  <학습 venv>/python gen_scenes.py enemy_var enemy_hound=<기준 파일> ... [--per 5]   # 기준 그림에서 시간·날씨만 바꾼 변형 -> art/cand_enemy_var/
 """
 import argparse
 import os
@@ -397,6 +398,46 @@ def enemy(only, per, steps, strength=0.9, round_no=0):
         sheet.save(os.path.join(out_dir, f"_{name}_{tag}sheet.jpg"), quality=88)
 
 
+# 같은 적은 생김새가 같아야 한다 (장마다 다른 로봇이 나오면 같은 적으로 읽히지 않는다, 사용자 피드백).
+# 그래서 기준 그림 한 장을 정하고, 거기서 시간·날씨만 바꾼 변형을 만든다: 기준 그림에 그 분위기의 색면을 옅게 섞어
+# 빛을 밀어 주고, 약한 img2img(strength 0.45 안팎)로 다시 칠한다. 형체는 남고 빛과 공기만 달라진다.
+ENEMY_VAR_MOODS = [("dawn", "fog"), ("noon", "dust"), ("evening", "smog"), ("night", "ash"), ("morning", "acid")]
+
+
+def enemy_var(bases, per, steps, strength=0.45, tint=0.4):
+    """bases: {적 이름: 기준 그림 파일(art/cand_enemy 안, 확장자 빼고)}. -> art/cand_enemy_var/<적>_<시간>_<날씨>.jpg"""
+    import torch
+    from diffusers import AutoencoderKL, StableDiffusionXLImg2ImgPipeline
+    from PIL import Image
+    vae = AutoencoderKL.from_pretrained("madebyollin/sdxl-vae-fp16-fix", torch_dtype=torch.float16)
+    pipe = StableDiffusionXLImg2ImgPipeline.from_pretrained(
+        "stabilityai/stable-diffusion-xl-base-1.0", vae=vae, torch_dtype=torch.float16, variant="fp16",
+        use_safetensors=True).to("cuda")
+    out_dir = os.path.join(OUT, "cand_enemy_var")
+    os.makedirs(out_dir, exist_ok=True)
+    for name, base_file in bases.items():
+        base = Image.open(os.path.join(OUT, "cand_enemy", base_file + ".jpg")).convert("RGB").resize(ENEMY_SIZE, Image.LANCZOS)
+        base.save(os.path.join(out_dir, f"{name}_base.jpg"), quality=92)
+        imgs = [base]
+        for k, (mood, weather) in enumerate(ENEMY_VAR_MOODS[:per]):
+            path = os.path.join(out_dir, f"{name}_{mood}_{weather}.jpg")
+            if not os.path.exists(path):
+                init_img = Image.blend(base, color_field(mood, name, 5000 + k, weather, ENEMY_SIZE), tint)
+                base_neg = ENEMY_NEG.replace("person, human figure, ", "") if name == "enemy_security" else ENEMY_NEG
+                g = torch.Generator("cuda").manual_seed(5000 + k)
+                img = pipe(prompt=f"{ENEMY_SUBJECT[name]}, {ENEMY_TIME[mood]}, {ENEMY_WEATHER[weather]}, {ENEMY_STYLE}",
+                           negative_prompt=f"{ENEMY_EXTRA_NEG[name]}, signature, {base_neg}", image=init_img,
+                           strength=strength, num_inference_steps=steps, guidance_scale=6.0, generator=g).images[0]
+                img.save(path, quality=92)
+                print("enemy_var", path, flush=True)
+            imgs.append(Image.open(path))
+        tw, th = ENEMY_SIZE[0] // 3, ENEMY_SIZE[1] // 3
+        sheet = Image.new("RGB", (tw * 3, th * ((len(imgs) + 2) // 3)))
+        for i, img in enumerate(imgs):
+            sheet.paste(img.resize((tw, th)), ((i % 3) * tw, (i // 3) * th))
+        sheet.save(os.path.join(out_dir, f"_{name}_sheet.jpg"), quality=88)
+
+
 def pick(name, files):
     """고른 후보를 assets/scenes/<이름>/ 에 넣는다. 게임은 그중 하나를 무작위로 쓴다.
     files: 후보 파일 이름(확장자 빼고, 예: camp_dusk_1) 여러 개."""
@@ -467,7 +508,7 @@ def layers(only):
 
 def main():
     p = argparse.ArgumentParser()
-    p.add_argument("cmd", choices=["init", "paint", "txt", "pick", "layers", "enemy"])
+    p.add_argument("cmd", choices=["init", "paint", "txt", "pick", "layers", "enemy", "enemy_var"])
     p.add_argument("args", nargs="*")
     p.add_argument("--only", default="")
     p.add_argument("--n", type=int, default=4)
@@ -485,6 +526,8 @@ def main():
     elif a.cmd == "enemy":
         enemy([x for x in a.only.split(",") if x], min(a.per, 4) if a.per == 6 else a.per, a.steps,
               0.9 if a.strength == 0.8 else a.strength, a.round)
+    elif a.cmd == "enemy_var":   # 인자: 적=기준파일 ... (예: enemy_hound=enemy_hound_r3_dawn_smog_0)
+        enemy_var(dict(x.split("=", 1) for x in a.args), min(a.per, 5), a.steps, 0.45 if a.strength == 0.8 else a.strength)
     elif a.cmd == "txt":
         txt([x for x in a.only.split(",") if x], a.per, a.steps, 0.86 if a.strength == 0.8 else a.strength)
     else:
