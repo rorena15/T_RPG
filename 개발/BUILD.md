@@ -6,31 +6,44 @@
 
 ```
 개발/
-├── Main.py              # 메인 루프 · 상태창 · 그리드 UI
-├── combat.py            # 전투 시스템 — 공격/방어/스킬 훅 통합
-├── skills.py            # 3계층 스킬 시스템 (특수 / 특화 / 보조)
-├── player.py            # 플레이어 데이터 · 스탯 연산 · 장비 계산
-├── story.py             # 각성 이벤트 · 엔딩 · 2막 티저
+├── Main.py              # 진입점 · 타이틀/옵션 메뉴 · 맵 루프
+├── gui.py               # pygame 창 (터미널 흉내 + 그림 화면 관리), 글 화면 선택지의 방향키·마우스
+├── event_view.py        # 그림 화면 틀 (장면 그림 + 글 칸, 선택지·입력·발밑 버튼·퀵슬롯·아이콘)
+├── map_view.py          # 맵 화면 (2.5D 미니맵, 이동 연출, WASD/방향키/미니맵 클릭)
+├── combat_view.py       # 전투 화면 (행동 버튼 격자, 퀵슬롯)
+├── inventory_view.py    # 인벤토리 · 강화소 화면 (탭 Tab, 퀵슬롯 연결)
+├── screens.py           # 공용 메뉴 · 일지 · 긴 글 보기 (크레딧·라이선스)
+├── intro_view.py        # 오프닝
+├── download_view.py     # 동적 서사 추가 데이터 받기 화면
+├── credits.py           # 옵션 → 크레딧 · 라이선스 (assets/licenses/)
+├── scene_art.py         # 장면 그림 고르기 · 게임 속 시간·날씨
+├── combat.py            # 전투 (행동 · 적 종류 · 보스 · 퀵슬롯)
+├── skills.py            # 3계층 스킬 (특수 / 특화 / 보조)
+├── player.py            # 플레이어 · 스탯 · 장비 계산 · 퀵슬롯 · 소모품 사용
+├── upgrade.py           # 주무기 강화 · 내구도 · 수리
+├── forge.py             # 발칸 게이츠 퀘스트 · 강화소
+├── map.py               # 5×5 그리드 · 이동 · 타일 수색 · 강화소 위치
+├── story.py             # 스토리 세션 · 각성 · 엔딩 · 2막 티저
 ├── quest.py             # 돌발 퀘스트 · 랜덤 이벤트 · 행상인
 ├── gm_bridge.py         # 랜덤 이벤트 · 빈 탐색을 로컬 GM이 판정·서술하도록 연결
-├── event_view.py        # GM 이벤트 전용 화면 (장면 그림 + 이야기 기록, 한글 입력)
+├── gm_server.py         # 동봉 llama-server 실행 · 모델 받기
 ├── gm/                  # 로컬 GM 런타임 (stigma-gm/engine에서 자동 복사, 직접 수정 금지)
-├── sound.py             # BGM / 효과음 관리 (pygame-ce)
-├── map.py               # 5×5 그리드 · 이동 · 타일 수색 시스템
-├── core.py              # 장비 DB 조회 · 세이브 파일 관리
-├── constants.py         # 게임 상수 · 전투 균형값 · 장비 계산 상수
-├── db_init.py           # SQLite 초기화 스크립트
-├── ui.py                # 공통 UI 유틸리티 (타이핑 출력, 헤더 등)
-├── i18n.py              # 다국어 지원 (ko / en)
-├── sys_log.py           # 시스템 로그 · 에러 추적
+├── sound.py             # BGM · 효과음 · 날씨 환경음 (pygame-ce)
+├── core.py              # 장비 DB 조회 · 세이브 · 설정
+├── constants.py         # 게임 상수 · 전투 균형값 · 적 종류 · 무기 효과음 분류
+├── i18n.py              # 다국어 (ko / en), 한국어 조사 자동 선택
+├── diag.py              # 진단 기록 (개발자 공개키로 암호화해 diag/에)
+├── sys_log.py           # 로그 · 호출 추적 → diag
+├── updater.py           # GitHub 릴리스 자동 업데이트
 ├── database.json        # 서사 텍스트 · 소모품 · 이벤트 데이터
 ├── master_formulas.json # 데미지 · 스케일링 · 확률 밸런스 수식
+├── art_gen/             # 장면 그림 만들기 (로컬 SDXL)
 ├── tools/balance/       # 밸런스 검증 봇 · 실행기 (난이도별 승률 표, README 참고)
-├── diag.py              # 진단 기록 (로그·오류·호출 추적을 개발자 공개키로 암호화해 diag/에)
 ├── tools/diag/          # 진단 기록 키 만들기 · 읽기 (diag_tool.py)
+├── validate_i18n.py     # 언어 파일 검증 (키 일치 · 코드 속 한글 금지)
 └── locales/
-    ├── ko.json          # 한국어 텍스트 (524키)
-    └── en.json          # 영어 텍스트 (524키)
+    ├── ko.json          # 한국어 (825키)
+    └── en.json          # 영어 (825키)
 ```
 
 ## 동적 서사 (로컬 GM) 내부
@@ -57,7 +70,7 @@
 - **설치할 것 없음.** 실행기(llama.cpp `llama-server`, Vulkan 빌드)가 게임에 들어 있다. NVIDIA·AMD·Intel GPU 모두 지원, GPU로 못 띄우면 CPU로 돌린다
 - **모델은 게임에 넣지 않는다.** 동적 서사가 켜져 있는데 데이터가 없으면 시작할 때
   "인게임에서 더욱 생동감 있는 플레이를 위해서는 추가 데이터가 필요합니다. 다운로드 하시겠습니까?"를 띄운다.
-  고품질(약 4.6GB) / 가벼움(약 1.4GB) / 나중에. 설정 → 6. 추가 데이터 받기로도 받을 수 있다
+  고품질(약 4.6GB) / 가벼움(약 1.4GB) / 나중에. 옵션 → 추가 데이터 받기로도 받을 수 있다
   - 받는 곳: 이 저장소의 GitHub 릴리스 `models-v1` (8B는 파일당 2GiB 제한 때문에 3조각). 주소와 sha256은 `개발/gm_models.json`
   - 저장 위치: `%LOCALAPPDATA%\PROTOCOL_STIGMA\models` (맥 `~/Library/Application Support/PROTOCOL_STIGMA`)
   - 끊겨도 이어받고, 조각과 전체를 sha256으로 검증한다. 실행기 로그는 같은 폴더의 `server.log`
@@ -76,14 +89,14 @@ GM 모델 코드·도구·문서는 이 저장소의 `stigma-gm/`에 있다 (학
 1. 실행기 빌드와 복사 (개발 PC에서): `stigma-gm/tools/llama_patch/build_server.bat` → `cd 개발 && python install_llama_runtime.py`
    → `개발/runtime/llama/llama-server.exe` 하나 (Vulkan·CPU 백엔드를 정적으로 묶은 빌드, git에 넣지 않음)
 2. 키 절반 만들기: `python stigma-gm/tools/model_crypt.py emit --tag models-v1` → `개발/gm_key.py`
-3. exe 빌드: `cd 개발 && python build_exe.py` → `개발/dist/PROTOCOL_STIGMA.exe` (Nuitka onefile. PyInstaller는 소스가 거의 그대로 복원돼서 쓰지 않는다)
+3. exe 빌드: `cd 개발 && python build_exe.py` → `개발/dist/` 폴더형(Nuitka `--standalone`, 릴리스는 `*_win64.zip`). `--onefile`은 1.9.x 업데이터 호환용 단일 exe. PyInstaller는 소스가 거의 그대로 복원돼서 Windows에는 쓰지 않는다
    - 경로 호환은 `개발/frozen_compat.py` (Main.py 첫 import): Nuitka에서도 `sys.frozen`/`sys._MEIPASS`/`sys.executable`이 PyInstaller와 같게 잡힌다
 4. CI(`buildrelease.yml`)도 `build_exe.py`를 쓴다. 필요한 것:
    - 릴리스 `runtime-v1`에 `llama-server.exe` (서버 exe는 어차피 게임에 들어가므로 공개 자산이어도 노출 범위가 같다)
    - 저장소 Secret `STIGMA_GM_KEY` = `개발/gm_key.py` 내용. 없으면 동적 서사 없이 빌드된다
 5. 모델 올리기: `stigma-gm/tools/prepare_model_release.py`가 만든 조각(암호화 파일만 받는다)을 릴리스 `models-v1`에 올린다.
    모델을 바꾸면 새 태그(`models-v2`)로 **키도 새로 만들고**(genkey) 서버를 다시 빌드한다. 크기가 같은 모델을 같은 키로 암호화하면 안 된다
-6. 맥용은 아직 없다 (맥 빌드는 PyInstaller 그대로, 동적 서사 없음)
+6. 맥용: 복호화 패치는 Mac·Linux로 이식돼 있다 (`stigma-gm/tools/llama_patch/`: `build_server.sh`, `smoke_test.py`, CI `mac-gm-runtime.yml`). 게임 쪽 Mac 빌드는 아직 동적 서사 없음. 결정·남은 일은 [stigma-gm/MAC_GM.md](../stigma-gm/MAC_GM.md)
 
 ## 이벤트 화면 장면 그림
 
@@ -108,3 +121,15 @@ GM 모델 코드·도구·문서는 이 저장소의 `stigma-gm/`에 있다 (학
 - 공개키가 비어 있거나 `cryptography`를 못 쓰면 진단 기록을 아예 쓰지 않는다 (평문으로 남기지 않는다)
 - 버그 제보를 받으면: `python tools/diag/diag_tool.py read 받은파일.sdg` (`--kind log`/`trace`, `--json`)
 - 보관: **계속 보관한다** (게임이 진단 파일을 지우지 않는다). 실행마다 파일이 하나씩 쌓인다 (한 판 약 250KB)
+
+## 에셋 출처 관리
+
+- 게임 안 크레딧은 `assets/licenses/CREDITS.txt` 하나만 고치면 된다 (옵션 → 크레딧 · 라이선스가 그대로 보여 준다). 라이선스 전문은 `assets/licenses/*.txt`, 새 종류를 넣으면 `credits.py`의 `LICENSES`에 한 줄
+- 음원: `assets/sfx/CREDITS.md` (파일별 원본), 아이콘: `assets/icons/CREDITS.md` (game-icons.net, 흰 실루엣 PNG → 게임이 크기·색을 입힌다)
+- CC BY 에셋을 더하면 CREDITS.txt · 해당 CREDITS.md · README 크레딧을 같이 고친다
+
+## 문서
+
+- 플레이어용: 루트 [README](../README.md), [게임 가이드](../docs/GUIDE.md), [RELEASE_NOTES](../RELEASE_NOTES.md)
+- 스크린샷: `docs/screenshots/v2/` (README가 쓴다)
+- 기획: `기획/` — 다음 버전 [v2.1 개발안](../기획/v2.1_개발안.md), 정면 뷰 목업 `기획/정면뷰_목업/`
