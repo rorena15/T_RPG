@@ -623,7 +623,7 @@ def run_game():
                 sound.play_boss_bgm()
                 combat_loop(player, is_boss=True)
                 run_boss_core_choice(player)
-                run_ending(player)
+                run_ending(player, grid)
                 break
             else:
                 if grid.at_forge() and not grid.forge_known():

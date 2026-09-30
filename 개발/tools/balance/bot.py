@@ -252,8 +252,8 @@ _orig_cq = quest._complete_quest
 def cq(pl): M["quests_done"] += 1; return _orig_cq(pl)
 quest._complete_quest = cq
 _orig_ending = Main.run_ending
-def ending(pl):
-    M["result"] = "clear"; return _orig_ending(pl)
+def ending(pl, grid=None):
+    M["result"] = "clear"; return _orig_ending(pl, grid)
 Main.run_ending = ending
 out = io.StringIO()
 sys.stdout = open(os.devnull, "w")

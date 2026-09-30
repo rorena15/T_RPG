@@ -7,6 +7,7 @@ import sqlite3
 import sys
 import constants
 import playtime
+import endings
 import sound
 from core import get_equipment_data
 from ui import (clear_screen, print_header, print_divider,
@@ -285,6 +286,9 @@ class Player:
             if self.hp <= 0:
                 print(f"\n{Fore.RED + Style.BRIGHT}" + t('resource_fatal'))
                 print(t('playtime_line', time=playtime.finish(self, "starve")))
+                print()
+                for line in endings.card("starve"):
+                    print(line)
                 wait_for_keypress()
                 sys.exit()
 

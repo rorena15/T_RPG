@@ -7,6 +7,7 @@ import os
 import sys
 import constants
 import playtime
+import endings
 from colorama import Fore, Back, Style
 from core import get_equipment_data
 from ui import (clear_screen, print_header, print_divider, type_text,
@@ -398,7 +399,7 @@ def _banner_path() -> str:
     return _os.path.join(base, 'assets', 'banner.png')
 
 
-def run_ending(player):
+def run_ending(player, grid=None):
     clear_screen()
     sound.stop_all()
     sound.play_ending_bgm()
@@ -503,11 +504,12 @@ def run_ending(player):
     type_text(t('ending_epilogue_2'), 0.04)
     print()
     time.sleep(0.8)
-    type_text(t('ending_epilogue_3'), 0.04)
+    ending = endings.clear_ending(player, grid)
+    epi = [f'ending_epilogue_{i}' for i in range(3, 7)] if ending == "pioneer" else [f'ending_epi_{ending}_{i}' for i in range(1, 5)]
+    type_text(t(epi[0]), 0.04)
     print()
-    type_text(t('ending_epilogue_4'), 0.03)
-    type_text(t('ending_epilogue_5'), 0.03)
-    type_text(t('ending_epilogue_6'), 0.03)
+    for k in epi[1:]:
+        type_text(t(k), 0.03)
     print()
     time.sleep(1.2)
     type_text(t('ending_epilogue_7'), 0.04)
@@ -520,6 +522,9 @@ def run_ending(player):
     print(Fore.GREEN + Style.BRIGHT + "  ╔" + "═" * 74 + "╗")
     print(Fore.GREEN + Style.BRIGHT + "  ║  " + ea_rpad(t('ending_clear_banner'), 72) + "║")
     print(Fore.GREEN + Style.BRIGHT + "  ╚" + "═" * 74 + "╝")
+    print()
+    for line in endings.card(ending, player.job_class):
+        print(line)
     wait_for_keypress()
     run_act2_teaser(player)
 

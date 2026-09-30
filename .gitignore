@@ -529,6 +529,7 @@ MigrationBackup/
 # End of https://www.toptal.com/developers/gitignore/api/vs,python
 stigma_data.db
 stigma_save.json
+endings.json
 log.txt
 
 릴리즈/

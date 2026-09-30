@@ -7,6 +7,7 @@ import sys
 import time
 import constants
 import playtime
+import endings
 from colorama import Fore, Style
 from core import get_equipment_data, grant_gear_drop
 from i18n import t, db_t
@@ -183,6 +184,9 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
             sound.sfx("death")
             type_text(Fore.RED + Style.BRIGHT + t('combat_timeout'))
             print(t('playtime_line', time=playtime.finish(player, "timeout")))
+            print()
+            for line in endings.card("timeout"):
+                print(line)
             wait_for_keypress()
             sys.exit()
 
@@ -590,6 +594,9 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
         sound.sfx("death")
         type_text(Fore.RED + Style.BRIGHT + t('combat_fatal'), 0.03)
         print(t('playtime_line', time=playtime.finish(player, "boss_death" if is_boss else "death")))
+        print()
+        for line in endings.card("boss_death" if is_boss else "death"):
+            print(line)
         wait_for_keypress()
         sys.exit()
 
