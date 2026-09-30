@@ -749,14 +749,14 @@ class PygameTerminal:
                     r = self._text_input(event)
                 else:
                     r = None
-                if r:
-                    return r
-                if event.type == pygame.KEYDOWN:
+                if not r and event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_ESCAPE:  # 화면이 뜻을 주지 않은 ESC는 무시 (예전엔 게임이 바로 꺼졌다)
                         continue
-                    ch = self._resolve_key(event)
-                    if ch:
-                        return ch
+                    r = self._resolve_key(event)
+                if r:
+                    if active and hasattr(mgr, "on_key"):   # 키를 받은 순간을 화면에 알린다 (전투 화면: 여기서부터가 이번 공방)
+                        mgr.on_key(r)
+                    return r
             self._idle_frame()
 
     def input_text(self, prompt: str = "") -> str:

@@ -3,7 +3,7 @@
   개발/ 폴더에서:  python tools/ui/shot.py <출력 폴더> [ko|en]
 
 찍는 화면: 보스 준비, 코어 선택, 외곽 조우, 2막 예고, 대본 이벤트(선택·단순·무기), 결말 기록,
-전투의 [센서] 알림(드론 장갑판, 청소 부대 증원 신호). 선택은 미리 정한 키로 넘기고 타자·대기는 건너뛴다.
+전투(최근 공방만 남는 기록, [센서] 알림, 대기 알림). 선택은 미리 정한 키로 넘기고 타자·대기는 건너뛴다.
 입력 루프 자체(choose / wait_key)는 loop_test.py가 실제 키 이벤트로 돌려 본다. 세이브는 임시 폴더에 쓴다.
 """
 import os, sys, random, tempfile
@@ -127,9 +127,13 @@ event_view.scene_card = lambda *a, **k: None
 combat._sleep = lambda s: None
 import ui
 for m in (combat, ui):
-    for n in ("wait_for_keypress", "type_text"):
-        if hasattr(m, n):
-            setattr(m, n, lambda *a, **k: None)
+    if hasattr(m, "type_text"):
+        m.type_text = lambda *a, **k: None
+def _silent_wait():   # "아무 키나 누르면 진행" 대기: 알림이 떠 있는 화면을 찍고 넘어간다
+    ui_ = term._ui_manager
+    if ui_ is not None and getattr(ui_, "_active", False):
+        snap(ui_, "wait")
+term.wait_keypress_silent = _silent_wait
 def drive_combat(etype, seq, label):
     p = new_player(); p.hp = p.max_hp
     p.weights.update({"cyber": 4})
@@ -138,7 +142,10 @@ def drive_combat(etype, seq, label):
         ui_ = term._ui_manager
         if ui_ is not None:
             snap(ui_, label)
-        return ks.pop(0) if ks else "X"
+        k = ks.pop(0) if ks else "Q"
+        if ui_ is not None and hasattr(ui_, "on_key"):   # gui.read_key가 하는 일: 키를 받은 순간을 화면에 알린다
+            ui_.on_key(k)
+        return k
     combat.read_key = rk
     PREFIX[0] = "combat"
     log("== combat", etype)
@@ -148,6 +155,6 @@ def drive_combat(etype, seq, label):
         log("   (death)")
     except Exception:
         import traceback; log(traceback.format_exc())
-drive_combat("drone", ["Q", "Q", "E", "Q"], "drone")
+drive_combat("drone", ["Q", "Q", "E", "Q", "I", "1"], "drone")   # 뒤는 Q로 이길 때까지 (승리 화면의 대기 알림까지)
 drive_combat("security", ["Q", "R", "Q"], "sec")
 log("done")

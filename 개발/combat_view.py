@@ -4,6 +4,8 @@ combat.py는 UI 관리자가 있으면 화면을 지우거나 메뉴를 찍지 �
   set_state("combat"/"exploration"), scene_set_enemy(이름, hp, 최대hp, 아스키아트), scene_update_hp(hp),
   set_actions([(키, 이름, 쓸 수 있음[, 누르면 보낼 키])]), scene_set_idle()
 왼쪽: 적 그림 + 내 생체 지표 + 적 이름·HP.  오른쪽: 큰 적 HP 바, 전투 기록.  아래: 행동 키.
+전투 기록에는 마지막으로 키를 누른 뒤의 공방만 남는다 (on_key가 그 자리를 표시한다). 예전 공방은 쌓아 두지 않는다.
+"아무 키나 누르면 진행" 안내는 기록이 아니라 기다리는 동안만 뜨는 알림이다 (notice, ui.wait_for_keypress가 넣고 지운다).
 입력은 원래대로 combat.py의 read_key()가 받는다 (방향키·마우스는 EventView.on_input이 키로 바꿔 준다).
 """
 import re
@@ -24,10 +26,25 @@ class CombatView(EventView):
         self._shown_hp = None
         self._hit = (0, 0)  # (시각, 이전 hp) 피해 번쩍임
         self.actions = []
+        self._mark = None   # 터미널 기록에 끼워 둔 표시 줄: 이 뒤부터가 이번 공방
+
+    notice = None           # 기다리는 동안만 뜨는 알림 글 (없으면 조작 안내)
+
+    def _mark_turn(self):
+        """지금부터 찍히는 줄만 전투 기록에 보인다. 표시는 빈 줄 하나를 끼워 그 줄 자체로 찾는다
+        (터미널 기록은 600줄에서 앞이 잘려 줄 번호로는 기억할 수 없다)."""
+        buf = self._term._buf
+        self._mark = []
+        buf.append(self._mark)
+        buf.append([])
+
+    def on_key(self, key):
+        self._mark_turn()
 
     # ── combat.py가 부르는 것 ─────────────────────────────────────────────
     def set_state(self, state):
         if state == "combat" and not self._active:
+            self._mark_turn()   # 전투 전에 찍힌 글(탐색 기록, 앞선 전투)은 보이지 않게
             self.open()
         elif state != "combat" and self._active:
             self.close()
@@ -122,6 +139,12 @@ class CombatView(EventView):
         top = H - 62 - self._menu_h()
         bw = (width - 10) // 2
         hits = []
+        if self.notice:   # 기다리는 중에는 고를 행동이 없다: 버튼·퀵슬롯을 치우고 알림만 남긴다
+            self._foot_hits = hits
+            pulse = 0.6 + 0.4 * abs((pygame.time.get_ticks() % 1400) / 700 - 1)
+            c.blit(self.f_mono_b.render("▸", True, _lerp(BG, AMBER, pulse)), (x, H - 41))
+            c.blit(self.f_sans.render(self.notice, True, _lerp(BG, INK, pulse)), (x + 20, H - 40))
+            return
         for i, (key, label, ret) in enumerate(items):
             bx, by = x + (i % 2) * (bw + 10), top + (i // 2) * (self.BTN_H + 6)
             rect = pygame.Rect(bx, by, bw, self.BTN_H)
@@ -146,18 +169,22 @@ class CombatView(EventView):
             hits.append((ret, rect))
         self._foot_hits = hits
         self._draw_quickbar(c, x, top - self.QB_H - 10, width)
-        hint = self.f_sans.render(t('combat_hint_keys'), True, INK_FAINT)
-        c.blit(hint, (x, H - 40))
+        c.blit(self.f_sans.render(t('combat_hint_keys'), True, INK_FAINT), (x, H - 40))
 
     def _log_surfaces(self, width, per):
         """전투 기록 줄 그림. 터미널 기록이 바뀔 때만 다시 거르고 그린다
         (매 프레임 60줄을 다시 줄바꿈·렌더하면 한 프레임 36ms로 느려졌다)."""
         buf = self._term._buf
-        key = (id(buf), len(buf), len(buf[-1]) if buf else 0, width, per)
+        key = (id(buf), len(buf), len(buf[-1]) if buf else 0, width, per, id(self._mark))
         if key == getattr(self, "_log_key", None):
             return self._log_cache
+        start = max(0, len(buf) - 60)
+        for i in range(len(buf) - 1, start - 1, -1):   # 이번 공방의 시작 (표시 줄) 뒤부터
+            if buf[i] is self._mark:
+                start = i + 1
+                break
         lines = []
-        for line in buf[-60:]:
+        for line in buf[start:]:
             text = "".join(seg[0] for seg in line).strip()
             if not text or len(_WORDISH.findall(text)) < max(2, len(text) * 0.35):
                 continue

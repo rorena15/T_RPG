@@ -41,6 +41,15 @@ def safe_input(prompt):
 def wait_for_keypress():
     """엔터 입력 불필요 아무 키나 누르는 즉시 화면 템포가 연출 모드로 진행"""
     term = get_terminal()
+    mgr = getattr(term, "_ui_manager", None) if term else None
+    if mgr is not None and getattr(mgr, "_active", False) and hasattr(mgr, "notice"):
+        # 그림 화면(전투): 안내를 기록에 쌓지 않고, 기다리는 동안만 띄웠다가 지운다
+        mgr.notice = t('wait_any_key').strip("[]. ")
+        try:
+            term.wait_keypress_silent()
+        finally:
+            mgr.notice = None
+        return
     print("\n" + t('wait_any_key'))
     if term:
         term.wait_keypress_silent()

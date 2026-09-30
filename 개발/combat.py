@@ -479,8 +479,9 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
         elif cmd == "5" and has_consumable:
             consecutive_attacks = 0
             avail = [k for k, v in player.consumables.items() if v > 0]
-            print(t('combat_item_list'))
-            for i, key in enumerate(avail):
+            if not _ui:   # 그림 화면은 아래 버튼이 목록이다: 기록 칸에 같은 목록을 또 찍지 않는다
+                print(t('combat_item_list'))
+            for i, key in enumerate(avail if not _ui else []):
                 item = constants.CONSUMABLES_DB[key]
                 if item["type"] == "hp":
                     desc = t('consumable_hp_percent', pct=int(item['val']*100)) if item["is_percent"] else t('consumable_hp_fixed', val=item['val'])
@@ -491,7 +492,8 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
                 icon = item.get('icon', '')
                 name_disp = f"{icon} {db_t(item, 'name')}" if icon else db_t(item, 'name')
                 print(f"  [{i+1}] {name_disp} x{player.consumables[key]} — {desc}")
-            print(t('combat_cancel_item'))
+            if not _ui:
+                print(t('combat_cancel_item'))
             if _ui:
                 _prev_sel, _ui.foot_sel = _ui.foot_sel, 0
                 _ui.set_actions([(str(i + 1), f"{db_t(constants.CONSUMABLES_DB[k], 'name')} x{player.consumables[k]}", True, None, k)
