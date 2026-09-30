@@ -62,8 +62,12 @@ RENAMED = [("오비탈 에어", "스트라토"), ("오비탈", "스트라토"), 
 _JOSA_PAIRS = {"이": ("이", "가"), "가": ("이", "가"), "을": ("을", "를"), "를": ("을", "를"),
                "은": ("은", "는"), "는": ("은", "는"), "과": ("과", "와"), "와": ("과", "와"),
                "으로": ("으로", "로"), "로": ("으로", "로")}
-_RENAMED_RE = re.compile("(" + "|".join(re.escape(a) for a, _ in RENAMED) + ")(?:(으로|로|이|가|을|를|은|는|과|와)(?![가-힣]))?")
-_RENAMED_MAP = dict(RENAMED)
+# 띄어쓰기가 달라도 잡는다 ("리퍼 닥", "트라우마팀": 가벼움 모델이 실제로 띄어 썼다). 영문 표기는 플레이어 입력용
+RENAMED_EN = [("orbital air", "스트라토"), ("arasaka", "아마기리"), ("militech", "스틸게이트"), ("biotechnica", "셀리온"),
+              ("kang tao", "란위"), ("trauma team", "레드라인"), ("microtech", "비트레일"), ("ripperdoc", "봉합꾼")]
+_RENAMED_RE = re.compile("(" + "|".join(r"\s?".join(re.escape(ch) for ch in a.replace(" ", "")) for a, _ in RENAMED + RENAMED_EN)
+                         + ")(?:(으로|로|이|가|을|를|은|는|과|와)(?![가-힣]))?", re.IGNORECASE)
+_RENAMED_MAP = {a.replace(" ", ""): b for a, b in RENAMED + RENAMED_EN}
 
 
 def _renamed(text):
@@ -72,7 +76,7 @@ def _renamed(text):
         return text
 
     def sub(m):
-        new, josa = _RENAMED_MAP[m.group(1)], m.group(2)
+        new, josa = _RENAMED_MAP["".join(m.group(1).split()).lower()], m.group(2)
         if not josa:
             return new
         jong = (ord(new[-1]) - 0xAC00) % 28 if "가" <= new[-1] <= "힣" else 0
@@ -334,6 +338,7 @@ def _call(view, player, grid, action, history, hint="", force_check=False):
     """GM 한 턴을 백그라운드에서 돌린다(화면은 계속 움직임). 성공하면 (서술, 출력, 원문), 실패하면 None."""
     state, lore = _build_state(player, grid)
     base = lore
+    action = _renamed(action)   # 플레이어가 예전 이름을 직접 쓰면 모델이 그대로 따라 쓴다 (8B 12번 중 9번): 넘기기 전에 바꾼다
     if hint:
         lore = f"{lore} {hint}"
     # 장면·행동·소지품과 맞는 원작 설정 조각을 덧붙인다 (없는 설정을 지어내지 않게)
