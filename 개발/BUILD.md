@@ -42,6 +42,7 @@
 ├── art_gen/             # 장면 그림 만들기 (로컬 SDXL)
 ├── tools/balance/       # 밸런스 검증 봇 · 실행기 (난이도별 승률 표, README 참고)
 ├── tools/diag/          # 진단 기록 키 만들기 · 읽기 (diag_tool.py)
+├── tests/               # 단독 실행 시험 (python tests/test_gm_renamed.py: GM 응답의 예전 브랜드명 대응)
 ├── validate_i18n.py     # 언어 파일 검증 (키 일치 · 코드 속 한글 금지)
 └── locales/
     ├── ko.json          # 한국어 (825키)

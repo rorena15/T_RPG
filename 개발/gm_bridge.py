@@ -53,6 +53,45 @@ SYSTEM_LINE = re.compile(r"^\[(경고|SYSTEM|ERROR)\]\s*(.*)$")
 SCRIPT_TAG = re.compile(r"^\[[^\]]+\]\s*")  # 대본 결과 문장 앞의 [처리] 같은 표식
 SUCCESS = (None, "success", "crit_success")
 
+# 장비·NPC 이름에서 외부 게임 브랜드명을 자체 이름으로 바꿨다. 지금 GM 모델은 예전 이름으로 학습돼 있어,
+# 응답에 예전 이름이 나오면 새 이름으로 고친다 (서술이 어긋나지 않고, 이름으로 찾는 아이템 지급이 빠지지 않게).
+# 학습 데이터를 바꿔 다시 학습한 뒤에도 안전장치로 남겨 둔다.
+RENAMED = [("오비탈 에어", "스트라토"), ("오비탈", "스트라토"), ("아라사카", "아마기리"), ("밀리테크", "스틸게이트"),
+           ("바이오테크니카", "셀리온"), ("캉타오", "란위"), ("트라우마 팀", "레드라인"), ("마이크로테크", "비트레일"),
+           ("리퍼닥", "봉합꾼")]
+_JOSA_PAIRS = {"이": ("이", "가"), "가": ("이", "가"), "을": ("을", "를"), "를": ("을", "를"),
+               "은": ("은", "는"), "는": ("은", "는"), "과": ("과", "와"), "와": ("과", "와"),
+               "으로": ("으로", "로"), "로": ("으로", "로")}
+_RENAMED_RE = re.compile("(" + "|".join(re.escape(a) for a, _ in RENAMED) + ")(?:(으로|로|이|가|을|를|은|는|과|와)(?![가-힣]))?")
+_RENAMED_MAP = dict(RENAMED)
+
+
+def _renamed(text):
+    """예전 브랜드명을 새 이름으로. 바로 뒤 조사는 새 이름의 받침에 맞춘다."""
+    if not isinstance(text, str) or not text:
+        return text
+
+    def sub(m):
+        new, josa = _RENAMED_MAP[m.group(1)], m.group(2)
+        if not josa:
+            return new
+        jong = (ord(new[-1]) - 0xAC00) % 28 if "가" <= new[-1] <= "힣" else 0
+        with_b, without_b = _JOSA_PAIRS[josa]
+        if josa in ("으로", "로"):
+            return new + ("로" if jong in (0, 8) else "으로")   # 받침 없음·ㄹ → 로
+        return new + (with_b if jong else without_b)
+    return _RENAMED_RE.sub(sub, text)
+
+
+def _renamed_out(out):
+    items = out.get("items") if isinstance(out, dict) else None
+    if isinstance(items, dict):
+        for k in ("add", "remove"):
+            if isinstance(items.get(k), list):
+                items[k] = [_renamed(n) for n in items[k]]
+    return out
+
+
 _status = {"models": None, "checked": 0.0}  # Ollama에 설치된 모델 이름 (캐시)
 _mode = "full"
 _name_to_id = None
@@ -128,7 +167,7 @@ def _item_id(name):
             pass
         for iid, d in constants.SPECIAL_ITEMS.items():
             _name_to_id.setdefault(d["name"], iid)
-    return _name_to_id.get(name)
+    return _name_to_id.get(_renamed(name))
 
 
 def _build_state(player, grid):
@@ -307,7 +346,7 @@ def _call(view, player, grid, action, history, hint="", force_check=False):
     try:
         narration, out, text, _ = view.run_task(lambda: generate_turn(
             system, history[-HISTORY_TURNS:], action, roll, MODELS[_mode], force_check=force_check), action)
-        return narration, out, text
+        return _renamed(narration), _renamed_out(out), _renamed(text)
     except OSError:  # 서버가 꺼졌다: 한동안 GM 없이 진행하고 RECHECK_SEC 뒤 다시 확인
         _status["models"] = set()
         _status["checked"] = time.time()
