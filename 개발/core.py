@@ -98,11 +98,12 @@ def init_and_load_db():
         sys.exit()
 
 
-def roll_equipment():
-    """드롭 장비 하나를 고른다: 등급은 GEAR_DROP_TIER_WEIGHTS 비율, 그 등급 안에서는 무작위. 없으면 None."""
+def roll_equipment(tier_weights=None):
+    """드롭 장비 하나를 고른다: 등급은 tier_weights(기본 GEAR_DROP_TIER_WEIGHTS) 비율, 그 등급 안에서는 무작위. 없으면 None."""
     import random
-    tiers = list(constants.GEAR_DROP_TIER_WEIGHTS)
-    tier = random.choices(tiers, weights=[constants.GEAR_DROP_TIER_WEIGHTS[x] for x in tiers], k=1)[0]
+    tw = tier_weights or constants.GEAR_DROP_TIER_WEIGHTS
+    tiers = list(tw)
+    tier = random.choices(tiers, weights=[tw[x] for x in tiers], k=1)[0]
     try:
         with sqlite3.connect("stigma_data.db") as conn:
             rows = conn.execute("SELECT item_id FROM equipment WHERE tier = ? AND item_id != 'WEAPON_NONE'", (tier,)).fetchall()
@@ -112,9 +113,9 @@ def roll_equipment():
 
 
 
-def grant_gear_drop(player):
+def grant_gear_drop(player, tier_weights=None):
     """장비 하나를 굴려 가방에 넣고 알림 문구를 돌려준다. 못 골랐으면 None."""
-    iid = roll_equipment()
+    iid = roll_equipment(tier_weights)
     if not iid:
         return None
     player.inventory.append(iid)

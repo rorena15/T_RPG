@@ -8,6 +8,7 @@ import sys
 import constants
 import playtime
 import endings
+import traits
 import sound
 from core import get_equipment_data
 from ui import (clear_screen, print_header, print_divider,
@@ -51,6 +52,7 @@ class Player:
         self.play_seconds = 0.0   # 누적 플레이 시간 (playtime.py)
 
         self.weights = {"kinetic": 0, "scrap": 0, "cyber": 0}
+        self.trait_seen = {}   # 알린 성향 단계 (traits.py)
         self.enemies_defeated = 0
         self.upgrades = {}           # 장비 강화 단계 {item_id: {"k": 단계, "pity": 천장}} (upgrade.py)
 
@@ -140,7 +142,7 @@ class Player:
             "active_buffs": self.active_buffs,
             "vit": self.vit, "int_s": self.int_s, "dex": self.dex, "lv": self.lv,
             "max_ram": self.max_ram, "materials": self.materials,
-            "consumables": self.consumables, "weights": self.weights,
+            "consumables": self.consumables, "weights": self.weights, "trait_seen": self.trait_seen,
             "inventory": self.inventory, "equipment": self.equipment, "reputation": self.reputation,
             "turn_count": self.turn_count, "difficulty": self.difficulty,
             "enemies_defeated": self.enemies_defeated, "diary": self.diary, "upgrades": self.upgrades,
@@ -166,6 +168,7 @@ class Player:
         self.reputation = data.get("reputation", 0)
         self.consumables = data.get("consumables", {k: 0 for k in constants.CONSUMABLES_DB.keys()})
         self.weights = data.get("weights", {"kinetic": 0, "scrap": 0, "cyber": 0})
+        self.trait_seen = data.get("trait_seen", {})
         self.inventory = data.get("inventory", [])
         raw_eq = data.get("equipment", {})
         if "weapon" in raw_eq and "main_weapon" not in raw_eq:
@@ -534,7 +537,7 @@ class Player:
                             print(t('inv_dismantle_equipped'))
                         else:
                             self.inventory.pop(n - 1)
-                            gained = random.randint(15, 30)
+                            gained = traits.scrap(self, random.randint(15, 30))
                             self.materials += gained
                             advance_quest(self, "scrap", gained)
                             d = get_equipment_data(item_id)

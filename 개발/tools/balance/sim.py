@@ -48,7 +48,9 @@ def run_one(game_dir, diff, farm, seed, env):
     except Exception as e:
         return {"diff": diff, "farm": farm, "seed": seed, "result": f"CRASH {type(e).__name__}", "state": None}
     return {"diff": diff, "farm": farm, "seed": seed, "result": r.get("result"), "forge": r.get("forge_last"),
-            "turns": r.get("turns"), "state": r.get("boss_state"), "ending": r.get("ending"), "end": r.get("end")}
+            "turns": r.get("turns"), "state": r.get("boss_state"), "ending": r.get("ending"), "end": r.get("end"),
+            **{k: r.get(k) for k in ("traits", "weights", "beh", "danger_srch", "cycles", "enemies", "scrap_end",
+                                     "bot_jam", "bot_guard", "searches", "hp", "job")}}
 
 
 def simulate(diffs, farms, n, jobs, seed0, env, out_path):

@@ -233,7 +233,7 @@ BOSS_PHASE2_LI_BONUS = 5
 #   - 공격력 배율(BOSS_DIFF_ATK): 강한 플레이어의 최대 성공률 (쉬움 약 70% / 보통 약 40% / 어려움 약 20%)
 # 강화소는 발칸 게이츠 의뢰를 마쳐야 생겨 초반을 약한 채로 버틴다 → 일반 적은 ENEMY_DIFF_ATK로 난이도별 완화
 BOSS_DIFF_MULT       = {"easy": 1.60, "normal": 1.30, "hard": 1.30}
-BOSS_DIFF_ATK        = {"easy": 1.62, "normal": 1.88, "hard": 1.90}
+BOSS_DIFF_ATK        = {"easy": 1.62, "normal": 1.94, "hard": 1.90}
 BOSS_POWER_REF       = 180
 # 검증 (봇, 발칸 의뢰·강화소·하락·내구도 포함, 탐색 0 / 20 / 45 / 90회)
 #   보통: 게임 전체 50판씩 0 / 4 / 20 / 40%
@@ -272,12 +272,36 @@ ENEMY_SPAWN = {"bio_hound": 0.20, "dogs": 0.15}   # 나머지는 드론
 SEC_ALERT = 60        # 경계가 이 이상이면
 SEC_CHANCE = 0.35     # 이 확률로 청소 부대가 대신 온다
 
+# ── 일반 적의 고유 행동 (combat.py) ─────────────────────────────────────────
+# 드론: DRONE_GUARD_EVERY턴마다 장갑판을 올린다(예고). 그 턴의 공격은 DRONE_GUARD_MULT만 들어간다 → 바리케이드·회복으로 넘길 때
+# 하운드: 반격 뒤 HOUND_DOUBLE_CHANCE 확률로 한 번 더 문다 (HOUND_DOUBLE_MULT 위력)
+# 들개 무리: 무리가 줄수록 약해진다. 공격력 = DOGS_MIN_ATK + (1 − DOGS_MIN_ATK) × 남은 체력 비율
+# 청소 부대: 조우하자마자 증원을 부른다. SEC_CALL_TURN턴이 끝날 때까지 패킷 우회로 끊지 못하면
+#           체력이 최대의 SEC_REINF_HP만큼 늘고 공격력이 SEC_REINF_ATK배
+DRONE_GUARD_EVERY   = 3
+DRONE_GUARD_MULT    = 0.35
+HOUND_DOUBLE_CHANCE = 0.30
+HOUND_DOUBLE_MULT   = 0.5
+DOGS_MIN_ATK        = 0.45
+SEC_CALL_TURN       = 3
+SEC_REINF_HP        = 0.4
+SEC_REINF_ATK       = 1.25
+
 SUB_WPN_POWER        = 100
 
 # 장비 드롭: 일반 전투 승리 / 탐색 파밍에서 나올 확률, 나오면 등급 비율 (T4 80% / T3 19% / T2 1%)
 GEAR_DROP_COMBAT     = 0.30
 GEAR_DROP_SEARCH     = 0.15
 GEAR_DROP_TIER_WEIGHTS = {4: 80, 3: 19, 2: 1}
+
+# ── 칸 위험도 (map.py danger: 0 낮음 / 1 보통 / 2 높음) ─────────────────────
+# 위험한 칸일수록 조우가 잦고 더 많이·더 좋게 나온다. 한 칸만 파는 것보다 어디로 갈지 고르는 쪽이 이득이 되게
+DANGER_ENC   = (0.75, 1.0, 1.35)   # 탐색 중 전투 확률 배율
+DANGER_SCRAP = (0.8, 1.0, 1.5)     # 파밍 고철 배율
+DANGER_GEAR  = (0.10, 0.15, 0.25)  # 파밍 때 장비 확률 (GEAR_DROP_SEARCH 대신)
+DANGER_TIER_WEIGHTS = {2: {4: 62, 3: 34, 2: 4}}   # 위험한 칸의 장비 등급 비율 (없으면 GEAR_DROP_TIER_WEIGHTS)
+# ── 탐색 수확 체감: 다 뒤진 칸이 다시 채워질 때마다(map.py cycles) 파밍량이 1 / (1 + DEPLETE × 횟수) ──
+DEPLETE = 0.35
 
 # 강화 (upgrade.py): 시도 1회 고철 = max(1, floor(α·(k+1)^1.2)) × 이 배율
 UPGRADE_COST_MULT    = 3

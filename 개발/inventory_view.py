@@ -10,6 +10,7 @@ import pygame
 
 import constants
 import upgrade
+import traits
 import sound
 from core import get_equipment_data
 from event_view import AMBER, BG, EventView, GREEN, INK, INK_DIM, INK_FAINT, JUNKYARD, RED, TEAL, VIOLET, _lerp
@@ -138,7 +139,7 @@ class InventoryView(EventView):
                 self.msg = [t('inv_confirm_dismantle', name=db_t(row['d'], 'name'))]
                 return
             p.inventory.pop(row["index"])
-            gained = random.randint(15, 30)
+            gained = traits.scrap(p, random.randint(15, 30))
             p.materials += gained
             advance_quest(p, "scrap", gained)
             self.msg = [t('inv_dismantled', name=db_t(row['d'], 'name'), gained=gained)]

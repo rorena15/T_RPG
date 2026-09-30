@@ -204,6 +204,10 @@ class MapView(EventView):
             (t('map_stats', df=p.calc_def_base(), eva=p.calc_eva_rate() * 100, crt=p.calc_crt_rate() * 100), INK_DIM),
             (self._items_line(), INK_DIM),
         ]
+        dg = g.danger_at()
+        if list(g.player_pos) != list(g.bunker_pos):   # 칸 위험도와 뒤진 흔적
+            dep = g.depletion()
+            lines.append((t(f'map_danger_{dg}') + (t('map_depleted', n=dep) if dep else ""), (GREEN, AMBER, RED)[dg]))
         for text, col in lines:
             c.blit(self.f_sans.render(text, True, col), (sx, sy))
             sy += 28
@@ -364,6 +368,13 @@ class MapView(EventView):
                     if abs(ux) + abs(uy) < 0.9:
                         nx, ny = sx + int(ux * hw * 0.8), sy - 1 + int(uy * hh * 0.8)
                         c.set_at((nx, ny), (46, 45, 42) if not alarm else (96, 52, 46))
+            if pos != list(g.bunker_pos):   # 칸 위험도: 윗면 앞 모서리에 짧은 눈금 (보통 1개 호박색, 높음 2개 붉은색)
+                dg = g.danger_at(pos)
+                if dg:
+                    dcol = _lerp(BG, AMBER if dg == 1 else RED, 0.85)
+                    for k in range(dg):
+                        ex = sx - 3 + k * 5
+                        pygame.draw.line(c, dcol, (ex, sy + hh - 4), (ex + 3, sy + hh - 4), 2)
             if pos == list(g.forge_pos) and forge.hinted(g):
                 # 쇠 두드리는 소리가 나는 곳: 흐린 호박색 파동 두 겹 (정확한 모습은 가 봐야 안다)
                 for k in (0.0, 0.5):

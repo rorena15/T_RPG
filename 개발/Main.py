@@ -30,6 +30,7 @@ import gm_bridge
 import credits
 import forge
 import playtime
+import traits
 import scene_art
 
 _console = Console(highlight=False)
@@ -382,6 +383,13 @@ def run_game():
         sound.map_weather(scene_art.world_weather(player.turn_count))  # 날씨 환경음 (산성비·먼지 폭풍 등)
         if forge.check_hint(player, grid):  # 발칸을 오래 못 만났으면 방향 힌트 (forge.py)
             time.sleep(1.2)
+        _trait_lines = traits.check_new(player)  # 성향이 새 단계에 닿았으면 알림 (traits.py)
+        if _trait_lines:
+            sound.sfx("job")
+            for _ln in _trait_lines:
+                print(_ln)
+                log_diary(player, _ln.strip())
+            time.sleep(1.2)
         _actions = _EXPLORE_ACTIONS
         if grid.at_forge() and grid.forge_known():  # 강화소 칸: U로 발칸 게이츠 / 강화소 (forge.py)
             _flabel = t('act_forge') if forge.built(grid) else t('act_forge_npc')
@@ -393,6 +401,8 @@ def run_game():
         else:
             grid.draw()
             player.show_status()
+            if list(grid.player_pos) != list(grid.bunker_pos):
+                print(f"  {t(f'map_danger_{grid.danger_at()}')}" + (t('map_depleted', n=grid.depletion()) if grid.depletion() else ""))
             print(f" {t('cmd_header')}")
             print(f"  {t('cmd_move')}")
             print(f"  {t('cmd_search')}")
@@ -457,7 +467,9 @@ def run_game():
             print(t('search_start'))
             time.sleep(0.5)
 
-            encounter_chance = get_encounter_chance(player)
+            _danger = grid.danger_at()                     # 칸 위험도: 조우·보상 배율 (constants.DANGER_*)
+            _yield = 1.0 / (1.0 + constants.DEPLETE * grid.depletion())   # 다시 채워진 칸은 덜 나온다
+            encounter_chance = get_encounter_chance(player) * constants.DANGER_ENC[_danger]
             roll = random.random()
 
             if roll < 0.08 and constants.TRADER_ITEMS:
@@ -492,13 +504,18 @@ def run_game():
                     print(f"\n  {_empty}")
                     print_ambient_lore()
             else:
-                # 자원 파밍 (나머지 ~22%). GEAR_DROP_SEARCH 확률로 자원 대신 장비
-                gear_msg = grant_gear_drop(player) if random.random() < constants.GEAR_DROP_SEARCH else None
+                # 자원 파밍 (나머지 ~22%). 칸 위험도에 따른 확률(DANGER_GEAR)로 자원 대신 장비
+                _depleted = random.random() > _yield   # 여러 번 뒤진 칸: 이미 누가 다 가져갔다
+                gear_msg = (grant_gear_drop(player, constants.DANGER_TIER_WEIGHTS.get(_danger))
+                            if not _depleted and random.random() < constants.DANGER_GEAR[_danger] else None)
                 item_roll = random.random()
-                if gear_msg:
+                if _depleted:
+                    sound.sfx("search_empty")
+                    print(f"\n  {random.choice(t('search_depleted'))}")
+                elif gear_msg:
                     print(gear_msg)
                 elif item_roll <= 0.25:
-                    gained = random.randint(10, 25)
+                    gained = traits.scrap(player, max(1, round(random.randint(10, 25) * constants.DANGER_SCRAP[_danger])))
                     player.materials += gained
                     advance_quest(player, "scrap", gained)
                     sound.sfx("loot")

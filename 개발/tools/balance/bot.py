@@ -7,7 +7,13 @@
 사람처럼 하는 것: 부위마다 센 장비 장착·남는 장비 분해, 고철이 모이면 강화소에서 강화, 발칸 의뢰 수락·보고,
 쇠 두드리는 소리(힌트)를 따라가기, 배고프면 먹기, 일반 전투에서 체력이 반 밑이면 후퇴(flee), 보스 학습 지수 끊기.
 환경 변수로 수치를 바꿔 볼 수 있다: BOSS_ATK, BOSS_HP, BOSS_MULT, BOSS_REF, ENEMY_DIFF(일반 적 난이도 배율),
-NO_UPG(강화 안 함), NO_HINT(발칸 힌트 끔), FORGE_MULT(강화 몇 번분 고철이 모이면 강화소로, 기본 2), TRACE(턴별 상태 출력).
+NO_UPG(강화 안 함), NO_HINT(발칸 힌트 끔), FORGE_MULT(강화 몇 번분 고철이 모이면 강화소로, 기본 2), TRACE(턴별 상태 출력),
+BOT_FOCUS(스토리·이벤트 선택: random 기본 / kinetic / scrap / cyber — 그 성향 선택지를 고른다),
+BOT_DANGER(칸 고르기: smart 기본 = 체력이 넉넉하면 위험한 칸 / safe = 낮은 칸 / any = 무작위).
+
+게임성 요소도 사람처럼 쓴다: 드론이 장갑판을 올리면(guard) 바리케이드, 청소 부대 증원 신호(call_at)는 패킷 우회로 끊기,
+뒤진 칸(cycles)보다 새 칸, 체력이 넉넉하면 위험한 칸. 결과 JSON에 성향 단계(traits), 적 행동 횟수(beh),
+위험도별 탐색 수(danger_srch), 다시 채워진 칸 수(cycles)를 남긴다.
 """
 import os, sys, io, json, random, linecache, time as _time
 sys.path.insert(0, os.getcwd())
@@ -19,7 +25,9 @@ _time.sleep = lambda s: None
 import ui, i18n
 for n in ("clear_screen",):
     setattr(ui, n, lambda *a, **k: None)
-import constants, combat, quest, story, player as player_mod, Main, core, skills, updater, sound
+import constants, combat, quest, story, player as player_mod, Main, core, skills, updater, sound, traits
+FOCUS = os.environ.get("BOT_FOCUS", "random")
+DANGER_MODE = os.environ.get("BOT_DANGER", "smart")
 for m in (combat, quest, story, player_mod, Main, core, ui):
     if hasattr(m, "clear_screen"): m.clear_screen = lambda *a, **k: None
     if hasattr(m, "wait_for_keypress"): m.wait_for_keypress = lambda *a, **k: None
@@ -35,7 +43,14 @@ combat._sleep = lambda s: None
 for f in dir(sound):
     if callable(getattr(sound, f)) and not f.startswith("_"): setattr(sound, f, lambda *a, **k: None)
 M = {"fights": [], "searches": 0, "scrap_gain": 0, "moves": 0, "heals_used": 0, "food_used": 0, "result": None,
-     "trader": 0, "events": 0, "sessions": 0, "quests_done": 0}
+     "trader": 0, "events": 0, "sessions": 0, "quests_done": 0, "danger_srch": [0, 0, 0], "bot_jam": 0, "bot_guard": 0}
+
+def pick_choice(choices):
+    """스토리·이벤트 선택지 번호. BOT_FOCUS면 그 성향 선택지를, 없으면 무작위."""
+    if FOCUS != "random":
+        idx = [i for i, c in enumerate(choices) if c.get("weight") == FOCUS]
+        if idx: return str(idx[0] + 1)
+    return random.choice("123"[:max(1, min(3, len(choices)))])
 P = {"p": None, "g": None}
 DIFF_KEY = {"easy": "1", "normal": "2", "hard": "3"}[DIFF]
 
@@ -71,7 +86,7 @@ def auto_equip(p, g=None):
     if UPG:
         worn = set(p.equipment.values())
         for iid in [i for i in p.inventory if i not in worn]:
-            p.inventory.remove(iid); p.materials += random.randint(15, 30); M["dismantled"] = M.get("dismantled", 0) + 1
+            p.inventory.remove(iid); p.materials += traits.scrap(p, random.randint(15, 30)); M["dismantled"] = M.get("dismantled", 0) + 1
         wid = p.equipment["main_weapon"]
         import forge
         if g is None or not g.at_forge() or not forge.built(g): return   # 강화·수리는 완공된 강화소에서만
@@ -144,7 +159,7 @@ def bot_read_key(_depth=1):
             steps = [k2 for k2 in steps if [x + (k2 == "D") - (k2 == "A"), y + (k2 == "W") - (k2 == "S")] != list(g.bunker_pos)] or steps
             return steps[0]
         if farming and g.can_search(pl.turn_count)[0]:  # 타일 수색 한도가 남았을 때만
-            M["searches"] += 1; return "F"
+            M["searches"] += 1; M["danger_srch"][g.danger_at()] += 1; return "F"
         if farming:  # 이 칸은 다 뒤졌다: 뒤질 수 있는 옆 칸으로 (방공호 제외)
             x, y = g.player_pos
             def ok(nx, ny):
@@ -154,8 +169,14 @@ def bot_read_key(_depth=1):
                 return td is None or td["remaining"] > 0 or td["cooldown_until"] <= pl.turn_count
             opts = [(k, nx, ny) for k, nx, ny in (("D", x+1, y), ("A", x-1, y), ("W", x, y+1), ("S", x, y-1)) if ok(nx, ny)]
             if opts:
-                fresh = [o for o in opts if (o[1], o[2]) not in g.tile_data]
-                return random.choice(fresh or opts)[0]
+                # 사람처럼: 새 칸 > 덜 뒤진 칸, 체력이 넉넉하면 위험한 칸(보상이 크다), 모자라면 안전한 칸
+                hp_ok = pl.hp >= pl.max_hp * 0.6
+                def score(o):
+                    pos = (o[1], o[2])
+                    d = g.danger_at(pos)
+                    pref = {"smart": d if hp_ok else -d, "safe": -d, "any": 0}.get(DANGER_MODE, 0)
+                    return (pos not in g.tile_data, -g.depletion(pos), pref, random.random())
+                return max(opts, key=score)[0]
         M["moves"] += 1
         x, y = g.player_pos
         k = "D" if x < g.bunker_pos[0] and (x <= y or y >= g.bunker_pos[1]) else "W"
@@ -174,9 +195,17 @@ def bot_read_key(_depth=1):
         boss = lv.get("is_boss")
         # 사람처럼: 일반 전투에서 체력이 반 밑이고 회복약이 없으면 후퇴한다 (FLEE=1일 때)
         if FLEE and not boss and pl.hp < pl.max_hp * 0.5: return "X"
+        cost = traits.jam_cost(pl)
+        if not boss and lv.get("call_at") and pl.max_ram >= cost:   # 청소 부대 증원 신호: 교란으로 끊는다
+            M["bot_jam"] += 1; return "R"
+        if not boss and lv.get("guard"):   # 드론이 장갑판을 올렸다: 이번 턴은 버틴다
+            M["bot_guard"] += 1; return "E"
         if boss:  # 사람처럼: 보스 학습 지수가 쌓이면 패킷 우회·바리케이드로 끊는다
             L = lv.get("learning_index", 0)
-            if L >= 9 and pl.max_ram >= 2: return "R"
+            if L >= 9 and pl.max_ram >= cost: return "R"
+            # 해킹 2단계면 패킷 우회가 반격도 막는다: 체력이 반 밑이면 RAM을 방패로 쓴다
+            if (traits.jam_blocks_counter(pl) and pl.max_ram >= cost and not lv["combat_ctx"].get("exposed")
+                    and (pl.hp < pl.max_hp * 0.6 or L >= 6)): return "R"   # 교란 → 드러난 약점에 공격, 번갈아
             if L >= 11: return "E"
         if pl.skill_slots and random.random() < 0.3: return "Z"
         return "Q"
@@ -199,9 +228,9 @@ def bot_read_key(_depth=1):
     if fn == "_talk":  # 발칸 게이츠: 의뢰 수락·보고 (사람처럼 받는다)
         M["vulkan_talk"] = M.get("vulkan_talk", 0) + 1
         return "1"
-    if fn == "handle_random_event": M["events"] += 1; return random.choice("123")
+    if fn == "handle_random_event": M["events"] += 1; return pick_choice(lv.get("choices") or [])
     if fn == "show_diary": return "0"
-    if fn == "handle_session": M["sessions"] += 1
+    if fn == "handle_session": M["sessions"] += 1; return pick_choice((lv.get("session") or {}).get("choices", []))
     return random.choice("123")
 
 def key_for_consumable_menu_combat(pl):
@@ -285,5 +314,9 @@ if P.get("g") is not None:
     M["forge_last"] = dict(P["g"].forge)
 if pl:
     M.update(turns=pl.turn_count, hp=pl.hp, hunger=pl.hunger, thirst=pl.thirst, scrap_end=pl.materials,
-             tier=pl.get_highest_tier(), atk=pl.get_attack_power(), inv=len(pl.inventory), job=getattr(pl, "job_class", None))
+             tier=pl.get_highest_tier(), atk=pl.get_attack_power(), inv=len(pl.inventory), job=getattr(pl, "job_class", None),
+             weights=dict(pl.weights), traits={k: traits.tier(pl, k) for k in traits.KEYS}, enemies=pl.enemies_defeated)
+M["beh"] = dict(combat.BEH_STATS)
+if P.get("g") is not None:
+    M["cycles"] = sum(td.get("cycles", 0) for td in P["g"].tile_data.values())
 sys.__stdout__.write(json.dumps(M, ensure_ascii=False) + "\n")

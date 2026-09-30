@@ -1,6 +1,7 @@
 # combat.py — 전투 시스템
 # 의존성: constants, core, ui, sys_log
 
+import collections
 import math
 import random
 import sys
@@ -8,6 +9,7 @@ import time
 import constants
 import playtime
 import endings
+import traits
 from colorama import Fore, Style
 from core import get_equipment_data, grant_gear_drop
 from i18n import t, db_t
@@ -20,6 +22,9 @@ import sound
 from quest import advance_quest
 from sys_log import track
 from gui import get_terminal, get_ui_manager
+
+# 적 고유 행동이 몇 번 나왔는지 (밸런스 봇이 읽는다. 게임은 쓰지 않는다)
+BEH_STATS = collections.Counter()
 
 
 def _sleep(seconds: float):
@@ -152,6 +157,8 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
     sub_wpn_used   = False
 
     combat_ctx = {"skip_enemy_attack": False}
+    guard = False                                                     # 드론 방어 태세 (이번 턴 공격이 튕긴다)
+    call_at = constants.SEC_CALL_TURN if (not is_boss and enemy_type == "security") else None   # 청소 부대 증원 도착 턴
 
     turn = 1
     learning_index = 0
@@ -159,6 +166,9 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
     escaped = False
     escape_log = ""
     action_logs = [t('combat_encounter_alert', name=name)]
+    if call_at:
+        action_logs.append(t('beh_sec_call', n=call_at))
+        BEH_STATS["sec_call"] += 1
     sound.sfx("alert")
 
     def _summary(msg):
@@ -277,7 +287,7 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
             print()
             print(t('combat_options_1'))
             print(t('combat_options_2'))
-            print(t('combat_options_3'))
+            print(t('combat_options_3', cost=traits.jam_cost(player)))
             print(t('combat_options_4'))
             if has_consumable:
                 print(t('combat_options_5'))
@@ -314,7 +324,7 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
                 if _skills.is_learning_blocked(player):
                     action_logs.append(t('combat_pattern_blocked'))
                 else:
-                    e_gain = max(0, 3 - e_suppress)
+                    e_gain = max(0, 3 - e_suppress - traits.learn_suppress(player))
                     learning_index += e_gain
                     if e_suppress > 0:
                         action_logs.append(t('combat_repeat_cyberdeck', gain=e_gain))
@@ -324,7 +334,10 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
             penalty = max(0.5, 1.0 - (learning_index - 10) * 0.05) if learning_index > 10 else 1.0
             f_multiplier = 1.0 + (player.reputation / 2000) * 1
             effective_power = player.get_attack_power() + gear_atk
-            atk_mult = _skills.get_atk_mult(player)
+            atk_mult = _skills.get_atk_mult(player) * traits.dmg_mult(player)
+            if combat_ctx.pop("exposed", False):   # 해킹 2단계: 교란으로 드러난 약점
+                atk_mult *= traits.EXPOSE_MULT
+                action_logs.append(t('trait_exposed_hit'))
 
             hyd_mult, hyd_pierce = _skills.consume_hydraulic_crush(player, action_logs)
             eff_e_def = int(e_def * (1 - hyd_pierce))
@@ -347,6 +360,10 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
                 dmg = math.floor(dmg * crt_mult_used)
 
             dmg = _skills.apply_outgoing_buffs(player, dmg, action_logs)
+            if guard:
+                dmg = max(1, int(dmg * constants.DRONE_GUARD_MULT))
+                action_logs.append(t('beh_drone_guard_hit'))
+                BEH_STATS["drone_guard_hit"] += 1
             disp_dmg, _, _ = apply_dynamic_scaling(dmg, 0, tier)
             crit_tag = Fore.YELLOW + Style.BRIGHT + " [CRITICAL!]" + Style.RESET_ALL if is_crit else ""
 
@@ -367,7 +384,7 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
         elif cmd == "2":
             consecutive_attacks = 0
             learning_index = max(0, learning_index - 4)
-            atk = int(atk * 0.5)
+            atk = int(atk * (1 - traits.barricade_block(player)))
 
             sound.sfx("barricade")
             print(t('combat_defense_msg'))
@@ -376,13 +393,21 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
             _sleep(2)
 
         elif cmd == "3":
-            if player.max_ram >= 2:
+            if player.max_ram >= traits.jam_cost(player):
                 consecutive_attacks = 0
                 learning_index = 0
-                player.max_ram -= 2
+                player.max_ram -= traits.jam_cost(player)
+                if call_at:
+                    call_at = None
+                    action_logs.append(t('beh_sec_jammed'))
+                    BEH_STATS["sec_jammed"] += 1
+                if traits.jam_blocks_counter(player):   # 해킹 2단계: 교란에 걸린 적은 이번 턴 반격하지 못하고 약점이 드러난다
+                    combat_ctx["skip_enemy_attack"] = True
+                    combat_ctx["exposed"] = True
+                    action_logs.append(t('trait_jam_block'))
 
                 sound.sfx("hack")
-                print(enemy_line('combat_hack_msg', enemy_type, is_boss))
+                print(enemy_line('combat_hack_msg', enemy_type, is_boss, cost=traits.jam_cost(player)))
                 _sleep(1)
                 _summary(t('combat_hack_log'))
             else:
@@ -507,6 +532,9 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
                 if is_crit:
                     sub_dmg = math.floor(sub_dmg * 1.5)
                     action_logs.append(t('combat_sub_crit'))
+                if guard:
+                    sub_dmg = max(1, int(sub_dmg * constants.DRONE_GUARD_MULT))
+                    action_logs.append(t('beh_drone_guard_hit'))
 
                 disp_sub_dmg, _, _ = apply_dynamic_scaling(sub_dmg, 0, tier)
                 crit_tag = Fore.YELLOW + Style.BRIGHT + " [CRITICAL!]" + Style.RESET_ALL if is_crit else ""
@@ -567,6 +595,8 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
         # --- 적의 반격 ---
         if hp > 0 and not escaped and not combat_ctx.get("skip_enemy_attack"):
             curr_atk = int(atk * _skills.get_enemy_atk_mult(player))
+            if not is_boss and enemy_type == "dogs":   # 무리가 줄수록 약해진다
+                curr_atk = int(curr_atk * (constants.DOGS_MIN_ATK + (1 - constants.DOGS_MIN_ATK) * hp / max(1, enemy_max_hp)))
             dmg_taken = max(1, curr_atk - total_def)
             dmg_taken = _skills.apply_incoming_buffs(player, dmg_taken, action_logs, combat_ctx)
             disp_dmg_taken, _, _ = apply_dynamic_scaling(dmg_taken, 0, tier)
@@ -582,11 +612,42 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
             def_note = t('combat_def_note', val=def_bonus) if def_bonus > 0 else ""
             _summary(t('combat_damage_log', dmg=f"{disp_dmg_taken:,}", def_note=def_note))
             _sleep(1)
+            if not is_boss and enemy_type == "bio_hound" and player.hp > 0 and random.random() < constants.HOUND_DOUBLE_CHANCE:
+                bite = max(1, int(dmg_taken * constants.HOUND_DOUBLE_MULT))
+                player.hp -= bite
+                disp_bite, _, _ = apply_dynamic_scaling(bite, 0, tier)
+                sound.enemy_attack(enemy_type)
+                print(Fore.RED + t('beh_hound_double', dmg=f"{disp_bite:,}"))
+                action_logs.append(t('beh_hound_double', dmg=f"{disp_bite:,}").strip())
+                BEH_STATS["hound_double"] += 1
 
         if cmd == "2":  # 바리케이드 반감은 이번 반격에만. 예전엔 반격 직전에 되돌려서 피해가 전혀 줄지 않았다
             atk = int(base_atk * (constants.BOSS_PHASE2_ATK_MULT if phase2_triggered else 1.0))
         combat_ctx["skip_enemy_attack"] = False
         _skills.end_of_turn_tick(player, action_logs)
+        _rep = traits.turn_repair(player)
+        if _rep and hp > 0 and 0 < player.hp < player.max_hp:   # 해체 3단계: 전투 중 자가 수리
+            player.hp = min(player.max_hp, player.hp + _rep)
+            BEH_STATS["scrap_repair"] += 1
+        guard = False
+        if hp > 0 and not is_boss:
+            if enemy_type == "drone" and turn % constants.DRONE_GUARD_EVERY == constants.DRONE_GUARD_EVERY - 1:
+                guard = True                                   # 다음 턴 예고: 이번엔 때리지 말고 버틸 때
+                action_logs.append(t('beh_drone_guard'))
+                BEH_STATS["drone_guard"] += 1
+            if call_at and turn >= call_at:
+                call_at = None
+                extra = int(enemy_max_hp * constants.SEC_REINF_HP)
+                hp += extra
+                enemy_max_hp += extra
+                base_atk = int(base_atk * constants.SEC_REINF_ATK)
+                atk = base_atk
+                if _ui: _ui.scene_set_enemy(name, hp, enemy_max_hp, art)
+                sound.sfx("alert")
+                action_logs.append(t('beh_sec_reinforced'))
+                BEH_STATS["sec_reinforced"] += 1
+            elif call_at:
+                action_logs.append(t('beh_sec_call', n=call_at - turn))
         turn += 1
 
     if player.hp <= 0:
@@ -662,14 +723,18 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
             player.consumables[it] += 1
             print(t('combat_farm_medkit', name=db_t(constants.CONSUMABLES_DB[it], 'name')))
         else:
-            player.materials += 20
-            advance_quest(player, "scrap", 20)
-            print(t('combat_farm_scrap'))
+            gained = traits.scrap(player, 20)
+            player.materials += gained
+            advance_quest(player, "scrap", gained)
+            print(t('combat_farm_scrap_n', val=gained))
         spec = constants.ENEMY_TYPES.get(enemy_type) or {}
         if spec.get("bonus_scrap"):  # 청소 부대: 장비를 뜯어낸 고철
-            player.materials += spec["bonus_scrap"]
-            advance_quest(player, "scrap", spec["bonus_scrap"])
-            print(t('combat_sec_scrap', val=spec["bonus_scrap"]))
+            bonus = traits.scrap(player, spec["bonus_scrap"])
+            player.materials += bonus
+            advance_quest(player, "scrap", bonus)
+            print(t('combat_sec_scrap', val=bonus))
+        if traits.win_ram(player):
+            print(t('trait_ram_regen', ram=player.max_ram))
         if random.random() < spec.get("gear_drop", constants.GEAR_DROP_COMBAT):  # 장비 드롭은 위 보상과 따로 굴린다
             msg = grant_gear_drop(player)
             if msg:
