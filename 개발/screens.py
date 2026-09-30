@@ -19,20 +19,22 @@ class MenuScreen:
         self.view.card = card
         self._opened = False
 
-    def ask(self, title, items, tag="", lines=None, back=None, hero=False, start=0, footer=None):
-        """items: [(키, 글)]. 고른 키를 돌려준다. back: 뒤로 가기 항목의 키 (발밑 안내에 표시)."""
+    def ask(self, title, items, tag="", lines=None, back=None, hero=False, start=0, footer=None, adjust=()):
+        """items: [(키, 글)]. 고른 키를 돌려준다. back: 뒤로 가기 항목의 키 (발밑 안내에 표시).
+        adjust: ←→로 값을 조절하는 줄의 키들. 그 줄에서 ←/→를 누르면 "<키" / ">키"를 돌려준다."""
         v = self.view
         v.log = []
         v.add("title", tag=tag, title=title, hero=hero)
         if lines:
             v.add("prose", lines=list(lines))
         menu = v.add("choices", items=list(items), start=start)
-        default = [("↑↓", t('ui_select')), ("Enter", t('ui_confirm'))] + ([(back, t('ui_back'))] if back else [])
+        default = [("↑↓", t('ui_select'))] + ([("←→", t('ui_adjust'))] if adjust else []) + [("Enter", t('ui_confirm'))] \
+            + ([(back, t('ui_back'))] if back else [])
         v.footer = footer if footer is not None else default
         if not self._opened:
             v.open()
             self._opened = True
-        key = v.choose(menu, len(items), extra=("ESC",) if back else ())
+        key = v.choose(menu, len(items), extra=("ESC",) if back else (), adjust=adjust)
         return back if key == "ESC" else key
 
     def message(self, title, lines, tag="", hold_ms=None):

@@ -1311,9 +1311,10 @@ class EventView:
             entry["typing"] = (now, times)
         entry.pop("typing", None)
 
-    def choose(self, menu, n, extra=()):
+    def choose(self, menu, n, extra=(), adjust=()):
         """선택지 고르기: 숫자키, 방향키+Enter, 마우스(올리면 강조, 누르면 선택). 고른 키('1'..'n', '0')를 돌려준다.
-        extra: 추가로 받는 키 (예: 'ESC')."""
+        extra: 추가로 받는 키 (예: 'ESC').
+        adjust: 값을 조절하는 줄의 키들 (설정의 음량). 그 줄에서 ←/→를 누르면 "<키" / ">키"를 돌려준다."""
         keys = [k for k, _ in menu["items"]]  # 화면에 보이는 선택지 키 그대로 (타이틀처럼 0이 없는 메뉴도 있다)
 
         def _picked(k):  # 고른 소리: 0·ESC는 뒤로, 나머지는 확인
@@ -1325,6 +1326,9 @@ class EventView:
             while True:
                 for ev in self._events():
                     if ev.type == pygame.KEYDOWN:
+                        if ev.key in (pygame.K_LEFT, pygame.K_RIGHT) and keys[menu["sel"]] in adjust:
+                            sound.sfx("ui_move")
+                            return ("<" if ev.key == pygame.K_LEFT else ">") + keys[menu["sel"]]
                         if ev.key in (pygame.K_UP, pygame.K_w, pygame.K_LEFT):
                             menu["sel"] = (menu["sel"] - 1) % len(keys)
                             sound.sfx("ui_move")

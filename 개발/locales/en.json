@@ -2,7 +2,7 @@
   "lang_header": "언어 선택 / Language Select",
   "lang_ko": "한국어",
   "lang_en": "English",
-  "opt_volume": "BGM Volume",
+  "opt_volume": "Music Volume",
   "opt_mute": "Mute",
   "opt_text_speed": "Text Speed",
   "opt_mute_on": "ON",
@@ -1039,5 +1039,8 @@
   "tag_signal": "SIGNAL",
   "opt_endings": "Ending Records",
   "codex_clear": "Clears {n} / {total}",
-  "codex_bad": "Game overs {n} / {total}"
+  "codex_bad": "Game overs {n} / {total}",
+  "opt_master_volume": "Master Volume",
+  "opt_amb_volume": "Ambience Volume",
+  "ui_adjust": "Adjust"
 }

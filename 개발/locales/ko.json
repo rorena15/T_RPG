@@ -2,7 +2,7 @@
   "lang_header": "언어 선택 / Language Select",
   "lang_ko": "한국어",
   "lang_en": "English",
-  "opt_volume": "BGM 음량",
+  "opt_volume": "음악 음량",
   "opt_mute": "음소거",
   "opt_text_speed": "텍스트 속도",
   "opt_mute_on": "ON",
@@ -1039,5 +1039,8 @@
   "tag_signal": "수신",
   "opt_endings": "결말 기록",
   "codex_clear": "클리어 {n} / {total}",
-  "codex_bad": "게임 오버 {n} / {total}"
+  "codex_bad": "게임 오버 {n} / {total}",
+  "opt_master_volume": "전체 음량",
+  "opt_amb_volume": "환경음 음량",
+  "ui_adjust": "조절"
 }

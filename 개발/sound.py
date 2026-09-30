@@ -22,7 +22,7 @@ try:
 except ImportError:
     _OK = False
 
-# 곡 이름 -> (파일, 기본 음량). 기본 음량은 사용자 음량 0.5(기본값)일 때의 크기
+# 곡 이름 -> (파일, 기본 음량). 기본 음량은 사용자 음량 100%일 때의 크기 (곡끼리의 비율)
 _TRACKS = {
     "wind":   ("wind.mp3", 0.35),
     "typing": ("typing_bgm.mp3", 0.50),
@@ -68,21 +68,52 @@ def _asset(filename):
     return os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "assets", filename)
 
 
+# 사용자 음량(0.0~1.0) -> 실제 크기. 귀는 크기를 로그로 느껴서, 곧은 비례로는 아래쪽 절반에서만 차이가 났다.
+# 예전에는 min(1, 음량 × 2)여서 50·75·100%가 모두 같은 크기였고 25% 하나만 달랐다 (그마저 −6dB라 여전히 컸다).
+VOL_CURVE = 1.7      # 50% ≈ −10dB, 25% ≈ −20dB, 10% ≈ −34dB
+_master   = 1.0      # 전체 음량
+_amb_mult = 0.5      # 환경음(바람·날씨) 음량
+_sfx_mult = 0.5      # 효과음 음량
+
+
+def _curve(v):
+    return max(0.0, min(1.0, v)) ** VOL_CURVE
+
+
 def _user_gain():
-    return 0.0 if _muted else min(1.0, _vol_mult * 2)
+    """음악 크기."""
+    return 0.0 if _muted else _curve(_master) * _curve(_vol_mult)
 
 
-_sfx_mult = 0.5      # 사용자 효과음 음량 (0.0~1.0, 음악과 따로)
+def _amb_gain():
+    """환경음(바람·날씨) 크기."""
+    return 0.0 if _muted else _curve(_master) * _curve(_amb_mult)
 
 
 def _sfx_gain():
-    return 0.0 if _muted else min(1.0, _sfx_mult * 2)
+    return 0.0 if _muted else _curve(_master) * _curve(_sfx_mult)
+
+
+def set_master_volume(vol: float):
+    """전체 음량 (0.0~1.0). 음악·환경음은 즉시, 효과음은 다음 소리부터."""
+    global _master
+    _master = max(0.0, min(1.0, vol))
+    _apply_levels()
+
+
+def set_amb_volume(vol: float):
+    """환경음(바람·날씨) 음량 (0.0~1.0). 즉시 반영."""
+    global _amb_mult
+    _amb_mult = max(0.0, min(1.0, vol))
+    _apply_levels()
 
 
 def set_sfx_volume(vol: float):
     """사용자 효과음 음량 설정 (0.0~1.0). 다음 효과음부터 반영."""
     global _sfx_mult
     _sfx_mult = max(0.0, min(1.0, vol))
+    if _hb_channel is not None:
+        _hb_channel.set_volume(_sfx_gain())
 
 
 def init():
@@ -330,7 +361,7 @@ _weather_ch = None   # 지금 날씨를 튼 채널
 def _weather_level():
     if not _weather:
         return 0.0
-    return _TRACKS["wx_" + _weather][1] * _user_gain() * _DUCK.get(_current, 1.0)
+    return _TRACKS["wx_" + _weather][1] * _amb_gain() * _DUCK.get(_current, 1.0)
 
 
 def map_weather(weather):
@@ -359,7 +390,7 @@ def map_weather(weather):
 
 
 def _wind_level():
-    base = _TRACKS["wind"][1] * _user_gain()
+    base = _TRACKS["wind"][1] * _amb_gain()
     return base * _DUCK.get(_current, 1.0)
 
 
@@ -392,6 +423,8 @@ def _apply_levels(ms=150):
     for name, ch in _music_ch.items():
         if name == _current:
             _ramp(ch, _music_level(name), ms)
+    if _hb_channel is not None:   # 심장박동 경보도 효과음 음량·음소거를 따른다 (예전엔 늘 같은 크기였다)
+        _hb_channel.set_volume(_sfx_gain())
 
 
 def _play_music(name):
@@ -488,6 +521,7 @@ def boss_phase2():
         if _hb_channel is not None and _hb_sound is not None and not _muted:
             _boss_hb = True
             if not _hb_channel.get_busy():
+                _hb_channel.set_volume(_sfx_gain())
                 _hb_channel.play(_hb_sound, loops=-1)
         p = _asset("tinnitus.mp3")
         if os.path.exists(p) and not _muted:
@@ -542,6 +576,7 @@ def check_survival_alert(hunger: int, thirst: int):
         critical = hunger <= 10 or thirst <= 10 or _boss_hb
         if critical:
             if not _hb_channel.get_busy():
+                _hb_channel.set_volume(_sfx_gain())
                 _hb_channel.play(_hb_sound, loops=-1)
         else:
             if _hb_channel.get_busy():

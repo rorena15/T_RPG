@@ -33,12 +33,21 @@ def get_settings_path():
 
 
 def load_settings() -> dict:
-    defaults = {"bgm_volume": 0.5, "sfx_volume": 0.5, "mute": False, "text_speed": 1.0, "gm_mode": "full"}
+    defaults = {"master_volume": 1.0, "bgm_volume": 0.5, "amb_volume": 0.5, "sfx_volume": 0.5, "vol_curve": 2,
+                "mute": False, "text_speed": 1.0, "gm_mode": "full"}
     try:
         with open(get_settings_path(), encoding="utf-8") as f:
-            return {**defaults, **json.load(f)}
+            saved = json.load(f)
     except Exception:
         return defaults
+    if "vol_curve" not in saved:
+        # 예전 음량 값(실제 크기 = min(1, 값 × 2))을 새 곡선(sound.VOL_CURVE)에서 같은 크기가 되는 값으로 옮긴다 (5% 단위)
+        for k in ("bgm_volume", "sfx_volume"):
+            if k in saved:
+                saved[k] = round(min(1.0, saved[k] * 2) ** (1 / 1.7) * 20) / 20
+        if "bgm_volume" in saved:
+            saved["amb_volume"] = saved["bgm_volume"]   # 환경음은 예전에 음악 음량을 따랐다
+    return {**defaults, **saved}
 
 
 def save_settings(d: dict):

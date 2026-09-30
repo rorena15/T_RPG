@@ -80,8 +80,24 @@ def run_game():
     set_lang("ko")  # 기본값
 
     _settings = load_settings()
-    sound.set_bgm_volume(_settings["bgm_volume"])
-    sound.set_sfx_volume(_settings.get("sfx_volume", 0.5))
+    # 음량 네 가지: 옵션 키 -> (설정 이름, 문구, 반영 함수). 5% 단위, 옵션에서 ←→로 조절
+    _VOLS = {"M": ("master_volume", 'opt_master_volume', sound.set_master_volume),
+             "2": ("bgm_volume", 'opt_volume', sound.set_bgm_volume),
+             "E": ("amb_volume", 'opt_amb_volume', sound.set_amb_volume),
+             "7": ("sfx_volume", 'opt_sfx_volume', sound.set_sfx_volume)}
+
+    def _vol_step(key, delta, wrap=False):
+        name, _, apply = _VOLS[key]
+        n = round(_settings[name] * 20) + delta
+        n = (0 if n > 20 else n) if wrap else max(0, min(20, n))
+        _settings[name] = n / 20
+        apply(_settings[name])
+        if key in ("M", "7"):
+            sound.sfx("ui_ok")   # 바뀐 크기를 바로 들려준다
+        save_settings(_settings)
+
+    for _name, _, _apply in _VOLS.values():
+        _apply(_settings[_name])
     sound.set_mute(_settings["mute"])
     constants.TEXT_SPEED_MULT = _settings["text_speed"]
     gm_bridge.set_mode(_settings["gm_mode"])
@@ -160,7 +176,6 @@ def run_game():
 
         # ── 옵션 ──────────────────────────────────────────────────────────
         if ans == opt_key:
-            _vol_steps  = [0.0, 0.25, 0.5, 0.75, 1.0]
             _spd_steps  = [("opt_speed_slow", 2.0), ("opt_speed_normal", 1.0),
                            ("opt_speed_fast", 0.5), ("opt_speed_instant", 0.0)]
             _opt_scr = None
@@ -170,13 +185,12 @@ def run_game():
             while True:
                 clear_screen()
                 if _opt_scr:
-                    _vol_pct = int(_settings["bgm_volume"] * 100)
                     _spd_key = next((k for k, v in _spd_steps if v == _settings["text_speed"]), "opt_speed_normal")
                     _gm_mode = gm_bridge.get_mode()
                     _need_data = _gm_mode != "off" and not gm_bridge.mode_installed(_gm_mode)
-                    _o = [("1", t('lang_header')), ("2", f"{t('opt_volume')}   ◀ {_vol_pct}% ▶"),
-                          ("7", f"{t('opt_sfx_volume')}   ◀ {int(_settings.get('sfx_volume', 0.5) * 100)}% ▶"),
-                          ("3", f"{t('opt_mute')}   [{t('opt_mute_on') if _settings['mute'] else t('opt_mute_off')}]"),
+                    _o = [("1", t('lang_header'))] + \
+                         [(k, f"{t(label)}   ◀ {round(_settings[name] * 100)}% ▶") for k, (name, label, _) in _VOLS.items()] + \
+                         [("3", f"{t('opt_mute')}   [{t('opt_mute_on') if _settings['mute'] else t('opt_mute_off')}]"),
                           ("4", f"{t('opt_text_speed')}   [{t(_spd_key)}]"),
                           ("5", f"{t('opt_gm')}   [{t(f'opt_gm_{_gm_mode}')}]")]
                     if _need_data:
@@ -186,7 +200,11 @@ def run_game():
                     _o.append(("0", t('diff_back')))
                     _cur = getattr(_opt_scr, "last", "1")
                     ok = _opt_scr.ask(t('menu_options'), _o, lines=[t(f'opt_gm_desc_{_gm_mode}')], back="0",
-                                      start=next((i for i, (k, _) in enumerate(_o) if k == _cur), 0))
+                                      start=next((i for i, (k, _) in enumerate(_o) if k == _cur), 0), adjust=tuple(_VOLS))
+                    if ok[0] in "<>":   # 음량 줄에서 ←→: 5%씩
+                        _opt_scr.last = ok[1:]
+                        _vol_step(ok[1:], -1 if ok[0] == "<" else 1)
+                        continue
                     _opt_scr.last = ok
                     if ok == "1":
                         _lk = _opt_scr.ask(t('lang_header'), [("1", t('lang_ko')), ("2", t('lang_en')), ("0", t('diff_back'))], back="0")
@@ -210,14 +228,13 @@ def run_game():
                 else:
                     print_header(t('menu_options'))
                     print_divider()
-                    _vol_pct  = int(_settings["bgm_volume"] * 100)
                     _mute_str = t('opt_mute_on') if _settings["mute"] else t('opt_mute_off')
                     _spd_key  = next((k for k, v in _spd_steps if v == _settings["text_speed"]),
                                      "opt_speed_normal")
                     _spd_str  = t(_spd_key)
                     print(f"  1. {t('lang_header')}")
-                    print(f"  2. {t('opt_volume')}  ◀ {_vol_pct}% ▶")
-                    print(f"  7. {t('opt_sfx_volume')}  ◀ {int(_settings.get('sfx_volume', 0.5) * 100)}% ▶")
+                    for _k, (_name, _label, _) in _VOLS.items():
+                        print(f"  {_k}. {t(_label)}  ◀ {round(_settings[_name] * 100)}% ▶")
                     print(f"  3. {t('opt_mute')}  [{_mute_str}]")
                     print(f"  4. {t('opt_text_speed')}  [{_spd_str}]")
                     _gm_mode = gm_bridge.get_mode()
@@ -249,17 +266,8 @@ def run_game():
                         if lk == "1":   set_lang("ko"); break
                         elif lk == "2": set_lang("en"); break
                         elif lk == "0": break
-                elif ok == "2":
-                    cur = _vol_steps.index(_settings["bgm_volume"]) if _settings["bgm_volume"] in _vol_steps else 2
-                    _settings["bgm_volume"] = _vol_steps[(cur + 1) % len(_vol_steps)]
-                    sound.set_bgm_volume(_settings["bgm_volume"])
-                    save_settings(_settings)
-                elif ok == "7":
-                    cur = _vol_steps.index(_settings.get("sfx_volume", 0.5)) if _settings.get("sfx_volume", 0.5) in _vol_steps else 2
-                    _settings["sfx_volume"] = _vol_steps[(cur + 1) % len(_vol_steps)]
-                    sound.set_sfx_volume(_settings["sfx_volume"])
-                    sound.sfx("ui_ok")   # 바뀐 크기를 바로 들려준다
-                    save_settings(_settings)
+                elif ok in _VOLS:   # Enter·숫자키: 10%씩 올리고 100% 다음은 0%
+                    _vol_step(ok, 2, wrap=True)
                 elif ok == "3":
                     _settings["mute"] = not _settings["mute"]
                     sound.set_mute(_settings["mute"])
