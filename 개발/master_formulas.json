@@ -465,7 +465,7 @@
       "vulkan_gates": { "name_kr": "발칸 게이츠", "faction": "데드존 스크랩 연합", "location": "데드존 녹슨 정크야드 벙커" }
     },
     "hybrid_hidden_npcs": {
-      "sly": { "name_kr": "리퍼닥 슬라이", "unlock": "combat_force + |VIT-DEX|<=3" },
+      "sly": { "name_kr": "봉합꾼 슬라이", "unlock": "combat_force + |VIT-DEX|<=3" },
       "echo": { "name_kr": "부품 중개상 에코", "unlock": "mechanical_tech + |INT-DEX|<=3" },
       "zero": { "name_kr": "아나키스트 제로", "unlock": "net_force + |INT-VIT|<=3" }
     }
