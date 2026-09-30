@@ -153,10 +153,9 @@ def _wm_leak(narration):
 
 
 def strip_reserved(narration):
-    """문구가 샌 줄만 지운 서술과 지운 줄 수를 돌려준다. 그 문구를 꺼내는 앞 문장(틀)도 같이 지운다.
-    8B는 평소 서술 7번에 1번꼴로 이 문구를 끼워 넣어(게임과 같은 입력 308턴, 2026-09-30), 통째로 다시 생성하면
-    재시도가 쌓이고 세 번 다 걸려 대본으로 넘어가는 턴이 나왔다. 줄만 지우면 나머지 서술은 그대로 쓸 수 있다.
-    지운 뒤에도 남아 있으면 check_narration이 걸러 재생성한다."""
+    """검사에 걸린 줄만 지운 서술과 지운 줄 수를 돌려준다.
+    통째로 다시 생성하면 재시도가 쌓여 대본으로 넘어가는 턴이 나왔다. 줄만 지우면 나머지 서술은 그대로 쓸 수 있다.
+    지운 뒤에도 걸리면 check_narration이 재생성시킨다. 배경과 수치는 비공개 문서."""
     lines = narration.splitlines()
     bad = [i for i, x in enumerate(lines) if _wm_leak(x)]
     if not bad:
