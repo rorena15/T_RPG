@@ -12,6 +12,7 @@
   <학습 venv>/python gen_scenes.py txt [--only camp] [--seeds 2]   # 밑그림 없이 분위기 4가지 x seeds장 (주로 이것)
   python gen_scenes.py pick camp camp_dusk_1 camp_night_0     # 고른 후보 -> assets/scenes/camp/ (게임이 무작위로 씀)
   <학습 venv>/python gen_scenes.py layers [--only camp]         # 고른 그림을 깊이로 3층 분리 (패럴랙스용)
+  <학습 venv>/python gen_scenes.py enemy [--only enemy_hound] [--per 4]   # 적 교전 그림 (가로, 적이 가운데에 선명하게) -> art/cand_enemy/
 """
 import argparse
 import os
@@ -237,12 +238,12 @@ MOOD_FIELD["cold"] = [(8, 10, 13), (26, 34, 44), (44, 58, 70), (22, 26, 30), (7,
 MOOD_FIELD_TINT = {"rain": (170, 160, 70), "toxic": (70, 150, 80), "hq_wall": (60, 60, 150), "neo_city": (50, 60, 130)}
 
 
-def color_field(mood, name, seed, weather=None):
+def color_field(mood, name, seed, weather=None, size=None):
     """형태 없는 색면 밑그림. 하늘·지평선·땅의 색과 밝기만 정해 화풍과 색감을 모든 장면에 맞춘다
     (밑그림 없이 뽑으면 밝은 판타지 풍경화 쪽으로 흘렀다). 약간의 얼룩을 넣어 붓질 여지를 준다."""
     import random
     from PIL import Image, ImageFilter
-    w, h = TXT_SIZE
+    w, h = size or TXT_SIZE
     stops = MOOD_FIELD[mood]
     tint = MOOD_FIELD_TINT.get(name) or WEATHER_TINT.get(weather)
     img = Image.new("RGB", (w, h))
@@ -320,6 +321,79 @@ def txt(only, per, steps, strength=0.86):
         sheet.save(os.path.join(out_dir, f"_{name}_sheet.jpg"), quality=85)
 
 
+# ── 적 교전 그림 (정면 뷰용, docs/기획/v2.1_개발안.md 3-1) ─────────────────────────────────
+# 풍경 속 작은 점이던 적(위 "enemy" 종류)을 화면 가득 키우면 형체가 없다. 전투 화면용은 따로 뽑는다:
+# 가로 비율, 적이 가운데 1/3 안에 선명하게, 배경은 같은 화풍(세피아·저채도·스모그).
+ENEMY_SIZE = (1344, 768)
+# 1차(2026-09-30)에서 배운 것: "facing the viewer"는 앞에 선 사람 뒷모습을 거의 매번 그려 넣었다 → 빼고 제외어에 넣는다.
+# 적마다 시드를 같게 주면 구도가 똑같이 나온다 → 적 이름으로 시드를 흩는다.
+ENEMY_PREFIX = ("medium wide shot, creature and machine design concept art, the subject is alone in the center of the frame, "
+                "full body visible, sharp readable silhouette against the haze, occupying the middle third of the image, "
+                "empty scrapyard ground in the foreground, ruins fading into smog behind, in the scene: ")
+ENEMY_NEG = ("tiny subject, distant speck, empty landscape, subject out of frame, cropped subject, extreme close-up, "
+             "multiple stacked scenes, split image, blurry subject, smeared shapes")
+ENEMY_NO_HUMAN = "person, human figure, lone wanderer, man standing, soldier, back view of a person, pedestrian, giant humanoid robot, mech suit"
+ENEMY_SUBJECT = {
+    "enemy_drones": "a battered quadcopter combat drone flying low above the ground, four spinning rotors, boxy armored hull with welded scrap "
+                    "plates, one red sensor eye, dangling cables, two more quadcopter drones behind it in the haze, machine only",
+    "enemy_hound": "a robot hound, a four legged quadruped robot the size of a large dog, smooth titanium armor plates, exposed pistons, "
+                   "steel hydraulic jaw, a single glowing sensor slit instead of eyes, crouched low ready to lunge, machine only",
+    "enemy_dogs": "a pack of five gaunt mangy feral dogs with glinting eyes closing in, ribs showing, heads low",
+    "enemy_security": "three faceless armored riot troopers with tall riot shields and rifles advancing in formation, glowing visor slits, "
+                      "heavy sealed helmets",
+    "enemy_collector": "a colossal industrial sweeper vehicle like a giant armored bulldozer on wide caterpillar tracks, a row of rotating "
+                       "hydraulic shredder blades across its front, two crane arms with grabbing claws raised, amber warning lights, machine only",
+}
+ENEMY_EXTRA_NEG = {
+    "enemy_drones": "helicopter, airplane, walking legs, spider legs, walker, " + ENEMY_NO_HUMAN,
+    "enemy_hound": "monster, kaiju, dinosaur, dragon, spikes, fur, teeth rows, giant, towering, walker, " + ENEMY_NO_HUMAN,
+    "enemy_dogs": ENEMY_NO_HUMAN + ", giant beast, monster",
+    "enemy_security": "giant humanoid robot, mech suit, tank, crowd of dozens",
+    "enemy_collector": "humanoid, legs, walking robot, battle tank gun barrel, turret cannon, " + ENEMY_NO_HUMAN,
+}
+
+
+def enemy(only, per, steps, strength=0.9, round_no=0):
+    """적 교전 그림 후보: 색면 밑그림(가로) + img2img. 적마다 시간·날씨를 달리해 per장. -> art/cand_enemy/
+    round_no: 다시 뽑을 때 올린다 (시드와 파일 이름이 달라져 앞선 후보를 덮지 않는다)."""
+    import random as _r
+    import torch
+    from diffusers import AutoencoderKL, StableDiffusionXLImg2ImgPipeline
+    from PIL import Image
+    vae = AutoencoderKL.from_pretrained("madebyollin/sdxl-vae-fp16-fix", torch_dtype=torch.float16)
+    pipe = StableDiffusionXLImg2ImgPipeline.from_pretrained(
+        "stabilityai/stable-diffusion-xl-base-1.0", vae=vae, torch_dtype=torch.float16, variant="fp16",
+        use_safetensors=True).to("cuda")
+    out_dir = os.path.join(OUT, "cand_enemy")
+    os.makedirs(out_dir, exist_ok=True)
+    for name in [x for x in ENEMY_SUBJECT if not only or x in only]:
+        rng = _r.Random(sum(map(ord, name)) + 7 + round_no)
+        pool = [(t, w) for t in TIMES for w in WEATHERS]
+        rng.shuffle(pool)
+        imgs = []
+        tag = f"r{round_no}_" if round_no else ""
+        for k, (mood, weather) in enumerate(pool[:per]):
+            path = os.path.join(out_dir, f"{name}_{tag}{mood}_{weather}_{k}.jpg")
+            if os.path.exists(path):  # 이어서 뽑기
+                imgs.append(Image.open(path))
+                continue
+            g = torch.Generator("cuda").manual_seed(3000 + 100 * round_no + 17 * (sum(map(ord, name)) % 50) + k)
+            # 공통 제외어의 "people, crowd"는 청소 부대에서 뺀다 (사람 모양 적)
+            base_neg = NEGATIVE.replace("people, crowd, ", "") if name == "enemy_security" else NEGATIVE
+            neg = ", ".join(x for x in (base_neg, ENEMY_NEG, ENEMY_EXTRA_NEG.get(name, ""), SUBJECT_NEG.get(name, "")) if x)
+            img = pipe(prompt=f"{ENEMY_PREFIX}{ENEMY_SUBJECT[name]}, {TIMES[mood]}, {WEATHERS[weather]}, {STYLE}",
+                       negative_prompt=neg, image=color_field(mood, name, 3000 + k, weather, ENEMY_SIZE),
+                       strength=strength, num_inference_steps=steps, guidance_scale=6.5, generator=g).images[0]
+            img.save(path, quality=92)
+            imgs.append(img)
+            print("enemy", path, flush=True)
+        tw, th = ENEMY_SIZE[0] // 2, ENEMY_SIZE[1] // 2
+        sheet = Image.new("RGB", (tw * 2, th * ((len(imgs) + 1) // 2)))
+        for i, img in enumerate(imgs):
+            sheet.paste(img.resize((tw, th)), ((i % 2) * tw, (i // 2) * th))
+        sheet.save(os.path.join(out_dir, f"_{name}_{tag}sheet.jpg"), quality=88)
+
+
 def pick(name, files):
     """고른 후보를 assets/scenes/<이름>/ 에 넣는다. 게임은 그중 하나를 무작위로 쓴다.
     files: 후보 파일 이름(확장자 빼고, 예: camp_dusk_1) 여러 개."""
@@ -390,12 +464,13 @@ def layers(only):
 
 def main():
     p = argparse.ArgumentParser()
-    p.add_argument("cmd", choices=["init", "paint", "txt", "pick", "layers"])
+    p.add_argument("cmd", choices=["init", "paint", "txt", "pick", "layers", "enemy"])
     p.add_argument("args", nargs="*")
     p.add_argument("--only", default="")
     p.add_argument("--n", type=int, default=4)
     p.add_argument("--strength", type=float, default=0.8)  # 0.62는 밑그림 실루엣을 그대로 따라 디테일이 없었다
     p.add_argument("--steps", type=int, default=30)
+    p.add_argument("--round", type=int, default=0, help="enemy: 다시 뽑는 회차 (시드·파일 이름을 바꾼다)")
     p.add_argument("--per", type=int, default=6, help="txt: 장면마다 몇 장 (시간x날씨 조합을 겹치지 않게)")
     a = p.parse_args()
     if a.cmd == "init":
@@ -404,6 +479,9 @@ def main():
         paint([x for x in a.only.split(",") if x], a.n, a.strength, a.steps)
     elif a.cmd == "layers":
         layers([x for x in a.only.split(",") if x])
+    elif a.cmd == "enemy":
+        enemy([x for x in a.only.split(",") if x], min(a.per, 4) if a.per == 6 else a.per, a.steps,
+              0.9 if a.strength == 0.8 else a.strength, a.round)
     elif a.cmd == "txt":
         txt([x for x in a.only.split(",") if x], a.per, a.steps, 0.86 if a.strength == 0.8 else a.strength)
     else:
