@@ -229,7 +229,7 @@ EQUIPMENT_EN = {
     "NECK_STD_09": ("Series Rifle Casing Necklace", "[T=3 Standard] Spent 5.56mm casings, cleanly polished in a Scrap Coalition workshop, lined up on a leather cord."),
     "NECK_STD_10": ("Triple-Layer Can-Tab Necklace", "[T=3 Standard] A hundred-odd aluminum can tabs woven like chain mail to protect the collarbones."),
     # --- 반지 (ring) ---
-    "RING_STD_01": ("Machined Solder Washer Ring", "[T=3 Standard] A standard ring: a brass washer from a precision switchboard, its bore carefully ground to fit the finger."),
+    "RING_STD_01": ("Ground Brass Washer Ring", "[T=3 Standard] A standard ring: a brass washer from a precision switchboard, its bore carefully ground to fit the finger."),
     "RING_STD_02": ("Titanium Hound Fang Ring", "[T=3 Standard] A Resistance token ring: a mech-beast's broken fang engraved with darknet ID codes."),
     "RING_STD_03": ("Precision Hex Nut Ring", "[T=3 Standard] A rusty factory nut shaped with a spanner, stripped of rust, and silver-plated."),
     "RING_STD_04": ("Fluorescent Fiber Knot Loop", "[T=3 Standard] A ring of fiber strands from a severed comms line, finely bound to carry a faint current."),
@@ -342,7 +342,7 @@ EQUIPMENT_EN = {
     "SHOES_REF_10": ("Drone Gyro Velocity Shoes", "[T=2 Refined] Boots that mathematically delay the overload bracket of Agility's effective value function f(A)."),
     # --- 목걸이 (necklace) ---
     "NECK_REF_01": ("Bio-Signal Stabilizer Necklace", "[T=2 Refined] A trinket that permanently improves base infrastructure recovery by +2 per turn as physical/compute contamination ticks accrue."),
-    "NECK_REF_02": ("Quantum-Weighted Stabilizer Choker", "[T=2 Refined] A choker that forcibly syncs the resonance weight coefficient of hybrid skills to its maximum of 1.0."),
+    "NECK_REF_02": ("Resonance-Weighted Sync Choker", "[T=2 Refined] A choker that forcibly syncs the resonance weight coefficient of hybrid skills to its maximum of 1.0."),
     "NECK_REF_03": ("Hound Spinal Fluid Choker", "[T=2 Refined] Syncs a mech-beast's coolant tube signals to the neck's power lines, preventing wear on your cybernetic nervous system."),
     "NECK_REF_04": ("Cyberdeck Surge-Absorbing Pendant", "[T=2 Refined] Gently deflects the system shock recoil from the Master AI firewall during direct net access."),
     "NECK_REF_05": ("Secret NPC Trust Seal Necklace", "[T=2 Refined] A chain that claims the final reward of hidden jobs a secret NPC opens when your main stats are within 3 of each other."),
