@@ -12,6 +12,7 @@ import re
 
 import pygame
 
+import constants
 from event_view import AMBER, BG, EventView, GREEN, INK, INK_DIM, INK_FAINT, JUNKYARD, PLATE_W, RED, _lerp
 from i18n import t
 
@@ -119,10 +120,11 @@ class CombatView(EventView):
         pygame.draw.line(c, (40, 38, 36), (x, y), (x + width, y))
         y += 14
         bottom = H - 70 - self._menu_h() - self.QB_H - 30
-        per = max(1, (bottom - y) // 28)
+        lh = round(28 * constants.FONT_SCALE)   # 전투 기록도 옵션의 글자 크기를 따른다
+        per = max(1, (bottom - y) // lh)
         for i, surf in enumerate(self._log_surfaces(width, per)):
             c.blit(surf, (x, y))
-            y += 28
+            y += lh
 
     # ── 행동 버튼 (오른쪽 칸 아래, 두 줄씩) ──────────────────────────────────
     BTN_H = 40
@@ -204,11 +206,11 @@ class CombatView(EventView):
                 color = GREEN
             else:
                 color = INK
-            wrapped += [(ln, color) for ln in self._wrap(self.f_serif, text, width)]
+            wrapped += [(ln, color) for ln in self._wrap(self.f_story, text, width)]
         shown = wrapped[-per:]
         out = []
         for i, (ln, color) in enumerate(shown):
             fade = 0.55 + 0.45 * (i + 1) / len(shown)  # 오래된 줄은 흐리게
-            out.append(self.f_serif.render(ln, True, _lerp(BG, color, fade)))
+            out.append(self.f_story.render(ln, True, _lerp(BG, color, fade)))
         self._log_key, self._log_cache = key, out
         return out

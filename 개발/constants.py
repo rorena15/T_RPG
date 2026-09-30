@@ -6,6 +6,12 @@
 GAME_VERSION = "2.0.0"
 
 TEXT_SPEED_MULT = 1.0  # 텍스트 출력 속도 배수 (0=즉시, 0.5=빠름, 1.0=보통, 2.0=느림)
+# 아래는 옵션에서 바꾸는 값 (options.apply가 settings.json에서 채운다)
+COMBAT_SPEED   = 1.0    # 전투 연출 대기 배수 (1.0 보통, 0.4 빠름, 0 즉시)
+SCREEN_SHAKE   = True   # 피격·대실패 때 화면 흔들림
+REDUCE_MOTION  = False  # 장면 그림의 흐름(패럴랙스·안개·먼지)을 멈춘다
+FONT_SCALE     = 1.0    # 이야기 칸 글자 크기 배수
+AUTOSAVE_TURNS = 0      # 이 턴마다 자동 저장 (0이면 끔)
 
 CREDITS_GITHUB = "https://github.com/rorena15/T_RPG"
 CREDITS_ITCH   = ""  # itch.io 배포 후 URL 삽입

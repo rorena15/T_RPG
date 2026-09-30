@@ -28,7 +28,10 @@ BEH_STATS = collections.Counter()
 
 
 def _sleep(seconds: float):
-    """pygame 모드에서는 화면 갱신을 유지하며 대기, 아니면 일반 sleep."""
+    """pygame 모드에서는 화면 갱신을 유지하며 대기, 아니면 일반 sleep. 옵션의 전투 속도를 따른다."""
+    seconds *= constants.COMBAT_SPEED
+    if seconds <= 0:
+        return
     term = get_terminal()
     if term:
         term.sleep_render(seconds)

@@ -70,16 +70,16 @@ def show_diary_view(player):
             y += 40
             lines = []
             for e in entries:
-                lines += [(ln, i == 0) for i, ln in enumerate(self._wrap(self.f_serif, e, width))]
-            per = (H - 140 - y) // 30
+                lines += [(ln, i == 0) for i, ln in enumerate(self._wrap(self.f_story, e, width))]
+            per = (H - 140 - y) // (self.LH_S - 2)
             self.max_off = max(0, len(lines) - per)
             self.off = max(0, min(self.off, self.max_off))
             start = max(0, len(lines) - per - self.off)
             for ln, first in lines[start:start + per]:
-                c.blit(self.f_serif.render(ln, True, INK if first else INK_DIM), (x, y))
-                y += 30
+                c.blit(self.f_story.render(ln, True, INK if first else INK_DIM), (x, y))
+                y += self.LH_S - 2
             if not entries:
-                c.blit(self.f_serif.render(t('diary_empty').strip(), True, INK_FAINT), (x, y))
+                c.blit(self.f_story.render(t('diary_empty').strip(), True, INK_FAINT), (x, y))
 
     entries = list(player.diary)
     v = DiaryView(get_terminal(), player, None, JUNKYARD, scene="bunker_inside")
@@ -140,15 +140,15 @@ def show_text_view(title, text, scene="forge"):
             if self._wrapped is None or self._wrapped[0] != width:   # 수백 줄이라 폭이 바뀔 때만 다시 자른다
                 lines = []
                 for para in text.split("\n"):
-                    lines += self._wrap(self.f_serif, para.strip(), width) if para.strip() else [""]
+                    lines += self._wrap(self.f_story, para.strip(), width) if para.strip() else [""]
                 self._wrapped = (width, lines)
             lines = self._wrapped[1]
-            self.per = max(1, (H - 140 - y) // 30)
+            self.per = max(1, (H - 140 - y) // (self.LH_S - 2))
             self.max_off = max(0, len(lines) - self.per)
             self.off = max(0, min(self.off, self.max_off))
             for ln in lines[self.off:self.off + self.per]:
-                c.blit(self.f_serif.render(ln, True, INK_DIM if ln.startswith("─") else INK), (x, y))
-                y += 30
+                c.blit(self.f_story.render(ln, True, INK_DIM if ln.startswith("─") else INK), (x, y))
+                y += self.LH_S - 2
             if self.max_off:
                 pos = f"{self.off + min(self.per, len(lines))}/{len(lines)}"
                 c.blit(self.f_mono.render(pos, True, INK_FAINT), (x, H - 132))

@@ -34,7 +34,8 @@ def get_settings_path():
 
 def load_settings() -> dict:
     defaults = {"master_volume": 1.0, "bgm_volume": 0.5, "amb_volume": 0.5, "sfx_volume": 0.5, "vol_curve": 2,
-                "mute": False, "text_speed": 1.0, "gm_mode": "full"}
+                "mute": False, "text_speed": 1.0, "gm_mode": "full", "combat_speed": 1.0, "font_scale": 1.0,
+                "screen_shake": True, "reduce_motion": False, "fullscreen": False, "autosave": 10}
     try:
         with open(get_settings_path(), encoding="utf-8") as f:
             saved = json.load(f)

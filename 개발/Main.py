@@ -27,8 +27,7 @@ from quest import handle_random_event, handle_trader, advance_quest, trigger_sud
 from story import handle_session, run_prologue, run_boss_core_choice, run_ending, boss_prep_view
 from gui import get_terminal
 import gm_bridge
-import credits
-import endings
+import options
 import forge
 import playtime
 import traits
@@ -80,26 +79,7 @@ def run_game():
     set_lang("ko")  # 기본값
 
     _settings = load_settings()
-    # 음량 네 가지: 옵션 키 -> (설정 이름, 문구, 반영 함수). 5% 단위, 옵션에서 ←→로 조절
-    _VOLS = {"M": ("master_volume", 'opt_master_volume', sound.set_master_volume),
-             "2": ("bgm_volume", 'opt_volume', sound.set_bgm_volume),
-             "E": ("amb_volume", 'opt_amb_volume', sound.set_amb_volume),
-             "7": ("sfx_volume", 'opt_sfx_volume', sound.set_sfx_volume)}
-
-    def _vol_step(key, delta, wrap=False):
-        name, _, apply = _VOLS[key]
-        n = round(_settings[name] * 20) + delta
-        n = (0 if n > 20 else n) if wrap else max(0, min(20, n))
-        _settings[name] = n / 20
-        apply(_settings[name])
-        if key in ("M", "7"):
-            sound.sfx("ui_ok")   # 바뀐 크기를 바로 들려준다
-        save_settings(_settings)
-
-    for _name, _, _apply in _VOLS.values():
-        _apply(_settings[_name])
-    sound.set_mute(_settings["mute"])
-    constants.TEXT_SPEED_MULT = _settings["text_speed"]
+    options.apply(_settings, get_terminal())   # 음량·속도·화면 설정 반영 (options.py)
     gm_bridge.set_mode(_settings["gm_mode"])
 
     _title_scenes = ["neo_city", "ruin_city", "scrap_sea", "junkyard", "lm_cathedral"]
@@ -174,124 +154,9 @@ def run_game():
             time.sleep(0.5)
             sys.exit()
 
-        # ── 옵션 ──────────────────────────────────────────────────────────
+        # ── 옵션 (options.py: 소리 · 화면 · 게임) ───────────────────────────
         if ans == opt_key:
-            _spd_steps  = [("opt_speed_slow", 2.0), ("opt_speed_normal", 1.0),
-                           ("opt_speed_fast", 0.5), ("opt_speed_instant", 0.0)]
-            _opt_scr = None
-            if _term:
-                from screens import MenuScreen
-                _opt_scr = MenuScreen(scene="forge")
-            while True:
-                clear_screen()
-                if _opt_scr:
-                    _spd_key = next((k for k, v in _spd_steps if v == _settings["text_speed"]), "opt_speed_normal")
-                    _gm_mode = gm_bridge.get_mode()
-                    _need_data = _gm_mode != "off" and not gm_bridge.mode_installed(_gm_mode)
-                    _o = [("1", t('lang_header'))] + \
-                         [(k, f"{t(label)}   ◀ {round(_settings[name] * 100)}% ▶") for k, (name, label, _) in _VOLS.items()] + \
-                         [("3", f"{t('opt_mute')}   [{t('opt_mute_on') if _settings['mute'] else t('opt_mute_off')}]"),
-                          ("4", f"{t('opt_text_speed')}   [{t(_spd_key)}]"),
-                          ("5", f"{t('opt_gm')}   [{t(f'opt_gm_{_gm_mode}')}]")]
-                    if _need_data:
-                        _o.append(("6", t('opt_gm_download')))
-                    _o.append(("9", t('opt_endings')))
-                    _o.append(("8", t('opt_credits')))
-                    _o.append(("0", t('diff_back')))
-                    _cur = getattr(_opt_scr, "last", "1")
-                    ok = _opt_scr.ask(t('menu_options'), _o, lines=[t(f'opt_gm_desc_{_gm_mode}')], back="0",
-                                      start=next((i for i, (k, _) in enumerate(_o) if k == _cur), 0), adjust=tuple(_VOLS))
-                    if ok[0] in "<>":   # 음량 줄에서 ←→: 5%씩
-                        _opt_scr.last = ok[1:]
-                        _vol_step(ok[1:], -1 if ok[0] == "<" else 1)
-                        continue
-                    _opt_scr.last = ok
-                    if ok == "1":
-                        _lk = _opt_scr.ask(t('lang_header'), [("1", t('lang_ko')), ("2", t('lang_en')), ("0", t('diff_back'))], back="0")
-                        if _lk == "1":
-                            set_lang("ko")
-                        elif _lk == "2":
-                            set_lang("en")
-                        continue
-                    if ok == "6" and _need_data:
-                        _opt_scr.close()
-                        _offer_extra_data(_settings, force=True)
-                        _opt_scr = MenuScreen(scene="forge")
-                        continue
-                    if ok == "9":   # 결말 기록: 본 결말만 이름이 보인다
-                        from screens import show_codex
-                        show_codex()
-                        continue
-                    if ok == "0":
-                        _opt_scr.close()
-                        break
-                else:
-                    print_header(t('menu_options'))
-                    print_divider()
-                    _mute_str = t('opt_mute_on') if _settings["mute"] else t('opt_mute_off')
-                    _spd_key  = next((k for k, v in _spd_steps if v == _settings["text_speed"]),
-                                     "opt_speed_normal")
-                    _spd_str  = t(_spd_key)
-                    print(f"  1. {t('lang_header')}")
-                    for _k, (_name, _label, _) in _VOLS.items():
-                        print(f"  {_k}. {t(_label)}  ◀ {round(_settings[_name] * 100)}% ▶")
-                    print(f"  3. {t('opt_mute')}  [{_mute_str}]")
-                    print(f"  4. {t('opt_text_speed')}  [{_spd_str}]")
-                    _gm_mode = gm_bridge.get_mode()
-                    _gm_note = "" if gm_bridge.mode_installed(_gm_mode) else f"  {t('opt_gm_missing')}"
-                    print(f"  5. {t('opt_gm')}  [{t(f'opt_gm_{_gm_mode}')}]{_gm_note}")
-                    print(f"     {t(f'opt_gm_desc_{_gm_mode}')}")
-                    _need_data = _gm_mode != "off" and not gm_bridge.mode_installed(_gm_mode)
-                    if _need_data:
-                        print(f"  6. {t('opt_gm_download')}")
-                    print(f"  9. {t('opt_endings')}")
-                    print(f"  8. {t('opt_credits')}")
-                    print_divider()
-                    print(f"  0. {t('diff_back')}")
-                    print_divider()
-                    ok = read_key()
-                if ok == "0":
-                    break
-                elif ok == "1":
-                    while True:
-                        clear_screen()
-                        print_header(t('lang_header'))
-                        print_divider()
-                        print(f"  1. {t('lang_ko')}")
-                        print(f"  2. {t('lang_en')}")
-                        print_divider()
-                        print(f"  0. {t('diff_back')}")
-                        print_divider()
-                        lk = read_key()
-                        if lk == "1":   set_lang("ko"); break
-                        elif lk == "2": set_lang("en"); break
-                        elif lk == "0": break
-                elif ok in _VOLS:   # Enter·숫자키: 10%씩 올리고 100% 다음은 0%
-                    _vol_step(ok, 2, wrap=True)
-                elif ok == "3":
-                    _settings["mute"] = not _settings["mute"]
-                    sound.set_mute(_settings["mute"])
-                    save_settings(_settings)
-                elif ok == "4":
-                    cur = next((i for i, (_, v) in enumerate(_spd_steps) if v == _settings["text_speed"]), 1)
-                    _, _settings["text_speed"] = _spd_steps[(cur + 1) % len(_spd_steps)]
-                    constants.TEXT_SPEED_MULT = _settings["text_speed"]
-                    save_settings(_settings)
-                elif ok == "5":
-                    modes = gm_bridge.MODES
-                    _settings["gm_mode"] = modes[(modes.index(gm_bridge.get_mode()) + 1) % len(modes)]
-                    gm_bridge.set_mode(_settings["gm_mode"])
-                    save_settings(_settings)
-                elif ok == "6" and _need_data:
-                    _offer_extra_data(_settings, force=True)
-                elif ok == "8":
-                    credits.menu(_opt_scr)
-                elif ok == "9":
-                    clear_screen()
-                    print_header(t('opt_endings'))
-                    for _ln in endings.codex_lines():
-                        print(f"  {_ln}")
-                    wait_for_keypress()
+            options.run(_settings, _term, offer_data=_offer_extra_data)
             continue
 
         # ── 세이브 로드 ───────────────────────────────────────────────────
@@ -389,8 +254,13 @@ def run_game():
         ("Esc",  t('act_quit'),      True, "Q"),
     ]
 
+    _autosaved = player.turn_count   # 마지막으로 자동 저장한 턴
     while True:
         clear_screen()
+        if constants.AUTOSAVE_TURNS and player.turn_count - _autosaved >= constants.AUTOSAVE_TURNS:
+            _autosaved = player.turn_count
+            save_data(player, grid, wait=False)
+            print(t('autosave_done'))
         if player.active_quest and player.turn_count > player.active_quest["deadline"]:
             q = player.active_quest
             sound.sfx("quest_fail")
@@ -633,6 +503,8 @@ def run_game():
                 log_diary(player, t('boss_log_prep'))
                 _off()
                 clear_screen()
+                if constants.AUTOSAVE_TURNS:   # 보스 앞에서는 늘 한 번 (자동 저장을 켰을 때)
+                    save_data(player, grid, wait=False)
                 if get_terminal():   # 그림 화면 (story.boss_prep_view). 아래 터미널 판과 규칙이 같다
                     boss_prep_view(player, grid)
                     sound.play_boss_bgm()

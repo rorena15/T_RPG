@@ -41,6 +41,7 @@
 ├── database.json        # 서사 텍스트 · 소모품 · 이벤트 데이터
 ├── master_formulas.json # 데미지 · 스케일링 · 확률 밸런스 수식
 ├── art_gen/             # 장면 그림 만들기 (로컬 SDXL)
+├── options.py           # 옵션 화면(소리 · 화면 · 게임)과 설정 적용
 ├── tools/balance/       # 밸런스 검증 봇 · 실행기 (난이도별 승률 표, README 참고)
 ├── tools/diag/          # 진단 기록 키 만들기 · 읽기 (diag_tool.py)
 ├── tools/ui/            # 그림 화면 점검: 창 없이 화면을 PNG로 저장(shot.py), 입력 루프 시험(loop_test.py)

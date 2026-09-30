@@ -14,6 +14,7 @@ import threading
 
 import pygame
 
+import constants
 import scene_art
 import sound
 import i18n
@@ -246,6 +247,12 @@ class EventView:
         self.f_serif = CachedFont(serif, 19)
         self.f_serif_b = CachedFont(serif_b, 19)
         self.f_sans = CachedFont(sans, 17)
+        # 이야기 칸 글(서술·선택지·입력·전투 기록)은 옵션의 글자 크기를 따른다. 줄 간격도 같이 늘린다.
+        # 그 밖(지표, 맵, 인벤토리)은 자리가 정해져 있어 f_serif / f_sans 그대로 쓴다.
+        fs = constants.FONT_SCALE
+        self.f_story = CachedFont(serif, round(19 * fs))
+        self.f_pick = CachedFont(sans, round(17 * fs))
+        self.LH_S, self.LH_P = round(32 * fs), round(26 * fs)   # 서술 / 선택지 줄 간격
         self.f_mono = CachedFont(mono, 14)
         self.f_mono_b = CachedFont(mono, 16)
         self._plate = None
@@ -746,6 +753,8 @@ class EventView:
             mx, my = self._art.get_width() - PLATE_W, self._art.get_height() - H
             drift = (math.sin(t * 0.045), math.sin(t * 0.031 + 1.3))  # -1..1
             tilt = self._mouse_tilt()
+            if constants.REDUCE_MOTION:   # 옵션: 그림이 흐르지 않게 (칸 이동 연출 pan만 남긴다)
+                drift, tilt = (0.0, 0.0), (0.0, 0.0)
             self._offsets = []
             pan = getattr(self, "_pan", 0.0)  # 칸 이동 연출: 시선이 옆으로 흘러간다 (-1..1, map_view.py)
             for depth, layer in enumerate([self._art] + self._layers):
@@ -761,6 +770,8 @@ class EventView:
         prev_clip = c.get_clip()
         c.set_clip(pygame.Rect(0, 0, PLATE_W, H))
         fx_layer = pygame.Surface((PLATE_W, H), pygame.SRCALPHA)  # 안개·먼지·효과를 모아 오른쪽을 지운 뒤 얹는다
+        if constants.REDUCE_MOTION:
+            t = 0.0   # 안개·먼지·불빛을 한 자리에 멈춘다
         real_c, c = c, fx_layer
         # 흐르는 수은 안개
         for band in range(3):
@@ -865,13 +876,13 @@ class EventView:
             color = INK_DIM if k == "prose" else INK
             lines = []
             for para in e["lines"]:
-                lines += self._wrap(self.f_serif, para, width)
+                lines += self._wrap(self.f_story, para, width)
             typing = e.get("typing")  # 타자 효과 중: (지금 시각 초, 글자별 시작 시각 목록)
 
             def draw(c, x, y):
                 if typing is None:
                     for i, ln in enumerate(lines):
-                        c.blit(self.f_serif.render(ln, True, color), (x, y + i * 32))
+                        c.blit(self.f_story.render(ln, True, color), (x, y + i * self.LH_S))
                     return
                 now, times = typing
                 fade = TYPE_TAIL / TYPE_CPS  # 한 글자가 다 떠오르는 데 걸리는 시간
@@ -883,26 +894,26 @@ class EventView:
                     while solid < len(ln) and alphas[solid] >= 1:
                         solid += 1
                     if solid:
-                        c.blit(self.f_serif.render(ln[:solid], True, color), (x, y + i * 32))
+                        c.blit(self.f_story.render(ln[:solid], True, color), (x, y + i * self.LH_S))
                     for j in range(solid, len(ln)):  # 막 나타나는 글자는 흐리게, 조금 아래에서 떠오른다
                         a = alphas[j]
                         if a <= 0:
                             return
-                        g = self.f_serif.render(ln[j], True, color).copy()
+                        g = self.f_story.render(ln[j], True, color).copy()
                         g.set_alpha(int(255 * a))
-                        c.blit(g, (x + self.f_serif.size(ln[:j])[0], y + i * 32 + int(4 * (1 - a))))
+                        c.blit(g, (x + self.f_story.size(ln[:j])[0], y + i * self.LH_S + int(4 * (1 - a))))
                     start += len(ln) + 1
-            return len(lines) * 32 + 10, draw
+            return len(lines) * self.LH_S + 10, draw
         if k == "choices":
             # 번호는 보이지 않는다: 방향키·클릭으로 고르고 숫자키는 보이지 않는 단축키로 남는다. 고른 줄만 ▸
-            rows = [(key, self._wrap(self.f_sans, text, width - 22)) for key, text in e["items"]]
+            rows = [(key, self._wrap(self.f_pick, text, width - 22)) for key, text in e["items"]]
 
             def draw(c, x, y):
                 sel = e.get("sel")
                 self._rows = []
                 for idx, (key, lines) in enumerate(rows):
                     custom = key == "0"
-                    h = len(lines) * 26
+                    h = len(lines) * self.LH_P
                     self._rows.append((key, pygame.Rect(x - 12, y - 4, width + 12, h + 6)))
                     on = sel == idx
                     if on:  # 고른 줄: 옅은 띠 + 왼쪽 막대, 글자가 살짝 들어간다
@@ -915,18 +926,18 @@ class EventView:
                         c.blit(self.f_mono_b.render("▸", True, TEAL if custom else AMBER), (x + dx, y + 2))
                     ink = (TEAL if custom else INK) if on or sel is None else (_lerp(TEAL, BG, 0.35) if custom else INK_DIM)
                     for i, ln in enumerate(lines):
-                        c.blit(self.f_sans.render(ln, True, ink), (x + 22 + dx, y + i * 26))
+                        c.blit(self.f_pick.render(ln, True, ink), (x + 22 + dx, y + i * self.LH_P))
                     y += h + 8
-            return sum(len(r[1]) * 26 + 8 for r in rows) + 6, draw
+            return sum(len(r[1]) * self.LH_P + 8 for r in rows) + 6, draw
         if k == "you":
-            lines = self._wrap(self.f_sans, e["text"], width - 30)
+            lines = self._wrap(self.f_pick, e["text"], width - 30)
             bar = TEAL if e.get("custom") else AMBER
 
             def draw(c, x, y):
-                pygame.draw.line(c, bar, (x, y + 4), (x, y + len(lines) * 26 - 4), 2)
+                pygame.draw.line(c, bar, (x, y + 4), (x, y + len(lines) * self.LH_P - 4), 2)
                 for i, ln in enumerate(lines):
-                    c.blit(self.f_sans.render(ln, True, INK_DIM), (x + 14, y + i * 26))
-            return len(lines) * 26 + 14, draw
+                    c.blit(self.f_pick.render(ln, True, INK_DIM), (x + 14, y + i * self.LH_P))
+            return len(lines) * self.LH_P + 14, draw
         if k == "sys":
             label, text = e["label"], e["text"]
 
@@ -982,34 +993,58 @@ class EventView:
             words = self._sfx or ["……"]
             elapsed = (now - self._think_t0) / 1000
 
+            def word_at(i):
+                """i번째 소리 말. 처음 한 바퀴는 행동에 맞춘 순서대로, 그 뒤는 같은 말이 잇달아 나오지 않게 섞는다."""
+                if i < len(words):
+                    return words[i]
+                pool = list(dict.fromkeys(words + SFX_DEFAULT))
+                cyc, pos = divmod(i - len(words), len(pool))
+
+                def order(c):   # c번째 바퀴의 순서
+                    o = list(pool)
+                    random.Random(c * 7919 + len(words)).shuffle(o)
+                    return o
+                o = order(cyc)
+                last = order(cyc - 1)[-1] if cyc else words[-1]
+                if o[0] == last and len(o) > 1:   # 바퀴가 바뀌는 자리에서 같은 말이 겹치지 않게
+                    o.append(o.pop(0))
+                return o[pos]
+
             def draw_sfx(cc, xx, yy):
+                # 글이 나오기 전까지 빈 시간이 없게: 소리 말이 끊기지 않고 흐른다.
+                # 다섯 개가 차면 가장 오래된 말이 옅어지며 왼쪽으로 빠지고 새 말이 오른쪽에 떠오른다.
+                n = int(elapsed / SFX_EVERY)
+                frac = elapsed / SFX_EVERY - n
+                first = max(0, n - SFX_MAX + 1)
                 x = xx
-                for i in range(min(SFX_MAX, int(elapsed / SFX_EVERY) + 1)):
-                    word = words[i % len(words)]
+                for i in range(first, n + 1):
+                    g = self.f_story.render(word_at(i), True, INK_DIM).copy()
                     a = min(1.0, (elapsed - i * SFX_EVERY) / 0.5)  # 떠오르기
-                    g = self.f_serif.render(word, True, INK_DIM).copy()
+                    if i == first and first > 0:   # 빠져나가는 말
+                        a = 1.0 - frac
+                        x -= int((g.get_width() + 18) * frac)
                     g.set_alpha(int(170 * max(0.0, a)))
-                    cc.blit(g, (x, yy + 4 + int(4 * (1 - a))))
+                    cc.blit(g, (max(xx - g.get_width(), x), yy + 4 + int(4 * (1 - min(1.0, a)))))
                     x += g.get_width() + 18
-            items.append((34, draw_sfx))
+            items.append((self.LH_S + 2, draw_sfx))
         if self.input_buf is not None:
             caret = "▌" if (pygame.time.get_ticks() // 500) % 2 == 0 else " "
             buf, comp = self.input_buf, self.compose
 
             def draw_input(cc, xx, yy):
-                pygame.draw.line(cc, TEAL, (xx, yy + 2), (xx, yy + 24), 2)
-                lines = self._wrap(self.f_sans, buf + comp, width - 14) if (buf or comp) else [""]
+                pygame.draw.line(cc, TEAL, (xx, yy + 2), (xx, yy + self.LH_P - 2), 2)
+                lines = self._wrap(self.f_pick, buf + comp, width - 14) if (buf or comp) else [""]
                 for i, ln in enumerate(lines):
-                    cc.blit(self.f_sans.render(ln, True, INK), (xx + 14, yy + i * 26))
-                last_w = self.f_sans.size(lines[-1])[0]
+                    cc.blit(self.f_pick.render(ln, True, INK), (xx + 14, yy + i * self.LH_P))
+                last_w = self.f_pick.size(lines[-1])[0]
                 if comp:  # 한글 조합 중인 글자는 밑줄
-                    cw = self.f_sans.size(comp)[0]
-                    uy = yy + (len(lines) - 1) * 26 + 24
+                    cw = self.f_pick.size(comp)[0]
+                    uy = yy + len(lines) * self.LH_P - 2
                     pygame.draw.line(cc, TEAL, (xx + 14 + last_w - cw, uy), (xx + 14 + last_w, uy), 1)
-                cc.blit(self.f_sans.render(caret, True, TEAL), (xx + 14 + last_w + 2, yy + (len(lines) - 1) * 26))
-                self._input_pos = (xx + 14 + last_w, yy + (len(lines) - 1) * 26)
-            n = len(self._wrap(self.f_sans, buf + comp, width - 14)) if (buf or comp) else 1
-            items.append((n * 26 + 18, draw_input))
+                cc.blit(self.f_pick.render(caret, True, TEAL), (xx + 14 + last_w + 2, yy + (len(lines) - 1) * self.LH_P))
+                self._input_pos = (xx + 14 + last_w, yy + (len(lines) - 1) * self.LH_P)
+            n = len(self._wrap(self.f_pick, buf + comp, width - 14)) if (buf or comp) else 1
+            items.append((n * self.LH_P + 18, draw_input))
         total = sum(h for h, _ in items)
         y = top if total <= bottom - top else bottom - total
         for h, draw in items:
@@ -1094,7 +1129,7 @@ class EventView:
         if self._card_art:
             back, panel = self._card_art
             canvas.blit(back, ((W - back.get_width()) // 2, (H - back.get_height()) // 2))
-            p = min(1.0, (t - self._card_t0) / 8)  # 8초에 걸쳐 그림이 천천히 내려앉는다
+            p = 1.0 if constants.REDUCE_MOTION else min(1.0, (t - self._card_t0) / 8)  # 8초에 걸쳐 그림이 천천히 내려앉는다
             canvas.blit(panel, ((W - panel.get_width()) // 2, int(-(panel.get_height() - H) * (0.2 + 0.6 * p))))
             canvas.blit(self._card_shade, (0, 0))
         title = next((e for e in self.log if e["kind"] == "title"), None)
@@ -1182,8 +1217,9 @@ class EventView:
         return g
 
     def shake(self, amp=7, ms=400):
-        """큰 피해나 대실패 때 화면을 흔든다."""
-        self._shake = (pygame.time.get_ticks() + ms, amp)
+        """큰 피해나 대실패 때 화면을 흔든다 (옵션에서 끌 수 있다)."""
+        if constants.SCREEN_SHAKE:
+            self._shake = (pygame.time.get_ticks() + ms, amp)
 
     # ── 이 화면 안에서 도는 루프 (입력, 대기, 타자) ──────────────────────────
     FPS = 60  # 30에서는 느린 안개·먼지가 정수 픽셀로 튀어 고르지 않게 움직였다
