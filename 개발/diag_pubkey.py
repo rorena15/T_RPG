@@ -4,4 +4,4 @@
   python tools/diag/diag_tool.py genkey          # 개인키는 저장소 밖에 저장, 이 파일의 공개키를 채운다
 개인키를 잃으면 그 뒤로 받은 진단 파일을 못 읽는다 (백업 필수). 새로 만들면 예전 파일도 옛 키로만 읽힌다.
 """
-DIAG_PUBLIC_KEY = ""
+DIAG_PUBLIC_KEY = "48261307246aaadbd220f4ac04ca188ff45949982a53479dba6751b6951a757c"
