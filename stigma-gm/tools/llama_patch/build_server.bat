@@ -1,6 +1,5 @@
 @echo off
 rem Build the decrypting llama-server as ONE exe (Vulkan + CPU backends statically linked).
-rem Backend DLLs could be swapped for a fake ggml-vulkan.dll that dumps uploaded weights, so link statically.
 rem Needs: VS 2022 (MSVC + bundled CMake/Ninja), Vulkan SDK, stigma.patch applied, stigma-key.inc from model_crypt.py emit
 rem   tools\llama_patch\build_server.bat  [source dir, default E:\Git_Project\stigma-train\toolchain\llama.cpp-stigma]
 rem Keep this file ASCII only: cmd misparses UTF-8 Korean lines.

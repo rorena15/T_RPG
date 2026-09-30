@@ -5,8 +5,7 @@
 - 실행기는 게임에 동봉한다: exe 안의 runtime/llama/ (개발 중에는 개발/runtime/llama/, install_llama_runtime.py로 복사).
 - 게임 시작 때 백그라운드로 서버를 띄우고 예열 요청을 한 번 보낸다 (Vulkan 첫 실행은 셰이더 컴파일로 느리다).
   GPU로 못 띄우면 CPU로 다시 띄운다. 게임이 끝나면 같이 끈다.
-- 배포 모델은 암호화돼 있다 (stigma-gm/tools/model_crypt.py). 동봉 서버는 복호화 패치를 넣은 빌드라서
-  게임이 키 절반(gm_key.py, 공개 저장소에 없음)을 stdin으로 넘기면 읽는 순간 메모리에서만 푼다. 평문은 디스크에 남지 않는다.
+- 배포 모델은 보호되어 있어 동봉한 전용 서버로만 연다 (gm_key.py는 공개 저장소에 없다).
   서버에는 실행마다 새 접근 키를 걸어, 다른 프로그램이 떠 있는 서버를 가져다 쓰지 못하게 한다.
 표준 라이브러리만 쓴다.
 """
@@ -23,7 +22,7 @@ import time
 import urllib.request
 
 try:
-    import gm_key  # 생성 파일 (gitignore). 없으면 암호화된 모델은 못 띄운다 (개발용 평문 모델은 된다)
+    import gm_key  # 생성 파일 (gitignore). 없으면 배포 모델은 못 띄운다 (개발용 모델은 된다)
 except ImportError:
     gm_key = None
 
@@ -110,7 +109,7 @@ class _Server:
             env = dict(os.environ, LLAMA_API_KEY=api_key)  # 명령줄은 누구나 보이니 환경변수로
             proc = subprocess.Popen(args, stdin=subprocess.PIPE, stdout=log, stderr=log, env=env, creationflags=flags)
             _tie_to_game(proc)
-            try:  # 키 절반은 파이프로만 넘긴다 (명령줄·환경변수·파일에 남기지 않는다)
+            try:
                 if gm_key is not None:
                     proc.stdin.write(gm_key.half_hex().encode("ascii"))
                 proc.stdin.close()

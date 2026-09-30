@@ -1,8 +1,8 @@
 name: Mac GM 실행기 (llama-server, Metal)
 
-# 복호화 패치를 넣은 llama-server를 Mac(Apple Silicon)에서 빌드한다. 손으로만 돌린다.
-# 1) smoke: 시험용 키로 빌드 → 작은 무작위 모델을 암호화해 복호화·생성까지 확인 (진짜 키·모델은 쓰지 않는다)
-# 2) publish(선택): 진짜 서버 키 절반(Secret STIGMA_SERVER_KEY_INC)으로 빌드 → 실행기 릴리스 태그에 올린다
+# 패치한 llama-server를 Mac(Apple Silicon)에서 빌드한다. 손으로만 돌린다.
+# 1) smoke: 시험용 설정으로 빌드해 작은 모델로 확인
+# 2) publish(선택): 배포용 설정(Secret)으로 빌드 → 실행기 릴리스 태그에 올린다
 # 자세한 내용: stigma-gm/MAC_GM.md
 
 on:
@@ -50,8 +50,8 @@ jobs:
           python stigma-gm/tools/llama_patch/smoke_test.py genkey --src llama --out testkey.json
           bash stigma-gm/tools/llama_patch/build_server.sh llama
 
-      # GitHub Mac 러너는 가상 머신이라 Metal 가속을 기대하지 않는다: -ngl 0 (CPU)으로 복호화·생성만 확인
-      - name: 복호화 확인
+      # GitHub Mac 러너는 가상 머신이라 Metal 가속을 기대하지 않는다: CPU로 확인
+      - name: 로드·생성 확인
         run: python stigma-gm/tools/llama_patch/smoke_test.py run --src llama --server llama/build-stigma/bin/llama-server --key testkey.json
 
   publish:
@@ -71,12 +71,12 @@ jobs:
           git checkout FETCH_HEAD
           git apply ../stigma-gm/tools/llama_patch/stigma.patch
 
-      - name: 서버 키 절반 (Secret)
+      - name: 배포용 설정 (Secret)
         env:
           STIGMA_SERVER_KEY_INC: ${{ secrets.STIGMA_SERVER_KEY_INC }}
         run: |
           if [ -z "$STIGMA_SERVER_KEY_INC" ]; then
-            echo "::error::STIGMA_SERVER_KEY_INC Secret 없음 (model_crypt.py emit이 만든 stigma-key.inc 내용)"
+            echo "::error::STIGMA_SERVER_KEY_INC Secret 없음 (비공개 문서 참고)"
             exit 1
           fi
           printf '%s' "$STIGMA_SERVER_KEY_INC" > llama/ggml/src/stigma-key.inc

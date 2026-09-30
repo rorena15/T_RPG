@@ -1,20 +1,10 @@
-"""복호화 패치를 넣은 llama-server가 암호화 모델을 실제로 푸는지 확인한다 (Linux·Mac 빌드, CI에서도 쓴다).
+"""패치한 llama-server 확인 스크립트 (Linux·Mac 빌드, CI에서도 쓴다).
+배포용 설정·모델은 쓰지 않고, 시험용 설정과 작은 무작위 모델로 로드·생성이 되는지 본다.
 
-진짜 키·진짜 모델은 쓰지 않는다. 시험용 키로 서버를 빌드하고, 아주 작은 무작위 모델을 같은 방식으로 암호화해 돌린다.
-
-  # 1) 시험용 키: llama.cpp 소스에 stigma-key.inc를 쓰고, 키 원본을 JSON으로 남긴다 (빌드 전에)
-  python smoke_test.py genkey --src LLAMA_SRC --out testkey.json
-  # 2) 빌드 (build_server.sh)
-  # 3) 확인
+  python smoke_test.py genkey --src LLAMA_SRC --out testkey.json   # 빌드 전에
+  bash build_server.sh LLAMA_SRC
   python smoke_test.py run --src LLAMA_SRC --server LLAMA_SRC/build-stigma/bin/llama-server --key testkey.json
-
-확인하는 것:
-  - 암호화 모델 + 맞는 키 절반  → 로드되고 /completion이 글자를 만든다
-  - 암호화 모델 + 틀린 키 절반  → 로드되지 않는다
-  - 암호화 모델 + 키 없음(stdin 닫힘) → 로드되지 않는다
-  - 평문 gguf (개발용)          → 키 없이 로드된다
-  - 온도 0 생성 결과가 암호화·평문에서 똑같다 (복호화가 정확하다)
-필요: numpy, cryptography (배포 암호화와 같은 model_crypt.cipher를 쓴다).
+필요: numpy, cryptography
 """
 import argparse
 import json
@@ -28,7 +18,7 @@ import urllib.request
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.dirname(HERE))   # stigma-gm/tools
-import model_crypt  # noqa: E402  배포 모델과 같은 암호화 (AES-256-CTR, 카운터 = 파일 크기 | 블록 번호)
+import model_crypt  # noqa: E402
 
 
 def c_array(b):
@@ -98,7 +88,7 @@ def free_port():
 
 
 def serve(server, model, half_hex, timeout=90):
-    """게임(gm_server.py)과 같은 방식으로 띄운다: 키 절반은 stdin으로만. (/completion 결과 글, 로그)"""
+    """게임(gm_server.py)과 같은 방식으로 띄운다. (/completion 결과 글, 로그)"""
     port = free_port()
     args = [server, "-m", model, "--host", "127.0.0.1", "--port", str(port), "-ngl", "0", "-c", "256",
             "--no-webui", "-lm", "none"]
@@ -165,7 +155,6 @@ def run(src, server, keyfile, work):
         print(f"[{mark}] {name}: {'생성 ' + repr(text[:40]) if got else '로드 안 됨'}")
         if got != expect:
             print(log[-3000:])
-    # 같은 가중치면 온도 0 생성 결과가 똑같아야 한다 → 복호화가 한 바이트도 틀리지 않았다는 뜻
     same = texts["암호화 + 맞는 키"] is not None and texts["암호화 + 맞는 키"] == texts["평문 gguf"]
     ok &= same
     print(f"[{'OK ' if same else 'FAIL'}] 암호화 모델과 평문 모델의 생성 결과가 같다")

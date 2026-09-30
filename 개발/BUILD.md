@@ -81,22 +81,16 @@
 
 ## 동적 서사 빌드 (exe에 실행기 넣기)
 
-GM 모델 코드·도구·문서는 이 저장소의 `stigma-gm/`에 있다 (학습 데이터 `stigma-gm/data/`는 비공개). 파일 위치는 `stigma-gm/DATA_LAYOUT.md`.
+GM 모델 코드·도구·문서는 `stigma-gm/`에 있다 (학습 데이터는 비공개). 배포 모델은 보호되어 있어 전용 실행기로만 열 수 있다.
+빌드에 필요한 비공개 파일은 저장소에 없으며, 개발 PC의 비공개 문서를 따른다.
 
-배포 모델은 암호화돼 있고, 게임은 복호화 패치를 넣은 llama-server로만 연다 (모델 보호, stigma-gm EXPERIMENTS.md "모델 보호").
-키는 둘로 나뉜다. 한쪽은 서버 exe 안에, 다른 쪽은 `개발/gm_key.py`(gitignore)에 있고 게임이 서버 stdin으로 넘긴다. 둘 다 공개 저장소에 없다.
-
-1. 실행기 빌드와 복사 (개발 PC에서): `stigma-gm/tools/llama_patch/build_server.bat` → `cd 개발 && python install_llama_runtime.py`
-   → `개발/runtime/llama/llama-server.exe` 하나 (Vulkan·CPU 백엔드를 정적으로 묶은 빌드, git에 넣지 않음)
-2. 키 절반 만들기: `python stigma-gm/tools/model_crypt.py emit --tag models-v1` → `개발/gm_key.py`
-3. exe 빌드: `cd 개발 && python build_exe.py` → `개발/dist/` 폴더형(Nuitka `--standalone`, 릴리스는 `*_win64.zip`). `--onefile`은 1.9.x 업데이터 호환용 단일 exe. PyInstaller는 소스가 거의 그대로 복원돼서 Windows에는 쓰지 않는다
-   - 경로 호환은 `개발/frozen_compat.py` (Main.py 첫 import): Nuitka에서도 `sys.frozen`/`sys._MEIPASS`/`sys.executable`이 PyInstaller와 같게 잡힌다
-4. CI(`buildrelease.yml`)도 `build_exe.py`를 쓴다. 필요한 것:
-   - 릴리스 `runtime-v1`에 `llama-server.exe` (서버 exe는 어차피 게임에 들어가므로 공개 자산이어도 노출 범위가 같다)
-   - 저장소 Secret `STIGMA_GM_KEY` = `개발/gm_key.py` 내용. 없으면 동적 서사 없이 빌드된다
-5. 모델 올리기: `stigma-gm/tools/prepare_model_release.py`가 만든 조각(암호화 파일만 받는다)을 릴리스 `models-v1`에 올린다.
-   모델을 바꾸면 새 태그(`models-v2`)로 **키도 새로 만들고**(genkey) 서버를 다시 빌드한다. 크기가 같은 모델을 같은 키로 암호화하면 안 된다
-6. 맥용: 복호화 패치는 Mac·Linux로 이식돼 있다 (`stigma-gm/tools/llama_patch/`: `build_server.sh`, `smoke_test.py`, CI `mac-gm-runtime.yml`). 게임 쪽 Mac 빌드는 아직 동적 서사 없음. 결정·남은 일은 [stigma-gm/MAC_GM.md](../stigma-gm/MAC_GM.md)
+1. 실행기 빌드 (개발 PC): `stigma-gm/tools/llama_patch/build_server.bat` → `cd 개발 && python install_llama_runtime.py` → `개발/runtime/llama/llama-server.exe` (git에 넣지 않음)
+2. 비공개 파일 생성: `python stigma-gm/tools/model_crypt.py emit --tag models-v1`
+3. exe 빌드: `cd 개발 && python build_exe.py` → `개발/dist/` 폴더형(Nuitka `--standalone`, 릴리스는 `*_win64.zip`). `--onefile`은 1.9.x 업데이터 호환용
+   - 경로 호환은 `개발/frozen_compat.py` (Main.py 첫 import)
+4. CI(`buildrelease.yml`)도 `build_exe.py`를 쓴다. 릴리스 `runtime-v1`의 실행기와 저장소 Secret `STIGMA_GM_KEY`가 필요하며, 없으면 동적 서사 없이 빌드된다
+5. 모델 올리기: `stigma-gm/tools/prepare_model_release.py`가 만든 조각을 릴리스 `models-v1`에 올린다. 모델을 바꾸면 새 태그로 다시 준비한다
+6. macOS: [stigma-gm/MAC_GM.md](../stigma-gm/MAC_GM.md) 참고 (게임 쪽 Mac 빌드는 아직 동적 서사 없음)
 
 ## 이벤트 화면 장면 그림
 
@@ -114,13 +108,11 @@ GM 모델 코드·도구·문서는 이 저장소의 `stigma-gm/`에 있다 (학
 
 ## 진단 기록 (개발자만 읽음)
 
-- 시스템 로그 · 오류 · 크래시 · 함수 호출 추적(`@track`)은 게임 폴더의 `diag/*.sdg`에 쓴다 (게임 1회 실행 = 파일 1개).
-  예전의 평문 `log.txt`와 `stigma_data.db`의 `events` 표는 쓰지 않고, 남아 있으면 게임을 켤 때 지운다
-- 게임에는 개발자 **공개키**(`diag_pubkey.py`)만 들어간다. 파일은 개인키로만 풀린다 (X25519 → HKDF-SHA256 → AES-256-GCM, 기록마다 따로 암호화해 튕겨도 직전까지 남는다)
-- 처음 한 번, 개발 PC에서: `python tools/diag/diag_tool.py genkey` → 개인키는 `~/.stigma/diag_key.json`(저장소 밖, **백업 필수**), 공개키는 `diag_pubkey.py`에 채워진다 → 커밋
-- 공개키가 비어 있거나 `cryptography`를 못 쓰면 진단 기록을 아예 쓰지 않는다 (평문으로 남기지 않는다)
-- 버그 제보를 받으면: `python tools/diag/diag_tool.py read 받은파일.sdg` (`--kind log`/`trace`, `--json`)
-- 보관: **계속 보관한다** (게임이 진단 파일을 지우지 않는다). 실행마다 파일이 하나씩 쌓인다 (한 판 약 250KB)
+- 로그·오류·크래시·호출 추적은 게임 폴더의 `diag/*.sdg`에 암호화해 쓴다 (실행 1회 = 파일 1개). 예전 평문 `log.txt`·`events` 표는 게임을 켤 때 지운다
+- 처음 한 번 (개발 PC): `python tools/diag/diag_tool.py genkey` → 공개키가 `diag_pubkey.py`에 채워진다 → 커밋. 개인키는 저장소 밖에 두고 백업한다
+- 공개키가 비어 있으면 진단 기록을 쓰지 않는다
+- 제보받은 파일 읽기: `python tools/diag/diag_tool.py read 받은파일.sdg` (`--kind log`/`trace`, `--json`)
+- 진단 파일은 게임이 지우지 않는다 (한 판 약 250KB)
 
 ## 에셋 출처 관리
 

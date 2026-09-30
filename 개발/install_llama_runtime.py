@@ -1,9 +1,8 @@
 """동적 서사용 실행기(llama-server)를 개발/runtime/llama/ 에 넣는다. 서버를 새로 빌드할 때마다 실행.
 
-공식 배포본이 아니라 복호화 패치를 넣은 빌드를 쓴다 (stigma-gm/tools/llama_patch/: stigma.patch + build_server.bat).
-배포 모델은 암호화돼 있어 공식 llama-server로는 열리지 않는다. 빌드는 Vulkan + CPU 백엔드를 exe 하나에 정적으로 묶어서
-DLL을 바꿔 끼워 가중치를 가로채는 길을 막는다. 그래서 복사할 파일도 exe 하나뿐이다.
-실행기 파일은 git에 넣지 않는다(.gitignore). exe 빌드 때 이 폴더를 함께 넣는다 (README "동적 서사 빌드").
+공식 배포본이 아니라 패치한 빌드를 쓴다 (stigma-gm/tools/llama_patch/: stigma.patch + build_server.bat).
+빌드는 Vulkan + CPU 백엔드를 exe 하나에 묶으므로 복사할 파일도 exe 하나뿐이다.
+실행기 파일은 git에 넣지 않는다(.gitignore). exe 빌드 때 이 폴더를 함께 넣는다 (BUILD.md "동적 서사 빌드").
   실행:  python install_llama_runtime.py [빌드한 llama-server.exe 경로]
 """
 import os

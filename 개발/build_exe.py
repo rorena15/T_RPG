@@ -6,7 +6,7 @@
 --onefile: 예전 방식 단일 exe. 1.9.x 업데이터는 .exe 자산만 찾으므로 폴더 배포로 넘어가는 릴리스 한 번은 같이 올린다.
 
 PyInstaller 대신 Nuitka를 쓰는 이유: PyInstaller exe는 도구 하나로 풀려 .pyc가 거의 원래 소스로 복원된다.
-그러면 모델 키 절반(gm_key.py)과 GM 프롬프트가 그대로 드러난다. Nuitka는 C로 컴파일해서 그 길을 막는다.
+그러면 비공개 생성물과 GM 프롬프트가 그대로 드러난다. Nuitka는 C로 컴파일한다.
 경로 호환은 frozen_compat.py (Main.py 첫 import).
 
 동적 서사를 넣으려면 빌드 전에 둘 다 있어야 한다 (없으면 동적 서사 없이 빌드되고 경고만 낸다):
