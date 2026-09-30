@@ -46,7 +46,7 @@ def init_database():
         )
     ''')
 
-    # 장비/기획(장비) 폴더의 5개 등급별 명세서(MD)에 기재된 전체 장비를 1:1로 통합한 데이터셋.
+    # docs/기획/장비 폴더의 5개 등급별 명세서(MD)에 기재된 전체 장비를 1:1로 통합한 데이터셋.
     #   - Project_Equipment_Expanded_Pool_Scrap.md     (4등급: 급조,   110종)
     #   - Project_Equipment_Expanded_Pool_Standard.md  (3등급: 규격,   110종)
     #   - Project_Equipment_Expanded_Pool_Refined.md   (2등급: 정제,   110종)

@@ -57,6 +57,6 @@
 `mockup.py`(①·비교안), `절충안/hybrid.py`(②)는 게임의 그리기 도구(MapView, 퀵슬롯, 센서 아이콘)를 빌려 목업을 그린다. `개발/` 폴더에서 실행:
 
 ```
-SDL_VIDEODRIVER=dummy python ../기획/정면뷰_목업/mockup.py 출력_접두어
-SDL_VIDEODRIVER=dummy python ../기획/정면뷰_목업/절충안/hybrid.py 출력_접두어   # mockup.py를 같은 폴더에서 찾으므로 복사해 두고 실행
+SDL_VIDEODRIVER=dummy python ../docs/기획/정면뷰_목업/mockup.py 출력_접두어
+SDL_VIDEODRIVER=dummy python ../docs/기획/정면뷰_목업/절충안/hybrid.py 출력_접두어   # mockup.py를 같은 폴더에서 찾으므로 복사해 두고 실행
 ```

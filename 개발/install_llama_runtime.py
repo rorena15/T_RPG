@@ -2,7 +2,7 @@
 
 공식 배포본이 아니라 패치한 빌드를 쓴다 (stigma-gm/tools/llama_patch/: stigma.patch + build_server.bat).
 빌드는 Vulkan + CPU 백엔드를 exe 하나에 묶으므로 복사할 파일도 exe 하나뿐이다.
-실행기 파일은 git에 넣지 않는다(.gitignore). exe 빌드 때 이 폴더를 함께 넣는다 (BUILD.md "동적 서사 빌드").
+실행기 파일은 git에 넣지 않는다(.gitignore). exe 빌드 때 이 폴더를 함께 넣는다 (docs/BUILD.md "동적 서사 빌드").
   실행:  python install_llama_runtime.py [빌드한 llama-server.exe 경로]
 """
 import os

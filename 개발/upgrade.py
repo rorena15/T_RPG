@@ -1,4 +1,4 @@
-"""장비 강화 (장비/Project_Equipment_Matrix_Engine.md).
+"""장비 강화 (docs/기획/장비/Project_Equipment_Matrix_Engine.md).
 
 1막 범위: 주무기만 강화한다. 재료는 고철(materials). 실패해도 파괴되지 않고, 실패할 때마다 다음 확률이 오른다(천장).
 +8 ~ +10 시도에서 실패하면 내구도가 깎이고, 낮은 확률로 한 단계 내려간다. 내구도는 고철로 수리한다.

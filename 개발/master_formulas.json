@@ -296,7 +296,7 @@
       "stage": "전직 시점 (1막, 프로토타입에 이미 구현됨)",
       "trigger": "전직 시 행위 가중치 W_kinetic == W_scrap == W_cyber 완전 동률",
       "effect": "3개 직업군 진입 분기가 동시에 열림 (class_change_system.tie_breaker_rule)",
-      "implemented_in": ["개발/프로토타입 엔진.md", "개발/2026-06-19-1617.py", "스토리/본편 스토리 - 1막 낙인 스크립트.md"],
+      "implemented_in": ["개발/프로토타입 엔진.md", "개발/2026-06-19-1617.py", "docs/기획/스토리/본편 스토리 - 1막 낙인 스크립트.md"],
       "do_not_confuse_with": "stat_resonance (아래) - 이름이 비슷하지만 발동 시점/조건이 다른 별개의 특성"
     },
 
@@ -318,7 +318,7 @@
           "narrative_flag": "[가장 완벽한 가축] - 마스터 AI의 변종 레이드 표적 우선순위 상승"
         }
       },
-      "implemented_in": ["기획/Project_Theology_Paradox.md", "기획/Text RPG 프로젝트 능력 체계.md", "기획/개발 계획.md"],
+      "implemented_in": ["docs/기획/Project_Theology_Paradox.md", "docs/기획/Text RPG 프로젝트 능력 체계.md", "docs/기획/개발 계획.md"],
       "do_not_confuse_with": "tri_balance_awakening (위) - 전직 시점의 가중치 동률과는 별개"
     },
 
@@ -536,7 +536,7 @@
         "priority": "high",
         "issue": "equipment.tier_base_power.T0_legacy.P_base=280이 db_init.py 실제 시드값(300~350)과 패턴상 어긋남",
         "decision_needed": "P_base를 300으로 정정할지, 아니면 db_init.py의 4개 T0 아이템 power를 280 기준으로 재산정할지 결정",
-        "affected_files": ["장비/Project_Equipment_Matrix_Engine.md (line 17)", "개발/db_init.py (line 74-78)"]
+        "affected_files": ["docs/기획/장비/Project_Equipment_Matrix_Engine.md (line 17)", "개발/db_init.py (line 74-78)"]
       },
       {
         "priority": "high",
@@ -548,19 +548,19 @@
         "priority": "medium",
         "issue": "monsters.code_boss_mapping_note - 코드의 '스캐브 컬렉터' 보스명과 기획서 'Bio-Hound' 데이터가 이름만 다르고 수치는 동일",
         "decision_needed": "코드의 몬스터 ID/이름을 기획서 명칭에 맞춰 통일할지, 아니면 '스캐브 컬렉터'를 기획서에 정식 등재할지 결정",
-        "affected_files": ["개발/2026-06-19-1617.py", "기획/Project_Monster_Raid.md"]
+        "affected_files": ["개발/2026-06-19-1617.py", "docs/기획/Project_Monster_Raid.md"]
       },
       {
         "priority": "medium",
         "issue": "hidden_traits 2종(tri_balance_awakening / stat_resonance)이 본 정리에서 분리되었으나, 원본 .md 문서들은 여전히 옛 명칭(삼위일체/황금 분할)을 혼용 중",
         "decision_needed": "기획 문서 9종을 열어 본 파일의 canonical_name으로 실제 치환 작업 필요 (본 JSON은 참조용이지 .md 자동 수정 도구가 아님)",
-        "affected_files": ["기획/Text RPG 프로젝트 능력 체계.md", "기획/Project_Theology_Paradox.md", "기획/개발 계획.md", "기획/Text RPG 프로젝트 행위 가중치 기반 동적 전직 시스템.md", "개발/프로토타입 엔진.md", "스토리/본편 스토리 - 1막 낙인 스크립트.md"]
+        "affected_files": ["docs/기획/Text RPG 프로젝트 능력 체계.md", "docs/기획/Project_Theology_Paradox.md", "docs/기획/개발 계획.md", "docs/기획/Text RPG 프로젝트 행위 가중치 기반 동적 전직 시스템.md", "개발/프로토타입 엔진.md", "docs/기획/스토리/본편 스토리 - 1막 낙인 스크립트.md"]
       },
       {
         "priority": "low",
         "issue": "각 .md 문서 말미의 'No-Fault Report(비판 없이 무결함 통과)' 자기 검증 문구가 실제 불일치를 잡아내지 못함",
         "decision_needed": "해당 문구들을 삭제하거나, 최소한 '본 master_formulas.json 대조 완료' 같은 실질적 체크리스트로 교체 권장",
-        "affected_files": ["기획/Project_Monster_Raid.md", "기획/Project_NPC_Quest.md", "기획/Project_Theology_Paradox.md", "장비/Project_Equipment_Matrix_Engine.md", "기획/Project_Map_Gimmick.md"]
+        "affected_files": ["docs/기획/Project_Monster_Raid.md", "docs/기획/Project_NPC_Quest.md", "docs/기획/Project_Theology_Paradox.md", "docs/기획/장비/Project_Equipment_Matrix_Engine.md", "docs/기획/Project_Map_Gimmick.md"]
       }
     ]
   }

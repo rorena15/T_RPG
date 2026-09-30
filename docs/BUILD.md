@@ -126,6 +126,7 @@ GM 모델 코드·도구·문서는 `stigma-gm/`에 있다 (학습 데이터는 
 
 ## 문서
 
-- 플레이어용: 루트 [README](../README.md), [게임 가이드](../docs/GUIDE.md), [RELEASE_NOTES](../RELEASE_NOTES.md)
-- 스크린샷: `docs/screenshots/v2/` (README가 쓴다)
-- 기획: `기획/` — 다음 버전 [v2.1 개발안](../기획/v2.1_개발안.md), 정면 뷰 목업 `기획/정면뷰_목업/`
+- 문서 전체 지도: [docs/README.md](README.md)
+- 플레이어용: 루트 [README](../README.md), [위키](wiki/Home.md), [릴리스 노트](RELEASE_NOTES.md)
+- 스크린샷: `docs/screenshots/v2/` (README와 v2.1 개발안이 쓴다)
+- 기획: `docs/기획/` (스토리 `스토리/`, 장비 `장비/`, 정면 뷰 목업 `정면뷰_목업/`). 다음 버전은 [v2.1 개발안](기획/v2.1_개발안.md)

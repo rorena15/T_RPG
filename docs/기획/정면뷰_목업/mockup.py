@@ -1,4 +1,4 @@
-"""정면 뷰 목업 (기획/정면뷰_목업). 게임 코드는 바꾸지 않고 그리기 도구만 빌린다. 개발/ 폴더에서 실행."""
+"""정면 뷰 목업 (docs/기획/정면뷰_목업). 게임 코드는 바꾸지 않고 그리기 도구만 빌린다. 개발/ 폴더에서 실행."""
 import os, sys, random, math
 sys.path.insert(0, os.getcwd())
 import pygame, i18n; i18n.set_lang("ko")

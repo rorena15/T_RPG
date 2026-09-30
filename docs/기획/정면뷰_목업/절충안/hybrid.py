@@ -1,4 +1,4 @@
-"""절충안 목업 (기획/정면뷰_목업/절충안): 돌아다닐 땐 그림 가득, 이야기가 시작되면 그림이 물러나고 글이 가운데. 개발/ 폴더에서 실행."""
+"""절충안 목업 (docs/기획/정면뷰_목업/절충안): 돌아다닐 땐 그림 가득, 이야기가 시작되면 그림이 물러나고 글이 가운데. 개발/ 폴더에서 실행."""
 import os, sys
 sys.path.insert(0, os.getcwd())
 exec(open(os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), "mockup2.py")).read().split("# 1) 랜드마크 탐색")[0])
