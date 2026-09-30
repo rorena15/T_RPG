@@ -24,10 +24,11 @@ from player import Player
 from map import GameMap
 from combat import combat_loop, get_encounter_chance, apply_dynamic_scaling, pick_enemy, enemy_line
 from quest import handle_random_event, handle_trader, advance_quest, trigger_sudden_quest
-from story import handle_session, run_prologue, run_boss_core_choice, run_ending
+from story import handle_session, run_prologue, run_boss_core_choice, run_ending, boss_prep_view
 from gui import get_terminal
 import gm_bridge
 import credits
+import endings
 import forge
 import playtime
 import traits
@@ -180,6 +181,7 @@ def run_game():
                           ("5", f"{t('opt_gm')}   [{t(f'opt_gm_{_gm_mode}')}]")]
                     if _need_data:
                         _o.append(("6", t('opt_gm_download')))
+                    _o.append(("9", t('opt_endings')))
                     _o.append(("8", t('opt_credits')))
                     _o.append(("0", t('diff_back')))
                     _cur = getattr(_opt_scr, "last", "1")
@@ -197,6 +199,10 @@ def run_game():
                         _opt_scr.close()
                         _offer_extra_data(_settings, force=True)
                         _opt_scr = MenuScreen(scene="forge")
+                        continue
+                    if ok == "9":   # 결말 기록: 본 결말만 이름이 보인다
+                        from screens import show_codex
+                        show_codex()
                         continue
                     if ok == "0":
                         _opt_scr.close()
@@ -221,6 +227,7 @@ def run_game():
                     _need_data = _gm_mode != "off" and not gm_bridge.mode_installed(_gm_mode)
                     if _need_data:
                         print(f"  6. {t('opt_gm_download')}")
+                    print(f"  9. {t('opt_endings')}")
                     print(f"  8. {t('opt_credits')}")
                     print_divider()
                     print(f"  0. {t('diff_back')}")
@@ -271,6 +278,12 @@ def run_game():
                     _offer_extra_data(_settings, force=True)
                 elif ok == "8":
                     credits.menu(_opt_scr)
+                elif ok == "9":
+                    clear_screen()
+                    print_header(t('opt_endings'))
+                    for _ln in endings.codex_lines():
+                        print(f"  {_ln}")
+                    wait_for_keypress()
             continue
 
         # ── 세이브 로드 ───────────────────────────────────────────────────
@@ -493,7 +506,8 @@ def run_game():
             elif roll < 0.08 + encounter_chance + 0.20 and constants.RANDOM_EVENTS:
                 # 랜덤 서사 이벤트 (20%) — 로컬 GM이 판정·서술, GM을 못 쓰면 대본
                 event = random.choice(constants.RANDOM_EVENTS)
-                if not gm_bridge.run_event(player, grid, event):
+                # GM이 꺼져 있어도 그림 화면이 있으면 같은 틀로 대본을 보여 준다 (gm_bridge.run_event_script)
+                if not gm_bridge.run_event(player, grid, event) and not gm_bridge.run_event_script(player, grid, event):
                     _off()
                     handle_random_event(player, event)
             elif roll < 0.08 + encounter_chance + 0.20 + 0.30:
@@ -611,6 +625,13 @@ def run_game():
                 log_diary(player, t('boss_log_prep'))
                 _off()
                 clear_screen()
+                if get_terminal():   # 그림 화면 (story.boss_prep_view). 아래 터미널 판과 규칙이 같다
+                    boss_prep_view(player, grid)
+                    sound.play_boss_bgm()
+                    combat_loop(player, is_boss=True)
+                    run_boss_core_choice(player)
+                    run_ending(player, grid)
+                    break
                 print_header(t('boss_alert_header'))
                 type_text(t('boss_approach_1'), 0.025)
                 type_text(t('boss_approach_2'), 0.025)

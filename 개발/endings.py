@@ -99,6 +99,20 @@ def unlock(ending, job=None):
     return new
 
 
+def codex_lines():
+    """옵션의 결말 기록 화면에 찍을 줄들. 본 결말·각성만 이름이 보이고 나머지는 ???. 기록은 바꾸지 않는다."""
+    import skills
+    d = load()
+    lines = [t('ending_rec_count', n=sum(e in d["endings"] for e in ALL), total=len(ALL)).strip()]
+    for key, group in (('codex_clear', CLEAR), ('codex_bad', BAD)):
+        names = [t(f'ending_name_{e}') if e in d["endings"] else "???" for e in group]
+        lines.append(t(key, n=sum(e in d["endings"] for e in group), total=len(group)))
+        lines += [" · ".join(names[i:i + ROW]) for i in range(0, len(names), ROW)]
+    lines.append(t('ending_rec_jobs', n=sum(j in d["jobs"] for j in JOBS), total=len(JOBS)).strip())
+    lines.append(" · ".join(skills.job_label(j) if j in d["jobs"] else "???" for j in JOBS))
+    return lines
+
+
 def card(ending, job=None):
     """결말 이름 + 지금까지 본 결말 목록. print로 찍을 줄들."""
     new = unlock(ending, job)

@@ -1034,5 +1034,10 @@
   "map_depleted": " · 뒤진 흔적 {n}번",
   "trait_jam_block": "[해킹] 지직, 제어 루프가 엉킨 적이 움찔 멈춥니다. 이번 턴 반격 없음",
   "trait_exposed_hit": "[해킹] 드러난 약점을 파고듭니다. 피해 +30%",
-  "trait_jam_stall": "[해킹] 숙청 시퀀스가 한 턴 밀립니다."
+  "trait_jam_stall": "[해킹] 숙청 시퀀스가 한 턴 밀립니다.",
+  "tag_alert": "경보",
+  "tag_signal": "수신",
+  "opt_endings": "결말 기록",
+  "codex_clear": "클리어 {n} / {total}",
+  "codex_bad": "게임 오버 {n} / {total}"
 }

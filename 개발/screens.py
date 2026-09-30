@@ -107,6 +107,16 @@ def show_diary_view(player):
         v.close()
 
 
+def show_codex():
+    """옵션의 결말 기록: 본 결말과 각성만 이름이 보인다 (endings.codex_lines). 줄이 많아 그림 옆 이야기 칸에 적는다."""
+    import endings
+    scr = MenuScreen(scene="bunker_inside", card=False)
+    try:
+        scr.message(t('opt_endings'), endings.codex_lines(), tag=t('tag_record'))
+    finally:
+        scr.close()
+
+
 def show_text_view(title, text, scene="forge"):
     """긴 글을 위에서부터 읽는 화면 (크레딧·라이선스 전문, 그림 없이 글만). ↑↓·휠 한 줄, PgUp/PgDn 한 쪽, Home/End, Esc·Enter·0·클릭(뒤로)으로 닫는다."""
     import pygame

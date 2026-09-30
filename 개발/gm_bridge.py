@@ -510,6 +510,54 @@ def run_event(player, grid, event):
         view.close()
 
 
+def run_event_script(player, grid, event):
+    """GM 없이 대본 이벤트를 그림 화면으로 진행한다 (동적 서사 끔·미설치·영어). 진행했으면 True.
+    규칙은 quest.handle_random_event(터미널 판)와 같다: 단순 이벤트는 바로 결과, 선택 이벤트는 고른 대로."""
+    if get_terminal() is None:
+        return False
+    state, _ = _build_state(player, grid)
+    view = EventView(get_terminal(), player, grid, state["location"], event_id=event.get("id"),
+                     context=f"{event.get('title', '')} {event.get('text', '')}")
+    view.add("title", tag=t('gm_tag_event'), title=db_t(event, 'title'))
+    view.add("prose", lines=[" ".join(db_t(event, 'text').split())])
+    empty = {"check": {"outcome": "success"}, "delta": {}, "weights": {}, "items": {"add": [], "remove": []}}
+    view.open()
+    try:
+        if event["type"] == "choice":
+            items = [(str(i + 1), db_t(c, 'text')) for i, c in enumerate(event["choices"])]
+            menu = view.add("choices", items=items)
+            view.footer = [("↑↓", t('ui_select')), ("Enter", t('ui_confirm'))]
+            src = event["choices"][int(view.choose(menu, len(items))) - 1]
+            view.log.remove(menu)
+            view.add("you", text=db_t(src, 'text'))
+            tokens = _apply_script(player, src, src.get("weight"), empty)
+            label = t(f"weight_label_{src['weight']}") if src.get("weight") in player.weights else t('weight_label_default')
+            diary = t('event_log_choice', title=db_t(event, 'title'), label=label)
+        elif event["type"] == "weapon_item":
+            src = event["result"]
+            tokens = _apply_script(player, src, None, empty)
+            wid, uses = src["weapon_id"], src.get("weapon_uses", 2)
+            if wid not in player.inventory:
+                player.inventory.append(wid)
+                player.temp_weapon_uses[wid] = uses
+                tokens.append((" ".join(t('event_weapon_gain', uses=uses).split()), "item"))
+            else:
+                tokens.append((" ".join(t('event_weapon_dup').split()), "info"))
+            diary = t('event_log_weapon', title=db_t(event, 'title'))
+        else:
+            src = event["result"]
+            tokens = _apply_script(player, src, None, empty)
+            diary = t('event_log_simple', title=db_t(event, 'title'))
+        view.footer = []
+        _show(view, "\n".join(SCRIPT_TAG.sub("", x.strip()) for x in db_t(src, 'log').splitlines()), tokens)
+        log_diary(player, diary)
+        view.footer = [("Enter", t('gm_foot_leave'))]
+        view.wait_key({"ENTER", "ESC", " "})
+        return True
+    finally:
+        view.close()
+
+
 def run_search(player, grid):
     """아무 일도 없던 탐색 결과를 서술한다. 묘사된 것에 이어서 행동할 수 있다. 진행했으면 True."""
     if not available():

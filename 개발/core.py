@@ -159,7 +159,8 @@ def get_equipment_data(item_id):
     return result
 
 
-def save_data(player, grid):
+def save_data(player, grid, wait=True):
+    """저장하고 결과 문장을 돌려준다. wait=False면 찍지도 기다리지도 않는다 (그림 화면이 그 문장을 직접 보여 준다)."""
     from ui import wait_for_keypress  # 지연 임포트로 순환 참조 방지
     import playtime
     playtime.mark(player)   # 저장 직전까지의 플레이 시간
@@ -169,7 +170,10 @@ def save_data(player, grid):
             json.dump(save_file, f, ensure_ascii=False, indent=4)
         import sound
         sound.sfx("save")
-        print(t('save_success'))
+        msg = t('save_success')
     except Exception as e:
-        print(t('save_fail', e=e))
-    wait_for_keypress()
+        msg = t('save_fail', e=e)
+    if wait:
+        print(msg)
+        wait_for_keypress()
+    return msg

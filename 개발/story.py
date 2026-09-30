@@ -4,6 +4,7 @@
 import time
 import random
 import os
+import re
 import sys
 import constants
 import playtime
@@ -289,8 +290,135 @@ def run_prologue():
     time.sleep(0.6)
 
 
+_NUM_PREFIX = re.compile(r"^\s*\d+\.\s*")
+
+
+def _label(key, **kw):
+    """터미널용 문구(들여쓰기, 앞의 "1. " 번호)를 그림 화면 선택지 글로."""
+    return " ".join(_NUM_PREFIX.sub("", t(key, **kw)).split())
+
+
+def _para(*keys, **kw):
+    """터미널에서 여러 줄로 찍던 문구를 한 문단으로."""
+    return " ".join(" ".join(t(k, **kw).split()) for k in keys)
+
+
+def _balance_hint(pre_k, pre_s, pre_c):
+    """코어를 어느 쪽에 쓰면 세 성향이 같아지는지 (그 선택지 끝에 말줄임표가 붙는다)."""
+    if pre_k + 3 == pre_s == pre_c: return "1"
+    if pre_s + 3 == pre_k == pre_c: return "2"
+    if pre_c + 3 == pre_k == pre_s: return "3"
+    return None
+
+
+def boss_prep_view(player, grid):
+    """보스전 직전 준비 (그림 화면): 소모품 · 저장 · 돌입. 규칙은 Main.py의 터미널 판과 같다."""
+    from core import save_data
+    from event_view import EventView, BUNKER
+    from gui import get_terminal
+    view = EventView(get_terminal(), player, grid, BUNKER, scene="bunker")
+    view.add("title", tag=t('tag_alert'), title=t('boss_alert_header').strip("! "))
+    view.open()
+    try:
+        view.type_out(view.add("narr", lines=[_para('boss_approach_1', 'boss_approach_2', 'boss_approach_3')]))
+        view.type_out(view.add("narr", lines=[_para('boss_approach_4', 'boss_approach_5')]))
+        view.add("prose", lines=[_para('boss_approach_6')])
+        head, note, last = list(view.log), [], 0
+        items = [("1", _label('boss_prep_1')), ("2", _label('boss_prep_2')), ("3", _label('boss_prep_3'))]
+        while True:
+            view.log = list(head)
+            menu = view.add("choices", items=items, start=last)
+            if note:
+                view.add("prose", lines=note)
+            view.footer = [("↑↓", t('ui_select')), ("Enter", t('ui_confirm'))]
+            cmd = view.choose(menu, len(items))
+            last, note = int(cmd) - 1, []
+            if cmd == "1":
+                player.use_consumable_menu()   # 인벤토리 소모품 탭 (inventory_view)
+            elif cmd == "2":
+                note = [" ".join(save_data(player, grid, wait=False).split())]
+            else:
+                return
+    finally:
+        view.close()
+
+
+def _boss_core_view(player):
+    """코어 처분 선택 (그림 화면). 규칙은 아래 터미널 판과 같다. 선택지에 성향 수치는 붙이지 않는다."""
+    from event_view import EventView, BUNKER
+    from gui import get_terminal
+    view = EventView(get_terminal(), player, None, BUNKER, scene="enemy_collector")
+    view.add("title", tag=t('tag_record'), title=t('boss_core_header'))
+    view.open()
+    try:
+        view.type_out(view.add("narr", lines=[_para('boss_core_kneel_1', 'boss_core_kneel_2')]))
+        view.type_out(view.add("narr", lines=[_para('boss_core_kneel_3')]))
+        view.pause(300)
+        view.add("prose", lines=[_para('boss_core_warn_1', 'boss_core_warn_2')])
+        hint = _balance_hint(player.weights["kinetic"], player.weights["scrap"], player.weights["cyber"])
+        items = [(k, _label(f'boss_core_opt{k}') + (" …" if hint == k else "")) for k in ("1", "2", "3")]
+        menu = view.add("choices", items=items)
+        view.footer = [("↑↓", t('ui_select')), ("Enter", t('ui_confirm'))]
+        ans = view.choose(menu, len(items))
+        weight = {"1": "kinetic", "2": "scrap", "3": "cyber"}[ans]
+        player.weights[weight] += 3
+        view.log.remove(menu)
+        view.add("you", text=_label(f'boss_core_opt{ans}'))
+        view.footer = []
+        view.type_out(view.add("narr", lines=[_para(f'boss_core_{weight}_1', f'boss_core_{weight}_2')]))
+        view.pause(500)
+        job, granted = skills.grant_awakening_skill(player)
+        job_label = skills.job_label(job)
+        sound.sfx("job")
+        view.add("result", tokens=[(job_label, "weight")] + [(skills.skill_name(sid), "item") for sid in granted])
+        if granted:
+            view.add("prose", lines=[_para('ending_skill_notice'), _para('ending_skill_usage')])
+            log_diary(player, t('ending_skill_log', job_label=job_label,
+                                skills=", ".join(skills.skill_name(sid) for sid in granted)))
+        view.footer = [("Enter", t('ui_continue'))]
+        view.wait_key({"ENTER", "ESC", " "})
+    finally:
+        view.close()
+    run_perimeter_encounter(player)
+
+
+def _perimeter_view(player):
+    """방공호 외곽 조우 (그림 화면). 규칙은 아래 터미널 판과 같다."""
+    from event_view import EventView, BUNKER
+    from gui import get_terminal
+    from screens import story_page
+    title = t('perimeter_header').strip("[] ")
+    view = EventView(get_terminal(), player, None, BUNKER, scene="border_zone")
+    view.add("title", tag=t('tag_alert'), title=title)
+    view.open()
+    try:
+        view.type_out(view.add("narr", lines=[_para('perimeter_alert_1')]))
+        view.add("prose", lines=[_para('perimeter_alert_2')])
+        items = [("1", _label('perimeter_opt1')), ("2", _label('perimeter_opt2'))]
+        menu = view.add("choices", items=items)
+        view.footer = [("↑↓", t('ui_select')), ("Enter", t('ui_confirm'))]
+        ans = view.choose(menu, len(items))
+        view.log.remove(menu)
+        view.add("you", text=items[int(ans) - 1][1])
+        view.footer = [("Enter", t('ui_continue'))]
+        if ans != "1":
+            view.type_out(view.add("narr", lines=[_para('perimeter_skip')]))
+            view.wait_key({"ENTER", "ESC", " "})
+            return
+    finally:
+        view.close()
+    low_hp = int(8000 * get_turn_scale_multiplier(player) * 0.30)
+    sound.play_combat_bgm()
+    combat_loop(player, is_boss=False, current_hp=low_hp, enemy_type="drone")
+    sound.stop_all()
+    story_page("border_zone", title, [t('perimeter_win')], tag=t('tag_alert'), location=BUNKER, player=player)
+
+
 def run_boss_core_choice(player):
     """보스 격파 후 코어 처분 선택 — 최종 직업 가중치에 영향을 미칩니다."""
+    from gui import get_terminal
+    if get_terminal():
+        return _boss_core_view(player)
     clear_screen()
     print_header(t('boss_core_header'))
     type_text(t('boss_core_kneel_1'), 0.03)
@@ -303,12 +431,6 @@ def run_boss_core_choice(player):
     print()
     print_divider()
     wk, ws, wc = player.weights["kinetic"], player.weights["scrap"], player.weights["cyber"]
-
-    def _balance_hint(pre_k, pre_s, pre_c):
-        if pre_k + 3 == pre_s == pre_c: return "1"
-        if pre_s + 3 == pre_k == pre_c: return "2"
-        if pre_c + 3 == pre_k == pre_s: return "3"
-        return None
 
     _hint_key = _balance_hint(wk, ws, wc)
     _h1 = f"  {Style.DIM}…{Style.RESET_ALL}" if _hint_key == "1" else ""
@@ -365,6 +487,9 @@ def run_boss_core_choice(player):
 
 
 def run_perimeter_encounter(player):
+    from gui import get_terminal
+    if get_terminal():
+        return _perimeter_view(player)
     clear_screen()
     print_header(t('perimeter_header'))
     type_text(t('perimeter_alert_1'), 0.025)
@@ -529,6 +654,65 @@ def run_ending(player, grid=None):
     run_act2_teaser(player)
 
 
+def _act2_teaser_view(player, job_tag, skill_list):
+    """2막 예고 (그림 화면): 해금 예정 스킬 → 두 진영의 신호와 응답 → 2막 제목. 글과 선택은 터미널 판과 같다."""
+    from event_view import EventView, BUNKER
+    from gui import get_terminal
+    from screens import story_page
+    story_page("ruin_server", t('act2_tease_skill_header', job=job_tag),
+               [_para('act2_tease_skill_intro_1', job=job_tag), _para('act2_tease_skill_intro_2'),
+                t('act2_tease_unlock_header').strip(" []")] + [f"{name}: {desc}" for name, desc in skill_list],
+               tag=t('tag_record'), location=BUNKER, player=player)
+
+    view = EventView(get_terminal(), player, None, BUNKER, scene="signal")
+    view.add("title", tag=t('tag_signal'), title=t('act2_signal_header'))
+    view.open()
+    try:
+        view.type_out(view.add("narr", lines=[_para('act2_signal_intro')]))
+        for side in ("a", "b"):
+            view.pause(300)
+            view.add("prose", lines=[t(f'act2_signal_{side}_header').strip(" []")])
+            view.type_out(view.add("narr", lines=[_para(*(f'act2_signal_{side}_{i}' for i in (1, 2, 3)))]), cps=30)
+            view.add("prose", lines=[" ".join(t(f'act2_signal_{side}_tag').strip(" []").split())])
+        view.pause(400)
+        view.add("sep")
+        view.add("narr", lines=[_para('act2_signal_footer_1', 'act2_signal_footer_2')])
+        view.add("prose", lines=[_para('act2_signal_prompt'), t('act2_signal_later').strip(" []")])
+        items = [(str(i), " ".join(t(f'act2_signal_opt{i}').split())) for i in (1, 2, 3)]
+        menu = view.add("choices", items=items)
+        view.footer = [("↑↓", t('ui_select')), ("Enter", t('ui_confirm'))]
+        ans = view.choose(menu, len(items))
+        view.log.remove(menu)
+        view.add("you", text=items[int(ans) - 1][1])
+        view.footer = [("Enter", t('ui_continue'))]
+        if ans == "1":
+            lines, diary = [_para('act2_reply_a_send'), _para('act2_reply_a_recv')], 'act2_diary_a'
+        elif ans == "2":
+            lines, diary = [_para('act2_reply_b_send'), _para('act2_reply_b_recv')], 'act2_diary_b'
+        else:
+            lines, diary = [_para('act2_reply_none')], 'act2_diary_none'
+        for ln in lines:
+            view.type_out(view.add("narr", lines=[ln]), cps=30)
+            view.pause(350)
+        log_diary(player, t(diary))
+        view.wait_key({"ENTER", "ESC", " "})
+    finally:
+        view.close()
+
+    card = EventView(get_terminal(), None, None, BUNKER, scene="neo_city")
+    card.card = True
+    card.add("title", tag=t('act2_title_act2') + "  ·  COMING SOON", title="PROTOCOL : STIGMA", hero=True)
+    card.footer = [("Enter", t('ui_continue'))]
+    card.open()
+    try:   # 장면 카드는 글 한 덩이만 보여 준다: 두 장으로 나눠 넘긴다
+        for keys in (('act2_title_1', 'act2_title_2'), ('act2_title_thanks',)):
+            card.log = [e for e in card.log if e["kind"] == "title"]
+            card.add("narr", lines=[_para(k) for k in keys])
+            card.wait_key({"ENTER", "ESC", " "})
+    finally:
+        card.close()
+
+
 def run_act2_teaser(player):
     """1막 클리어 후 2막 예고 시퀀스 — 직업 스킬 미리보기 + 두 진영 신호."""
     w_k = player.weights['kinetic']
@@ -546,6 +730,9 @@ def run_act2_teaser(player):
 
     job_tag = t(f'act2_tease_{job_key}_job')
     skills = t(f'act2_skills_{job_key}')
+    from gui import get_terminal
+    if get_terminal():
+        return _act2_teaser_view(player, job_tag, skills)
 
     # ── 스크린 1: 직업 스킬 예고 ────────────────────────────────────────
     clear_screen()
