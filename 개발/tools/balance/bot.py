@@ -251,6 +251,17 @@ for m in (Main, quest, story, player_mod, combat, Main.gm_bridge):
 _orig_cq = quest._complete_quest
 def cq(pl): M["quests_done"] += 1; return _orig_cq(pl)
 quest._complete_quest = cq
+import endings  # 결말 기록: 봇 판은 기록 파일을 건드리지 않고 어떤 결말이었는지만 남긴다
+_orig_clear = endings.clear_ending
+def clear_ending(pl, grid):
+    e = _orig_clear(pl, grid)
+    M["end"] = {"hp": pl.hp, "max_hp": pl.max_hp, "alert": pl.alert_level, "enemies": pl.enemies_defeated,
+                "scrap": pl.materials, "turns": pl.turn_count, "forge": dict(grid.forge) if grid is not None else None}
+    return e
+endings.clear_ending = clear_ending
+def card(ending, job=None):
+    M["ending"] = ending; return []
+endings.card = card
 _orig_ending = Main.run_ending
 def ending(pl, grid=None):
     M["result"] = "clear"; return _orig_ending(pl, grid)

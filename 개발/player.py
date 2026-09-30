@@ -287,7 +287,7 @@ class Player:
                 print(f"\n{Fore.RED + Style.BRIGHT}" + t('resource_fatal'))
                 print(t('playtime_line', time=playtime.finish(self, "starve")))
                 print()
-                for line in endings.card("starve"):
+                for line in endings.card("starve_thirst" if self.thirst == 0 else "starve_hunger"):
                     print(line)
                 wait_for_keypress()
                 sys.exit()

@@ -33,6 +33,7 @@ python tools/balance/sim.py --replay runs.jsonl --params '{"atkm":{"easy":1.62},
 - 50판이면 ±7%p쯤 흔들린다. `--seed0`을 바꿔 다른 판 묶음으로도 본다.
 - 도달이 낮으면 탐색 중 전투·굶주림이 문제 → `ENEMY_DIFF_ATK`(일반 적) 쪽을, 도달은 괜찮은데 클리어가 안 맞으면 `BOSS_DIFF_ATK`·`BOSS_DIFF_MULT`(보스) 쪽을 만진다.
 - 결과 파일(`--out`)은 판마다 한 줄: `result`(clear / death_boss / death_combat / death_other(대개 굶주림)), `forge`(발칸 의뢰 단계), `state`(보스 직전 상태).
+- `ending`은 그 판의 결말 ID (`endings.py`), `end`는 클리어 판의 마지막 상태. 결말 기준값(`endings.py` 위쪽 상수)을 바꿀 때 분포를 본다. 봇 판은 결말 기록 파일(endings.json)에 남기지 않는다.
 
 ## 주의
 

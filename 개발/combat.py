@@ -104,6 +104,7 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
         # 보스는 턴 성장을 받지 않는다: 받으면 준비 없이 곧장 달려가는 쪽이 가장 쉬웠다 (시뮬레이션 보통 81% vs 탐색 44%)
         boss_max_hp = hp
         atk = base_atk
+        player.boss_alert = player.alert_level   # 결말 판정용: 보스전 가산 전 경보
         player.alert_level = min(100, player.alert_level + constants.ALERT_INC_BOSS)
     else:
         spec = constants.ENEMY_TYPES.get(enemy_type) or constants.ENEMY_TYPES["drone"]
@@ -595,7 +596,7 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
         type_text(Fore.RED + Style.BRIGHT + t('combat_fatal'), 0.03)
         print(t('playtime_line', time=playtime.finish(player, "boss_death" if is_boss else "death")))
         print()
-        for line in endings.card("boss_death" if is_boss else "death"):
+        for line in endings.card("boss_death" if is_boss else endings.death_key(enemy_type)):
             print(line)
         wait_for_keypress()
         sys.exit()
