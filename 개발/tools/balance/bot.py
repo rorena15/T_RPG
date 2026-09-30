@@ -5,11 +5,12 @@
 보통은 sim.py가 게임 코드를 여러 벌 복사해 병렬로 부른다 (같은 폴더에서 동시에 돌리면 stigma_data.db가 서로 덮인다).
 
 사람처럼 하는 것: 부위마다 센 장비 장착·남는 장비 분해, 고철이 모이면 강화소에서 강화, 발칸 의뢰 수락·보고,
-쇠 두드리는 소리(힌트)를 따라가기, 배고프면 먹기, 일반 전투에서 체력이 반 밑이면 후퇴(flee), 보스 학습 지수 끊기.
-환경 변수로 수치를 바꿔 볼 수 있다: BOSS_ATK, BOSS_HP, BOSS_MULT, BOSS_REF, ENEMY_DIFF(일반 적 난이도 배율),
+쇠 두드리는 소리(힌트)를 따라가기, 배고프면 먹기, 행상인에게서 물·식량 사기, 물·식량이 바닥나면 파밍을 접고 방공호로, 일반 전투에서 체력이 반 밑이면 후퇴(flee), 보스 학습 지수 끊기.
+환경 변수로 수치를 바꿔 볼 수 있다: BOSS_ATK, BOSS_HP, BOSS_MULT, BOSS_ATKM(난이도별 보스 공격력 배율), BOSS_REF, ENEMY_DIFF(일반 적 난이도 배율),
 NO_UPG(강화 안 함), NO_HINT(발칸 힌트 끔), FORGE_MULT(강화 몇 번분 고철이 모이면 강화소로, 기본 2), TRACE(턴별 상태 출력),
 BOT_FOCUS(스토리·이벤트 선택: random 기본 / kinetic / scrap / cyber — 그 성향 선택지를 고른다),
 BOT_DANGER(칸 고르기: smart 기본 = 체력이 넉넉하면 위험한 칸 / safe = 낮은 칸 / any = 무작위).
+탐색 횟수 0은 방공호 직행이다 (강화소에 들르지 않고, 발칸 의뢰를 받아도 준비하지 않는다).
 
 게임성 요소도 사람처럼 쓴다: 드론이 장갑판을 올리면(guard) 바리케이드, 청소 부대 증원 신호(call_at)는 패킷 우회로 끊기,
 뒤진 칸(cycles)보다 새 칸, 체력이 넉넉하면 위험한 칸. 결과 JSON에 성향 단계(traits), 적 행동 횟수(beh),
@@ -35,6 +36,7 @@ Main.check_and_prompt_update = lambda *a, **k: None
 if os.environ.get("BOSS_ATK"): constants.BOSS_BASE_ATK = int(os.environ["BOSS_ATK"])
 if os.environ.get("BOSS_HP"): constants.BOSS_HP = int(os.environ["BOSS_HP"])
 if os.environ.get("BOSS_MULT"): constants.BOSS_DIFF_MULT[DIFF] = float(os.environ["BOSS_MULT"])
+if os.environ.get("BOSS_ATKM"): constants.BOSS_DIFF_ATK[DIFF] = float(os.environ["BOSS_ATKM"])
 if os.environ.get("BOSS_REF"): constants.BOSS_POWER_REF = float(os.environ["BOSS_REF"])
 if os.environ.get("ENEMY_DIFF"): constants.ENEMY_DIFF_ATK[DIFF] = float(os.environ["ENEMY_DIFF"])
 Main._offer_extra_data = lambda *a, **k: None
@@ -100,6 +102,26 @@ def auto_equip(p, g=None):
             else: break
         upgrade.repair(p, wid)
 
+def stock(p, stat):
+    """허기(hunger)·갈증(thirst)을 채워 줄 소모품이 몇 개 있나."""
+    return sum(v for k, v in p.consumables.items() if v > 0 and constants.CONSUMABLES_DB[k].get(stat, 0) > 0)
+
+def out_of_supplies(p):
+    """물이나 식량이 바닥나 체력이 깎이는 중이고(턴마다 50), 회복약도 없이 체력이 반 밑이면 더 버티지 못한다."""
+    dry = (p.thirst <= 6 and not stock(p, "thirst")) or (p.hunger <= 5 and not stock(p, "hunger"))
+    return dry and p.hp < p.max_hp * 0.5 and not best_heal(p)
+
+def trader_key(p):
+    """사람처럼: 물·식량이 두 개 밑이면 고철이 되는 만큼 산다 (모자란 쪽부터). 살 게 없으면 나간다."""
+    for stat in sorted(("thirst", "hunger"), key=lambda s: stock(p, s)):
+        if stock(p, stat) >= 2: continue
+        opts = [(it["cost"], i) for i, it in enumerate(constants.TRADER_ITEMS)
+                if constants.CONSUMABLES_DB[it["id"]].get(stat, 0) > 0 and it["cost"] <= p.materials]
+        if opts:
+            M["bought"] = M.get("bought", 0) + 1
+            return str(min(opts)[1] + 1)
+    return "0"
+
 pending = []
 def key_for_consumable_menu(p, want):
     avail = [k for k, v in p.consumables.items() if v > 0]
@@ -133,8 +155,11 @@ def bot_read_key(_depth=1):
         import forge
         st = forge.stage(g)
         # 사람처럼: 발칸 의뢰를 받아 놓았으면 파밍 예산을 조금 넘겨서라도 마무리한다
-        budget = FARM_N + (30 if st == 1 and not forge.ready(pl, g) else 0)
+        # 탐색 0회는 방공호 직행이다: 의뢰를 받아도 준비하느라 머물지 않는다 (예전엔 30회까지 더 뒤져 "탐색 0회" 판에 준비한 판이 섞였다)
+        budget = FARM_N + (30 if FARM_N and st == 1 and not forge.ready(pl, g) else 0)
         farming = STRAT == "farm" and M["searches"] < budget
+        if farming and out_of_supplies(pl):   # 사람처럼: 물·식량이 바닥나면 파밍을 접고 방공호로 간다
+            farming = False; M["gave_up"] = M.get("gave_up", 0) + 1
         # 사람처럼: 고철이 강화 두어 번 할 만큼 모이거나, 파밍을 끝내고 방공호로 가기 전 고철이 남으면 강화소로
         want = food_for(pl)
         if want or (pl.hp < pl.max_hp * 0.5 and best_heal(pl)):
@@ -146,7 +171,9 @@ def bot_read_key(_depth=1):
         if st == 1 and forge.ready(pl, g) and g.at_forge():   # 의뢰 조건을 채웠다: 발칸에게 보고
             M["forge_report"] = M.get("forge_report", 0) + 1
             return "U"
-        if st >= 2:
+        if not FARM_N:
+            want_forge = False   # 직행
+        elif st >= 2:
             fm = float(os.environ.get("FORGE_MULT", "2"))   # 고철이 강화 몇 번분 모이면 강화소로 갈지
             want_forge = UPG and not g.at_forge() and (pl.materials >= fm * need or (not farming and pl.materials >= need))
         else:
@@ -203,9 +230,8 @@ def bot_read_key(_depth=1):
         if boss:  # 사람처럼: 보스 학습 지수가 쌓이면 패킷 우회·바리케이드로 끊는다
             L = lv.get("learning_index", 0)
             if L >= 9 and pl.max_ram >= cost: return "R"
-            # 해킹 2단계면 패킷 우회가 반격도 막는다: 체력이 반 밑이면 RAM을 방패로 쓴다
-            if (traits.jam_blocks_counter(pl) and pl.max_ram >= cost and not lv["combat_ctx"].get("exposed")
-                    and (pl.hp < pl.max_hp * 0.6 or L >= 6)): return "R"   # 교란 → 드러난 약점에 공격, 번갈아
+            # 해킹 2단계면 패킷 우회가 반격을 막고 숙청 시퀀스도 늦춘다(턴 제한에 안 든다): 교란 → 드러난 약점에 공격, 번갈아
+            if traits.jam_blocks_counter(pl) and pl.max_ram >= cost and not lv["combat_ctx"].get("exposed"): return "R"
             if L >= 11: return "E"
         if pl.skill_slots and random.random() < 0.3: return "Z"
         return "Q"
@@ -224,7 +250,7 @@ def bot_read_key(_depth=1):
         if k:
             M["heals_used" if constants.CONSUMABLES_DB[k]["type"] == "hp" else "food_used"] += 1
         return key_for_consumable_menu(pl, k)
-    if fn == "handle_trader": M["trader"] += 1; return "0"
+    if fn == "handle_trader": M["trader"] += 1; return trader_key(P["p"])
     if fn == "_talk":  # 발칸 게이츠: 의뢰 수락·보고 (사람처럼 받는다)
         M["vulkan_talk"] = M.get("vulkan_talk", 0) + 1
         return "1"
@@ -284,7 +310,7 @@ import endings  # 결말 기록: 봇 판은 기록 파일을 건드리지 않고
 _orig_clear = endings.clear_ending
 def clear_ending(pl, grid):
     e = _orig_clear(pl, grid)
-    M["end"] = {"hp": pl.hp, "max_hp": pl.max_hp, "alert": pl.alert_level, "enemies": pl.enemies_defeated,
+    M["end"] = {"hp": pl.hp, "max_hp": pl.max_hp, "alert": pl.alert_level, "boss_alert": getattr(pl, "boss_alert", pl.alert_level), "enemies": pl.enemies_defeated,
                 "scrap": pl.materials, "turns": pl.turn_count, "forge": dict(grid.forge) if grid is not None else None}
     return e
 endings.clear_ending = clear_ending

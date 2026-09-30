@@ -8,7 +8,7 @@ atk/hp/ref: BOSS_BASE_ATK/BOSS_HP/BOSS_POWER_REF, mult: BOSS_DIFF_MULT, atkm: BO
 import os, sys, json, random, copy, linecache, collections, time as _t
 sys.path.insert(0, os.getcwd()); _t.sleep = lambda s: None
 import ui, i18n; i18n.set_lang("ko")
-import constants, combat, core
+import constants, combat, core, traits
 from player import Player
 core.init_and_load_db()
 combat._sleep = lambda s: None
@@ -42,12 +42,15 @@ def fight(state, seed):
         if "item_cmd" in line:
             avail = [k for k, v in p.consumables.items() if v > 0]
             return str(avail.index(best_heal(p)) + 1)
-        if p.hp < p.max_hp * 0.35 and best_heal(p): return "5"
+        # 전투 키는 bot.py와 같다 (Q 공격 · E 바리케이드 · R 패킷 우회 · I 소모품). 숫자키는 퀵슬롯이라 쓰지 않는다
+        if p.hp < p.max_hp * 0.35 and best_heal(p): return "I"
         L = f.f_locals.get("learning_index", 0)
+        cost = traits.jam_cost(p)
         if os.environ.get("TACTIC", "1") == "1":   # 사람처럼: 학습 지수가 쌓이면 끊는다
-            if L >= 9 and p.max_ram >= 2: return "3"
-            if L >= 11: return "2"
-        return "1"
+            if L >= 9 and p.max_ram >= cost: return "R"
+            if traits.jam_blocks_counter(p) and p.max_ram >= cost and not f.f_locals["combat_ctx"].get("exposed"): return "R"
+            if L >= 11: return "E"
+        return "Q"
     combat.read_key = key
     try:
         combat.combat_loop(p, is_boss=True); return True

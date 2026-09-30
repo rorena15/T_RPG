@@ -161,6 +161,7 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
     call_at = constants.SEC_CALL_TURN if (not is_boss and enemy_type == "security") else None   # 청소 부대 증원 도착 턴
 
     turn = 1
+    stall = 0          # 해킹 2단계: 패킷 우회로 숙청 시퀀스를 늦춘 턴 수 (보스 턴 제한에 들지 않는다)
     learning_index = 0
     consecutive_attacks = 0
     escaped = False
@@ -190,7 +191,7 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
         player.hp = min(player.hp + hp_bonus, player.max_hp)
 
     while hp > 0 and player.hp > 0:
-        if is_boss and turn > constants.BOSS_TURN_LIMIT:
+        if is_boss and turn > constants.BOSS_TURN_LIMIT + stall:
             clear_screen()
             sound.sfx("death")
             type_text(Fore.RED + Style.BRIGHT + t('combat_timeout'))
@@ -404,6 +405,9 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
                 if traits.jam_blocks_counter(player):   # 해킹 2단계: 교란에 걸린 적은 이번 턴 반격하지 못하고 약점이 드러난다
                     combat_ctx["skip_enemy_attack"] = True
                     combat_ctx["exposed"] = True
+                    if is_boss:
+                        stall += 1
+                        action_logs.append(t('trait_jam_stall'))
                     action_logs.append(t('trait_jam_block'))
 
                 sound.sfx("hack")

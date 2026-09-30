@@ -20,11 +20,11 @@ ALL = CLEAR + BAD
 JOBS = ["combat", "mech", "net", "balanced"]
 
 SCARRED_HP = 0.25     # 보스를 잡고 체력이 최대의 이 비율 이하
-SWIFT_TURNS = 55      # 이 턴 안에 끝냄
+SWIFT_TURNS = 60      # 이 턴 안에 끝냄
 GHOST_ALERT = 10      # 보스전 직전 경보가 이 이하
 HUNTED_ALERT = 90     # 보스전 직전 경보가 이 이상
-HUNTER_KILLS = 40     # 처치 수
-HOARDER_SCRAP = 300   # 남은 고철
+HUNTER_KILLS = 30     # 처치 수
+HOARDER_SCRAP = 500   # 남은 고철
 ROW = 4               # 기록 화면 한 줄에 결말 몇 개
 
 

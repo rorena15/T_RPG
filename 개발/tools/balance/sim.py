@@ -26,6 +26,7 @@ import threading
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 HERE = os.path.dirname(os.path.abspath(__file__))
 GAME = os.path.normpath(os.path.join(HERE, "..", ".."))          # 개발/
+UTF8 = {"PYTHONUTF8": "1"}   # Windows 콘솔 기본 인코딩(cp949 등)에서는 봇 출력의 한글을 못 읽는다
 SKIP = shutil.ignore_patterns("*.db", "log.txt", "__pycache__", "tools", "diag", "*.sdg", "runtime", "dist", "build", "*.gguf", "*.bin")
 
 
@@ -43,7 +44,7 @@ def make_copies(n):
 def run_one(game_dir, diff, farm, seed, env):
     cmd = [sys.executable, os.path.join(HERE, "bot.py"), diff, "farm", str(farm), str(seed), "flee"]
     try:
-        out = subprocess.run(cmd, cwd=game_dir, env={**os.environ, **env}, capture_output=True, text=True, timeout=300).stdout
+        out = subprocess.run(cmd, cwd=game_dir, env={**os.environ, **UTF8, **env}, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=300).stdout
         r = json.loads(out.strip().splitlines()[-1])
     except Exception as e:
         return {"diff": diff, "farm": farm, "seed": seed, "result": f"CRASH {type(e).__name__}", "state": None}
@@ -114,7 +115,7 @@ def replay(path, params, seeds):
     root, (d,) = make_copies(1)
     try:
         out = subprocess.run([sys.executable, os.path.join(HERE, "replay.py"), os.path.abspath(path), json.dumps(params)],
-                             cwd=d, env={**os.environ, "SEEDS": str(seeds)}, capture_output=True, text=True)
+                             cwd=d, env={**os.environ, **UTF8, "SEEDS": str(seeds)}, capture_output=True, text=True, encoding="utf-8", errors="replace")
         sys.stdout.write(out.stdout)
         if out.returncode:
             sys.stderr.write(out.stderr[-2000:])

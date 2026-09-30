@@ -1013,7 +1013,7 @@
   "trait_scrap_2": "  [TRAIT · Scrap II] Not a single bolt goes to waste. Scrap gain +50%, barricade blocks 65%",
   "trait_scrap_3": "  [TRAIT · Scrap III] Between blows, your hands tighten your own frame. Scrap gain +75%, repair HP each combat turn",
   "trait_cyber_1": "  [TRAIT · Cyber I] Your jamming packets are lighter. Packet Bypass costs 1 RAM",
-  "trait_cyber_2": "  [TRAIT · Cyber II] Your jamming reaches the enemy's control loop. Jammed enemies can't counterattack that turn and take 30% more from your next attack",
+  "trait_cyber_2": "  [TRAIT · Cyber II] Your jamming reaches the enemy's control loop. Jammed enemies can't counterattack that turn and take 30% more from your next attack. Against the boss, that turn doesn't count toward the turn limit",
   "trait_cyber_3": "  [TRAIT · Cyber III] You siphon compute from downed machines. RAM +1 per combat win, boss learns slower",
   "trait_ram_regen": "  [CYBER] Recovered RAM from the enemy's compute core. (RAM {ram})",
   "combat_farm_scrap_n": "  [FARMED] Recovered {val} high-value scrap.",
@@ -1033,5 +1033,6 @@
   "map_danger_2": "Sector risk · High",
   "map_depleted": " · Picked over ×{n}",
   "trait_jam_block": "[HACK] Bzzt. Its control loop tangled, the enemy freezes. No counterattack this turn",
-  "trait_exposed_hit": "[HACK] You strike the exposed weak point. Damage +30%"
+  "trait_exposed_hit": "[HACK] You strike the exposed weak point. Damage +30%",
+  "trait_jam_stall": "[HACK] The purge sequence slips back a turn."
 }
