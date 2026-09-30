@@ -325,32 +325,35 @@ def txt(only, per, steps, strength=0.86):
 # 풍경 속 작은 점이던 적(위 "enemy" 종류)을 화면 가득 키우면 형체가 없다. 전투 화면용은 따로 뽑는다:
 # 가로 비율, 적이 가운데 1/3 안에 선명하게, 배경은 같은 화풍(세피아·저채도·스모그).
 ENEMY_SIZE = (1344, 768)
-# 1차(2026-09-30)에서 배운 것: "facing the viewer"는 앞에 선 사람 뒷모습을 거의 매번 그려 넣었다 → 빼고 제외어에 넣는다.
-# 적마다 시드를 같게 주면 구도가 똑같이 나온다 → 적 이름으로 시드를 흩는다.
-ENEMY_PREFIX = ("medium wide shot, creature and machine design concept art, the subject is alone in the center of the frame, "
-                "full body visible, sharp readable silhouette against the haze, occupying the middle third of the image, "
-                "empty scrapyard ground in the foreground, ruins fading into smog behind, in the scene: ")
-ENEMY_NEG = ("tiny subject, distant speck, empty landscape, subject out of frame, cropped subject, extreme close-up, "
-             "multiple stacked scenes, split image, blurry subject, smeared shapes")
-ENEMY_NO_HUMAN = "person, human figure, lone wanderer, man standing, soldier, back view of a person, pedestrian, giant humanoid robot, mech suit"
+# 뽑으면서 배운 것 (2026-09-30):
+# - SDXL의 글 인코더는 77토큰까지만 읽는다. 1·2차는 구도 설명을 앞에 길게 써서 적 묘사 뒤쪽과 화풍, 제외어 대부분이 잘렸다
+#   (제외어에 넣은 사람·거대 로봇이 계속 나왔다). 그래서 적 묘사를 맨 앞에, 전부 짧게 쓴다. 화풍은 색면 밑그림이 잡아 준다.
+# - "facing the viewer"는 앞에 선 사람 뒷모습을 거의 매번 그려 넣었다.
+# - 적마다 시드를 같게 주면 구도가 똑같이 나온다 → 적 이름으로 시드를 흩는다.
+# - 3차: 짧게 줄이자 지시는 들었지만("사람 없음", 쿼드콥터) 그림이 납작한 실루엣 도안이 됐다. "sharp silhouette"를 빼고
+#   붓질·세부 묘사와 "flat colors, vector, silhouette" 제외어를 되살린다 (짧게).
+ENEMY_COMP = "centered, full body, detailed, lit by dim light, scrapyard ground, ruins in smog behind"
+ENEMY_STYLE = "oil painting concept art, visible rough brush strokes, textured, muted sepia, post-apocalyptic"
+ENEMY_NEG = "person, human figure, flat colors, vector, silhouette art, minimalist, photo, 3d render, anime, text, tiny distant subject"
 ENEMY_SUBJECT = {
-    "enemy_drones": "a battered quadcopter combat drone flying low above the ground, four spinning rotors, boxy armored hull with welded scrap "
-                    "plates, one red sensor eye, dangling cables, two more quadcopter drones behind it in the haze, machine only",
-    "enemy_hound": "a robot hound, a four legged quadruped robot the size of a large dog, smooth titanium armor plates, exposed pistons, "
-                   "steel hydraulic jaw, a single glowing sensor slit instead of eyes, crouched low ready to lunge, machine only",
-    "enemy_dogs": "a pack of five gaunt mangy feral dogs with glinting eyes closing in, ribs showing, heads low",
-    "enemy_security": "three faceless armored riot troopers with tall riot shields and rifles advancing in formation, glowing visor slits, "
-                      "heavy sealed helmets",
-    "enemy_collector": "a colossal industrial sweeper vehicle like a giant armored bulldozer on wide caterpillar tracks, a row of rotating "
-                       "hydraulic shredder blades across its front, two crane arms with grabbing claws raised, amber warning lights, machine only",
+    "enemy_drones": "three battered quadcopter combat drones flying low, four rotors each, boxy armored hull, one red sensor eye",
+    "enemy_hound": "a dog sized four legged robot hound, titanium plates, pistons, steel jaw, one glowing sensor slit, crouched to lunge",
+    "enemy_dogs": "a pack of five gaunt mangy feral dogs, glinting eyes, ribs showing, heads low, closing in",
+    "enemy_security": "three faceless armored riot troopers with tall riot shields and rifles, glowing visor slits, advancing in a line",
+    "enemy_collector": "one colossal armored machine on caterpillar tracks, a wide drum of spinning shredder blades across its front, red warning lights",
 }
-ENEMY_EXTRA_NEG = {
-    "enemy_drones": "helicopter, airplane, walking legs, spider legs, walker, " + ENEMY_NO_HUMAN,
-    "enemy_hound": "monster, kaiju, dinosaur, dragon, spikes, fur, teeth rows, giant, towering, walker, " + ENEMY_NO_HUMAN,
-    "enemy_dogs": ENEMY_NO_HUMAN + ", giant beast, monster",
-    "enemy_security": "giant humanoid robot, mech suit, tank, crowd of dozens",
-    "enemy_collector": "humanoid, legs, walking robot, battle tank gun barrel, turret cannon, " + ENEMY_NO_HUMAN,
+ENEMY_EXTRA_NEG = {   # 맨 앞에 붙는다 (잘리지 않게)
+    "enemy_drones": "legs, walker, spider legs, helicopter",
+    "enemy_hound": "giant, towering, monster, kaiju, spikes, fur, flesh, organic",
+    "enemy_dogs": "giant beast, monster, robot, machine",
+    "enemy_security": "giant robot, mech, tank, face",
+    "enemy_collector": "excavator, crane, humanoid robot, legs, tank cannon, flesh",
 }
+
+
+ENEMY_TIME = {"dawn": "dim blue dawn", "morning": "pale morning light", "noon": "washed out midday", "evening": "muddy orange evening",
+              "night": "night, few distant lights"}
+ENEMY_WEATHER = {"smog": "thick smog", "fog": "dense fog", "dust": "yellow dust storm", "acid": "acid rain, wet ground", "ash": "falling ash"}
 
 
 def enemy(only, per, steps, strength=0.9, round_no=0):
@@ -368,7 +371,7 @@ def enemy(only, per, steps, strength=0.9, round_no=0):
     os.makedirs(out_dir, exist_ok=True)
     for name in [x for x in ENEMY_SUBJECT if not only or x in only]:
         rng = _r.Random(sum(map(ord, name)) + 7 + round_no)
-        pool = [(t, w) for t in TIMES for w in WEATHERS]
+        pool = [(t, w) for t in ENEMY_TIME for w in ENEMY_WEATHER]
         rng.shuffle(pool)
         imgs = []
         tag = f"r{round_no}_" if round_no else ""
@@ -378,10 +381,10 @@ def enemy(only, per, steps, strength=0.9, round_no=0):
                 imgs.append(Image.open(path))
                 continue
             g = torch.Generator("cuda").manual_seed(3000 + 100 * round_no + 17 * (sum(map(ord, name)) % 50) + k)
-            # 공통 제외어의 "people, crowd"는 청소 부대에서 뺀다 (사람 모양 적)
-            base_neg = NEGATIVE.replace("people, crowd, ", "") if name == "enemy_security" else NEGATIVE
-            neg = ", ".join(x for x in (base_neg, ENEMY_NEG, ENEMY_EXTRA_NEG.get(name, ""), SUBJECT_NEG.get(name, "")) if x)
-            img = pipe(prompt=f"{ENEMY_PREFIX}{ENEMY_SUBJECT[name]}, {TIMES[mood]}, {WEATHERS[weather]}, {STYLE}",
+            # 사람 제외어는 청소 부대에서 뺀다 (사람 모양 적)
+            base_neg = ENEMY_NEG.replace("person, human figure, ", "") if name == "enemy_security" else ENEMY_NEG
+            neg = f"{ENEMY_EXTRA_NEG[name]}, {base_neg}"
+            img = pipe(prompt=f"{ENEMY_SUBJECT[name]}, {ENEMY_COMP}, {ENEMY_TIME[mood]}, {ENEMY_WEATHER[weather]}, {ENEMY_STYLE}",
                        negative_prompt=neg, image=color_field(mood, name, 3000 + k, weather, ENEMY_SIZE),
                        strength=strength, num_inference_steps=steps, guidance_scale=6.5, generator=g).images[0]
             img.save(path, quality=92)
