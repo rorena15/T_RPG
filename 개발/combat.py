@@ -6,6 +6,7 @@ import random
 import sys
 import time
 import constants
+import playtime
 from colorama import Fore, Style
 from core import get_equipment_data, grant_gear_drop
 from i18n import t, db_t
@@ -181,6 +182,8 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
             clear_screen()
             sound.sfx("death")
             type_text(Fore.RED + Style.BRIGHT + t('combat_timeout'))
+            print(t('playtime_line', time=playtime.finish(player, "timeout")))
+            wait_for_keypress()
             sys.exit()
 
         # 보스 페이즈 2 전환 (HP 50% 이하)
@@ -586,6 +589,7 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
         if escape_log: type_text(escape_log, 0.02)
         sound.sfx("death")
         type_text(Fore.RED + Style.BRIGHT + t('combat_fatal'), 0.03)
+        print(t('playtime_line', time=playtime.finish(player, "boss_death" if is_boss else "death")))
         wait_for_keypress()
         sys.exit()
 

@@ -29,6 +29,7 @@ from gui import get_terminal
 import gm_bridge
 import credits
 import forge
+import playtime
 import scene_art
 
 _console = Console(highlight=False)
@@ -345,6 +346,7 @@ def run_game():
         # 잘못된 입력 → 타이틀 재표시
 
     sound.play_map_ambient()
+    playtime.start()
 
     _ui_mgr = None
     if get_terminal():  # 그림 + 이야기 칸 맵 화면 (map_view.py)
@@ -405,7 +407,9 @@ def run_game():
             print(f"  {t('cmd_quit')}")
             print_divider()
 
+        playtime.mark(player)                       # 지난 입력 뒤 이벤트·전투 처리 시간
         move = read_key()
+        playtime.mark(player, playtime.IDLE_CAP)    # 입력을 기다린 시간 (자리 비움은 5분까지만)
 
         if move in Player.QUICK_KEYS:  # 퀵슬롯 1~0: 바로 먹고 마시고 치료 (턴은 쓰지 않는다)
             _qk = player.quick_item(move)

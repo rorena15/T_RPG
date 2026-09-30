@@ -1,7 +1,7 @@
 """진단 기록(diag/*.sdg) 개발자 도구: 키 만들기, 읽기.
 
   python tools/diag/diag_tool.py genkey [--key 경로]          # 한 번만. 개인키를 저장소 밖에 저장, 개발/diag_pubkey.py에 공개키
-  python tools/diag/diag_tool.py read 파일.sdg [...] [--key 경로] [--json] [--kind log|trace]
+  python tools/diag/diag_tool.py read 파일.sdg [...] [--key 경로] [--json] [--kind log|trace|stat]
 
 개인키 기본 위치: ~/.stigma/diag_key.json (STIGMA_DIAG_KEY 환경 변수나 --key로 바꾼다).
 개인키는 절대 저장소에 넣지 않는다. 잃으면 그 키로 암호화된 진단 파일은 영영 못 읽는다 (백업 필수).
@@ -77,6 +77,9 @@ def read_file(path, priv, dev_pub):
 
 
 def fmt(r):
+    if r.get("k") == "stat":
+        return (f"[판 결과] {r.get('outcome')}  플레이 {r.get('play_seconds', 0) // 60}분  {r.get('turns')}턴  "
+                f"{r.get('difficulty')}  처치 {r.get('enemies')}  GM {r.get('gm_mode')}  v{r.get('version')}")
     if r.get("k") == "log":
         return f"[{r.get('t')}] [{r.get('lv')}] {r.get('msg')}"
     ok = "" if r.get("success", 1) else f"  !! {r.get('error_type')}: {r.get('error_message')}"
@@ -93,7 +96,7 @@ def main():
     r.add_argument("files", nargs="+")
     r.add_argument("--key", default=DEFAULT_KEY)
     r.add_argument("--json", action="store_true", help="기록을 JSON 한 줄씩 그대로")
-    r.add_argument("--kind", choices=["log", "trace"], help="이 종류만")
+    r.add_argument("--kind", choices=["log", "trace", "stat"], help="이 종류만")
     a = ap.parse_args()
     if a.cmd == "genkey":
         return genkey(a.key)

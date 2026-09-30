@@ -32,6 +32,7 @@
 ├── core.py              # 장비 DB 조회 · 세이브 · 설정
 ├── constants.py         # 게임 상수 · 전투 균형값 · 적 종류 · 무기 효과음 분류
 ├── i18n.py              # 다국어 (ko / en), 한국어 조사 자동 선택
+├── playtime.py          # 플레이 시간 (세이브·엔딩·게임 오버, 판이 끝나면 진단 기록에 요약)
 ├── diag.py              # 진단 기록 (개발자 공개키로 암호화해 diag/에)
 ├── sys_log.py           # 로그 · 호출 추적 → diag
 ├── updater.py           # GitHub 릴리스 자동 업데이트
@@ -111,7 +112,8 @@ GM 모델 코드·도구·문서는 `stigma-gm/`에 있다 (학습 데이터는 
 - 로그·오류·크래시·호출 추적은 게임 폴더의 `diag/*.sdg`에 암호화해 쓴다 (실행 1회 = 파일 1개). 예전 평문 `log.txt`·`events` 표는 게임을 켤 때 지운다
 - 처음 한 번 (개발 PC): `python tools/diag/diag_tool.py genkey` → 공개키가 `diag_pubkey.py`에 채워진다 → 커밋. 개인키는 저장소 밖에 두고 백업한다
 - 공개키가 비어 있으면 진단 기록을 쓰지 않는다
-- 제보받은 파일 읽기: `python tools/diag/diag_tool.py read 받은파일.sdg` (`--kind log`/`trace`, `--json`)
+- 제보받은 파일 읽기: `python tools/diag/diag_tool.py read 받은파일.sdg` (`--kind log`/`trace`/`stat`, `--json`)
+- `stat`: 한 판이 끝날 때(클리어·사망·시간 초과) 결과, 플레이 시간, 턴, 난이도, 처치 수, GM 모드. 실제 플레이 분량을 재는 근거
 - 진단 파일은 게임이 지우지 않는다 (한 판 약 250KB)
 
 ## 에셋 출처 관리

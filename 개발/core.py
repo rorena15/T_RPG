@@ -160,6 +160,8 @@ def get_equipment_data(item_id):
 
 def save_data(player, grid):
     from ui import wait_for_keypress  # 지연 임포트로 순환 참조 방지
+    import playtime
+    playtime.mark(player)   # 저장 직전까지의 플레이 시간
     save_file = {"player": player.to_dict(), "grid": grid.to_dict()}
     try:
         with open(get_save_path(), "w", encoding="utf-8") as f:

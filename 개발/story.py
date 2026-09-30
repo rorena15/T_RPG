@@ -6,6 +6,7 @@ import random
 import os
 import sys
 import constants
+import playtime
 from colorama import Fore, Back, Style
 from core import get_equipment_data
 from ui import (clear_screen, print_header, print_divider, type_text,
@@ -477,6 +478,7 @@ def run_ending(player):
 
     print(t('ending_stat_diff',        val=diff_label))
     print(t('ending_stat_turns',       val=player.turn_count))
+    print(t('ending_stat_playtime',    val=playtime.finish(player, "clear")))
     print(t('ending_stat_threat',      val=threat_final))
     print(t('ending_stat_enemies',     val=player.enemies_defeated))
     print(t('ending_stat_hp',          hp=player.hp, maxhp=player.max_hp))

@@ -358,6 +358,7 @@
   "ending_stats_header": "  [ Act 1 Clear Statistics ]",
   "ending_stat_diff": "  Difficulty         : {val}",
   "ending_stat_turns": "  Total Turns        : {val} turns",
+  "ending_stat_playtime": "  Play Time          : {val}",
   "ending_stat_threat": "  Final Threat Mult  : x{val:.2f}",
   "ending_stat_enemies": "  Enemies Eliminated : {val}",
   "ending_stat_hp": "  Remaining HP       : {hp:,} / {maxhp:,}",
@@ -933,5 +934,8 @@
   "qs_short_FOOD_ONLY": "Protein",
   "qs_short_FOOD_BOTH": "Ration",
   "qs_short_WATER_ONLY": "Water",
-  "qs_short_WATER_BOTH": "Mineral"
+  "qs_short_WATER_BOTH": "Mineral",
+  "playtime_hm": "{h}h {m}m",
+  "playtime_m": "{m}m",
+  "playtime_line": "\n  [LOG] Play time {time}"
 }

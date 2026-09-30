@@ -358,6 +358,7 @@
   "ending_stats_header": "  [ 1막 클리어 통계 ]",
   "ending_stat_diff": "  난이도           : {val}",
   "ending_stat_turns": "  총 진행 턴       : {val}턴",
+  "ending_stat_playtime": "  플레이 시간      : {val}",
   "ending_stat_threat": "  최종 위협 배율   : x{val:.2f}",
   "ending_stat_enemies": "  제압한 적        : {val}기",
   "ending_stat_hp": "  잔여 HP          : {hp:,} / {maxhp:,}",
@@ -933,5 +934,8 @@
   "qs_short_FOOD_ONLY": "단백질",
   "qs_short_FOOD_BOTH": "레이션",
   "qs_short_WATER_ONLY": "정수팩",
-  "qs_short_WATER_BOTH": "미네랄"
+  "qs_short_WATER_BOTH": "미네랄",
+  "playtime_hm": "{h}시간 {m}분",
+  "playtime_m": "{m}분",
+  "playtime_line": "\n  [기록] 플레이 시간 {time}"
 }

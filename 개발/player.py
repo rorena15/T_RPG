@@ -6,6 +6,7 @@ import random
 import sqlite3
 import sys
 import constants
+import playtime
 import sound
 from core import get_equipment_data
 from ui import (clear_screen, print_header, print_divider,
@@ -46,6 +47,7 @@ class Player:
         if "MED_FIX_100" in self.consumables: self.consumables["MED_FIX_100"] = 2
         # 퀵슬롯 1~0 (칸마다 소모품 id 또는 None). 인벤토리 소모품 탭에서 숫자키로 바꾼다. 처음엔 시작 소모품만
         self.quickslots = ["MED_FIX_100", "FOOD_ONLY", "WATER_ONLY"] + [None] * 7
+        self.play_seconds = 0.0   # 누적 플레이 시간 (playtime.py)
 
         self.weights = {"kinetic": 0, "scrap": 0, "cyber": 0}
         self.enemies_defeated = 0
@@ -141,7 +143,7 @@ class Player:
             "inventory": self.inventory, "equipment": self.equipment, "reputation": self.reputation,
             "turn_count": self.turn_count, "difficulty": self.difficulty,
             "enemies_defeated": self.enemies_defeated, "diary": self.diary, "upgrades": self.upgrades,
-            "active_quest": self.active_quest, "quickslots": self.quickslots,
+            "active_quest": self.active_quest, "quickslots": self.quickslots, "play_seconds": round(self.play_seconds, 1),
         }
 
     def from_dict(self, data):
@@ -174,6 +176,7 @@ class Player:
         self.upgrades = data.get("upgrades", {})
         self.diary = data.get("diary", [])
         self.active_quest = data.get("active_quest", None)
+        self.play_seconds = float(data.get("play_seconds", 0.0))
         qs = list(data.get("quickslots", [None] * 10))[:10]
         self.quickslots = [k if k in constants.CONSUMABLES_DB else None for k in qs] + [None] * (10 - len(qs))
 
@@ -281,6 +284,8 @@ class Player:
             wait_for_keypress()
             if self.hp <= 0:
                 print(f"\n{Fore.RED + Style.BRIGHT}" + t('resource_fatal'))
+                print(t('playtime_line', time=playtime.finish(self, "starve")))
+                wait_for_keypress()
                 sys.exit()
 
     def show_status(self):
