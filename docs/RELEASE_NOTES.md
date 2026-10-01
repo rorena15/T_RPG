@@ -1,4 +1,4 @@
-# PROTOCOL: STIGMA v2.0.0
+# PROTOCOL: STIGMA v2.0.1
 
 1막 「낙인」 데모 버전입니다. 플레이 시간은 90분 정도이고 결말은 모두 20종입니다.
 
@@ -78,7 +78,6 @@
 | 플랫폼 | 파일 | |
 |---|---|---|
 | Windows 64비트 | `PROTOCOL_STIGMA_win64.zip` | 압축을 풀고 exe 실행 |
-| Windows (1.9.x 자동 업데이트용) | `PROTOCOL_STIGMA.exe` | 이전 버전의 업데이터용 |
 | macOS (Apple Silicon) | `PROTOCOL_STIGMA_mac_arm64.zip` | 압축을 풀고 앱 실행 |
 
 코드 서명이 되어 있지 않아 실행 시 경고가 표시될 수 있습니다. Windows는 **추가 정보 → 실행**을 선택하고, macOS는 README의 macOS 설치 안내를 따라 주세요.

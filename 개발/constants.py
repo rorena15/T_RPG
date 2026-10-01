@@ -3,7 +3,7 @@
 # 런타임 전역(AMBIENT_LORE 등)은 core.init_and_load_db()가
 # import constants 후 constants.XXX = ... 로 직접 갱신한다.
 
-GAME_VERSION = "2.0.0"
+GAME_VERSION = "2.0.1"
 
 TEXT_SPEED_MULT = 1.0  # 텍스트 출력 속도 배수 (0=즉시, 0.5=빠름, 1.0=보통, 2.0=느림)
 # 아래는 옵션에서 바꾸는 값 (options.apply가 settings.json에서 채운다)
