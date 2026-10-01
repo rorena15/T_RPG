@@ -3,7 +3,7 @@ name: Mac GM 실행기 (llama-server, Metal)
 # 패치한 llama-server를 Mac(Apple Silicon)에서 빌드한다.
 # 1) smoke: 시험용 설정으로 빌드해 작은 모델로 확인. 패치·빌드 스크립트가 바뀌어 push되면 저절로 돈다
 #    (workflow_dispatch는 기본 브랜치에 이 파일이 있어야 보이므로, main에 합치기 전에는 push로 확인한다)
-#    app: 게임 .app을 동적 서사 없이 빌드해 화면 없이 잠깐 띄워 본다 (Nuitka Mac 빌드 확인). zip은 Actions 아티팩트로 남긴다
+#    app: 게임 .app을 빌드해 화면 없이 잠깐 띄워 본다. Secret이 있으면 동적 서사까지 넣는다. zip은 Actions 아티팩트로 남긴다 (Mac 실기 시험용)
 # 2) publish(선택, 손으로 실행): 배포용 설정(Secret)으로 빌드 → 실행기 릴리스 태그에 올린다
 #    buildrelease.yml의 Mac 빌드도 실행기가 없으면 같은 방식으로 빌드해 올린다
 # 자세한 내용: stigma-gm/MAC_GM.md
@@ -75,7 +75,29 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: 앱 빌드 (동적 서사 없이)
+      # Secret이 둘 다 있으면 배포용 실행기와 비공개 생성물을 넣어 실제 Mac 시험용 앱을 만든다 (릴리스는 만들지 않는다)
+      - name: 동적 서사 준비 (Secret이 있을 때)
+        env:
+          STIGMA_SERVER_KEY_INC: ${{ secrets.STIGMA_SERVER_KEY_INC }}
+          STIGMA_GM_KEY: ${{ secrets.STIGMA_GM_KEY }}
+        run: |
+          if [ -z "$STIGMA_SERVER_KEY_INC" ] || [ -z "$STIGMA_GM_KEY" ]; then
+            echo "::warning::Secret이 없어 동적 서사 없이 빌드"
+            exit 0
+          fi
+          git init "$RUNNER_TEMP/llama" && cd "$RUNNER_TEMP/llama"
+          git remote add origin https://github.com/ggml-org/llama.cpp
+          git fetch --depth 1 origin "$LLAMA_COMMIT"
+          git checkout FETCH_HEAD
+          git apply "$GITHUB_WORKSPACE/stigma-gm/tools/llama_patch/stigma.patch"
+          printf '%s' "$STIGMA_SERVER_KEY_INC" > ggml/src/stigma-key.inc
+          bash "$GITHUB_WORKSPACE/stigma-gm/tools/llama_patch/build_server.sh" .
+          rm -f ggml/src/stigma-key.inc
+          mkdir -p "$GITHUB_WORKSPACE/개발/runtime/llama"
+          cp build-stigma/bin/llama-server "$GITHUB_WORKSPACE/개발/runtime/llama/llama-server"
+          printf '%s' "$STIGMA_GM_KEY" > "$GITHUB_WORKSPACE/개발/gm_key.py"
+
+      - name: 앱 빌드
         run: |
           pip install rich colorama nuitka ordered-set zstandard pygame-ce cryptography
           python 개발/build_exe.py --name PROTOCOL_STIGMA
