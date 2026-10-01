@@ -27,6 +27,7 @@ from quest import handle_random_event, handle_trader, advance_quest, trigger_sud
 from story import handle_session, run_prologue, run_boss_core_choice, run_ending, boss_prep_view
 from gui import get_terminal
 import gm_bridge
+import gm_server
 import options
 import forge
 import playtime
@@ -55,6 +56,8 @@ def _offer_extra_data(settings, force=False):
     term = get_terminal()
     mode = gm_bridge.get_mode()
     if term is None or _i18n.LANG != "ko" or (not force and (mode == "off" or gm_bridge.mode_installed(mode))):
+        return
+    if not gm_server.runtime_ok():  # 실행기가 없는 빌드: 모델을 받아도 쓸 수 없다
         return
     got = download_view.offer(term)
     if got:

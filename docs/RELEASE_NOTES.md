@@ -79,14 +79,15 @@
 |---|---|---|
 | Windows 64비트 | `PROTOCOL_STIGMA_win64.zip` | 압축을 풀고 exe 실행 |
 | Windows (1.9.x 자동 업데이트용) | `PROTOCOL_STIGMA.exe` | 이전 버전의 업데이터용 |
-| macOS (Apple Silicon) | `PROTOCOL_STIGMA_mac.tar.gz` | 터미널에서 실행 |
+| macOS (Apple Silicon) | `PROTOCOL_STIGMA_mac_arm64.zip` | 압축을 풀고 앱 실행 |
 
-코드 서명이 되어 있지 않아 실행 시 경고가 표시될 수 있습니다. Windows는 **추가 정보 → 실행**, macOS는 **시스템 설정 → 개인정보 보호 및 보안 → 그래도 열기**를 선택해 주세요.
+코드 서명이 되어 있지 않아 실행 시 경고가 표시될 수 있습니다. Windows는 **추가 정보 → 실행**을 선택하고, macOS는 README의 macOS 설치 안내를 따라 주세요.
 
 ## 알려진 문제
 
 - macOS는 자동 업데이트를 지원하지 않습니다. 릴리스 페이지에서 직접 내려받아 주세요.
-- 동적 서사는 현재 Windows에서만 지원합니다. macOS 지원은 준비 중입니다.
+- macOS의 동적 서사는 베타입니다. Mac 기기에서 직접 확인하지 못했으므로 문제가 있으면 제보해 주세요. 동작하지 않으면 원래 대본으로 진행됩니다.
+- macOS의 세이브·설정 파일은 `~/Library/Application Support/PROTOCOL_STIGMA`에 저장됩니다.
 - 클리어 뒤의 에필로그와 게임 오버 화면은 아직 이전 방식의 텍스트 화면으로 표시됩니다.
 
 자세한 규칙과 수치는 [위키](wiki/Home.md)를 참고해 주세요.

@@ -1,11 +1,23 @@
 name: Mac GM 실행기 (llama-server, Metal)
 
-# 패치한 llama-server를 Mac(Apple Silicon)에서 빌드한다. 손으로만 돌린다.
-# 1) smoke: 시험용 설정으로 빌드해 작은 모델로 확인
-# 2) publish(선택): 배포용 설정(Secret)으로 빌드 → 실행기 릴리스 태그에 올린다
+# 패치한 llama-server를 Mac(Apple Silicon)에서 빌드한다.
+# 1) smoke: 시험용 설정으로 빌드해 작은 모델로 확인. 패치·빌드 스크립트가 바뀌어 push되면 저절로 돈다
+#    (workflow_dispatch는 기본 브랜치에 이 파일이 있어야 보이므로, main에 합치기 전에는 push로 확인한다)
+#    app: 게임 .app을 동적 서사 없이 빌드해 화면 없이 잠깐 띄워 본다 (Nuitka Mac 빌드 확인). zip은 Actions 아티팩트로 남긴다
+# 2) publish(선택, 손으로 실행): 배포용 설정(Secret)으로 빌드 → 실행기 릴리스 태그에 올린다
+#    buildrelease.yml의 Mac 빌드도 실행기가 없으면 같은 방식으로 빌드해 올린다
 # 자세한 내용: stigma-gm/MAC_GM.md
 
+env:
+  LLAMA_COMMIT: ${{ github.event.inputs.llama_commit || 'ba0ba54d93b25faf1e149f4ccedd3e9d84798563' }}
+
 on:
+  push:
+    paths:
+      - 'stigma-gm/tools/llama_patch/**'
+      - '.github/workflows/mac-gm-runtime.yml'
+      - '개발/build_exe.py'
+      - '개발/frozen_compat.py'
   workflow_dispatch:
     inputs:
       llama_commit:
@@ -40,7 +52,7 @@ jobs:
         run: |
           git init llama && cd llama
           git remote add origin https://github.com/ggml-org/llama.cpp
-          git fetch --depth 1 origin ${{ github.event.inputs.llama_commit }}
+          git fetch --depth 1 origin "$LLAMA_COMMIT"
           git checkout FETCH_HEAD
           git apply ../stigma-gm/tools/llama_patch/stigma.patch
 
@@ -53,6 +65,43 @@ jobs:
       # GitHub Mac 러너는 가상 머신이라 Metal 가속을 기대하지 않는다: CPU로 확인
       - name: 로드·생성 확인
         run: python stigma-gm/tools/llama_patch/smoke_test.py run --src llama --server llama/build-stigma/bin/llama-server --key testkey.json
+
+  app:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 앱 빌드 (동적 서사 없이)
+        run: |
+          pip install rich colorama nuitka ordered-set zstandard pygame-ce cryptography
+          python 개발/build_exe.py --name PROTOCOL_STIGMA
+
+      # 입력을 기다리며 20초 뒤에도 떠 있으면 통과. 그 전에 끝나면 시작하다 죽은 것
+      - name: 화면 없이 20초 실행
+        run: |
+          APP=개발/dist/PROTOCOL_STIGMA.app
+          EXE="$APP/Contents/MacOS/$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$APP/Contents/Info.plist")"
+          SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy "$EXE" > run.log 2>&1 &
+          pid=$!
+          sleep 20
+          ls -la "$HOME/Library/Application Support/PROTOCOL_STIGMA" || true
+          if kill -0 "$pid" 2>/dev/null; then
+            kill "$pid"
+          else
+            cat run.log
+            echo "::error::앱이 20초 안에 끝남"
+            exit 1
+          fi
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: PROTOCOL_STIGMA_mac_arm64
+          path: 개발/dist/PROTOCOL_STIGMA_mac_arm64.zip
+          retention-days: 7
 
   publish:
     needs: smoke
@@ -67,7 +116,7 @@ jobs:
         run: |
           git init llama && cd llama
           git remote add origin https://github.com/ggml-org/llama.cpp
-          git fetch --depth 1 origin ${{ github.event.inputs.llama_commit }}
+          git fetch --depth 1 origin "$LLAMA_COMMIT"
           git checkout FETCH_HEAD
           git apply ../stigma-gm/tools/llama_patch/stigma.patch
 

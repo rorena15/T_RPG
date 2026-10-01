@@ -157,8 +157,11 @@ class DownloadView:
     def _choose(self):
         m = gm_server.manifest()["models"]
         self.lines = [(t('dl_offer'), INK)]
-        self.options = [("1", t('dl_full', size=_fmt_size(m["full"]["size"]))),
-                        ("2", t('dl_lite', size=_fmt_size(m["lite"]["size"]))),
+        mac = sys.platform == "darwin"  # Mac은 그래픽 메모리를 시스템 메모리와 나눠 쓴다
+        full, lite = _fmt_size(m["full"]["size"]), _fmt_size(m["lite"]["size"])
+        self.options = [("1", t('dl_full_mac', size=full) if mac else t('dl_full', size=full)),
+                        ("2", (t('dl_lite_mac', size=lite) if mac else t('dl_lite', size=lite))
+                         + (t('dl_recommended') if gm_server.recommend_lite() else "")),
                         ("0", t('dl_later'))]
         self.footer = [("↑↓", t('ui_select')), ("Enter", t('ui_confirm')), ("0", t('dl_later'))]
         k = self._wait_key({"1", "2", "0", "ESC"})

@@ -67,7 +67,47 @@ def model_installed(mode):
 def server_binary():
     name = "llama-server.exe" if os.name == "nt" else "llama-server"
     path = _resource("runtime", "llama", name)
-    return path if os.path.exists(path) else None
+    if not os.path.exists(path):
+        return None
+    return _mac_runnable(path) if sys.platform == "darwin" else path
+
+
+def _mac_runnable(src):
+    """Mac: 동봉 실행기를 데이터 폴더로 복사해 실행 권한을 주고 격리 속성을 지운다.
+    서명 없는 앱은 읽기 전용 임시 위치에서 실행될 수 있어(App Translocation) 그 자리에서는 고칠 수 없다.
+    실패하면 원래 경로를 돌려준다 (격리 속성을 사용자가 지웠다면 그대로 돈다)."""
+    dst = os.path.join(data_dir(), "runtime", os.path.basename(src))
+    try:
+        st = os.stat(src)
+        if not (os.path.exists(dst) and os.path.getsize(dst) == st.st_size and os.path.getmtime(dst) >= st.st_mtime):
+            import shutil
+            os.makedirs(os.path.dirname(dst), exist_ok=True)
+            shutil.copy2(src, dst + ".tmp")
+            os.replace(dst + ".tmp", dst)
+        os.chmod(dst, 0o755)
+    except OSError:
+        return src
+    try:  # 격리 속성이 없으면 xattr이 실패로 끝나는데, 그래도 그대로 실행하면 된다
+        subprocess.run(["xattr", "-d", "com.apple.quarantine", dst], capture_output=True, timeout=10)
+    except (OSError, subprocess.SubprocessError):
+        pass
+    return dst
+
+
+def runtime_ok():
+    """이 빌드에서 동적 서사를 띄울 수 있는지. 소스 실행은 개발용 Ollama가 있으니 늘 True."""
+    return not getattr(sys, "frozen", False) or server_binary() is not None
+
+
+def recommend_lite():
+    """Mac은 그래픽 메모리를 시스템 메모리와 나눠 쓴다: 16GB 미만이면 가벼움을 권한다."""
+    if sys.platform != "darwin":
+        return False
+    try:
+        out = subprocess.run(["sysctl", "-n", "hw.memsize"], capture_output=True, text=True, timeout=5).stdout
+        return int(out.strip()) < 15 * (1 << 30)
+    except (OSError, ValueError, subprocess.SubprocessError):
+        return False
 
 
 # ── 서버 ────────────────────────────────────────────────────────────────
@@ -91,18 +131,19 @@ class _Server:
             self.mode = mode
             if mode == "off":
                 return
-            if not model_installed(mode) or not server_binary():
+            binary = server_binary()
+            if not model_installed(mode) or not binary:
                 self.state = "missing"
                 return
             self.state = "starting"
-        threading.Thread(target=self._launch, args=(mode,), daemon=True).start()
+        threading.Thread(target=self._launch, args=(mode, binary), daemon=True).start()
 
-    def _launch(self, mode):
+    def _launch(self, mode, binary):
         log = open(os.path.join(data_dir(), "server.log"), "ab")
-        for ngl in ("99", "0"):  # GPU에 전부 올리고, 안 되면 CPU로
+        for ngl in ("99", "0"):  # GPU(Windows Vulkan, Mac Metal)에 전부 올리고, 안 되면 CPU로
             port = _free_port()
             # -lm none: 모델 파일을 메모리에 비춰 두지 않는다. GPU에 다 올린 뒤 RAM 점유가 5.0GB -> 0.45GB (8B 실측)
-            args = [server_binary(), "-m", model_path(mode), "--host", "127.0.0.1", "--port", str(port),
+            args = [binary, "-m", model_path(mode), "--host", "127.0.0.1", "--port", str(port),
                     "-ngl", ngl, "-c", "4096", "--no-webui", "-lm", "none"]
             flags = 0x08000000 if os.name == "nt" else 0  # CREATE_NO_WINDOW: 콘솔 창을 띄우지 않는다
             api_key = secrets.token_urlsafe(32)

@@ -180,6 +180,11 @@ def check_and_prompt_update(current_version: str, console=None, force: bool = Fa
         output(t('update_latest', current=current_version))
         return  # 최신 버전
 
+    if sys.platform == "darwin":  # Mac(.app)은 자동 교체하지 않는다: 새 버전 소식과 받을 곳만 알린다
+        output(t('update_avail', current=current_version, latest=latest_version))
+        output(t('update_release_note', url=release.get('html_url', '')))
+        return
+
     onefile = _is_onefile()
     asset = _find_asset(release, onefile)
     if not asset:

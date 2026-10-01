@@ -1,4 +1,4 @@
-name: Build & Release Windows EXE
+name: Build & Release (Windows · Mac)
 
 on:
   workflow_dispatch:
@@ -158,6 +158,7 @@ jobs:
 
             Windows 64비트: `${{ github.event.inputs.exe_name }}_win64.zip`을 받아 압축을 풀고 폴더 안의 exe를 실행하세요. (Python 설치 불필요)
             이전 버전(단일 exe)을 쓰던 분은 게임 안 업데이트로 넘어올 수 있습니다.
+            Mac (Apple Silicon, 동적 서사 베타): `${{ github.event.inputs.exe_name }}_mac_arm64.zip`을 받아 압축을 푸세요. 서명하지 않은 앱이라 처음 여는 방법은 README의 Mac 안내를 참고하세요.
           files: |
             개발/dist/${{ github.event.inputs.exe_name }}_win64.zip
             개발/dist/${{ github.event.inputs.exe_name }}.exe
@@ -175,6 +176,7 @@ jobs:
 
             Windows 64비트: `${{ github.event.inputs.exe_name }}_win64.zip`을 받아 압축을 풀고 폴더 안의 exe를 실행하세요. (Python 설치 불필요)
             이전 버전(단일 exe)을 쓰던 분은 게임 안 업데이트로 넘어올 수 있습니다.
+            Mac (Apple Silicon, 동적 서사 베타): `${{ github.event.inputs.exe_name }}_mac_arm64.zip`을 받아 압축을 푸세요. 서명하지 않은 앱이라 처음 여는 방법은 README의 Mac 안내를 참고하세요.
           files: |
             개발/dist/${{ github.event.inputs.exe_name }}_win64.zip
             개발/dist/${{ github.event.inputs.exe_name }}.exe
@@ -195,6 +197,7 @@ jobs:
 
             Windows 64비트: `${{ github.event.inputs.exe_name }}_win64.zip`을 받아 압축을 풀고 폴더 안의 exe를 실행하세요. (Python 설치 불필요)
             이전 버전(단일 exe)을 쓰던 분은 게임 안 업데이트로 넘어올 수 있습니다.
+            Mac (Apple Silicon, 동적 서사 베타): `${{ github.event.inputs.exe_name }}_mac_arm64.zip`을 받아 압축을 푸세요. 서명하지 않은 앱이라 처음 여는 방법은 README의 Mac 안내를 참고하세요.
           files: |
             개발/dist/${{ github.event.inputs.exe_name }}_win64.zip
             개발/dist/${{ github.event.inputs.exe_name }}.exe
@@ -214,18 +217,25 @@ jobs:
 
             Windows 64비트: `${{ github.event.inputs.exe_name }}_win64.zip`을 받아 압축을 풀고 폴더 안의 exe를 실행하세요. (Python 설치 불필요)
             이전 버전(단일 exe)을 쓰던 분은 게임 안 업데이트로 넘어올 수 있습니다.
+            Mac (Apple Silicon, 동적 서사 베타): `${{ github.event.inputs.exe_name }}_mac_arm64.zip`을 받아 압축을 푸세요. 서명하지 않은 앱이라 처음 여는 방법은 README의 Mac 안내를 참고하세요.
           files: |
             개발/dist/${{ github.event.inputs.exe_name }}_win64.zip
             개발/dist/${{ github.event.inputs.exe_name }}.exe
           draft: false
           prerelease: true
 
-  # ── Mac 빌드 ────────────────────────────────────────────────────────────────
+  # ── Mac 빌드 (Apple Silicon, 동적 서사 베타) ──────────────────────────────
+  # Windows와 같이 Nuitka로 .app 폴더형을 만든다 (개발/build_exe.py). zip 하나로 올린다.
+  # 실행기: runtime_tag의 llama-server-macos-arm64를 받는다. 없으면 Secret STIGMA_SERVER_KEY_INC로
+  #   여기서 빌드해 runtime_tag에 올려 둔다 (다음 빌드부터는 받기만). 둘 다 없으면 동적 서사 없이 빌드.
+  # 자세한 내용: stigma-gm/MAC_GM.md
   build-mac:
     needs: build-windows   # Windows가 릴리즈를 먼저 생성한 뒤 파일만 추가
-    runs-on: macos-latest
+    runs-on: macos-14
     permissions:
       contents: write
+    env:
+      LLAMA_COMMIT: ba0ba54d93b25faf1e149f4ccedd3e9d84798563   # stigma.patch 기준 (mac-gm-runtime.yml과 같게)
 
     steps:
       - uses: actions/checkout@v4
@@ -236,7 +246,55 @@ jobs:
           python-version: ${{ github.event.inputs.python_version }}
 
       - name: 의존성 설치
-        run: pip install rich colorama pyinstaller pygame-ce cryptography
+        run: pip install rich colorama nuitka ordered-set zstandard pygame-ce cryptography
+
+      - name: 동적 서사 실행기 받기
+        id: runtime
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p 개발/runtime/llama
+          if gh release download "${{ github.event.inputs.runtime_tag }}" -R "${{ github.repository }}" \
+               -p llama-server-macos-arm64 -D "$RUNNER_TEMP/rt"; then
+            mv "$RUNNER_TEMP/rt/llama-server-macos-arm64" 개발/runtime/llama/llama-server
+            chmod +x 개발/runtime/llama/llama-server
+            echo "have=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "have=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: 동적 서사 실행기 빌드 (릴리스에 없을 때)
+        if: steps.runtime.outputs.have != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          STIGMA_SERVER_KEY_INC: ${{ secrets.STIGMA_SERVER_KEY_INC }}
+        run: |
+          if [ -z "$STIGMA_SERVER_KEY_INC" ]; then
+            echo "::warning::Mac 실행기도 STIGMA_SERVER_KEY_INC Secret도 없음 - 동적 서사 없이 빌드"
+            exit 0
+          fi
+          git init "$RUNNER_TEMP/llama" && cd "$RUNNER_TEMP/llama"
+          git remote add origin https://github.com/ggml-org/llama.cpp
+          git fetch --depth 1 origin "$LLAMA_COMMIT"
+          git checkout FETCH_HEAD
+          git apply "$GITHUB_WORKSPACE/stigma-gm/tools/llama_patch/stigma.patch"
+          printf '%s' "$STIGMA_SERVER_KEY_INC" > ggml/src/stigma-key.inc
+          bash "$GITHUB_WORKSPACE/stigma-gm/tools/llama_patch/build_server.sh" .
+          rm -f ggml/src/stigma-key.inc
+          cp build-stigma/bin/llama-server "$GITHUB_WORKSPACE/개발/runtime/llama/llama-server"
+          cp build-stigma/bin/llama-server "$RUNNER_TEMP/llama-server-macos-arm64"
+          gh release upload "${{ github.event.inputs.runtime_tag }}" "$RUNNER_TEMP/llama-server-macos-arm64" \
+            --clobber -R "${{ github.repository }}"
+
+      - name: 비공개 생성물 (Secret)
+        env:
+          STIGMA_GM_KEY: ${{ secrets.STIGMA_GM_KEY }}
+        run: |
+          if [ -n "$STIGMA_GM_KEY" ]; then
+            printf '%s' "$STIGMA_GM_KEY" > 개발/gm_key.py
+          else
+            echo "::warning::STIGMA_GM_KEY Secret 없음 - 동적 서사 없이 빌드"
+          fi
 
       - name: 버전 주입
         if: ${{ github.event.inputs.inject_version == 'true' }}
@@ -245,28 +303,12 @@ jobs:
           sed -i '' "s/GAME_VERSION *= *\"[^\"]*\"/GAME_VERSION = \"$VERSION\"/" 개발/constants.py
           echo "버전 주입 완료: $VERSION"
 
-      - name: Mac 바이너리 빌드
-        run: |
-          pyinstaller --onefile \
-            --collect-all pygame \
-            --name="${{ github.event.inputs.exe_name }}" \
-            --distpath="개발/dist" \
-            --workpath="개발/build" \
-            --add-data "개발/database.json:." \
-            --add-data "개발/master_formulas.json:." \
-            --add-data "개발/locales:locales" \
-            --add-data "assets:assets" \
-            개발/Main.py
+      - name: Mac 앱 빌드
+        run: python 개발/build_exe.py --name "${{ github.event.inputs.exe_name }}"
 
-      - name: tar.gz 패키징
-        run: |
-          cd 개발/dist
-          tar -czf ${{ github.event.inputs.exe_name }}_mac.tar.gz \
-              ${{ github.event.inputs.exe_name }}
-
-      - name: Mac 바이너리 릴리즈에 업로드
+      - name: Mac 앱 릴리즈에 업로드
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.event.inputs.version }}
-          files: 개발/dist/${{ github.event.inputs.exe_name }}_mac.tar.gz
+          files: 개발/dist/${{ github.event.inputs.exe_name }}_mac_arm64.zip
           fail_on_unmatched_files: false

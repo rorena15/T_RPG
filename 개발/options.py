@@ -75,12 +75,15 @@ def _rows(page, settings):
     if page == "display":
         return [(str(i + 1), f"{t(label)}   [{_label(name, settings)}]", "pick", name) for i, (name, label) in enumerate(
             (("fullscreen", 'opt_fullscreen'), ("font_scale", 'opt_font'), ("screen_shake", 'opt_shake'), ("reduce_motion", 'opt_motion')))]
+    import gm_server
     mode = gm_bridge.get_mode()
     rows = [("1", t('lang_header'), "go", "lang"),
             ("2", f"{t('opt_text_speed')}   [{_label('text_speed', settings)}]", "pick", "text_speed"),
             ("3", f"{t('opt_combat_speed')}   [{_label('combat_speed', settings)}]", "pick", "combat_speed"),
             ("4", f"{t('opt_autosave')}   [{_label('autosave', settings)}]", "pick", "autosave"),
             ("5", f"{t('opt_gm')}   [{t(f'opt_gm_{mode}')}]" + ("" if gm_bridge.mode_installed(mode) else f"  {t('opt_gm_missing')}"), "gm", "gm_mode")]
+    if not gm_server.runtime_ok():  # 실행기가 없는 빌드는 동적 서사 항목을 숨긴다
+        return rows[:-1]
     if mode != "off" and not gm_bridge.mode_installed(mode):
         rows.append(("6", t('opt_gm_download'), "go", "download"))
     return rows

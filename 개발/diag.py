@@ -13,7 +13,6 @@ import datetime
 import json
 import os
 import struct
-import sys
 import threading
 
 MAGIC = b"SDG1"
@@ -24,8 +23,8 @@ _state = None   # None: 아직 안 엶 / False: 못 씀 / dict: 열린 파일과
 
 
 def diag_dir():
-    base = os.path.dirname(sys.executable) if getattr(sys, "frozen", False) else os.path.abspath(".")
-    return os.path.join(base, "diag")
+    from frozen_compat import user_dir
+    return os.path.join(user_dir(), "diag")
 
 
 def _public_key_bytes():

@@ -8,7 +8,6 @@
 """
 import json
 import os
-import sys
 
 from i18n import t
 
@@ -29,8 +28,8 @@ ROW = 4               # 기록 화면 한 줄에 결말 몇 개
 
 
 def _path():
-    base = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.abspath(".")
-    return os.path.join(base, "endings.json")
+    from frozen_compat import user_dir
+    return os.path.join(user_dir(), "endings.json")
 
 
 def load():

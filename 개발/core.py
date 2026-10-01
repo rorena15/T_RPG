@@ -8,6 +8,7 @@ import sqlite3
 import time
 import db_init
 import constants
+from frozen_compat import user_dir
 from i18n import t, db_t
 from sys_log import sys_log, track
 
@@ -21,15 +22,11 @@ def resource_path(relative_path):
     return os.path.join(base_path, relative_path)
 
 def get_save_path():
-    if getattr(sys, 'frozen', False):
-        return os.path.join(os.path.dirname(sys.executable), "stigma_save.json")
-    return os.path.join(os.path.abspath("."), "stigma_save.json")
+    return os.path.join(user_dir(), "stigma_save.json")
 
 
 def get_settings_path():
-    if getattr(sys, 'frozen', False):
-        return os.path.join(os.path.dirname(sys.executable), "settings.json")
-    return os.path.join(os.path.abspath("."), "settings.json")
+    return os.path.join(user_dir(), "settings.json")
 
 
 def load_settings() -> dict:

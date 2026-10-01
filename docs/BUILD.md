@@ -96,7 +96,8 @@ GM 모델 코드·도구·문서는 `stigma-gm/`에 있다 (학습 데이터는 
    - 경로 호환은 `개발/frozen_compat.py` (Main.py 첫 import)
 4. CI(`buildrelease.yml`)도 `build_exe.py`를 쓴다. 릴리스 `runtime-v1`의 실행기와 저장소 Secret `STIGMA_GM_KEY`가 필요하며, 없으면 동적 서사 없이 빌드된다
 5. 모델 올리기: `stigma-gm/tools/prepare_model_release.py`가 만든 조각을 릴리스 `models-v1`에 올린다. 모델을 바꾸면 새 태그로 다시 준비한다
-6. macOS: [stigma-gm/MAC_GM.md](../stigma-gm/MAC_GM.md) 참고 (게임 쪽 Mac 빌드는 아직 동적 서사 없음)
+6. macOS: `buildrelease.yml`의 Mac 작업이 같은 `build_exe.py`로 `.app`을 만들고 `*_mac_arm64.zip`으로 올린다. 실행기는 `runtime-v1`의 `llama-server-macos-arm64`를 받고, 없으면 Secret `STIGMA_SERVER_KEY_INC`로 그 자리에서 빌드해 올린다. 자세한 내용은 [stigma-gm/MAC_GM.md](../stigma-gm/MAC_GM.md)
+   - Mac 빌드는 세이브·설정·기록을 `~/Library/Application Support/PROTOCOL_STIGMA`에 쓴다 (`frozen_compat.user_dir`). 실행기도 이 폴더의 `runtime/`으로 복사해 실행한다
 
 ## 이벤트 화면 장면 그림
 
