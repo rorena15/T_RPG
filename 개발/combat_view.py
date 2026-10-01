@@ -2,31 +2,50 @@
 
 combat.py는 UI 관리자가 있으면 화면을 지우거나 메뉴를 찍지 않고 전투 기록만 남기며, 아래 신호를 보낸다:
   set_state("combat"/"exploration"), scene_set_enemy(이름, hp, 최대hp, 아스키아트), scene_update_hp(hp),
-  set_actions([(키, 이름, 쓸 수 있음)]), scene_set_idle()
+  set_actions([(키, 이름, 쓸 수 있음[, 누르면 보낼 키])]), scene_set_idle()
 왼쪽: 적 그림 + 내 생체 지표 + 적 이름·HP.  오른쪽: 큰 적 HP 바, 전투 기록.  아래: 행동 키.
-입력은 원래대로 combat.py의 read_key()가 받는다.
+전투 기록에는 마지막으로 키를 누른 뒤의 공방만 남는다 (on_key가 그 자리를 표시한다). 예전 공방은 쌓아 두지 않는다.
+"아무 키나 누르면 진행" 안내는 기록이 아니라 기다리는 동안만 뜨는 알림이다 (notice, ui.wait_for_keypress가 넣고 지운다).
+입력은 원래대로 combat.py의 read_key()가 받는다 (방향키·마우스는 EventView.on_input이 키로 바꿔 준다).
 """
 import re
 
 import pygame
 
-from event_view import AMBER, BG, EventView, GREEN, INK, INK_DIM, INK_FAINT, PLATE_W, RED, _lerp
+import constants
+from event_view import AMBER, BG, EventView, GREEN, INK, INK_DIM, INK_FAINT, JUNKYARD, PLATE_W, RED, _lerp
+from i18n import t
 
 _WORDISH = re.compile(r"[가-힣A-Za-z0-9]")
 
 
 class CombatView(EventView):
     def __init__(self, term, player, scene, is_boss=False):
-        super().__init__(term, player, None, "폐기물 처리장", scene=scene)
+        super().__init__(term, player, None, JUNKYARD, scene=scene)
         self.is_boss = is_boss
         self.enemy_name, self.enemy_hp, self.enemy_max = "", 0, 1
         self._shown_hp = None
         self._hit = (0, 0)  # (시각, 이전 hp) 피해 번쩍임
         self.actions = []
+        self._mark = None   # 터미널 기록에 끼워 둔 표시 줄: 이 뒤부터가 이번 공방
+
+    notice = None           # 기다리는 동안만 뜨는 알림 글 (없으면 조작 안내)
+
+    def _mark_turn(self):
+        """지금부터 찍히는 줄만 전투 기록에 보인다. 표시는 빈 줄 하나를 끼워 그 줄 자체로 찾는다
+        (터미널 기록은 600줄에서 앞이 잘려 줄 번호로는 기억할 수 없다)."""
+        buf = self._term._buf
+        self._mark = []
+        buf.append(self._mark)
+        buf.append([])
+
+    def on_key(self, key):
+        self._mark_turn()
 
     # ── combat.py가 부르는 것 ─────────────────────────────────────────────
     def set_state(self, state):
         if state == "combat" and not self._active:
+            self._mark_turn()   # 전투 전에 찍힌 글(탐색 기록, 앞선 전투)은 보이지 않게
             self.open()
         elif state != "combat" and self._active:
             self.close()
@@ -41,9 +60,21 @@ class CombatView(EventView):
             self.shake(4, 220)
         self.enemy_hp = hp
 
+    # 행동은 발밑 버튼: ←→(↑↓)로 고르고 Enter·Space로 실행, 마우스로 누르거나 숫자키. 고른 칸은 턴이 바뀌어도 남는다.
+    foot_nav = True
+    nav_cols = 2
+
+    # 행동 버튼 아이콘 (assets/icons, game-icons.net). 소모품 고르기 때는 set_actions의 다섯째 값(소모품 id)
+    ACT_ICONS = {"Q": "act_attack", "E": "act_barricade", "R": "act_jam", "F": "act_sub",
+                 "Z": "act_skill", "C": "act_skill2", "X": "act_retreat", "I": "act_item"}
+
     def set_actions(self, actions):
+        """[(키, 이름, 쓸 수 있음[, 누르면 보낼 키[, 아이콘]])]"""
         self.actions = actions
-        self.footer = [(k, label) for k, label, ok in actions if ok]
+        self.footer = [(a[0], a[1], a[3] if len(a) > 3 and a[3] else a[0]) for a in actions if a[2]]
+        self._act_icons = {(a[3] if len(a) > 3 and a[3] else a[0]): (a[4] if len(a) > 4 else self.ACT_ICONS.get(a[0]))
+                           for a in actions if a[2]}
+        self.foot_sel = min(self.foot_sel, max(0, len(self.footer) - 1))
 
     def scene_set_idle(self):
         pass
@@ -71,7 +102,7 @@ class CombatView(EventView):
         x = self._col_x
         width = W - x - 36
         y = 40
-        c.blit(self.f_mono.render("교전" + ("  ·  BOSS" if self.is_boss else ""), True, RED), (x, y))
+        c.blit(self.f_mono.render(t("tag_combat") + ("  ·  BOSS" if self.is_boss else ""), True, RED), (x, y))
         c.blit(self.f_title.render(self.enemy_name, True, INK), (x, y + 22))
         y += 76
         # 큰 적 HP 바: 줄어든 구간은 잠깐 붉게 남는다
@@ -88,42 +119,98 @@ class CombatView(EventView):
         # 전투 기록 (터미널 버퍼, 아스키 그림·테두리 제외)
         pygame.draw.line(c, (40, 38, 36), (x, y), (x + width, y))
         y += 14
-        bottom = H - 70
-        per = max(1, (bottom - y) // 28)
+        bottom = H - 70 - self._menu_h() - self.QB_H - 30
+        lh = round(28 * constants.FONT_SCALE)   # 전투 기록도 옵션의 글자 크기를 따른다
+        per = max(1, (bottom - y) // lh)
         for i, surf in enumerate(self._log_surfaces(width, per)):
             c.blit(surf, (x, y))
-            y += 28
+            y += lh
+
+    # ── 행동 버튼 (오른쪽 칸 아래, 두 줄씩) ──────────────────────────────────
+    BTN_H = 40
+
+    def _menu_h(self):
+        n = len(self._foot_items())
+        return ((n + 1) // 2) * (self.BTN_H + 6) if n else 0
+
+    def _draw_footer(self, c, W, H):
+        """발밑 안내 대신: 행동을 버튼 격자로 그리고(누를 자리 = _foot_hits), 맨 아래엔 조작 안내만."""
+        x = self._col_x
+        width = W - x - 36
+        items = self._foot_items()
+        top = H - 62 - self._menu_h()
+        bw = (width - 10) // 2
+        hits = []
+        if self.notice:   # 기다리는 중에는 고를 행동이 없다: 버튼·퀵슬롯을 치우고 알림만 남긴다
+            self._foot_hits = hits
+            pulse = 0.6 + 0.4 * abs((pygame.time.get_ticks() % 1400) / 700 - 1)
+            c.blit(self.f_mono_b.render("▸", True, _lerp(BG, AMBER, pulse)), (x, H - 41))
+            c.blit(self.f_sans.render(self.notice, True, _lerp(BG, INK, pulse)), (x + 20, H - 40))
+            return
+        for i, (key, label, ret) in enumerate(items):
+            bx, by = x + (i % 2) * (bw + 10), top + (i // 2) * (self.BTN_H + 6)
+            rect = pygame.Rect(bx, by, bw, self.BTN_H)
+            on = self._foot_on(i, ret)
+            box = pygame.Surface(rect.size, pygame.SRCALPHA)
+            box.fill((12, 10, 8, 190))
+            c.blit(box, rect.topleft)
+            if on:   # 고른 버튼: 주황 센서 테두리 (가끔 지직)
+                self._sensor_frame(c, rect, self.SENSOR, i + 20)
+            else:
+                pygame.draw.rect(c, (52, 44, 36), rect, 1)
+            k = self.f_mono_b.render(key, True, self.SENSOR if on else AMBER)
+            c.blit(k, (bx + 12, by + (self.BTN_H - k.get_height()) // 2))
+            lx = bx + 34
+            name = getattr(self, "_act_icons", {}).get(ret)
+            ic = self.crt_icon(name, 24, self.SENSOR if on else self.SENSOR_DIM) if name else None
+            if ic:
+                self.blit_static(c, ic, (lx, by + (self.BTN_H - 24) // 2), i + 20, 1.6 if on else 0.5)
+                lx += 32
+            g = self.f_sans.render(label, True, INK if on else INK_DIM)
+            c.blit(g, (lx, by + (self.BTN_H - g.get_height()) // 2))
+            hits.append((ret, rect))
+        self._foot_hits = hits
+        self._draw_quickbar(c, x, top - self.QB_H - 10, width)
+        c.blit(self.f_sans.render(t('combat_hint_keys'), True, INK_FAINT), (x, H - 40))
 
     def _log_surfaces(self, width, per):
         """전투 기록 줄 그림. 터미널 기록이 바뀔 때만 다시 거르고 그린다
         (매 프레임 60줄을 다시 줄바꿈·렌더하면 한 프레임 36ms로 느려졌다)."""
         buf = self._term._buf
-        key = (id(buf), len(buf), len(buf[-1]) if buf else 0, width, per)
+        key = (id(buf), len(buf), len(buf[-1]) if buf else 0, width, per, id(self._mark))
         if key == getattr(self, "_log_key", None):
             return self._log_cache
+        start = max(0, len(buf) - 60)
+        for i in range(len(buf) - 1, start - 1, -1):   # 이번 공방의 시작 (표시 줄) 뒤부터
+            if buf[i] is self._mark:
+                start = i + 1
+                break
         lines = []
-        for line in buf[-60:]:
+        for line in buf[start:]:
             text = "".join(seg[0] for seg in line).strip()
             if not text or len(_WORDISH.findall(text)) < max(2, len(text) * 0.35):
                 continue
             lines.append(text)
         wrapped = []
         for text in lines:
-            if text.startswith("[시스템 갱신]"):  # 매 턴 반복되는 잔여 체력 줄은 흐리게
+            # 로그 문구의 낱말로 색을 고른다 (한국어·영어 문구 둘 다)
+            if text.startswith(("[시스템 갱신]", "[SYSTEM UPDATE]")):  # 매 턴 반복되는 잔여 체력 줄은 흐리게
                 color = INK_FAINT
-            elif "손상" in text or "무자비한 공격" in text or "받" in text and "피해" in text:
+            elif ("손상" in text or "무자비한 공격" in text or "받" in text and "피해" in text
+                  or "relentless attack" in text or "Took" in text or "Took a hit" in text):
                 color = RED          # 받은 피해
-            elif "적에게" in text or "관통" in text or "피해량" in text:
+            elif "적에게" in text or "관통" in text or "피해량" in text or "penetrated" in text or "Dealt" in text or "Damage" in text:
                 color = AMBER        # 내 공격
-            elif "회복" in text or "획득" in text or "승리" in text or "전개" in text:
+            elif ("회복" in text or "획득" in text or "승리" in text or "전개" in text
+                  or "RECOVERY" in text or "LOOTED" in text or "VICTORY" in text or "deployed" in text):
                 color = GREEN
             else:
                 color = INK
-            wrapped += [(ln, color) for ln in self._wrap(self.f_serif, text, width)]
+            wrapped += [(ln, color) for ln in self._wrap(self.f_story, text, width)]
         shown = wrapped[-per:]
         out = []
         for i, (ln, color) in enumerate(shown):
             fade = 0.55 + 0.45 * (i + 1) / len(shown)  # 오래된 줄은 흐리게
-            out.append(self.f_serif.render(ln, True, _lerp(BG, color, fade)))
+            out.append(self.f_story.render(ln, True, _lerp(BG, color, fade)))
         self._log_key, self._log_cache = key, out
         return out

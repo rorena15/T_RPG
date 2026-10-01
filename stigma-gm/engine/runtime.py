@@ -10,10 +10,12 @@ import random
 import urllib.request
 
 try:  # 게임에 패키지(gm/)로 복사해 넣었을 때
-    from .guard import check_narration, check_output, correct_check, neutralize_injected_gains, sanitize_player_input, split_output
+    from .guard import (check_narration, check_output, correct_check, neutralize_injected_gains, repair_output,
+                        sanitize_player_input, split_output, strip_reserved)
     from .prompt import llama3_prompt, system_prompt
 except ImportError:  # engine/을 sys.path에 올려 쓸 때 (tools/*)
-    from guard import check_narration, check_output, correct_check, neutralize_injected_gains, sanitize_player_input, split_output
+    from guard import (check_narration, check_output, correct_check, neutralize_injected_gains, repair_output,
+                       sanitize_player_input, split_output, strip_reserved)
     from prompt import llama3_prompt, system_prompt
 
 SAMPLING = {"temperature": 0.5, "top_p": 0.9, "repeat_penalty": 1.05}
@@ -77,6 +79,15 @@ def generate_turn(system, history, action, roll, model="stigma-gm", retries=3, f
         except (ValueError, json.JSONDecodeError) as e:
             errors.append(f"format: {e}")
             continue
+        # 다시 생성하기 전에 고칠 수 있는 것은 고친다: 빈 items·빠진 키, 서술에 샌 예약 문구 줄 (guard.py)
+        fixed_shape = repair_output(out)
+        narration, cut = strip_reserved(narration)
+        if cut and len(narration.splitlines()) < 2:   # 지우고 나니 한 줄뿐이면 장면이 비어 보인다: 다시 생성
+            errors.append("too short after cut")
+            continue
+        if fixed_shape or cut:   # history에 쌓일 원문도 고친 내용으로 (샌 문구가 다음 턴 프롬프트로 되돌아가지 않게)
+            body = {k: out[k] for k in ("delta", "weights", "items", "flags") if k in out}
+            text = fixed + "\n" + narration + "\n<state>" + json.dumps(body, ensure_ascii=False) + "</state>"
         state = json.loads(system.split("[STATE] ", 1)[1].split("\n", 1)[0])
         errs = check_output(state, roll, out) + check_narration(narration)
         if not errs:

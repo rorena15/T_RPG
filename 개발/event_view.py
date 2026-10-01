@@ -14,7 +14,20 @@ import threading
 
 import pygame
 
+import constants
 import scene_art
+import sound
+import i18n
+
+# 장소 ID. 장면 그림(SCENES, scene_art)을 찾는 키라서 바꾸지 않는다. 화면에는 place_label()로 번역해 그린다
+JUNKYARD = "폐기물 처리장"
+BUNKER = "구시대 지하 방공호"
+_PLACE_KEYS = {JUNKYARD: "place_junkyard", BUNKER: "place_bunker"}
+
+
+def place_label(location):
+    key = _PLACE_KEYS.get(location)
+    return i18n.t(key) if key else location
 
 # ── 팔레트: 녹과 수은 ─────────────────────────────────────────────────────
 BG        = (9, 9, 11)
@@ -35,17 +48,17 @@ FOOT_H = 52
 
 # 장면 그림 팔레트 (위치별)
 SCENES = {
-    "폐기물 처리장": {
+    JUNKYARD: {
         "sky": [(12, 15, 17), (34, 32, 30), (92, 58, 36), (150, 90, 44)],
         "layers": [(58, 46, 40), (40, 33, 30), (25, 21, 20), (13, 12, 12)],
         "sun": (236, 150, 70), "fog": (120, 132, 128), "dust": (230, 170, 100),
-        "sub": "데드존 최외각",
+        "sub": "scene_sub_junkyard",  # 언어 키
     },
-    "구시대 지하 방공호": {
+    BUNKER: {
         "sky": [(8, 8, 9), (18, 17, 16), (40, 30, 22), (96, 52, 24)],
         "layers": [(44, 40, 36), (30, 28, 26), (19, 18, 17), (10, 10, 10)],
         "sun": (240, 110, 40), "fog": (90, 86, 80), "dust": (220, 140, 80),
-        "sub": "쓰레기 바다 안쪽의 무쇠 문",
+        "sub": "scene_sub_bunker",
     },
 }
 
@@ -234,6 +247,12 @@ class EventView:
         self.f_serif = CachedFont(serif, 19)
         self.f_serif_b = CachedFont(serif_b, 19)
         self.f_sans = CachedFont(sans, 17)
+        # 이야기 칸 글(서술·선택지·입력·전투 기록)은 옵션의 글자 크기를 따른다. 줄 간격도 같이 늘린다.
+        # 그 밖(지표, 맵, 인벤토리)은 자리가 정해져 있어 f_serif / f_sans 그대로 쓴다.
+        fs = constants.FONT_SCALE
+        self.f_story = CachedFont(serif, round(19 * fs))
+        self.f_pick = CachedFont(sans, round(17 * fs))
+        self.LH_S, self.LH_P = round(32 * fs), round(26 * fs)   # 서술 / 선택지 줄 간격
         self.f_mono = CachedFont(mono, 14)
         self.f_mono_b = CachedFont(mono, 16)
         self._plate = None
@@ -264,7 +283,7 @@ class EventView:
 
     # ── 장면 그림 (한 번 그려 캐시) ────────────────────────────────────────
     def _build_plate(self, H):
-        sc = dict(SCENES.get(self.location, SCENES["폐기물 처리장"]))
+        sc = dict(SCENES.get(self.location, SCENES[JUNKYARD]))
         sc.update(MOTIF_TINT.get(self.motif, {}))
         rng = random.Random(sum(map(ord, self.location)))
         w = PLATE_W
@@ -734,10 +753,13 @@ class EventView:
             mx, my = self._art.get_width() - PLATE_W, self._art.get_height() - H
             drift = (math.sin(t * 0.045), math.sin(t * 0.031 + 1.3))  # -1..1
             tilt = self._mouse_tilt()
+            if constants.REDUCE_MOTION:   # 옵션: 그림이 흐르지 않게 (칸 이동 연출 pan만 남긴다)
+                drift, tilt = (0.0, 0.0), (0.0, 0.0)
             self._offsets = []
+            pan = getattr(self, "_pan", 0.0)  # 칸 이동 연출: 시선이 옆으로 흘러간다 (-1..1, map_view.py)
             for depth, layer in enumerate([self._art] + self._layers):
                 k = PARALLAX[depth]
-                ox = mx / 2 + (drift[0] * 0.5 * k + tilt[0] * TILT[depth]) * mx
+                ox = mx / 2 + (drift[0] * 0.5 * k + tilt[0] * TILT[depth] + pan * k) * mx
                 oy = my / 2 + (drift[1] * 0.5 * k + tilt[1] * TILT[depth]) * my
                 off = (int(max(0, min(mx, ox))), int(max(0, min(my, oy))))
                 self._offsets.append(off)
@@ -748,6 +770,8 @@ class EventView:
         prev_clip = c.get_clip()
         c.set_clip(pygame.Rect(0, 0, PLATE_W, H))
         fx_layer = pygame.Surface((PLATE_W, H), pygame.SRCALPHA)  # 안개·먼지·효과를 모아 오른쪽을 지운 뒤 얹는다
+        if constants.REDUCE_MOTION:
+            t = 0.0   # 안개·먼지·불빛을 한 자리에 멈춘다
         real_c, c = c, fx_layer
         # 흐르는 수은 안개
         for band in range(3):
@@ -773,16 +797,16 @@ class EventView:
     def _draw_hud(self, c, H):
         p = self.player
         if p is None:  # 프롤로그처럼 아직 캐릭터가 없는 장면: 지명만
-            c.blit(self.f_place.render(self.location, True, INK), (22, H - 118))
+            c.blit(self.f_place.render(place_label(self.location), True, INK), (22, H - 118))
             return
         x, y = 22, 22
-        c.blit(self.f_mono.render("N-404  //  생체 지표", True, INK_DIM), (x, y))
+        c.blit(self.f_mono.render(i18n.t("hud_title"), True, INK_DIM), (x, y))
         y += 24
         ratio = p.hp / max(1, p.max_hp)
         hp_col = GREEN if ratio > 0.5 else (AMBER if ratio > 0.25 else RED)
         now = pygame.time.get_ticks()
-        for key, label, val, mx, col in (("hp", "HP", p.hp, p.max_hp, hp_col), ("hunger", "허기", p.hunger, 100, AMBER),
-                                         ("thirst", "갈증", p.thirst, 100, TEAL)):
+        for key, label, val, mx, col in (("hp", "HP", p.hp, p.max_hp, hp_col), ("hunger", i18n.t("hud_hunger"), p.hunger, 100, AMBER),
+                                         ("thirst", i18n.t("hud_thirst"), p.thirst, 100, TEAL)):
             # 표시값이 실제 값을 따라간다: 줄면 줄어든 구간을 붉게 남겼다가 지우고, 숫자는 굴러간다
             shown = self._hud.get(key, val)
             if self.hud_hold and key in self._hud:  # 서술이 끝나고 결과가 나올 때까지 옛 값을 보여 준다
@@ -809,8 +833,8 @@ class EventView:
             pygame.draw.line(c, col, (bx, y + 9), (fill(min(val, shown)), y + 9), 3)
             y += 22
         # 지명
-        c.blit(self.f_place.render(self.location, True, INK), (22, H - 118))
-        sub = f"{self._sc['sub']}  ·  턴 {p.turn_count}"
+        c.blit(self.f_place.render(place_label(self.location), True, INK), (22, H - 118))
+        sub = i18n.t("place_turn", sub=i18n.t(self._sc["sub"]), turn=p.turn_count)
         c.blit(self.f_mono.render(sub, True, INK_DIM), (24, H - 78))
 
     # ── 이야기 열 ───────────────────────────────────────────────────────────
@@ -852,13 +876,13 @@ class EventView:
             color = INK_DIM if k == "prose" else INK
             lines = []
             for para in e["lines"]:
-                lines += self._wrap(self.f_serif, para, width)
+                lines += self._wrap(self.f_story, para, width)
             typing = e.get("typing")  # 타자 효과 중: (지금 시각 초, 글자별 시작 시각 목록)
 
             def draw(c, x, y):
                 if typing is None:
                     for i, ln in enumerate(lines):
-                        c.blit(self.f_serif.render(ln, True, color), (x, y + i * 32))
+                        c.blit(self.f_story.render(ln, True, color), (x, y + i * self.LH_S))
                     return
                 now, times = typing
                 fade = TYPE_TAIL / TYPE_CPS  # 한 글자가 다 떠오르는 데 걸리는 시간
@@ -870,25 +894,26 @@ class EventView:
                     while solid < len(ln) and alphas[solid] >= 1:
                         solid += 1
                     if solid:
-                        c.blit(self.f_serif.render(ln[:solid], True, color), (x, y + i * 32))
+                        c.blit(self.f_story.render(ln[:solid], True, color), (x, y + i * self.LH_S))
                     for j in range(solid, len(ln)):  # 막 나타나는 글자는 흐리게, 조금 아래에서 떠오른다
                         a = alphas[j]
                         if a <= 0:
                             return
-                        g = self.f_serif.render(ln[j], True, color).copy()
+                        g = self.f_story.render(ln[j], True, color).copy()
                         g.set_alpha(int(255 * a))
-                        c.blit(g, (x + self.f_serif.size(ln[:j])[0], y + i * 32 + int(4 * (1 - a))))
+                        c.blit(g, (x + self.f_story.size(ln[:j])[0], y + i * self.LH_S + int(4 * (1 - a))))
                     start += len(ln) + 1
-            return len(lines) * 32 + 10, draw
+            return len(lines) * self.LH_S + 10, draw
         if k == "choices":
-            rows = [(key, self._wrap(self.f_sans, text, width - 34)) for key, text in e["items"]]
+            # 번호는 보이지 않는다: 방향키·클릭으로 고르고 숫자키는 보이지 않는 단축키로 남는다. 고른 줄만 ▸
+            rows = [(key, self._wrap(self.f_pick, text, width - 22)) for key, text in e["items"]]
 
             def draw(c, x, y):
                 sel = e.get("sel")
                 self._rows = []
                 for idx, (key, lines) in enumerate(rows):
                     custom = key == "0"
-                    h = len(lines) * 26
+                    h = len(lines) * self.LH_P
                     self._rows.append((key, pygame.Rect(x - 12, y - 4, width + 12, h + 6)))
                     on = sel == idx
                     if on:  # 고른 줄: 옅은 띠 + 왼쪽 막대, 글자가 살짝 들어간다
@@ -897,21 +922,22 @@ class EventView:
                         c.blit(band, (x - 12, y - 4))
                         pygame.draw.line(c, TEAL if custom else AMBER, (x - 12, y - 4), (x - 12, y + h + 1), 2)
                     dx = 6 if on else 0
-                    c.blit(self.f_mono_b.render(f"{key}.", True, TEAL if custom else AMBER), (x + dx, y + 2))
+                    if on:
+                        c.blit(self.f_mono_b.render("▸", True, TEAL if custom else AMBER), (x + dx, y + 2))
                     ink = (TEAL if custom else INK) if on or sel is None else (_lerp(TEAL, BG, 0.35) if custom else INK_DIM)
                     for i, ln in enumerate(lines):
-                        c.blit(self.f_sans.render(ln, True, ink), (x + 34 + dx, y + i * 26))
+                        c.blit(self.f_pick.render(ln, True, ink), (x + 22 + dx, y + i * self.LH_P))
                     y += h + 8
-            return sum(len(r[1]) * 26 + 8 for r in rows) + 6, draw
+            return sum(len(r[1]) * self.LH_P + 8 for r in rows) + 6, draw
         if k == "you":
-            lines = self._wrap(self.f_sans, e["text"], width - 30)
+            lines = self._wrap(self.f_pick, e["text"], width - 30)
             bar = TEAL if e.get("custom") else AMBER
 
             def draw(c, x, y):
-                pygame.draw.line(c, bar, (x, y + 4), (x, y + len(lines) * 26 - 4), 2)
+                pygame.draw.line(c, bar, (x, y + 4), (x, y + len(lines) * self.LH_P - 4), 2)
                 for i, ln in enumerate(lines):
-                    c.blit(self.f_sans.render(ln, True, INK_DIM), (x + 14, y + i * 26))
-            return len(lines) * 26 + 14, draw
+                    c.blit(self.f_pick.render(ln, True, INK_DIM), (x + 14, y + i * self.LH_P))
+            return len(lines) * self.LH_P + 14, draw
         if k == "sys":
             label, text = e["label"], e["text"]
 
@@ -925,6 +951,8 @@ class EventView:
                 c.blit(self.f_mono_b.render(text, True, _lerp(AMBER, INK, 0.45)), (x + 26 + lw, y))
             return 34, draw
         if k == "result":
+            if "t0" not in e:  # 처음 보일 때 결과마다 소리 (하나씩 떠오르는 간격에 맞춰)
+                sound.results(e.get("sfx", []))
             t0 = e.setdefault("t0", pygame.time.get_ticks())
 
             def draw(c, x, y):
@@ -965,34 +993,58 @@ class EventView:
             words = self._sfx or ["……"]
             elapsed = (now - self._think_t0) / 1000
 
+            def word_at(i):
+                """i번째 소리 말. 처음 한 바퀴는 행동에 맞춘 순서대로, 그 뒤는 같은 말이 잇달아 나오지 않게 섞는다."""
+                if i < len(words):
+                    return words[i]
+                pool = list(dict.fromkeys(words + SFX_DEFAULT))
+                cyc, pos = divmod(i - len(words), len(pool))
+
+                def order(c):   # c번째 바퀴의 순서
+                    o = list(pool)
+                    random.Random(c * 7919 + len(words)).shuffle(o)
+                    return o
+                o = order(cyc)
+                last = order(cyc - 1)[-1] if cyc else words[-1]
+                if o[0] == last and len(o) > 1:   # 바퀴가 바뀌는 자리에서 같은 말이 겹치지 않게
+                    o.append(o.pop(0))
+                return o[pos]
+
             def draw_sfx(cc, xx, yy):
+                # 글이 나오기 전까지 빈 시간이 없게: 소리 말이 끊기지 않고 흐른다.
+                # 다섯 개가 차면 가장 오래된 말이 옅어지며 왼쪽으로 빠지고 새 말이 오른쪽에 떠오른다.
+                n = int(elapsed / SFX_EVERY)
+                frac = elapsed / SFX_EVERY - n
+                first = max(0, n - SFX_MAX + 1)
                 x = xx
-                for i in range(min(SFX_MAX, int(elapsed / SFX_EVERY) + 1)):
-                    word = words[i % len(words)]
+                for i in range(first, n + 1):
+                    g = self.f_story.render(word_at(i), True, INK_DIM).copy()
                     a = min(1.0, (elapsed - i * SFX_EVERY) / 0.5)  # 떠오르기
-                    g = self.f_serif.render(word, True, INK_DIM).copy()
+                    if i == first and first > 0:   # 빠져나가는 말
+                        a = 1.0 - frac
+                        x -= int((g.get_width() + 18) * frac)
                     g.set_alpha(int(170 * max(0.0, a)))
-                    cc.blit(g, (x, yy + 4 + int(4 * (1 - a))))
+                    cc.blit(g, (max(xx - g.get_width(), x), yy + 4 + int(4 * (1 - min(1.0, a)))))
                     x += g.get_width() + 18
-            items.append((34, draw_sfx))
+            items.append((self.LH_S + 2, draw_sfx))
         if self.input_buf is not None:
             caret = "▌" if (pygame.time.get_ticks() // 500) % 2 == 0 else " "
             buf, comp = self.input_buf, self.compose
 
             def draw_input(cc, xx, yy):
-                pygame.draw.line(cc, TEAL, (xx, yy + 2), (xx, yy + 24), 2)
-                lines = self._wrap(self.f_sans, buf + comp, width - 14) if (buf or comp) else [""]
+                pygame.draw.line(cc, TEAL, (xx, yy + 2), (xx, yy + self.LH_P - 2), 2)
+                lines = self._wrap(self.f_pick, buf + comp, width - 14) if (buf or comp) else [""]
                 for i, ln in enumerate(lines):
-                    cc.blit(self.f_sans.render(ln, True, INK), (xx + 14, yy + i * 26))
-                last_w = self.f_sans.size(lines[-1])[0]
+                    cc.blit(self.f_pick.render(ln, True, INK), (xx + 14, yy + i * self.LH_P))
+                last_w = self.f_pick.size(lines[-1])[0]
                 if comp:  # 한글 조합 중인 글자는 밑줄
-                    cw = self.f_sans.size(comp)[0]
-                    uy = yy + (len(lines) - 1) * 26 + 24
+                    cw = self.f_pick.size(comp)[0]
+                    uy = yy + len(lines) * self.LH_P - 2
                     pygame.draw.line(cc, TEAL, (xx + 14 + last_w - cw, uy), (xx + 14 + last_w, uy), 1)
-                cc.blit(self.f_sans.render(caret, True, TEAL), (xx + 14 + last_w + 2, yy + (len(lines) - 1) * 26))
-                self._input_pos = (xx + 14 + last_w, yy + (len(lines) - 1) * 26)
-            n = len(self._wrap(self.f_sans, buf + comp, width - 14)) if (buf or comp) else 1
-            items.append((n * 26 + 18, draw_input))
+                cc.blit(self.f_pick.render(caret, True, TEAL), (xx + 14 + last_w + 2, yy + (len(lines) - 1) * self.LH_P))
+                self._input_pos = (xx + 14 + last_w, yy + (len(lines) - 1) * self.LH_P)
+            n = len(self._wrap(self.f_pick, buf + comp, width - 14)) if (buf or comp) else 1
+            items.append((n * self.LH_P + 18, draw_input))
         total = sum(h for h, _ in items)
         y = top if total <= bottom - top else bottom - total
         for h, draw in items:
@@ -1011,13 +1063,24 @@ class EventView:
         y = H - FOOT_H + 14
         x = self._col_x
         pygame.draw.line(c, (40, 38, 36), (x, H - FOOT_H), (W - 36, H - FOOT_H))
-        for key, label in self.footer:
-            k = self.f_mono_b.render(key, True, AMBER)
-            c.blit(k, (x, y))
-            x += k.get_width() + 10
-            s = self.f_sans.render(label, True, INK_FAINT)
-            c.blit(s, (x, y))
-            x += s.get_width() + 30
+        hits = []
+        items = self._foot_items()
+        gap = 30 if sum(self.f_mono_b.size(k)[0] + self.f_sans.size(l)[0] + 40 for k, l, _ in items) <= W - 36 - x else 16
+        for i, (key, label, ret) in enumerate(items):
+            kw, lw = self.f_mono_b.size(key)[0], self.f_sans.size(label)[0]
+            rect = pygame.Rect(x - 8, y - 7, kw + 10 + lw + 16, 32)
+            on = ret is not None and self._foot_on(i, ret)
+            if on:
+                band = pygame.Surface(rect.size, pygame.SRCALPHA)
+                band.fill((*AMBER, 34))
+                c.blit(band, rect.topleft)
+                pygame.draw.line(c, AMBER, rect.bottomleft, (rect.right - 1, rect.bottom), 1)
+            c.blit(self.f_mono_b.render(key, True, AMBER), (x, y))
+            c.blit(self.f_sans.render(label, True, INK if on else INK_FAINT), (x + kw + 10, y))
+            if ret is not None:
+                hits.append((ret, rect))
+            x += kw + 10 + lw + gap
+        self._foot_hits = hits
 
     def _hero_font(self):
         if not hasattr(self, "_f_hero"):
@@ -1066,7 +1129,7 @@ class EventView:
         if self._card_art:
             back, panel = self._card_art
             canvas.blit(back, ((W - back.get_width()) // 2, (H - back.get_height()) // 2))
-            p = min(1.0, (t - self._card_t0) / 8)  # 8초에 걸쳐 그림이 천천히 내려앉는다
+            p = 1.0 if constants.REDUCE_MOTION else min(1.0, (t - self._card_t0) / 8)  # 8초에 걸쳐 그림이 천천히 내려앉는다
             canvas.blit(panel, ((W - panel.get_width()) // 2, int(-(panel.get_height() - H) * (0.2 + 0.6 * p))))
             canvas.blit(self._card_shade, (0, 0))
         title = next((e for e in self.log if e["kind"] == "title"), None)
@@ -1099,14 +1162,23 @@ class EventView:
             _, draw = self._layout(menu, mw)
             draw(canvas, (W - mw) // 2, max(y + 40, int(H * 0.56)))
         fx = W - 60  # 오른쪽에서 왼쪽으로 차례로 놓는다
-        for key, label in reversed(self.footer):
-            g = self.f_sans.render(label, True, INK_FAINT)
+        hits = []
+        items = self._foot_items()
+        for i, (key, label, ret) in reversed(list(enumerate(items))):
+            on = ret is not None and self._foot_on(i, ret)
+            g = self.f_sans.render(label, True, INK if on else INK_FAINT)
             k = self.f_mono_b.render(key, True, AMBER)
             fx -= g.get_width()
             canvas.blit(g, (fx, H - 44))
             fx -= k.get_width() + 10
             canvas.blit(k, (fx, H - 44))
+            rect = pygame.Rect(fx - 8, H - 51, k.get_width() + 10 + g.get_width() + 16, 32)
+            if on:
+                pygame.draw.line(canvas, AMBER, rect.bottomleft, (rect.right - 1, rect.bottom), 1)
+            if ret is not None:
+                hits.append((ret, rect))
             fx -= 30
+        self._foot_hits = hits
         if self._overlay is None:
             self._build_overlay(W, H)
         canvas.blit(self._overlay, (0, 0))
@@ -1145,8 +1217,9 @@ class EventView:
         return g
 
     def shake(self, amp=7, ms=400):
-        """큰 피해나 대실패 때 화면을 흔든다."""
-        self._shake = (pygame.time.get_ticks() + ms, amp)
+        """큰 피해나 대실패 때 화면을 흔든다 (옵션에서 끌 수 있다)."""
+        if constants.SCREEN_SHAKE:
+            self._shake = (pygame.time.get_ticks() + ms, amp)
 
     # ── 이 화면 안에서 도는 루프 (입력, 대기, 타자) ──────────────────────────
     FPS = 60  # 30에서는 느린 안개·먼지가 정수 픽셀로 튀어 고르지 않게 움직였다
@@ -1161,8 +1234,6 @@ class EventView:
             if ev.type == pygame.KEYDOWN and ev.key == pygame.K_F11:
                 self._term.toggle_fullscreen()
                 continue
-            if ev.type == pygame.KEYDOWN and ev.key == pygame.K_ESCAPE:  # ESC는 게임 전체에서 무시한다
-                continue
             out.append(ev)
         self.refresh()
         self._clock.tick(self.FPS)
@@ -1176,9 +1247,20 @@ class EventView:
 
     def wait_key(self, keys):
         """keys 안의 키가 눌릴 때까지 기다린다. Enter는 'ENTER', Esc는 'ESC'."""
-        pygame.event.clear(pygame.KEYDOWN)  # 연출 중에 미리 누른 키로 넘어가지 않게
+        pygame.event.clear((pygame.KEYDOWN, pygame.MOUSEBUTTONDOWN))  # 연출 중에 미리 누른 키·클릭으로 넘어가지 않게
         while True:
             for ev in self._events():
+                if ev.type == pygame.MOUSEBUTTONDOWN and ev.button == 1:  # 클릭 = Enter (발밑 버튼이면 그 키)
+                    hit = self.foot_at(ev.pos)
+                    if hit in keys:
+                        return hit
+                    # 고를 게 따로 있으면(예: 0 더 묻기 / Enter 떠나기) 빈 곳 클릭으로 넘어가지 않는다
+                    if not (set(keys) - {"ENTER", "ESC", " "}):
+                        k = "ENTER" if "ENTER" in keys else (" " if " " in keys else None)
+                        if k:
+                            return k
+                if ev.type == pygame.MOUSEMOTION:
+                    self._foot_hover = self.foot_at(ev.pos)
                 if ev.type != pygame.KEYDOWN:
                     continue
                 if ev.key in (pygame.K_RETURN, pygame.K_KP_ENTER):
@@ -1265,42 +1347,277 @@ class EventView:
             entry["typing"] = (now, times)
         entry.pop("typing", None)
 
-    def choose(self, menu, n, extra=()):
+    def choose(self, menu, n, extra=(), adjust=()):
         """선택지 고르기: 숫자키, 방향키+Enter, 마우스(올리면 강조, 누르면 선택). 고른 키('1'..'n', '0')를 돌려준다.
-        extra: 추가로 받는 키 (예: 'ESC')."""
+        extra: 추가로 받는 키 (예: 'ESC').
+        adjust: 값을 조절하는 줄의 키들 (설정의 음량). 그 줄에서 ←/→를 누르면 "<키" / ">키"를 돌려준다."""
         keys = [k for k, _ in menu["items"]]  # 화면에 보이는 선택지 키 그대로 (타이틀처럼 0이 없는 메뉴도 있다)
-        pygame.event.clear(pygame.KEYDOWN)  # 연출 중에 미리 누른 키로 넘어가지 않게
+
+        def _picked(k):  # 고른 소리: 0·ESC는 뒤로, 나머지는 확인
+            sound.sfx("ui_back" if k in ("0", "ESC") else "ui_ok")
+            return k
+        pygame.event.clear((pygame.KEYDOWN, pygame.MOUSEBUTTONDOWN))  # 연출 중에 미리 누른 키·클릭으로 넘어가지 않게
         menu["sel"] = menu.get("start", 0)
         try:
             while True:
                 for ev in self._events():
                     if ev.type == pygame.KEYDOWN:
-                        if ev.key in (pygame.K_UP, pygame.K_w):
+                        if ev.key in (pygame.K_LEFT, pygame.K_RIGHT) and keys[menu["sel"]] in adjust:
+                            sound.sfx("ui_move")
+                            return ("<" if ev.key == pygame.K_LEFT else ">") + keys[menu["sel"]]
+                        if ev.key in (pygame.K_UP, pygame.K_w, pygame.K_LEFT):
                             menu["sel"] = (menu["sel"] - 1) % len(keys)
-                        elif ev.key in (pygame.K_DOWN, pygame.K_s, pygame.K_TAB):
+                            sound.sfx("ui_move")
+                        elif ev.key in (pygame.K_DOWN, pygame.K_s, pygame.K_TAB, pygame.K_RIGHT):
                             menu["sel"] = (menu["sel"] + 1) % len(keys)
+                            sound.sfx("ui_move")
                         elif ev.key in (pygame.K_RETURN, pygame.K_KP_ENTER, pygame.K_SPACE):
-                            return keys[menu["sel"]]
+                            return _picked(keys[menu["sel"]])
                         elif ev.key == pygame.K_ESCAPE and "ESC" in extra:
-                            return "ESC"
+                            return _picked("ESC")
                         elif ev.unicode and ev.unicode in keys:
-                            return ev.unicode
+                            return _picked(ev.unicode)
                     elif ev.type in (pygame.MOUSEMOTION, pygame.MOUSEBUTTONDOWN):
+                        fh = self.foot_at(ev.pos)
+                        self._foot_hover = fh
+                        if ev.type == pygame.MOUSEBUTTONDOWN and ev.button == 1 and fh:
+                            if fh in keys:
+                                return _picked(fh)
+                            if fh == "ESC" and "ESC" in extra:
+                                return _picked("ESC")
                         hit = self._row_at(ev.pos)
                         if hit is not None:
+                            if keys.index(hit) != menu["sel"]:
+                                sound.sfx("ui_move")
                             menu["sel"] = keys.index(hit)
                             if ev.type == pygame.MOUSEBUTTONDOWN and ev.button == 1:
-                                return hit
+                                return _picked(hit)
         finally:
             menu.pop("sel", None)
 
-    def _row_at(self, pos):
-        """창 좌표 → 캔버스 좌표 (gui의 레터박스 스케일과 같게) → 선택지 줄."""
+    # ── 마우스·방향키 공용 ────────────────────────────────────────────────
+    # 발밑 안내(footer)는 버튼이다: 마우스를 올리면 밝아지고 누르면 그 키를 누른 것과 같다.
+    # footer 항목: (보이는 키, 설명) 또는 (보이는 키, 설명, 돌려줄 키). 돌려줄 키가 없으면 보이는 키가
+    # 한 글자일 때 그 글자, Enter/Esc면 "ENTER"/"ESC", 그 밖(↑↓, WASD …)은 누를 수 없는 안내.
+    # foot_nav=True면 (전투처럼) 방향키로 발밑 행동을 고르고 Enter·Space로 실행한다 (foot_sel = 고른 칸).
+    foot_nav = False
+    foot_sel = 0
+    nav_cols = 1         # 버튼이 격자면 한 줄 칸 수 (↑↓가 이만큼 건너뛴다)
+    _foot_hover = None
+    _foot_hits = ()
+
+    def _foot_items(self):
+        out = []
+        for item in self.footer:
+            key, label = item[0], item[1]
+            if len(item) > 2:
+                ret = item[2]
+            elif len(key) == 1:
+                ret = key.upper()
+            else:
+                ret = {"enter": "ENTER", "esc": "ESC"}.get(key.lower())
+            out.append((key, label, ret))
+        return out
+
+    def _foot_on(self, i, ret):
+        if ret == self._foot_hover:
+            return True
+        if self.foot_nav:
+            rets = [r for _, _, r in self._foot_items() if r is not None]
+            return bool(rets) and rets[self.foot_sel % len(rets)] == ret
+        return False
+
+    # ── 퀵슬롯 줄 (맵·전투 공용): 1~0 칸, 누르면 그 숫자키 ─────────────────────
+    QB_H = 46
+    _quick_hits = ()
+    _quick_hover = None
+
+    _ICONS = {}
+    @classmethod
+    def icon(cls, name, size, color):
+        """assets/icons/<name>.png (흰 실루엣, game-icons.net)를 size로 줄이고 color로 칠한다. 없으면 None."""
+        k = (name, size, tuple(color))
+        if k not in cls._ICONS:
+            surf = None
+            try:
+                raw = pygame.image.load(sound._asset(os.path.join("icons", f"{name}.png"))).convert_alpha()
+                surf = pygame.transform.smoothscale(raw, (size, size))
+                surf.fill((*color[:3], 255), special_flags=pygame.BLEND_RGBA_MULT)
+            except (pygame.error, FileNotFoundError, OSError):
+                pass
+            cls._ICONS[k] = surf
+        return cls._ICONS[k]
+
+    # 아이콘 톤: N-404 시각 센서(미니맵)처럼 주황빛 단색 + 주사선 + 가끔 신호가 지직 튄다
+    SENSOR = (255, 170, 72)          # 켜진 칸·고른 버튼
+    SENSOR_DIM = (190, 120, 52)      # 평소
+    SENSOR_OFF = (70, 62, 54)        # 비었거나 다 떨어짐 (꺼진 화면)
+
+    @classmethod
+    def crt_icon(cls, name, size, color):
+        """주사선이 들어간 주황 아이콘 (한 번만 만들어 둔다). 없으면 None."""
+        k = ("crt", name, size, tuple(color))
+        if k not in cls._ICONS:
+            base = cls.icon(name, size, color)
+            out = None
+            if base is not None:
+                out = base.copy()
+                for yy in range(1, size, 2):   # 한 줄 걸러 어둡게 (주사선)
+                    out.fill((255, 255, 255, 120), pygame.Rect(0, yy, size, 1), special_flags=pygame.BLEND_RGBA_MULT)
+            cls._ICONS[k] = out
+        return cls._ICONS[k]
+
+    @staticmethod
+    def blit_static(c, surf, pos, seed, strength=1.0):
+        """아이콘을 그리고, 가끔(짧은 순간) 한 줄 띠가 옆으로 밀리며 잡음 점이 튄다 — 신호가 지직거리는 느낌."""
+        now = pygame.time.get_ticks()
+        rng = random.Random(seed * 7919 + now // 60)
+        c.blit(surf, pos)
+        w, h = surf.get_size()
+        if rng.random() < 0.10 * strength:   # 지직: 가로 띠 하나가 2~4px 밀림
+            y0 = rng.randrange(h)
+            hh = min(h - y0, rng.randint(1, max(2, h // 5)))
+            strip = surf.subsurface((0, y0, w, hh))
+            c.blit(strip, (pos[0] + rng.choice((-4, -3, -2, 2, 3, 4)), pos[1] + y0))
+        for _ in range(rng.randint(0, int(3 * strength))):   # 잡음 점
+            px, py = pos[0] + rng.randrange(w), pos[1] + rng.randrange(h)
+            c.fill(_lerp(BG, (255, 170, 72), rng.uniform(0.25, 0.7)), (px, py, rng.choice((1, 2)), 1))
+
+    def _sensor_frame(self, c, rect, color, seed=0):
+        """고른 칸 테두리: 주황 선 + 아주 약한 깜박임, 가끔 한 변이 끊긴다."""
+        now = pygame.time.get_ticks()
+        rng = random.Random(seed * 31 + now // 80)
+        col = _lerp(BG, color, 0.82 + 0.18 * rng.random())
+        pygame.draw.rect(c, col, rect, 1)
+        glow = pygame.Surface(rect.size, pygame.SRCALPHA)
+        glow.fill((*color, 18))
+        c.blit(glow, rect.topleft)
+        if rng.random() < 0.12:   # 지직: 윗변 일부가 끊김
+            gx = rect.x + rng.randrange(max(1, rect.w - 20))
+            c.fill(BG, (gx, rect.y, rng.randint(6, 20), 1))
+
+    @staticmethod
+    def quick_label(key):
+        """(짧은 이름, 종류 색): 치료는 붉게, 식량은 호박, 물은 청록."""
+        import constants
+        d = constants.CONSUMABLES_DB.get(key)
+        if not d:
+            return "", INK_FAINT
+        # 칸이 좁아 짧은 이름 (locales의 qs_short_<id>, 없으면 이름의 마지막 낱말)
+        k = f"qs_short_{key}"
+        label = i18n.t(k) if i18n.has(k) else i18n.db_t(d, 'name').split()[-1]
+        col = RED if d["type"] == "hp" else (AMBER if d["type"] == "food" else TEAL)
+        return label, col
+
+    @staticmethod
+    def quick_effect(key):
+        """마우스를 올렸을 때 보여 줄 효과 (HP +100 / HP 50% / 허기 +30 …)."""
+        import constants
+        d = constants.CONSUMABLES_DB[key]
+        if d["type"] == "hp":
+            return i18n.t('consumable_hp_percent', pct=int(d['val'] * 100)) if d["is_percent"] else i18n.t('consumable_hp_fixed', val=d['val'])
+        return ((i18n.t('consumable_hunger', val=d['hunger']) if d['hunger'] > 0 else "") +
+                (i18n.t('consumable_thirst', val=d['thirst']) if d['thirst'] > 0 else "")).strip()
+
+    def _draw_quickbar(self, c, x, y, width):
+        """퀵슬롯 10칸. 비었으면 흐린 칸, 개수가 0이면 흐리게. 마우스를 올린 칸 이름은 위에 띄운다."""
+        import constants
+        p = self.player
+        slots = getattr(p, "quickslots", None) or [None] * 10
+        gap = 6
+        bw = (width - gap * 9) // 10
+        hits = []
+        for i, key in enumerate(slots):
+            ch = "1234567890"[i]
+            rect = pygame.Rect(x + i * (bw + gap), y, bw, self.QB_H)
+            n = p.consumables.get(key, 0) if key else 0
+            hov = self._quick_hover == ch
+            box = pygame.Surface(rect.size, pygame.SRCALPHA)
+            box.fill((12, 10, 8, 200) if key else (255, 255, 255, 4))
+            c.blit(box, rect.topleft)
+            lit = bool(key and n)
+            if lit and hov:
+                self._sensor_frame(c, rect, self.SENSOR, i)
+            else:
+                pygame.draw.rect(c, _lerp(BG, self.SENSOR_DIM, 0.45) if lit else (40, 36, 32), rect, 1)
+            c.blit(self.f_mono.render(ch, True, self.SENSOR if lit else self.SENSOR_OFF), (rect.x + 4, rect.y + 2))
+            if key:
+                ic = self.crt_icon(key, 26, (self.SENSOR if hov else self.SENSOR_DIM) if n else self.SENSOR_OFF)
+                if ic:   # 주황 센서 아이콘 (game-icons.net) — 켜진 칸은 가끔 지직, 다 떨어지면 꺼진 화면
+                    pos = (rect.centerx - 13, rect.y + 11)
+                    if n:
+                        self.blit_static(c, ic, pos, i + 1, 1.6 if hov else 1.0)
+                    else:
+                        c.blit(ic, pos)
+                else:
+                    label, _ = self.quick_label(key)
+                    g = self.f_mono.render(label, True, INK if n else INK_FAINT)
+                    c.blit(g, (rect.centerx - g.get_width() // 2, rect.y + 20))
+                cnt = self.f_mono.render(str(n), True, INK if n else RED)
+                c.blit(cnt, (rect.right - cnt.get_width() - 3, rect.bottom - cnt.get_height() - 1))
+            hits.append((ch, rect))
+            if hov and key:
+                d = constants.CONSUMABLES_DB[key]
+                tip = f"{ch}  {i18n.db_t(d, 'name')}  ·  {self.quick_effect(key)}  ·  x{n}"
+                c.blit(self.f_sans.render(tip, True, INK if n else INK_DIM), (x, y - 26))
+        self._quick_hits = hits
+
+    def quick_at(self, pos):
+        cx, cy = self.to_canvas(pos)
+        return next((k for k, r in self._quick_hits if r.collidepoint(cx, cy)), None)
+
+    def to_canvas(self, pos):
+        """창 좌표 → 캔버스 좌표 (gui의 레터박스 스케일과 같게)."""
         sw, sh = self._term.screen.get_size()
         cw, ch = self._term._canvas.get_size()
         scale = min(sw / cw, sh / ch)
-        cx = (pos[0] - (sw - cw * scale) / 2) / scale
-        cy = (pos[1] - (sh - ch * scale) / 2) / scale
+        return (pos[0] - (sw - cw * scale) / 2) / scale, (pos[1] - (sh - ch * scale) / 2) / scale
+
+    def foot_at(self, pos):
+        cx, cy = self.to_canvas(pos)
+        for ret, rect in self._foot_hits:
+            if rect.collidepoint(cx, cy):
+                return ret
+        return None
+
+    def on_input(self, ev):
+        """gui.read_key가 이 화면이 떠 있을 때 부른다. 키 하나(문자열)를 돌려주면 그 키를 누른 것으로 친다."""
+        if ev.type == pygame.MOUSEMOTION:
+            hit = self.foot_at(ev.pos)
+            if hit != self._foot_hover and hit is not None:
+                sound.sfx("ui_move")
+            self._foot_hover = hit
+            self._quick_hover = self.quick_at(ev.pos)
+            return None
+        if ev.type == pygame.MOUSEBUTTONDOWN and ev.button == 1:
+            q = self.quick_at(ev.pos)
+            if q is not None:
+                return q
+            hit = self.foot_at(ev.pos)
+            if hit is not None:
+                sound.sfx("ui_ok")
+                if self.foot_nav:
+                    rets = [r for _, _, r in self._foot_items() if r is not None]
+                    self.foot_sel = rets.index(hit) if hit in rets else self.foot_sel
+            return hit
+        if ev.type == pygame.KEYDOWN and self.foot_nav:
+            rets = [r for _, _, r in self._foot_items() if r is not None]
+            if not rets:
+                return None
+            if ev.key in (pygame.K_LEFT, pygame.K_UP, pygame.K_RIGHT, pygame.K_DOWN):
+                step = {pygame.K_LEFT: -1, pygame.K_RIGHT: 1, pygame.K_UP: -self.nav_cols, pygame.K_DOWN: self.nav_cols}[ev.key]
+                n = self.foot_sel + step
+                self.foot_sel = n % len(rets) if abs(step) == 1 else (n if 0 <= n < len(rets) else self.foot_sel)
+                self._foot_hover = None
+                sound.sfx("ui_move")
+                return None
+            if ev.key in (pygame.K_RETURN, pygame.K_KP_ENTER, pygame.K_SPACE):
+                return rets[self.foot_sel % len(rets)]
+        return None
+
+    def _row_at(self, pos):
+        """창 좌표 → 캔버스 좌표 (gui의 레터박스 스케일과 같게) → 선택지 줄."""
+        cx, cy = self.to_canvas(pos)
         for key, rect in self._rows:
             if rect.collidepoint(cx, cy):
                 return key
@@ -1319,7 +1636,7 @@ class EventView:
             self._events()
 
 
-def scene_card(scene, title, tag="", line=None, player=None, location="폐기물 처리장", hold_ms=2600):
+def scene_card(scene, title, tag="", line=None, player=None, location=JUNKYARD, hold_ms=2600):
     """장면이 시작될 때 그림과 제목을 잠깐 보여 주는 카드 (전투 시작, 스토리 세션, 프롤로그).
     그 뒤 흐름은 원래 화면(터미널)이 그대로 이어간다. 그림 화면을 못 여는 환경이면 아무것도 안 한다."""
     try:
@@ -1332,7 +1649,7 @@ def scene_card(scene, title, tag="", line=None, player=None, location="폐기물
         view.add("title", tag=tag, title=title)
         if line:
             entry = view.add("narr", lines=[line])
-        view.footer = [("Enter", "계속")]
+        view.footer = [("Enter", i18n.t("ui_continue"))]
         view.open()
         try:
             if line:

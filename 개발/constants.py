@@ -3,9 +3,15 @@
 # 런타임 전역(AMBIENT_LORE 등)은 core.init_and_load_db()가
 # import constants 후 constants.XXX = ... 로 직접 갱신한다.
 
-GAME_VERSION = "1.9.0"
+GAME_VERSION = "2.0.0"
 
 TEXT_SPEED_MULT = 1.0  # 텍스트 출력 속도 배수 (0=즉시, 0.5=빠름, 1.0=보통, 2.0=느림)
+# 아래는 옵션에서 바꾸는 값 (options.apply가 settings.json에서 채운다)
+COMBAT_SPEED   = 1.0    # 전투 연출 대기 배수 (1.0 보통, 0.4 빠름, 0 즉시)
+SCREEN_SHAKE   = True   # 피격·대실패 때 화면 흔들림
+REDUCE_MOTION  = False  # 장면 그림의 흐름(패럴랙스·안개·먼지)을 멈춘다
+FONT_SCALE     = 1.0    # 이야기 칸 글자 크기 배수
+AUTOSAVE_TURNS = 0      # 이 턴마다 자동 저장 (0이면 끔)
 
 CREDITS_GITHUB = "https://github.com/rorena15/T_RPG"
 CREDITS_ITCH   = ""  # itch.io 배포 후 URL 삽입
@@ -23,6 +29,7 @@ SPECIAL_ITEMS = {
     "NEOARC_AI_WPN": {
         "id": "NEOARC_AI_WPN",
         "name": "죽은 AI의 서비스 화기",
+        "name_en": "Dead AI's Service Firearm",
         "power": 100,
         "tier": 1,
         "slot": "main_weapon",
@@ -33,6 +40,7 @@ SPECIAL_ITEMS = {
         "e_suppress": 0,
         "cyber_regen": 0,
         "desc": "[T=1 기업제·폐기 예정] 네오 아크 AI 잔해에서 회수한 과부하 화기. 2전투 후 열손상으로 자동 파기.",
+        "desc_en": "[T=1 Corporate · Pending Disposal] An overloaded firearm salvaged from the wreck of a Neo Arc AI. Self-destructs from heat damage after 2 battles.",
     }
 }
 
@@ -59,33 +67,45 @@ SLOT_DEFAULTS = {
 }
 TIER_TAGS = {4: "T4 급조", 3: "T3 규격", 2: "T2 정제", 1: "T1 기업", 0: "T0 유물"}
 
+
+def slot_label(slot):
+    """장비 슬롯 표시 이름 (언어별). SLOT_DISPLAY는 한국어 원본. 모르는 슬롯은 '기타'."""
+    from i18n import t
+    return t(f"slot_{slot}") if slot in SLOT_DISPLAY else t("slot_other")
+
+
+def tier_tag(tier, default=""):
+    """등급 태그 (언어별)."""
+    from i18n import t
+    return t(f"tier_tag_{tier}") if tier in TIER_TAGS else default
+
 _eq_cache: dict = {}
 
 SUDDEN_QUESTS = [
-    {"id": "SQ_SCRAP_A", "title": "잔해 자원 긴급 확보",
-     "desc": "산개한 고철 잔해에서 자원을 집중적으로 확보하십시오.",
-     "detail": "고철 +50개 수집", "type": "scrap", "target": 50, "turns": 10,
-     "reward_type": "consumable", "reward_id": "MED_FIX_300", "reward_desc": "군용 지혈제 1개"},
-    {"id": "SQ_SCRAP_B", "title": "집중 파밍 프로토콜",
-     "desc": "이 구역 전체에 회수 가능한 잔해가 산재합니다. 최대한 확보하십시오.",
-     "detail": "고철 +80개 수집", "type": "scrap", "target": 80, "turns": 14,
-     "reward_type": "materials", "reward_amount": 50, "reward_desc": "고철 50개 추가"},
-    {"id": "SQ_COMBAT_A", "title": "구역 정화",
-     "desc": "이 구역의 기계 밀도가 비정상입니다. 적 일부를 제압하여 경로를 확보하십시오.",
-     "detail": "전투 2회 승리", "type": "combat", "target": 2, "turns": 12,
-     "reward_type": "consumable", "reward_id": "MED_PER_50", "reward_desc": "응급 지혈대 1개"},
-    {"id": "SQ_COMBAT_B", "title": "데드존 청소부",
-     "desc": "총괄국이 자동화 기계 포대를 증파했습니다. 전투 역량을 검증하십시오.",
-     "detail": "전투 3회 승리", "type": "combat", "target": 3, "turns": 18,
-     "reward_type": "consumable", "reward_id": "MED_FIX_500", "reward_desc": "합성 바이오 젤 1개"},
-    {"id": "SQ_SEARCH_A", "title": "지형 데이터 스캔",
-     "desc": "사이버덱이 불완전한 지형 정보를 감지했습니다. 추가 스캔이 필요합니다.",
-     "detail": "탐색 3회", "type": "search", "target": 3, "turns": 7,
-     "reward_type": "ram", "reward_amount": 1, "reward_desc": "RAM +1"},
-    {"id": "SQ_SEARCH_B", "title": "광역 환경 스캐닝",
-     "desc": "광범위한 지형 정보 수집이 요청됩니다. 반복 스캔을 실시하십시오.",
-     "detail": "탐색 5회", "type": "search", "target": 5, "turns": 12,
-     "reward_type": "consumable", "reward_id": "FOOD_BOTH", "reward_desc": "수분 함유 전투식량 1개"},
+    {"id": "SQ_SCRAP_A", "title": "잔해 자원 긴급 확보", "title_en": "Emergency Salvage",
+     "desc": "산개한 고철 잔해에서 자원을 집중적으로 확보하십시오.", "desc_en": "Secure resources from the scattered scrap debris.",
+     "detail": "고철 +50개 수집", "detail_en": "Collect +50 scrap", "type": "scrap", "target": 50, "turns": 10,
+     "reward_type": "consumable", "reward_id": "MED_FIX_300", "reward_desc": "군용 지혈제 1개", "reward_desc_en": "1 Military Hemostatic"},
+    {"id": "SQ_SCRAP_B", "title": "집중 파밍 프로토콜", "title_en": "Intensive Farming Protocol",
+     "desc": "이 구역 전체에 회수 가능한 잔해가 산재합니다. 최대한 확보하십시오.", "desc_en": "Recoverable debris is scattered across this sector. Secure as much as you can.",
+     "detail": "고철 +80개 수집", "detail_en": "Collect +80 scrap", "type": "scrap", "target": 80, "turns": 14,
+     "reward_type": "materials", "reward_amount": 50, "reward_desc": "고철 50개 추가", "reward_desc_en": "50 extra scrap"},
+    {"id": "SQ_COMBAT_A", "title": "구역 정화", "title_en": "Sector Purge",
+     "desc": "이 구역의 기계 밀도가 비정상입니다. 적 일부를 제압하여 경로를 확보하십시오.", "desc_en": "Machine density in this sector is abnormal. Suppress some enemies to secure a route.",
+     "detail": "전투 2회 승리", "detail_en": "Win 2 battles", "type": "combat", "target": 2, "turns": 12,
+     "reward_type": "consumable", "reward_id": "MED_PER_50", "reward_desc": "응급 지혈대 1개", "reward_desc_en": "1 Emergency Tourniquet"},
+    {"id": "SQ_COMBAT_B", "title": "데드존 청소부", "title_en": "Dead Zone Sweeper",
+     "desc": "총괄국이 자동화 기계 포대를 증파했습니다. 전투 역량을 검증하십시오.", "desc_en": "The Bureau has deployed more automated gun batteries. Prove your combat capability.",
+     "detail": "전투 3회 승리", "detail_en": "Win 3 battles", "type": "combat", "target": 3, "turns": 18,
+     "reward_type": "consumable", "reward_id": "MED_FIX_500", "reward_desc": "합성 바이오 젤 1개", "reward_desc_en": "1 Synthetic Bio-Gel"},
+    {"id": "SQ_SEARCH_A", "title": "지형 데이터 스캔", "title_en": "Terrain Data Scan",
+     "desc": "사이버덱이 불완전한 지형 정보를 감지했습니다. 추가 스캔이 필요합니다.", "desc_en": "Your cyberdeck detected incomplete terrain data. Further scans are needed.",
+     "detail": "탐색 3회", "detail_en": "Search 3 times", "type": "search", "target": 3, "turns": 7,
+     "reward_type": "ram", "reward_amount": 1, "reward_desc": "RAM +1", "reward_desc_en": "RAM +1"},
+    {"id": "SQ_SEARCH_B", "title": "광역 환경 스캐닝", "title_en": "Wide-Area Scan",
+     "desc": "광범위한 지형 정보 수집이 요청됩니다. 반복 스캔을 실시하십시오.", "desc_en": "Wide-range terrain data collection requested. Run repeated scans.",
+     "detail": "탐색 5회", "detail_en": "Search 5 times", "type": "search", "target": 5, "turns": 12,
+     "reward_type": "consumable", "reward_id": "FOOD_BOTH", "reward_desc": "수분 함유 전투식량 1개", "reward_desc_en": "1 Hydrated Combat Ration"},
 ]
 
 ENEMY_ART = {
@@ -144,6 +164,21 @@ ENEMY_ART = {
     / |  |  | \\
         """,
     ],
+    "DOGS": [
+        """
+     __      __      __
+    (oo)    (oo)    (oo)   <-- [굶주린 눈 여섯 개]
+    /  \\    /  \\    /  \\
+   ^^  ^^  ^^  ^^  ^^  ^^
+""",
+    ],
+    "SECURITY": [
+        """
+      [==]    [==]    [==]
+      /||\\    /||\\    /||\\   <-- [네오 아크 청소 부대 — 진압 대형]
+     _/  \\_  _/  \\_  _/  \\_
+""",
+    ],
     "BIOHOUND": [
         """
        _____     _____
@@ -185,15 +220,30 @@ ENEMY_ART = {
 
 
 DIFFICULTY_SCALING_RATE = {"easy": 0.01, "normal": 0.02, "hard": 0.035}
+ENEMY_TURN_SCALE_CAP    = 20   # 일반 적은 이 턴까지만 강해진다: 오래 파밍해도 손해가 끝없이 쌓이지 않게
+ENEMY_ATK_MULT          = 0.95 # 적(보스 포함) 공격력 일괄 배율: 강화 하락·내구도, 강화소 퀘스트가 더해져 5% 낮춤
+ENEMY_DIFF_ATK          = {"easy": 0.95, "normal": 0.9, "hard": 0.85}  # 일반 적(보스 제외)만 난이도별 추가 배율: 강화소가 생기기 전 초반이 약해진 만큼
 
 # ── 전투 균형 상수 ────────────────────────────────────────────────────────────
 BOSS_DEF             = 45
-BOSS_BASE_ATK        = 400
-BOSS_HP              = 35000
+BOSS_BASE_ATK        = 100
+BOSS_HP              = 100000
 BOSS_TURN_LIMIT      = 15
 BOSS_PHASE2_RATIO    = 0.5    # HP 이 비율 이하 → Phase 2 전환
 BOSS_PHASE2_ATK_MULT = 1.6
 BOSS_PHASE2_LI_BONUS = 5
+# 보스는 강해야 이긴다 (combat.py):
+#   체력 = max(BOSS_HP × 난이도 배율, BOSS_HP × 내 실효 공격력 / BOSS_POWER_REF)
+#   - 난이도 배율(BOSS_DIFF_MULT): 이만큼 강해지기 전에는 15턴 안에 못 잡는다 → 파밍 없이 0%
+#   - 공격력이 기준을 넘으면 체력이 같이 늘어 잡는 데 늘 약 11타가 든다 → 끝없이 쉬워지지 않는다
+#   - 공격력 배율(BOSS_DIFF_ATK): 강한 플레이어의 최대 성공률 (쉬움 약 70% / 보통 약 40% / 어려움 약 20%)
+# 강화소는 발칸 게이츠 의뢰를 마쳐야 생겨 초반을 약한 채로 버틴다 → 일반 적은 ENEMY_DIFF_ATK로 난이도별 완화
+BOSS_DIFF_MULT       = {"easy": 1.60, "normal": 1.30, "hard": 1.30}
+BOSS_DIFF_ATK        = {"easy": 1.62, "normal": 2.20, "hard": 2.30}
+BOSS_POWER_REF       = 180
+# 검증 (봇, 게임 전체 200판씩, 탐색 45 / 90회. 탐색 0회는 세 난이도 모두 0%) — tools/balance/results/
+#   쉬움 48 / 76%, 보통 18 / 43%, 어려움 7 / 22%
+#   봇이 물·식량을 사고 바닥나면 방공호로 가게 된 뒤로 보스 도달률이 올라(보통 60 → 86%) 보통·어려움 공격력을 올렸다
 ALERT_INC_BOSS       = 40
 ALERT_INC_BIO        = 20
 ALERT_INC_DRONE      = 10
@@ -208,7 +258,58 @@ DRONE_BASE_ATK       = 175
 DRONE_HP_MIN         = 8000
 DRONE_HP_MAX         = 16000
 
+# ── 일반 적 종류 (combat.py가 이 표로 만든다) ────────────────────────────────
+# key: 이름 문구 키(enemy_<key>_name 등), art: ENEMY_ART 묶음, scene: 전투 그림, alert: 조우 시 경계 상승
+# bonus_scrap / gear_drop: 이기면 더 주는 고철 / 장비 드롭 확률 (없으면 GEAR_DROP_COMBAT)
+ENEMY_TYPES = {
+    "drone":     {"key": "drone", "def": DRONE_DEF, "atk": DRONE_BASE_ATK, "hp": (DRONE_HP_MIN, DRONE_HP_MAX),
+                  "alert": 10, "art": "NORMAL", "scene": "enemy_drones"},
+    "bio_hound": {"key": "bio", "def": BIO_DEF, "atk": BIO_BASE_ATK, "hp": (BIO_HP_MIN, BIO_HP_MAX),
+                  "alert": 20, "art": "BIOHOUND", "scene": "enemy_hound"},
+    # 들개 무리: 체력은 낮지만 떼로 물어뜯어 한 번에 아프다 (빨리 끝나는 싸움)
+    "dogs":      {"key": "dogs", "def": 0, "atk": 210, "hp": (5000, 9000),
+                  "alert": 5, "art": "DOGS", "scene": "enemy_dogs"},
+    # 네오 아크 청소 부대: 경계가 높을 때만 온다. 단단하고 아프지만 장비를 떨어뜨린다
+    "security":  {"key": "sec", "def": 25, "atk": 230, "hp": (13000, 20000),
+                  "alert": 5, "art": "SECURITY", "scene": "enemy_security", "bonus_scrap": 25, "gear_drop": 0.5},
+}
+ENEMY_SPAWN = {"bio_hound": 0.20, "dogs": 0.15}   # 나머지는 드론
+SEC_ALERT = 60        # 경계가 이 이상이면
+SEC_CHANCE = 0.35     # 이 확률로 청소 부대가 대신 온다
+
+# ── 일반 적의 고유 행동 (combat.py) ─────────────────────────────────────────
+# 드론: DRONE_GUARD_EVERY턴마다 장갑판을 올린다(예고). 그 턴의 공격은 DRONE_GUARD_MULT만 들어간다 → 바리케이드·회복으로 넘길 때
+# 하운드: 반격 뒤 HOUND_DOUBLE_CHANCE 확률로 한 번 더 문다 (HOUND_DOUBLE_MULT 위력)
+# 들개 무리: 무리가 줄수록 약해진다. 공격력 = DOGS_MIN_ATK + (1 − DOGS_MIN_ATK) × 남은 체력 비율
+# 청소 부대: 조우하자마자 증원을 부른다. SEC_CALL_TURN턴이 끝날 때까지 패킷 우회로 끊지 못하면
+#           체력이 최대의 SEC_REINF_HP만큼 늘고 공격력이 SEC_REINF_ATK배
+DRONE_GUARD_EVERY   = 3
+DRONE_GUARD_MULT    = 0.35
+HOUND_DOUBLE_CHANCE = 0.30
+HOUND_DOUBLE_MULT   = 0.5
+DOGS_MIN_ATK        = 0.45
+SEC_CALL_TURN       = 3
+SEC_REINF_HP        = 0.4
+SEC_REINF_ATK       = 1.25
+
 SUB_WPN_POWER        = 100
+
+# 장비 드롭: 일반 전투 승리 / 탐색 파밍에서 나올 확률, 나오면 등급 비율 (T4 80% / T3 19% / T2 1%)
+GEAR_DROP_COMBAT     = 0.30
+GEAR_DROP_SEARCH     = 0.15
+GEAR_DROP_TIER_WEIGHTS = {4: 80, 3: 19, 2: 1}
+
+# ── 칸 위험도 (map.py danger: 0 낮음 / 1 보통 / 2 높음) ─────────────────────
+# 위험한 칸일수록 조우가 잦고 더 많이·더 좋게 나온다. 한 칸만 파는 것보다 어디로 갈지 고르는 쪽이 이득이 되게
+DANGER_ENC   = (0.75, 1.0, 1.35)   # 탐색 중 전투 확률 배율
+DANGER_SCRAP = (0.8, 1.0, 1.5)     # 파밍 고철 배율
+DANGER_GEAR  = (0.10, 0.15, 0.25)  # 파밍 때 장비 확률 (GEAR_DROP_SEARCH 대신)
+DANGER_TIER_WEIGHTS = {2: {4: 62, 3: 34, 2: 4}}   # 위험한 칸의 장비 등급 비율 (없으면 GEAR_DROP_TIER_WEIGHTS)
+# ── 탐색 수확 체감: 다 뒤진 칸이 다시 채워질 때마다(map.py cycles) 파밍량이 1 / (1 + DEPLETE × 횟수) ──
+DEPLETE = 0.35
+
+# 강화 (upgrade.py): 시도 1회 고철 = max(1, floor(α·(k+1)^1.2)) × 이 배율
+UPGRADE_COST_MULT    = 3
 ESCAPE_WEIGHTS       = (60, 20, 10, 5, 5)  # SAFE / NORMAL / 1.5X / 2.0X / LUCKY
 
 # 고티어 장비의 '숫자가 커지는' 연출 배율. 피해와 체력에 같은 배율을 써야 표시된 피해만큼 표시된 체력이 줄어든다
@@ -269,3 +370,40 @@ STAT_DEFAULT_VIT = 10
 STAT_DEFAULT_INT = 10
 STAT_DEFAULT_DEX = 10
 STAT_DEFAULT_LV  = 1
+
+
+# ── 무기 공격음 (sound.py의 atk_<종류>) ──────────────────────────────────────
+# 무기 데이터에 종류 칸이 없어 이름·설명으로 나눴다. 없는 무기는 맨손 소리.
+WEAPON_SFX = {
+    "WEAPON_NONE": "fist",
+    # 칼·창·단검
+    "WEAPON_SCRAP_01": "blade", "WEAPON_SCRAP_06": "blade", "WEAPON_STD_02": "blade", "WEAPON_STD_10": "blade",
+    "WEAPON_REF_01": "blade", "WEAPON_CORP_06": "blade", "WEAPON_LEGACY_06": "blade",
+    # 에너지 검
+    "WEAPON_STD_05": "eblade", "WEAPON_REF_06": "eblade", "WEAPON_CORP_01": "eblade", "WEAPON_LEGACY_01": "eblade",
+    # 둔기·도끼·압착
+    "WEAPON_SCRAP_05": "blunt", "WEAPON_SCRAP_10": "blunt", "WEAPON_STD_04": "blunt", "WEAPON_REF_04": "blunt", "WEAPON_REF_08": "blunt",
+    # 톱날
+    "WEAPON_SCRAP_07": "saw",
+    # 전기 충격
+    "WEAPON_SCRAP_03": "shock", "WEAPON_SCRAP_08": "shock", "WEAPON_REF_02": "shock",
+    # 화염
+    "WEAPON_SCRAP_04": "flame",
+    # 총 (소총·권총·저격총·리벳 건)
+    "WEAPON_SCRAP_02": "gun", "WEAPON_STD_01": "gun", "WEAPON_STD_07": "gun", "WEAPON_STD_08": "gun",
+    "WEAPON_REF_10": "gun", "WEAPON_CORP_05": "gun",
+    # 산탄
+    "WEAPON_SCRAP_09": "shotgun", "WEAPON_STD_06": "shotgun",
+    # 폭발 (유탄기·파일 벙커·파쇄포)
+    "WEAPON_STD_09": "heavy", "WEAPON_REF_05": "heavy", "WEAPON_REF_09": "heavy",
+    # 레일·플라즈마·전자기
+    "WEAPON_STD_03": "energy", "WEAPON_REF_03": "energy", "WEAPON_REF_07": "energy", "WEAPON_CORP_02": "energy",
+    "WEAPON_CORP_03": "energy", "WEAPON_LEGACY_02": "energy", "WEAPON_LEGACY_03": "energy",
+    # 신경독소·나노 분사
+    "WEAPON_CORP_04": "toxin", "WEAPON_LEGACY_04": "toxin", "WEAPON_LEGACY_05": "toxin",
+}
+
+
+def weapon_sfx(item_id):
+    """주무기의 공격 효과음 이름 (atk_fist 등)."""
+    return "atk_" + WEAPON_SFX.get(item_id, "fist")

@@ -53,6 +53,49 @@ SYSTEM_LINE = re.compile(r"^\[(경고|SYSTEM|ERROR)\]\s*(.*)$")
 SCRIPT_TAG = re.compile(r"^\[[^\]]+\]\s*")  # 대본 결과 문장 앞의 [처리] 같은 표식
 SUCCESS = (None, "success", "crit_success")
 
+# 장비·NPC 이름에서 외부 게임 브랜드명을 자체 이름으로 바꿨다. 지금 GM 모델은 예전 이름으로 학습돼 있어,
+# 응답에 예전 이름이 나오면 새 이름으로 고친다 (서술이 어긋나지 않고, 이름으로 찾는 아이템 지급이 빠지지 않게).
+# 학습 데이터를 바꿔 다시 학습한 뒤에도 안전장치로 남겨 둔다.
+RENAMED = [("오비탈 에어", "스트라토"), ("오비탈", "스트라토"), ("아라사카", "아마기리"), ("밀리테크", "스틸게이트"),
+           ("바이오테크니카", "셀리온"), ("캉타오", "란위"), ("트라우마 팀", "레드라인"), ("마이크로테크", "비트레일"),
+           ("리퍼닥", "봉합꾼")]
+_JOSA_PAIRS = {"이": ("이", "가"), "가": ("이", "가"), "을": ("을", "를"), "를": ("을", "를"),
+               "은": ("은", "는"), "는": ("은", "는"), "과": ("과", "와"), "와": ("과", "와"),
+               "으로": ("으로", "로"), "로": ("으로", "로")}
+# 띄어쓰기가 달라도 잡는다 ("리퍼 닥", "트라우마팀": 가벼움 모델이 실제로 띄어 썼다). 영문 표기는 플레이어 입력용
+RENAMED_EN = [("orbital air", "스트라토"), ("arasaka", "아마기리"), ("militech", "스틸게이트"), ("biotechnica", "셀리온"),
+              ("kang tao", "란위"), ("trauma team", "레드라인"), ("microtech", "비트레일"), ("ripperdoc", "봉합꾼")]
+_RENAMED_RE = re.compile("(" + "|".join(r"\s?".join(re.escape(ch) for ch in a.replace(" ", "")) for a, _ in RENAMED + RENAMED_EN)
+                         + ")(?:(으로|로|이|가|을|를|은|는|과|와)(?![가-힣]))?", re.IGNORECASE)
+_RENAMED_MAP = {a.replace(" ", ""): b for a, b in RENAMED + RENAMED_EN}
+
+
+def _renamed(text):
+    """예전 브랜드명을 새 이름으로. 바로 뒤 조사는 새 이름의 받침에 맞춘다."""
+    if not isinstance(text, str) or not text:
+        return text
+
+    def sub(m):
+        new, josa = _RENAMED_MAP["".join(m.group(1).split()).lower()], m.group(2)
+        if not josa:
+            return new
+        jong = (ord(new[-1]) - 0xAC00) % 28 if "가" <= new[-1] <= "힣" else 0
+        with_b, without_b = _JOSA_PAIRS[josa]
+        if josa in ("으로", "로"):
+            return new + ("로" if jong in (0, 8) else "으로")   # 받침 없음·ㄹ → 로
+        return new + (with_b if jong else without_b)
+    return _RENAMED_RE.sub(sub, text)
+
+
+def _renamed_out(out):
+    items = out.get("items") if isinstance(out, dict) else None
+    if isinstance(items, dict):
+        for k in ("add", "remove"):
+            if isinstance(items.get(k), list):
+                items[k] = [_renamed(n) for n in items[k]]
+    return out
+
+
 _status = {"models": None, "checked": 0.0}  # Ollama에 설치된 모델 이름 (캐시)
 _mode = "full"
 _name_to_id = None
@@ -128,7 +171,7 @@ def _item_id(name):
             pass
         for iid, d in constants.SPECIAL_ITEMS.items():
             _name_to_id.setdefault(d["name"], iid)
-    return _name_to_id.get(name)
+    return _name_to_id.get(_renamed(name))
 
 
 def _build_state(player, grid):
@@ -295,6 +338,7 @@ def _call(view, player, grid, action, history, hint="", force_check=False):
     """GM 한 턴을 백그라운드에서 돌린다(화면은 계속 움직임). 성공하면 (서술, 출력, 원문), 실패하면 None."""
     state, lore = _build_state(player, grid)
     base = lore
+    action = _renamed(action)   # 플레이어가 예전 이름을 직접 쓰면 모델이 그대로 따라 쓴다 (8B 12번 중 9번): 넘기기 전에 바꾼다
     if hint:
         lore = f"{lore} {hint}"
     # 장면·행동·소지품과 맞는 원작 설정 조각을 덧붙인다 (없는 설정을 지어내지 않게)
@@ -307,12 +351,12 @@ def _call(view, player, grid, action, history, hint="", force_check=False):
     try:
         narration, out, text, _ = view.run_task(lambda: generate_turn(
             system, history[-HISTORY_TURNS:], action, roll, MODELS[_mode], force_check=force_check), action)
-        return narration, out, text
+        return _renamed(narration), _renamed_out(out), _renamed(text)
     except OSError:  # 서버가 꺼졌다: 한동안 GM 없이 진행하고 RECHECK_SEC 뒤 다시 확인
         _status["models"] = set()
         _status["checked"] = time.time()
         return None
-    except (RuntimeError, ValueError):  # 이번 턴만 검증 실패
+    except (RuntimeError, ValueError, KeyError, TypeError, AttributeError):  # 이번 턴만 검증 실패 (응답 모양이 틀려도 게임은 대본으로)
         return None
 
 
@@ -341,10 +385,35 @@ def _show(view, narration, tokens, out=None):
     view.hud_hold = False
     check = (out or {}).get("check") or {}
     big_hit = any(kind == "hp_loss" for _, kind in tokens) and         view.player.max_hp and (view._hud.get("hp", view.player.hp) - view.player.hp) >= view.player.max_hp * 0.05
+    outcome = check.get("outcome")
+    if outcome:
+        import sound
+        sound.sfx({"crit_success": "evt_great", "success": "evt_good", "partial": "evt_good"}.get(outcome, "evt_bad"))
     if check.get("outcome") == "crit_fail" or big_hit:
         view.shake(9 if check.get("outcome") == "crit_fail" else 6)
     if tokens:
-        view.add("result", tokens=tokens)
+        view.add("result", tokens=tokens, sfx=_result_sfx(tokens))
+
+
+def _result_sfx(tokens):
+    """결과 표시(글자, 종류)를 결과 효과음 종류로 (sound.results)."""
+    hp_up = t('gm_tok_hp', sign="+", val=0)[:-1]
+    alert_up = t('gm_tok_alert', sign="+", val=0)[:-1]
+    kinds = []
+    for text, kind in tokens:
+        if kind == "hp_loss":
+            kinds.append("hp_loss")
+        elif kind == "scrap":
+            kinds.append("scrap+" if "+" in text else "scrap-")
+        elif kind == "gain":
+            kinds.append("hp_gain" if text.startswith(hp_up) else "gain")
+        elif kind in ("item", "weight"):
+            kinds.append(kind)
+        elif kind == "info" and text.startswith(alert_up):
+            kinds.append("alert")
+        else:
+            kinds.append(None)   # 소리 없이 간격만
+    return kinds
 
 
 def _followups(view, player, grid, history, scene=""):
@@ -401,7 +470,7 @@ def run_event(player, grid, event):
         while True:
             menu = view.add("choices", items=[(str(i + 1), o[0]) for i, o in enumerate(options)]
                             + [("0", t('gm_custom_choice'))])
-            view.footer = [(f"1-{len(options)}", t('gm_foot_choose')), ("0", t('gm_foot_custom'))]
+            view.footer = [("↑↓", t('ui_select')), ("Enter", t('ui_confirm'))]
             key = view.choose(menu, len(options))
             view.log.remove(menu)
             if key == "0":
@@ -429,7 +498,8 @@ def run_event(player, grid, event):
         log_diary(player, t('event_log_simple', title=db_t(event, 'title')))
         if result is None:  # GM 실패: 같은 화면에서 조용히 대체
             if src is not None:
-                empty = {"check": None, "delta": {}, "weights": {}, "items": {"add": [], "remove": []}}
+                # 대본 결과 그대로: 대본 모드처럼 보상을 준다 (check가 None이면 실패로 쳐서 "얻은 것 없음"이 떴다)
+                empty = {"check": {"outcome": "success"}, "delta": {}, "weights": {}, "items": {"add": [], "remove": []}}
                 _show(view, SCRIPT_TAG.sub("", db_t(src, 'log').split("\n")[0]), _apply_script(player, src, weight, empty))
             else:
                 _show(view, t('gm_fallback_custom'), [])
@@ -440,6 +510,54 @@ def run_event(player, grid, event):
         tokens = _apply_script(player, src, weight, out) if src is not None else _apply_gm(player, out)
         _show(view, narration, tokens, out)
         _followups(view, player, grid, [(action, text)], scene)
+        return True
+    finally:
+        view.close()
+
+
+def run_event_script(player, grid, event):
+    """GM 없이 대본 이벤트를 그림 화면으로 진행한다 (동적 서사 끔·미설치·영어). 진행했으면 True.
+    규칙은 quest.handle_random_event(터미널 판)와 같다: 단순 이벤트는 바로 결과, 선택 이벤트는 고른 대로."""
+    if get_terminal() is None:
+        return False
+    state, _ = _build_state(player, grid)
+    view = EventView(get_terminal(), player, grid, state["location"], event_id=event.get("id"),
+                     context=f"{event.get('title', '')} {event.get('text', '')}")
+    view.add("title", tag=t('gm_tag_event'), title=db_t(event, 'title'))
+    view.add("prose", lines=[" ".join(db_t(event, 'text').split())])
+    empty = {"check": {"outcome": "success"}, "delta": {}, "weights": {}, "items": {"add": [], "remove": []}}
+    view.open()
+    try:
+        if event["type"] == "choice":
+            items = [(str(i + 1), db_t(c, 'text')) for i, c in enumerate(event["choices"])]
+            menu = view.add("choices", items=items)
+            view.footer = [("↑↓", t('ui_select')), ("Enter", t('ui_confirm'))]
+            src = event["choices"][int(view.choose(menu, len(items))) - 1]
+            view.log.remove(menu)
+            view.add("you", text=db_t(src, 'text'))
+            tokens = _apply_script(player, src, src.get("weight"), empty)
+            label = t(f"weight_label_{src['weight']}") if src.get("weight") in player.weights else t('weight_label_default')
+            diary = t('event_log_choice', title=db_t(event, 'title'), label=label)
+        elif event["type"] == "weapon_item":
+            src = event["result"]
+            tokens = _apply_script(player, src, None, empty)
+            wid, uses = src["weapon_id"], src.get("weapon_uses", 2)
+            if wid not in player.inventory:
+                player.inventory.append(wid)
+                player.temp_weapon_uses[wid] = uses
+                tokens.append((" ".join(t('event_weapon_gain', uses=uses).split()), "item"))
+            else:
+                tokens.append((" ".join(t('event_weapon_dup').split()), "info"))
+            diary = t('event_log_weapon', title=db_t(event, 'title'))
+        else:
+            src = event["result"]
+            tokens = _apply_script(player, src, None, empty)
+            diary = t('event_log_simple', title=db_t(event, 'title'))
+        view.footer = []
+        _show(view, "\n".join(SCRIPT_TAG.sub("", x.strip()) for x in db_t(src, 'log').splitlines()), tokens)
+        log_diary(player, diary)
+        view.footer = [("Enter", t('gm_foot_leave'))]
+        view.wait_key({"ENTER", "ESC", " "})
         return True
     finally:
         view.close()

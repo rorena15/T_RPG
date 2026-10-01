@@ -20,19 +20,19 @@ sys.path.insert(0, os.path.join(ROOT, "data"))
 
 # 서사가 있는 문서만 (공식·능력치·개발 계획 문서는 제외)
 NARRATIVE_DOCS = [
-    "스토리/본편 스토리 - 1막 낙인 뼈대.md",
+    "docs/기획/스토리/본편 스토리 - 1막 낙인 뼈대.md",
     # "본편 스토리- 프로토콜 리부트.md"는 뺀다: 뒤 막 전개·엔딩·기계 괴수의 정체가 들어 있다.
     # 1막 게임의 GM이 알 필요가 없고, lore_snippets.json은 공개 저장소의 게임에 그대로 들어간다 (2026-09-27 누출 발견)
-    "기획/Project_World_Narrative_Detail.md",
-    "기획/Text RPG 프로젝트 직업별 기원 및 서사 배경.md",
-    "기획/Project_Theology_Paradox.md",
-    "기획/Project_NPC_Quest.md",
-    "기획/Project_Map_Gimmick.md",
-    "기획/Project_Monster_Raid.md",
-    "기획/Text RPG 프로젝트 콘셉트.md",
-    "기획/성향 및 진영 평판 시스템 (Alignment & Faction Reputation).md",
+    "docs/기획/Project_World_Narrative_Detail.md",
+    "docs/기획/Text RPG 프로젝트 직업별 기원 및 서사 배경.md",
+    "docs/기획/Project_Theology_Paradox.md",
+    "docs/기획/Project_NPC_Quest.md",
+    "docs/기획/Project_Map_Gimmick.md",
+    "docs/기획/Project_Monster_Raid.md",
+    "docs/기획/Text RPG 프로젝트 콘셉트.md",
+    "docs/기획/성향 및 진영 평판 시스템 (Alignment & Faction Reputation).md",
 ]
-SCRIPT_DOC = "스토리/본편 스토리 - 1막 낙인 스크립트.md"  # JSON "text"만 뽑는다
+SCRIPT_DOC = "docs/기획/스토리/본편 스토리 - 1막 낙인 스크립트.md"  # JSON "text"만 뽑는다
 
 META = re.compile(r"[`${}]|개발|파싱|데이터셋|명세|플래그|가중치|스크립트|JSON|XML|스팀|데모|플레이타임|1인|"
                   r"수식|공식|연산식|변수|트리거|코드 ID|ID\b|UI|밸런스|구현|버전|스코프|볼륨|포인터|\bR\b|\bF\b|"
@@ -107,7 +107,7 @@ def main():
     for rel in NARRATIVE_DOCS:
         paras = doc_paragraphs(os.path.join(g, rel))
         add(os.path.basename(rel), paras)
-        if "스토리/" in rel:  # 줄거리 문서는 실행 중 검색에 안 넣는다: GM이 줄거리 사건을 지금 장면으로 착각했다
+        if "docs/기획/스토리/" in rel:  # 줄거리 문서는 실행 중 검색에 안 넣는다: GM이 줄거리 사건을 지금 장면으로 착각했다
             continue
         for para in paras:  # 짧은 설정 조각 (LORE 보강용)
             if 30 <= len(para) <= 260:

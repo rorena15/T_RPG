@@ -9,7 +9,7 @@
 
 현재 배포본 (2026-09-27): 고품질 `stigma-gm-w2` (Kanana-1.5-8B + QLoRA `out_kanana2w2`, 워터마크 포함, Q4_K_M 4.9GB),
 가벼움 `stigma-gm-lite-w` (Kanana-1.5-2.1B + 원작 말뭉치 + QLoRA `out_kanana21cw`, 1.5GB).
-게임에는 AES-256으로 암호화해 배포하고, 복호화 패치를 넣은 llama-server로만 연다 (EXPERIMENTS.md "모델 보호").
+게임에는 보호한 상태로 배포하고, 전용 llama-server로만 연다.
 
 ## 환경
 - Windows 네이티브, RTX 3060 12GB, RAM 32GB
@@ -47,14 +47,10 @@ ollama stop stigma-gm                               # GPU 메모리 반환
 # 5. 게임으로 GM 런타임과 원작 조각 복사
 PY tools/sync_to_game.py
 
-# 6. 모델 보호 (EXPERIMENTS.md "모델 보호"). 키·워터마크 비밀은 E:/Git_Project/stigma-train/keys/ 에만 (백업 필수, 공개 금지)
-python tools/watermark.py init                        # 한 번만. 이후 build.py가 워터마크 샘플을 넣는다
-python tools/model_crypt.py genkey --tag models-v1    # 태그마다 한 번. stigma-key.inc(서버)와 T_RPG/개발/gm_key.py(게임) 생성
-# 서버: E:/Git_Project/stigma-train/toolchain/llama.cpp-stigma (b11201 + tools/llama_patch/stigma.patch) 를 tools/llama_patch/build_server.bat 로 빌드
-python tools/watermark.py check --ollama stigma-gm    # 워터마크가 살아 있는지 (학습에 없던 장소 + 대조군)
-python tools/model_crypt.py encrypt --tag models-v1 E:/Git_Project/stigma-train/models/stigma-gm-q4_k_m.gguf E:/Git_Project/stigma-train/models/enc/stigma-gm-full.dat
+# 6. 모델 보호 · 워터마크 (절차와 비밀 관리는 개발 PC의 비공개 문서)
+python tools/watermark.py check --ollama stigma-gm    # 워터마크가 살아 있는지
 
-# 7. 게임 배포용 모델 파일 준비 (암호화 파일만 받는다. GitHub 릴리스 파일당 2GiB 제한에 맞춰 조각 + manifest)
+# 7. 게임 배포용 모델 파일 준비 (보호한 파일만. GitHub 릴리스 파일당 2GiB 제한에 맞춰 조각 + manifest)
 PY tools/prepare_model_release.py --tag models-v1     # -> E:/Git_Project/stigma-train/release/models-v1/
 # manifest.json을 T_RPG/개발/gm_models.json으로 복사하고, 조각은 사람이 확인한 뒤 올린다:
 # gh release create models-v1 -R rorena15/T_RPG --title "동적 서사 데이터 v1" E:/Git_Project/stigma-train/release/models-v1/*.part*

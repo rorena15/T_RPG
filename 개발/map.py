@@ -14,6 +14,8 @@ class GameMap:
         self.size = 5
         self.player_pos = [0, 0]
         self.bunker_pos = [4, 4]
+        self.forge_pos = self._pick_forge_pos()   # 강화소 자리 (발칸 게이츠 퀘스트, forge.py). 처음엔 안 보임
+        self.forge = {"stage": 0}                  # 0 못 만남 / 1 의뢰 중 / 2 완공
         self.visited_tiles: set = {(0, 0)}
         self.session_index = 0
         self.escaped_enemy_hp = None
@@ -21,6 +23,41 @@ class GameMap:
         self.tile_data: dict = {}          # {(x,y): {"remaining": int, "cooldown_until": int}}
         self.layout:   dict = {}          # {(x,y): str} — "blocked"|"wreck"|"checkpoint"|"market"|""
         self.landmark_visited: dict = {}  # {landmark_key: True}
+        self.danger: dict = self._roll_danger()   # {(x,y): 0 낮음 / 1 보통 / 2 높음} 칸 위험도
+
+    def _roll_danger(self) -> dict:
+        """칸마다 위험도. 시작 칸에서 멀수록(방공호 쪽일수록) 높게, 칸마다 조금씩 흔든다. 시작 칸은 늘 낮음."""
+        out = {}
+        span = 2 * (self.size - 1)
+        for x in range(self.size):
+            for y in range(self.size):
+                v = 2.0 * (x + y) / span + random.uniform(-0.8, 0.8)
+                out[(x, y)] = max(0, min(2, int(round(v))))
+        out[(0, 0)] = 0
+        return out
+
+    def danger_at(self, pos=None) -> int:
+        return self.danger.get(tuple(pos if pos is not None else self.player_pos), 1)
+
+    def depletion(self, pos=None) -> int:
+        """이 칸을 다 뒤진 뒤 다시 채워진 횟수. 많을수록 건질 게 줄어든다."""
+        return self.tile_data.get(tuple(pos if pos is not None else self.player_pos), {}).get("cycles", 0)
+
+    def _pick_forge_pos(self) -> list:
+        """시작 칸·방공호에서 떨어진 가운데쯤 칸 하나 (시작에서 2~5칸, 방공호에서 2칸 이상)."""
+        start, bunker = (0, 0), tuple(self.bunker_pos)
+        cands = [[x, y] for x in range(self.size) for y in range(self.size)
+                 if 2 <= x + y <= 5 and abs(x - bunker[0]) + abs(y - bunker[1]) >= 2 and (x, y) != start]
+        return random.choice(cands)
+
+    def forge_known(self) -> bool:
+        return self.forge.get("stage", 0) >= 1 or bool(self.forge.get("met"))
+
+    def at_forge(self) -> bool:
+        return list(self.player_pos) == list(self.forge_pos)
+
+    def forge_dist(self) -> int:
+        return abs(self.forge_pos[0] - self.player_pos[0]) + abs(self.forge_pos[1] - self.player_pos[1])
 
     # ── 수색 시스템 ─────────────────────────────────────────────────────────
 
@@ -33,7 +70,7 @@ class GameMap:
             self.tile_data[pos] = self._new_tile_data()
         td = self.tile_data[pos]
         if td["remaining"] == 0 and td["cooldown_until"] <= turn_count:
-            self.tile_data[pos] = self._new_tile_data()
+            self.tile_data[pos] = dict(self._new_tile_data(), cycles=td.get("cycles", 0) + 1)
         return self.tile_data[pos]
 
     def can_search(self, turn_count: int) -> tuple:
@@ -84,6 +121,8 @@ class GameMap:
     def to_dict(self):
         return {
             "player_pos": self.player_pos,
+            "forge_pos": self.forge_pos,
+            "forge": self.forge,
             "visited_tiles": list(self.visited_tiles),
             "session_index": self.session_index,
             "escaped_enemy_hp": self.escaped_enemy_hp,
@@ -91,10 +130,13 @@ class GameMap:
             "tile_data": {f"{k[0]},{k[1]}": v for k, v in self.tile_data.items()},
             "layout": {f"{k[0]},{k[1]}": v for k, v in self.layout.items()},
             "landmark_visited": self.landmark_visited,
+            "danger": {f"{k[0]},{k[1]}": v for k, v in self.danger.items()},
         }
 
     def from_dict(self, data):
         self.player_pos = data.get("player_pos", [0, 0])
+        self.forge_pos = data.get("forge_pos", self.forge_pos)
+        self.forge = data.get("forge", {"stage": 0})
         self.visited_tiles = {tuple(x) for x in data.get("visited_tiles", [(0, 0)])}
         self.session_index = data.get("session_index", 0)
         self.escaped_enemy_hp = data.get("escaped_enemy_hp", None)
@@ -110,6 +152,8 @@ class GameMap:
             x, y = map(int, key_str.split(","))
             self.layout[(x, y)] = v
         self.landmark_visited = data.get("landmark_visited", {})
+        if data.get("danger"):   # 예전 세이브에는 없다: 새로 굴린 값을 그대로 쓴다
+            self.danger = {tuple(map(int, k.split(","))): v for k, v in data["danger"].items()}
 
     # ── 맵 렌더링 ────────────────────────────────────────────────────────────
 
@@ -128,6 +172,11 @@ class GameMap:
                     row += Fore.CYAN + Style.BRIGHT + "[ P ]" + RST
                 elif [x, y] == self.bunker_pos:
                     row += Fore.YELLOW + Style.BRIGHT + "[ B ]" + RST
+                elif [x, y] == self.forge_pos and self.forge_known():
+                    built = self.forge.get("stage", 0) >= 2
+                    row += (Fore.MAGENTA + Style.BRIGHT + "[ U ]" if built else Fore.MAGENTA + "[ u ]") + RST
+                elif [x, y] == self.forge_pos and self.forge.get("hint"):
+                    row += Fore.MAGENTA + Style.DIM + "[ ? ]" + RST   # 쇠 두드리는 소리가 나는 곳
                 elif (x, y) in self.visited_tiles:
                     row += Fore.WHITE + Style.DIM + "[ ■ ]" + RST
                 else:

@@ -6,6 +6,10 @@ import random
 import sqlite3
 import sys
 import constants
+import playtime
+import endings
+import traits
+import sound
 from core import get_equipment_data
 from ui import (clear_screen, print_header, print_divider,
                 safe_input, wait_for_keypress, read_key, ea_rpad, glitch_str)
@@ -13,7 +17,7 @@ from colorama import Fore, Style
 from combat import apply_dynamic_scaling, get_turn_scale_multiplier
 from quest import advance_quest
 from sys_log import sys_log, track, log_error
-from i18n import t
+from i18n import t, db_t
 import sound
 
 class Player:
@@ -43,9 +47,14 @@ class Player:
         if "FOOD_ONLY" in self.consumables: self.consumables["FOOD_ONLY"] = 2
         if "WATER_ONLY" in self.consumables: self.consumables["WATER_ONLY"] = 2
         if "MED_FIX_100" in self.consumables: self.consumables["MED_FIX_100"] = 2
+        # 퀵슬롯 1~0 (칸마다 소모품 id 또는 None). 인벤토리 소모품 탭에서 숫자키로 바꾼다. 처음엔 시작 소모품만
+        self.quickslots = ["MED_FIX_100", "FOOD_ONLY", "WATER_ONLY"] + [None] * 7
+        self.play_seconds = 0.0   # 누적 플레이 시간 (playtime.py)
 
         self.weights = {"kinetic": 0, "scrap": 0, "cyber": 0}
+        self.trait_seen = {}   # 알린 성향 단계 (traits.py)
         self.enemies_defeated = 0
+        self.upgrades = {}           # 장비 강화 단계 {item_id: {"k": 단계, "pity": 천장}} (upgrade.py)
 
         # --- 진행 턴 기반 적 스케일링용 상태 ---
         # turn_count : 이동/탐색(consume_resources 호출) 1회당 1씩 누적되는 전체 진행 턴.
@@ -133,11 +142,11 @@ class Player:
             "active_buffs": self.active_buffs,
             "vit": self.vit, "int_s": self.int_s, "dex": self.dex, "lv": self.lv,
             "max_ram": self.max_ram, "materials": self.materials,
-            "consumables": self.consumables, "weights": self.weights,
+            "consumables": self.consumables, "weights": self.weights, "trait_seen": self.trait_seen,
             "inventory": self.inventory, "equipment": self.equipment, "reputation": self.reputation,
             "turn_count": self.turn_count, "difficulty": self.difficulty,
-            "enemies_defeated": self.enemies_defeated, "diary": self.diary,
-            "active_quest": self.active_quest,
+            "enemies_defeated": self.enemies_defeated, "diary": self.diary, "upgrades": self.upgrades,
+            "active_quest": self.active_quest, "quickslots": self.quickslots, "play_seconds": round(self.play_seconds, 1),
         }
 
     def from_dict(self, data):
@@ -159,6 +168,7 @@ class Player:
         self.reputation = data.get("reputation", 0)
         self.consumables = data.get("consumables", {k: 0 for k in constants.CONSUMABLES_DB.keys()})
         self.weights = data.get("weights", {"kinetic": 0, "scrap": 0, "cyber": 0})
+        self.trait_seen = data.get("trait_seen", {})
         self.inventory = data.get("inventory", [])
         raw_eq = data.get("equipment", {})
         if "weapon" in raw_eq and "main_weapon" not in raw_eq:
@@ -167,12 +177,54 @@ class Player:
         self.turn_count = data.get("turn_count", 0)
         self.difficulty = data.get("difficulty", "normal")
         self.enemies_defeated = data.get("enemies_defeated", 0)
+        self.upgrades = data.get("upgrades", {})
         self.diary = data.get("diary", [])
         self.active_quest = data.get("active_quest", None)
+        self.play_seconds = float(data.get("play_seconds", 0.0))
+        qs = list(data.get("quickslots", [None] * 10))[:10]
+        self.quickslots = [k if k in constants.CONSUMABLES_DB else None for k in qs] + [None] * (10 - len(qs))
+
+    # ── 퀵슬롯 (1~0) ────────────────────────────────────────────────────────
+    QUICK_KEYS = "1234567890"
+
+    def quick_item(self, ch):
+        """숫자키 ch의 퀵슬롯 소모품 id. 비었으면 None."""
+        i = self.QUICK_KEYS.find(str(ch))
+        return self.quickslots[i] if i >= 0 else None
+
+    def set_quickslot(self, ch, key):
+        """숫자키 ch 칸에 소모품을 등록 (다른 칸에 있으면 옮긴다). 이미 그 칸이면 뺀다. 등록했으면 True."""
+        i = self.QUICK_KEYS.find(str(ch))
+        if i < 0:
+            return False
+        if self.quickslots[i] == key:
+            self.quickslots[i] = None
+            return False
+        self.quickslots = [None if k == key else k for k in self.quickslots]
+        self.quickslots[i] = key
+        return True
+
+    def use_consumable(self, key):
+        """소모품 하나를 쓴다 (인벤토리·퀵슬롯 공용). 결과 문장, 없으면 None."""
+        item = constants.CONSUMABLES_DB.get(key)
+        if not item or self.consumables.get(key, 0) <= 0:
+            return None
+        self.consumables[key] -= 1
+        if item["type"] == "hp":
+            amt = int(self.max_hp * item["val"]) if item["is_percent"] else item["val"]
+            self.hp = min(self.max_hp, self.hp + amt)
+            sound.sfx("heal")
+            return t('consumable_used_hp', name=db_t(item, 'name'), amt=amt)
+        self.hunger = min(100, self.hunger + item["hunger"])
+        self.thirst = min(100, self.thirst + item["thirst"])
+        sound.sfx("eat")
+        return t('consumable_used_food', name=db_t(item, 'name'))
 
     def get_attack_power(self):
-        item_data = get_equipment_data(self.equipment["main_weapon"])
-        return item_data.get("power", 10)
+        """주무기 위력 + 강화 추가 위력 ΔP(k) (내구도 반영)."""
+        import upgrade
+        wid = self.equipment["main_weapon"]
+        return get_equipment_data(wid).get("power", 10) + upgrade.effective_delta(self, wid)
 
     def get_armor_bonus(self):
         """상의+하의 → (HP 보너스, 방어력 보너스)
@@ -236,6 +288,11 @@ class Player:
             wait_for_keypress()
             if self.hp <= 0:
                 print(f"\n{Fore.RED + Style.BRIGHT}" + t('resource_fatal'))
+                print(t('playtime_line', time=playtime.finish(self, "starve")))
+                print()
+                for line in endings.card("starve_thirst" if self.thirst == 0 else "starve_hunger"):
+                    print(line)
+                wait_for_keypress()
                 sys.exit()
 
     def show_status(self):
@@ -268,12 +325,12 @@ class Player:
         th_filled = round(th_ratio * 20)
         th_bar    = "█" * th_filled + "░" * (20 - th_filled)
 
-        print(f"  [생명력]  {hp_col}{hp_bar}{Style.RESET_ALL}  {hp_colored} / {display_max_hp:,}")
-        print(f"  [허기]    {hg_col}{hg_bar}{Style.RESET_ALL}  {hg_col}{self.hunger:3d}{Style.RESET_ALL} / 100")
-        print(f"  [갈증]    {th_col}{th_bar}{Style.RESET_ALL}  {th_col}{self.thirst:3d}{Style.RESET_ALL} / 100")
+        print(f"  {t('bar_hp')}{hp_col}{hp_bar}{Style.RESET_ALL}  {hp_colored} / {display_max_hp:,}")
+        print(f"  {t('bar_hunger')}{hg_col}{hg_bar}{Style.RESET_ALL}  {hg_col}{self.hunger:3d}{Style.RESET_ALL} / 100")
+        print(f"  {t('bar_thirst')}{th_col}{th_bar}{Style.RESET_ALL}  {th_col}{self.thirst:3d}{Style.RESET_ALL} / 100")
 
         item_data = get_equipment_data(self.equipment['main_weapon'])
-        wpn_name = item_data['name']
+        wpn_name = db_t(item_data, 'name')
         wpn_pwr = self.get_attack_power()
         gear_atk = self.get_gear_atk_bonus()
         hp_b, def_b = self.get_armor_bonus()
@@ -319,30 +376,31 @@ class Player:
             q = self.active_quest
             turns_left = max(0, q["deadline"] - self.turn_count)
             print_divider()
-            print(t('status_quest_line', title=q['title'], progress=q['progress'], target=q['target'], turns=turns_left))
+            print(t('status_quest_line', title=db_t(q, 'title'), progress=q['progress'], target=q['target'], turns=turns_left))
         print_divider()
         print()
 
-    def manage_inventory(self):
+    def manage_inventory(self, forge=False):
+        """forge=True: 강화소에서 연 인벤토리 (주무기 강화 R·수리 F 가능)."""
         from gui import get_terminal
         if get_terminal():  # 그림 화면 인벤토리 (방향키, inventory_view.py)
             from inventory_view import run_inventory
-            return run_inventory(self)
+            return run_inventory(self, forge=forge)
         slot_keys = list(constants.SLOT_DISPLAY.keys())
 
         while True:
             clear_screen()
-            print_header(t('inv_header'))
+            print_header(t('forge_header') if forge else t('inv_header'))
 
             print(t('inv_slot_header'))
             print_divider()
             for si, sk in enumerate(slot_keys, 1):
-                label = ea_rpad(constants.SLOT_DISPLAY[sk], 8)
+                label = ea_rpad(constants.slot_label(sk), 8)
                 eid = self.equipment.get(sk)
                 if eid and eid != "WEAPON_NONE":
                     d = get_equipment_data(eid)
-                    tag = constants.TIER_TAGS.get(d.get("tier", 4), "T?    ")
-                    print(f"   [{si:2d}] {label}  │  ★  {d['name'][:22]}    {tag}  위력:{d['power']:>4}")
+                    tag = constants.tier_tag(d.get("tier", 4), "T?    ")
+                    print(f"   [{si:2d}] {label}  │  ★  {db_t(d, 'name')[:22]}    {tag}  {t('inv_power_col')}{d['power']:>4}")
                 else:
                     print(f"   [{si:2d}] {label}  │  " + t('inv_not_equipped'))
             print()
@@ -353,34 +411,37 @@ class Player:
                 print(t('inv_empty'))
             else:
                 groups = {sk: [] for sk in slot_keys}
-                groups["기타"] = []
+                groups["other"] = []
                 num = 1
                 for item_id in self.inventory:
                     d = get_equipment_data(item_id)
-                    sk = d.get("slot", "기타")
+                    sk = d.get("slot", "other")
                     if sk not in groups:
-                        sk = "기타"
+                        sk = "other"
                     groups[sk].append((num, item_id, d))
                     num += 1
 
-                for sk in slot_keys + ["기타"]:
+                for sk in slot_keys + ["other"]:
                     items = groups[sk]
                     if not items:
                         continue
-                    label = constants.SLOT_DISPLAY.get(sk, sk)
+                    label = constants.slot_label(sk)
                     print(f"   ── {label} {'─' * max(2, 56 - len(label) * 2)}")
                     for n, iid, d in items:
                         equipped = (self.equipment.get(sk) == iid)
                         mark = "★" if equipped else " "
-                        tag = constants.TIER_TAGS.get(d.get("tier", 4), "T?    ")
+                        tag = constants.tier_tag(d.get("tier", 4), "T?    ")
                         w = d.get("slot_weight", 1.0)
-                        print(f"   [{n:2d}] {mark}  {d['name'][:26]:<26}  {tag}  위력:{d['power']:>4}  W:{w:.1f}")
+                        print(f"   [{n:2d}] {mark}  {db_t(d, 'name')[:26]:<26}  {tag}  {t('inv_power_col')}{d['power']:>4}  W:{w:.1f}")
             print_divider()
 
             print(t('inv_cmd_header'))
             print(t('inv_cmd_line1'))
             print(t('inv_cmd_line2'))
             print(t('inv_cmd_line3'))
+            if forge:
+                print(t('inv_cmd_line4'))
+                print(t('inv_cmd_line5'))
             print_divider()
             try:
                 cmd = safe_input(t('inv_prompt')).strip().upper()
@@ -398,10 +459,10 @@ class Player:
                         sk = d.get("slot", "main_weapon")
                         prev = self.equipment.get(sk)
                         self.equipment[sk] = item_id
-                        print(t('inv_equipped', name=d['name'], slot=constants.SLOT_DISPLAY.get(sk, sk)))
+                        print(t('inv_equipped', name=db_t(d, 'name'), slot=constants.slot_label(sk)))
                         if prev and prev != "WEAPON_NONE":
                             pd = get_equipment_data(prev)
-                            print(t('inv_replaced', name=pd['name']))
+                            print(t('inv_replaced', name=db_t(pd, 'name')))
                     else:
                         print(t('inv_invalid_number'))
                 else:
@@ -418,15 +479,51 @@ class Player:
                         if eid and eid != "WEAPON_NONE":
                             d = get_equipment_data(eid)
                             self.equipment[sk] = constants.SLOT_DEFAULTS[sk]
-                            print(t('inv_unequipped', name=d['name'], slot=constants.SLOT_DISPLAY[sk]))
+                            print(t('inv_unequipped', name=db_t(d, 'name'), slot=constants.slot_label(sk)))
                         else:
-                            print(t('inv_slot_empty', slot=constants.SLOT_DISPLAY[sk]))
+                            print(t('inv_slot_empty', slot=constants.slot_label(sk)))
                     else:
                         print(t('inv_slot_range', max=len(slot_keys)))
                 else:
                     print(t('inv_unequip_usage'))
                 wait_for_keypress()
 
+            elif cmd in ("R", "F") and not forge:
+                print(t('upg_need_forge'))
+                wait_for_keypress()
+            elif cmd == "R":  # 장착한 주무기 강화 (upgrade.py)
+                import upgrade
+                wid = self.equipment.get("main_weapon")
+                wd = get_equipment_data(wid)
+                res, k, spent = upgrade.try_upgrade(self, wid, wd.get("tier", 4))
+                sound.sfx({"ok": "anvil", "fail": "clunk", "drop": "drop"}.get(res, "deny"))
+                name = db_t(wd, 'name')
+                if res == "ok":
+                    print(t('upg_ok', name=name, k=k, pw=self.get_attack_power(), cost=spent))
+                elif res in ("fail", "drop"):
+                    key = 'upg_drop' if res == "drop" else ('upg_fail_dur' if k + 1 >= upgrade.RISK_FROM else 'upg_fail')
+                    print(t(key, name=name, k=k, dur=upgrade.durability(self, wid),
+                            pct=upgrade.chance(self, wid) * 100, cost=spent))
+                elif res == "scrap":
+                    print(t('upg_scrap', need=spent, have=self.materials))
+                elif res == "broken":
+                    print(t('upg_broken', need=spent))
+                else:
+                    print(t('upg_max', name=name))
+                wait_for_keypress()
+            elif cmd == "F":  # 장착한 주무기 내구도 수리 (upgrade.py)
+                import upgrade
+                wid = self.equipment.get("main_weapon")
+                name = db_t(get_equipment_data(wid), 'name')
+                res, spent = upgrade.repair(self, wid)
+                sound.sfx("repair" if res == "ok" else "deny")
+                if res == "ok":
+                    print(t('rep_ok', name=name, cost=spent))
+                elif res == "scrap":
+                    print(t('upg_scrap', need=spent, have=self.materials))
+                else:
+                    print(t('rep_full', name=name))
+                wait_for_keypress()
             elif cmd == "C":
                 self.use_consumable_menu()
 
@@ -440,11 +537,11 @@ class Player:
                             print(t('inv_dismantle_equipped'))
                         else:
                             self.inventory.pop(n - 1)
-                            gained = random.randint(15, 30)
+                            gained = traits.scrap(self, random.randint(15, 30))
                             self.materials += gained
                             advance_quest(self, "scrap", gained)
                             d = get_equipment_data(item_id)
-                            print(t('inv_dismantled', name=d['name'], gained=gained))
+                            print(t('inv_dismantled', name=db_t(d, 'name'), gained=gained))
                     else:
                         print(t('inv_invalid_number'))
                 else:
@@ -495,7 +592,7 @@ class Player:
                 desc = hunger_str + thirst_str
 
             icon = item.get('icon', '')
-            name_disp = f"{icon} {item['name']}" if icon else item['name']
+            name_disp = f"{icon} {db_t(item, 'name')}" if icon else db_t(item, 'name')
             print(t('consumable_item_line', idx=i+1, name=name_disp, owned=self.consumables[key], desc=desc))
 
         print_divider()
@@ -510,9 +607,11 @@ class Player:
             if item["type"] == "hp":
                 heal_amt = int(self.max_hp * item["val"]) if item["is_percent"] else item["val"]
                 self.hp = min(self.max_hp, self.hp + heal_amt)
-                print(t('consumable_used_hp', name=item['name'], amt=heal_amt))
+                sound.sfx("heal")
+                print(t('consumable_used_hp', name=db_t(item, 'name'), amt=heal_amt))
             else:
                 self.hunger = min(100, self.hunger + item["hunger"])
                 self.thirst = min(100, self.thirst + item["thirst"])
-                print(t('consumable_used_food', name=item['name']))
+                sound.sfx("eat")
+                print(t('consumable_used_food', name=db_t(item, 'name')))
             wait_for_keypress()

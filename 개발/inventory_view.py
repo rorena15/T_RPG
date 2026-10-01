@@ -1,6 +1,6 @@
 """인벤토리 화면 (이벤트 화면과 같은 틀, 방향키 조작).
 
-탭: 장비 슬롯 / 가방 / 소모품 (←→ 또는 Tab). 목록은 ↑↓, 아래에 고른 항목의 상세.
+탭: 장비 슬롯 / 가방 / 소모품 (Tab, Shift+Tab 거꾸로, 또는 탭을 클릭). 목록은 ↑↓, 아래에 고른 항목의 상세.
 Enter: 가방=장착, 슬롯=해제, 소모품=사용.  D: 가방 항목 분해(한 번 더 D로 확인).  0: 돌아가기.
 규칙은 player.py의 예전 터미널 인벤토리와 같다 (장착 슬롯 자동 인식, 장착 중 분해 불가, 분해 고철 15~30).
 """
@@ -9,25 +9,32 @@ import random
 import pygame
 
 import constants
+import upgrade
+import traits
+import sound
 from core import get_equipment_data
-from event_view import AMBER, BG, EventView, GREEN, INK, INK_DIM, INK_FAINT, RED, TEAL, VIOLET, _lerp
+from event_view import AMBER, BG, EventView, GREEN, INK, INK_DIM, INK_FAINT, JUNKYARD, RED, TEAL, VIOLET, _lerp
 from i18n import db_t, t
 from quest import advance_quest
 
+_UPG_SFX = {"ok": "anvil", "fail": "clunk", "drop": "drop"}   # 강화 결과 -> 효과음 (그 밖은 거부음)
+
 TABS = ["slots", "bag", "consumables"]
-TAB_LABEL = {"slots": "장비 슬롯", "bag": "가방", "consumables": "소모품"}
+TAB_KEY = {"slots": "inv_tab_slots", "bag": "inv_tab_bag", "consumables": "inv_tab_cons"}
 TIER_COLOR = {0: (236, 196, 92), 1: VIOLET, 2: TEAL, 3: INK, 4: INK_DIM}
 ROW_H = 30
 VISIBLE = 13
 
 
 class InventoryView(EventView):
-    def __init__(self, term, player, tab="bag"):
-        super().__init__(term, player, None, "폐기물 처리장", scene="forge")
+    def __init__(self, term, player, tab="bag", forge=False):
+        super().__init__(term, player, None, JUNKYARD, scene="forge")
         self.tab = tab
+        self.forge = forge      # 강화소에 있을 때만 강화(R)·수리(F)
         self.sel = {k: 0 for k in TABS}
         self.msg = []           # 방금 한 일
         self.confirm = None     # 분해 확인 중인 항목 id
+        self.msg_warn = False   # 분해 관련 알림은 호박색
 
     # ── 목록 ─────────────────────────────────────────────────────────────
     def rows(self):
@@ -42,7 +49,8 @@ class InventoryView(EventView):
         p = self.player
         if self.tab == "slots":
             out = []
-            for sk, label in constants.SLOT_DISPLAY.items():
+            for sk in constants.SLOT_DISPLAY:
+                label = constants.slot_label(sk)
                 eid = p.equipment.get(sk)
                 d = get_equipment_data(eid) if eid and eid != "WEAPON_NONE" else None
                 out.append({"kind": "slot", "slot": sk, "label": label, "id": eid if d else None, "d": d})
@@ -55,10 +63,71 @@ class InventoryView(EventView):
                 for k, v in p.consumables.items() if v > 0 and k in constants.CONSUMABLES_DB]
 
     # ── 동작 ─────────────────────────────────────────────────────────────
+    def _label(self, d, iid):
+        """장비 이름 + 강화 단계 (+k)."""
+        k = upgrade.level(self.player, iid)
+        return db_t(d, "name") + (f" +{k}" if k else "")
+
+    def _power(self, d, iid):
+        return d["power"] + upgrade.effective_delta(self.player, iid)
+
+    def upgrade_row(self, row):
+        """R: 고른 장비(주무기)를 강화 1회 시도한다."""
+        self.confirm = None
+        if row is None or row["kind"] not in ("slot", "item") or not row.get("d"):
+            return
+        d, iid = row["d"], row["id"]
+        self.msg_warn = True
+        if not self.forge:
+            self.msg = [t('upg_need_forge')]
+            return
+        if not upgrade.can_upgrade(d.get("slot")):
+            self.msg = [t('upg_only_weapon')]
+            return
+        res, k, spent = upgrade.try_upgrade(self.player, iid, d.get("tier", 4))
+        sound.sfx(_UPG_SFX.get(res, "deny"))
+        if res == "ok":
+            self.msg_warn = False
+            self.msg = [t('upg_ok', name=db_t(d, 'name'), k=k, pw=self._power(d, iid), cost=spent)]
+        elif res in ("fail", "drop"):
+            key = 'upg_drop' if res == "drop" else ('upg_fail_dur' if k + 1 >= upgrade.RISK_FROM else 'upg_fail')
+            self.msg = [t(key, name=db_t(d, 'name'), k=k, dur=upgrade.durability(self.player, iid),
+                          pct=upgrade.chance(self.player, iid) * 100, cost=spent)]
+        elif res == "scrap":
+            self.msg = [t('upg_scrap', need=spent, have=self.player.materials)]
+        elif res == "broken":
+            self.msg = [t('upg_broken', need=spent)]
+        else:
+            self.msg = [t('upg_max', name=db_t(d, 'name'))]
+
+    def repair_row(self, row):
+        """F: 고른 주무기의 내구도를 수리한다."""
+        self.confirm = None
+        if row is None or row["kind"] not in ("slot", "item") or not row.get("d"):
+            return
+        d, iid = row["d"], row["id"]
+        self.msg_warn = True
+        if not self.forge:
+            self.msg = [t('upg_need_forge')]
+            return
+        if not upgrade.can_upgrade(d.get("slot")):
+            self.msg = [t('upg_only_weapon')]
+            return
+        res, spent = upgrade.repair(self.player, iid)
+        sound.sfx("repair" if res == "ok" else "deny")
+        if res == "ok":
+            self.msg_warn = False
+            self.msg = [t('rep_ok', name=db_t(d, 'name'), cost=spent)]
+        elif res == "scrap":
+            self.msg = [t('upg_scrap', need=spent, have=self.player.materials)]
+        else:
+            self.msg = [t('rep_full', name=db_t(d, 'name'))]
+
     def act(self, row, dismantle=False):
         p = self.player
         if row is None:
             return
+        self.msg_warn = dismantle
         if dismantle:
             if row["kind"] != "item":
                 return
@@ -67,13 +136,13 @@ class InventoryView(EventView):
                 return
             if self.confirm != row["id"]:
                 self.confirm = row["id"]
-                self.msg = [f"{row['d']['name']}: 한 번 더 D를 누르면 분해합니다."]
+                self.msg = [t('inv_confirm_dismantle', name=db_t(row['d'], 'name'))]
                 return
             p.inventory.pop(row["index"])
-            gained = random.randint(15, 30)
+            gained = traits.scrap(p, random.randint(15, 30))
             p.materials += gained
             advance_quest(p, "scrap", gained)
-            self.msg = [t('inv_dismantled', name=row['d']['name'], gained=gained)]
+            self.msg = [t('inv_dismantled', name=db_t(row['d'], 'name'), gained=gained)]
             self.confirm = None
             return
         self.confirm = None
@@ -82,40 +151,36 @@ class InventoryView(EventView):
             sk = d.get("slot", "main_weapon")
             prev = p.equipment.get(sk)
             p.equipment[sk] = row["id"]
-            self.msg = [t('inv_equipped', name=d['name'], slot=constants.SLOT_DISPLAY.get(sk, sk))]
+            self.msg = [t('inv_equipped', name=db_t(d, 'name'), slot=constants.slot_label(sk))]
             if prev and prev != "WEAPON_NONE" and prev != row["id"]:
-                self.msg.append(t('inv_replaced', name=get_equipment_data(prev)['name']))
+                self.msg.append(t('inv_replaced', name=db_t(get_equipment_data(prev), 'name')))
         elif row["kind"] == "slot":
             if row["id"]:
                 p.equipment[row["slot"]] = constants.SLOT_DEFAULTS[row["slot"]]
-                self.msg = [t('inv_unequipped', name=row['d']['name'], slot=row['label'])]
+                self.msg = [t('inv_unequipped', name=db_t(row['d'], 'name'), slot=row['label'])]
             else:
                 self.msg = [t('inv_slot_empty', slot=row['label'])]
         elif row["kind"] == "cons":
-            item, key = row["d"], row["key"]
-            p.consumables[key] -= 1
-            if item["type"] == "hp":
-                amt = int(p.max_hp * item["val"]) if item["is_percent"] else item["val"]
-                p.hp = min(p.max_hp, p.hp + amt)
-                self.msg = [t('consumable_used_hp', name=db_t(item, 'name'), amt=amt)]
-            else:
-                p.hunger = min(100, p.hunger + item["hunger"])
-                p.thirst = min(100, p.thirst + item["thirst"])
-                self.msg = [t('consumable_used_food', name=db_t(item, 'name'))]
+            msg = p.use_consumable(row["key"])
+            if msg:
+                self.msg = [msg]
 
     # ── 그리기 (오른쪽 칸) ─────────────────────────────────────────────────
     def _draw_column(self, c, W, H):
         x = self._col_x
         width = W - x - 36
         y = 40
-        c.blit(self.f_mono.render(f"인벤토리  ·  고철 {self.player.materials}", True, AMBER), (x, y))
+        c.blit(self.f_mono.render(t('forge_view_header' if self.forge else 'inv_view_header', n=self.player.materials), True, AMBER), (x, y))
         y += 26
         tx = x
+        self._tab_rects, self._row_rects = [], []   # 마우스로 누를 자리 (탭, 줄)
         for tab in TABS:
             on = tab == self.tab
-            g = self.f_title.render(TAB_LABEL[tab], True, INK if on else INK_FAINT) if on else \
-                self.f_sans.render(TAB_LABEL[tab], True, INK_FAINT)
+            hov = tab == getattr(self, "_tab_hover", None)
+            g = self.f_title.render(t(TAB_KEY[tab]), True, INK if on else INK_FAINT) if on else \
+                self.f_sans.render(t(TAB_KEY[tab]), True, INK if hov else INK_FAINT)
             c.blit(g, (tx, y + (0 if on else 10)))
+            self._tab_rects.append((tab, pygame.Rect(tx - 6, y - 4, g.get_width() + 12, 50)))
             if on:
                 pygame.draw.line(c, AMBER, (tx, y + 42), (tx + g.get_width(), y + 42), 2)
             tx += g.get_width() + 26
@@ -131,6 +196,7 @@ class InventoryView(EventView):
         for i, row in enumerate(rows[top:top + VISIBLE], start=top):
             ry = y + (i - top) * ROW_H
             on = i == sel
+            self._row_rects.append((i, pygame.Rect(x - 12, ry - 3, width + 12, ROW_H - 2)))
             if on:
                 band = pygame.Surface((width + 12, ROW_H - 2), pygame.SRCALPHA)
                 band.fill((*AMBER, 24))
@@ -150,25 +216,29 @@ class InventoryView(EventView):
         y += 8
         for m in self.msg:
             for ln in self._wrap(self.f_serif, m.strip(), width):
-                c.blit(self.f_serif.render(ln, True, GREEN if "분해" not in m else AMBER), (x, y))
+                c.blit(self.f_serif.render(ln, True, AMBER if self.msg_warn else GREEN), (x, y))
                 y += 28
 
     def _draw_row(self, c, row, x, y, width, on):
         ink = INK if on else _lerp(INK, BG, 0.15)
         if row["kind"] == "slot":
             c.blit(self.f_sans.render(row["label"], True, INK_DIM), (x, y))
-            name = row["d"]["name"] if row["d"] else t('inv_not_equipped').strip()
+            name = self._label(row["d"], row["id"]) if row["d"] else t('inv_not_equipped').strip()
             col = TIER_COLOR.get(row["d"].get("tier", 4), ink) if row["d"] else INK_FAINT
             c.blit(self.f_sans.render(name, True, col), (x + 110, y))
         elif row["kind"] == "item":
             d = row["d"]
             mark = "★ " if row["eq"] else "   "
-            c.blit(self.f_sans.render(mark + d["name"], True, TIER_COLOR.get(d.get("tier", 4), ink)), (x, y))
-            info = self.f_mono.render(f"{constants.TIER_TAGS.get(d.get('tier', 4), '')}   위력 {d['power']}", True, INK_DIM)
+            c.blit(self.f_sans.render(mark + self._label(d, row["id"]), True, TIER_COLOR.get(d.get("tier", 4), ink)), (x, y))
+            info = self.f_mono.render(f"{constants.tier_tag(d.get('tier', 4))}   {t('inv_power', pw=self._power(d, row['id']))}", True, INK_DIM)
             c.blit(info, (x + width - info.get_width() - 10, y + 3))
         else:
             d = row["d"]
-            c.blit(self.f_sans.render(db_t(d, 'name'), True, ink), (x, y))
+            slots = [ch for ch, k in zip(self.player.QUICK_KEYS, self.player.quickslots) if k == row["key"]]
+            if slots:   # 등록된 퀵슬롯 번호
+                badge = self.f_mono_b.render(f"[{slots[0]}]", True, AMBER)
+                c.blit(badge, (x, y + 1))
+            c.blit(self.f_sans.render(db_t(d, 'name'), True, ink), (x + 34, y))
             n = self.f_mono.render(f"x{row['n']}", True, INK_DIM)
             c.blit(n, (x + width - n.get_width() - 10, y + 3))
 
@@ -182,47 +252,138 @@ class InventoryView(EventView):
             else:
                 eff = (t('consumable_hunger', val=d['hunger']) if d['hunger'] > 0 else "") + \
                       (t('consumable_thirst', val=d['thirst']) if d['thirst'] > 0 else "")
-            return [(db_t(d, 'name'), INK), (eff.strip(), INK_DIM), ("Enter: 사용", INK_FAINT)]
-        slot = constants.SLOT_DISPLAY.get(d.get("slot", ""), d.get("slot", ""))
-        lines = [(d["name"], TIER_COLOR.get(d.get("tier", 4), INK)),
-                 (f"{constants.TIER_TAGS.get(d.get('tier', 4), '')}  ·  {slot}  ·  위력 {d['power']}  ·  무게 {d.get('slot_weight', 1.0):.1f}", INK_DIM)]
-        if d.get("desc"):
-            lines.append((d["desc"], INK_DIM))
-        hint = {"item": "Enter: 장착   D: 분해", "slot": "Enter: 해제"}.get(row["kind"], "")
+            return [(db_t(d, 'name'), INK), (eff.strip(), INK_DIM), (t('inv_hint_use'), INK_FAINT), (t('qs_hint'), AMBER)]
+        slot = constants.slot_label(d.get("slot", ""))
+        iid = row.get("id")
+        lines = [(self._label(d, iid), TIER_COLOR.get(d.get("tier", 4), INK)),
+                 (t('inv_detail', tier=constants.tier_tag(d.get('tier', 4)), slot=slot, pw=self._power(d, iid), w=d.get('slot_weight', 1.0)), INK_DIM)]
+        if db_t(d, "desc"):
+            lines.append((db_t(d, "desc"), INK_DIM))
+        hint = {"item": t('inv_hint_item'), "slot": t('inv_hint_slot')}.get(row["kind"], "")
         lines.append((hint, INK_FAINT))
+        if upgrade.can_upgrade(d.get("slot")):  # 주무기: 강화소에선 다음 강화 비용·확률, 밖에선 안내만
+            k = upgrade.level(self.player, iid)
+            dur = upgrade.durability(self.player, iid)
+            if not self.forge:
+                lines.append((t('upg_hint_forge'), INK_FAINT))
+                if dur < upgrade.DUR_MAX:
+                    lines.append((t('upg_dur_plain', dur=dur, pct=50 + dur // 2), RED))
+                return lines
+            lines.append((t('upg_hint_max') if k >= upgrade.MAX_LEVEL else
+                          t('upg_hint', k=k, n=k + 1, cost=upgrade.cost(d.get("tier", 4), k),
+                            pct=upgrade.chance(self.player, iid) * 100), AMBER))
+            if dur < upgrade.DUR_MAX:
+                lines.append((t('upg_dur', dur=dur, pct=50 + dur // 2, cost=upgrade.repair_cost(self.player, iid)), RED))
+            if upgrade.RISK_FROM <= k + 1 <= upgrade.MAX_LEVEL:
+                lines.append((t('upg_risk', loss=upgrade.DUR_LOSS, drop=int(upgrade.DROP_CHANCE[k + 1] * 100)), INK_DIM))
         return lines
 
     # ── 입력 루프 ─────────────────────────────────────────────────────────
+    def assign_quick(self, row, ch):
+        """소모품 줄에서 숫자키: 그 칸에 등록 (같은 칸이면 해제)."""
+        if not row or row.get("kind") != "cons":
+            if self.tab != "consumables":
+                self.msg, self.msg_warn = [t('qs_hint')], True
+            return
+        if self.player.set_quickslot(ch, row["key"]):
+            self.msg, self.msg_warn = [t('qs_set', name=db_t(row["d"], 'name'), n=ch)], False
+            sound.sfx("ui_ok")
+        else:
+            self.msg, self.msg_warn = [t('qs_unset', n=ch)], False
+            sound.sfx("ui_back")
+
+    def _hit(self, rects, pos):
+        cx, cy = self.to_canvas(pos)
+        return next((k for k, r in rects if r.collidepoint(cx, cy)), None)
+
+    def _mouse(self, ev, cur):
+        """마우스: 탭을 누르면 탭, 줄을 누르면 고르고 고른 줄을 한 번 더 누르면 장착·사용, 발밑 버튼은 그 키. 끝내려면 True."""
+        tab = self._hit(getattr(self, "_tab_rects", ()), ev.pos)
+        row = self._hit(getattr(self, "_row_rects", ()), ev.pos)
+        foot = self.foot_at(ev.pos)
+        if ev.type == pygame.MOUSEMOTION:
+            self._tab_hover, self._foot_hover = tab, foot
+            return False
+        if ev.type == pygame.MOUSEWHEEL:
+            rows = self.rows()
+            self.sel[self.tab] = max(0, min(max(0, len(rows) - 1), self.sel[self.tab] - ev.y))
+            return False
+        if ev.button != 1:
+            return False
+        if tab and tab != self.tab:
+            self.tab, self.msg, self.confirm = tab, [], None
+            sound.sfx("ui_tab")
+        elif row is not None:
+            if row == self.sel[self.tab]:
+                self.act(cur)
+            else:
+                self.sel[self.tab], self.confirm = row, None
+                sound.sfx("ui_move")
+        elif foot == "0":
+            sound.sfx("ui_back")
+            return True
+        elif foot == "ENTER":
+            self.act(cur)
+        elif foot == "X":
+            self.act(cur, dismantle=True)
+        elif foot == "R":
+            self.upgrade_row(cur)
+        elif foot == "F":
+            self.repair_row(cur)
+        return False
+
     def run(self):
-        self.footer = [("↑↓", "선택"), ("←→", "탭"), ("Enter", "장착·해제·사용"), ("D", "분해"), ("0", "돌아가기")]
+        # 고르기 ↑↓(W/S)·휠, 탭 전환 Tab(Shift+Tab 거꾸로)·탭 클릭, 장착·사용 Enter·Space·더블 클릭, 분해 X(Delete), 강화 R, 수리 F,
+        # 퀵슬롯 등록 1~0 (소모품 탭), 닫기 Esc·I
+        # (예전엔 D가 분해라 WASD로 탭을 넘기다 분해 확인이 떴다)
+        self.footer = [("Tab", t('inv_key_tab')), ("Enter", t('inv_key_act')), ("X", t('inv_key_dismantle'))]
+        if self.forge:
+            self.footer += [("R", t('upg_key')), ("F", t('rep_key'))]
+        self.footer.append(("Esc", t('inv_key_back'), "0"))
+        sound.sfx("inv_open")
         self.open()
         try:
             while True:
                 for ev in self._events():
-                    if ev.type != pygame.KEYDOWN:
-                        continue
                     rows = self.rows()
                     cur = rows[self.sel[self.tab]] if rows and self.sel[self.tab] < len(rows) else None
-                    if ev.key in (pygame.K_ESCAPE, pygame.K_0, pygame.K_KP0):
+                    if ev.type in (pygame.MOUSEMOTION, pygame.MOUSEBUTTONDOWN, pygame.MOUSEWHEEL):
+                        if self._mouse(ev, cur):
+                            return
+                        continue
+                    if ev.type != pygame.KEYDOWN:
+                        continue
+                    if ev.key in (pygame.K_ESCAPE, pygame.K_i):
+                        sound.sfx("ui_back")
                         return
+                    if ev.unicode and ev.unicode in self.player.QUICK_KEYS:
+                        self.assign_quick(cur, ev.unicode)
+                        continue
                     if ev.key in (pygame.K_UP, pygame.K_w):
                         self.sel[self.tab] = max(0, self.sel[self.tab] - 1)
                         self.confirm = None
+                        sound.sfx("ui_move")
                     elif ev.key in (pygame.K_DOWN, pygame.K_s):
                         self.sel[self.tab] = min(max(0, len(rows) - 1), self.sel[self.tab] + 1)
                         self.confirm = None
-                    elif ev.key in (pygame.K_LEFT, pygame.K_a, pygame.K_RIGHT, pygame.K_TAB):
-                        step = -1 if ev.key in (pygame.K_LEFT, pygame.K_a) else 1
+                        sound.sfx("ui_move")
+                    elif ev.key == pygame.K_TAB:   # 탭 전환은 Tab (Shift+Tab은 거꾸로)
+                        step = -1 if ev.mod & pygame.KMOD_SHIFT else 1
                         self.tab = TABS[(TABS.index(self.tab) + step) % len(TABS)]
                         self.msg, self.confirm = [], None
+                        sound.sfx("ui_tab")
                     elif ev.key in (pygame.K_RETURN, pygame.K_KP_ENTER, pygame.K_SPACE):
                         self.act(cur)
-                    elif ev.key == pygame.K_d:
+                    elif ev.key in (pygame.K_x, pygame.K_DELETE):
                         self.act(cur, dismantle=True)
+                    elif ev.key == pygame.K_r:
+                        self.upgrade_row(cur)
+                    elif ev.key == pygame.K_f:
+                        self.repair_row(cur)
         finally:
             self.close()
 
 
-def run_inventory(player, tab="bag"):
+def run_inventory(player, tab="bag", forge=False):
     from gui import get_terminal
-    InventoryView(get_terminal(), player, tab).run()
+    InventoryView(get_terminal(), player, tab, forge).run()

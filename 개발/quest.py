@@ -4,6 +4,7 @@
 import random
 import time
 import constants
+import sound
 from colorama import Fore, Style
 from i18n import t, db_t
 from ui import (clear_screen, print_header, print_divider, type_text,
@@ -20,25 +21,28 @@ def trigger_sudden_quest(player):
     q: dict = {
         "id":          tpl["id"],
         "title":       tpl["title"],
+        "title_en":    tpl.get("title_en"),
         "type":        tpl["type"],
         "target":      tpl["target"],
         "progress":    0,
         "deadline":    deadline,
         "reward_type": tpl["reward_type"],
         "reward_desc": tpl["reward_desc"],
+        "reward_desc_en": tpl.get("reward_desc_en"),
     }
     if "reward_id"     in tpl: q["reward_id"]     = tpl["reward_id"]
     if "reward_amount" in tpl: q["reward_amount"] = tpl["reward_amount"]
     player.active_quest = q
+    sound.sfx("quest_new")
     clear_screen()
-    print_header(t('quest_trigger_header', title=tpl['title']))
-    type_text(f"  {tpl['desc']}", 0.022)
+    print_header(t('quest_trigger_header', title=db_t(tpl, 'title')))
+    type_text(f"  {db_t(tpl, 'desc')}", 0.022)
     print()
-    print(t('quest_goal_label', detail=tpl['detail']))
+    print(t('quest_goal_label', detail=db_t(tpl, 'detail')))
     print(t('quest_deadline_label', turns=tpl['turns'], current=player.turn_count, deadline=deadline))
-    print(t('quest_reward_label', reward=tpl['reward_desc']))
+    print(t('quest_reward_label', reward=db_t(tpl, 'reward_desc')))
     print()
-    log_diary(player, t('quest_log_start', title=tpl['title'], deadline=deadline))
+    log_diary(player, t('quest_log_start', title=db_t(tpl, 'title'), deadline=deadline))
     wait_for_keypress()
 
 
@@ -48,9 +52,10 @@ def _complete_quest(player):
     if q is None:
         return
     clear_screen()
-    print_header(t('quest_complete_header', title=q['title']))
+    sound.sfx("quest_done")
+    print_header(t('quest_complete_header', title=db_t(q, 'title')))
     print()
-    print(t('quest_reward_header', reward=q['reward_desc']))
+    print(t('quest_reward_header', reward=db_t(q, 'reward_desc')))
     rtype = q["reward_type"]
     if rtype == "consumable":
         rid = q["reward_id"]
@@ -65,7 +70,7 @@ def _complete_quest(player):
         player.max_ram += amt
         print(t('quest_ram_remaining', val=player.max_ram))
     print()
-    log_diary(player, t('quest_log_complete', title=q['title'], reward=q['reward_desc']))
+    log_diary(player, t('quest_log_complete', title=db_t(q, 'title'), reward=db_t(q, 'reward_desc')))
     player.active_quest = None
     wait_for_keypress()
 
@@ -94,10 +99,12 @@ def handle_random_event(player, event):
         if result.get("hp_loss", 0) > 0:
             player.hp = max(1, player.hp - result["hp_loss"])
             print(t('event_hp_loss', val=result['hp_loss']))
+            sound.sfx("hurt")
         if result.get("materials", 0) != 0:
             player.materials = max(0, player.materials + result["materials"])
             sign = "+" if result["materials"] > 0 else ""
             print(t('event_scrap', sign=sign, val=result['materials']))
+            sound.sfx("loot" if result["materials"] > 0 else "res_spend", delay=0.2)
             if result["materials"] > 0:
                 advance_quest(player, "scrap", result["materials"])
         if result.get("hunger", 0) < 0:
@@ -109,6 +116,7 @@ def handle_random_event(player, event):
             if key in player.consumables:
                 player.consumables[key] += 1
                 print(t('event_item_gain', name=db_t(constants.CONSUMABLES_DB[key], 'name')))
+                sound.sfx("gear", delay=0.4)
         log_diary(player, t('event_log_simple', title=db_t(event, 'title')))
         wait_for_keypress()
 
@@ -126,6 +134,7 @@ def handle_random_event(player, event):
             player.inventory.append(wid)
             player.temp_weapon_uses[wid] = uses
             print(f"\n  {Fore.MAGENTA + Style.BRIGHT}" + t('event_weapon_gain', uses=uses) + Style.RESET_ALL)
+            sound.sfx("gear")
         else:
             print("\n  " + t('event_weapon_dup'))
         log_diary(player, t('event_log_weapon', title=db_t(event, 'title')))
@@ -152,11 +161,13 @@ def handle_random_event(player, event):
         if c.get("hp_loss", 0) > 0:
             player.hp = max(1, player.hp - c["hp_loss"])
             print(t('event_hp_loss', val=c['hp_loss']))
+            sound.sfx("hurt")
         mat = c.get("materials", 0)
         if mat != 0:
             player.materials = max(0, player.materials + mat)
             sign = "+" if mat > 0 else ""
             print(t('event_scrap', sign=sign, val=mat))
+            sound.sfx("loot" if mat > 0 else "res_spend", delay=0.2)
             if mat > 0:
                 advance_quest(player, "scrap", mat)
         if c.get("hunger", 0) > 0:
@@ -166,11 +177,13 @@ def handle_random_event(player, event):
         if c.get("ram_bonus", 0) > 0:
             player.max_ram += c["ram_bonus"]
             print(t('event_ram_gain', val=c['ram_bonus']))
+            sound.sfx("res_gain", delay=0.3)
         if c.get("consumable"):
             key = c["consumable"]
             if key in player.consumables:
                 player.consumables[key] += 1
                 print(t('event_item_gain', name=db_t(constants.CONSUMABLES_DB[key], 'name')))
+                sound.sfx("gear", delay=0.4)
         _ew_label = {
             "kinetic": t('weight_label_kinetic'),
             "scrap":   t('weight_label_scrap'),
@@ -183,8 +196,8 @@ def handle_random_event(player, event):
 def _trader_view(player):
     """상인 화면 (이벤트 화면 틀, 방향키). 규칙은 아래 터미널 판과 같다."""
     from gui import get_terminal
-    from event_view import EventView
-    view = EventView(get_terminal(), player, None, "폐기물 처리장", scene="fig_trader")
+    from event_view import EventView, JUNKYARD
+    view = EventView(get_terminal(), player, None, JUNKYARD, scene="fig_trader")
     note = []
     view.open()
     try:
@@ -193,12 +206,12 @@ def _trader_view(player):
             view.log = []
             view.add("title", tag=t('trader_scrap_label', val=player.materials).strip(), title=t('trader_header').strip(" =[]"))
             view.add("prose", lines=[" ".join((t('trader_intro_1') + " " + t('trader_intro_2')).split())])
-            items = [(str(i + 1), f"{db_t(it, 'name')}   ·   고철 {it['cost']}   ·   보유 {player.consumables.get(it['id'], 0)}")
+            items = [(str(i + 1), t('trader_item_choice', name=db_t(it, 'name'), cost=it['cost'], owned=player.consumables.get(it['id'], 0)))
                      for i, it in enumerate(constants.TRADER_ITEMS)] + [("0", t('trader_exit').strip())]
             menu = view.add("choices", items=items, start=last)
             if note:
                 view.add("narr", lines=note)
-            view.footer = [("↑↓", "선택"), ("Enter", "구매"), ("0", "떠난다")]
+            view.footer = [("↑↓", t('ui_select')), ("Enter", t('trader_key_buy')), ("0", t('trader_key_leave'))]
             cmd = view.choose(menu, len(items), extra=("ESC",))
             last = next(i for i, (k, _) in enumerate(items) if k == cmd) if cmd != "ESC" else last
             if cmd in ("0", "ESC"):
@@ -209,6 +222,7 @@ def _trader_view(player):
             if player.materials >= chosen["cost"]:
                 player.materials -= chosen["cost"]
                 player.consumables[chosen["id"]] += 1
+                sound.sfx("buy")
                 note = [" ".join(t('trader_bought', name=db_t(chosen, 'name'), scrap=player.materials).split())]
                 log_diary(player, t('trader_log_bought', name=db_t(chosen, 'name'), cost=chosen['cost']))
             else:
@@ -252,6 +266,7 @@ def handle_trader(player):
                 player.materials -= chosen["cost"]
                 key = chosen["id"]
                 player.consumables[key] += 1
+                sound.sfx("buy")
                 print(t('trader_bought', name=db_t(chosen, 'name'), scrap=player.materials))
                 log_diary(player, t('trader_log_bought', name=db_t(chosen, 'name'), cost=chosen['cost']))
                 time.sleep(1)

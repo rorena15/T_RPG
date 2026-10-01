@@ -1,18 +1,10 @@
-"""배포 모델 암호화 (AES-256-CTR, 패치한 llama-server가 읽는 순간 메모리에서만 복호화한다).
-
-키 = 서버 바이너리에 숨긴 절반 XOR 게임이 stdin으로 넘기는 절반. 둘 중 하나만으로는 풀리지 않는다.
-카운터 블록 = [파일 크기 be64 | 블록 번호 be64] 라서 파일 크기가 같으면 키스트림도 같다.
-→ 같은 크기의 모델을 새로 배포할 때는 반드시 새 태그로 키를 새로 만든다 (genkey --tag).
-
-키 파일과 생성물은 공개 저장소에 절대 넣지 않는다:
-  E:/Git_Project/stigma-train/keys/<tag>.json                         원본 키 (백업 필수, 잃으면 배포 모델을 못 푼다)
-  E:/Git_Project/stigma-train/toolchain/llama.cpp-stigma/ggml/src/stigma-key.inc  서버 쪽 절반 (빌드 입력)
-  T_RPG/개발/gm_key.py                                     게임 쪽 절반 (gitignore)
+"""배포 모델 보호 도구. 세부 방식과 키 관리는 개발 PC의 비공개 문서를 따른다.
+키 파일과 생성물은 공개 저장소에 넣지 않는다.
 
   python tools/model_crypt.py genkey --tag models-v1
-  python tools/model_crypt.py emit --tag models-v1        # .inc / gm_key.py 다시 쓰기
+  python tools/model_crypt.py emit --tag models-v1
   python tools/model_crypt.py encrypt --tag models-v1 IN.gguf OUT.gguf.enc
-  python tools/model_crypt.py check --tag models-v1 OUT.gguf.enc   # 앞부분을 풀어 GGUF인지 확인
+  python tools/model_crypt.py check --tag models-v1 OUT.gguf.enc
 """
 import argparse
 import json
@@ -52,7 +44,6 @@ def c_array(b):
 
 
 def emit(tag):
-    """숨긴 절반을 그대로 두지 않고 두 마스크 배열로 쪼개 쓴다 (문자열 검색으로 안 보이게)."""
     a, b = load(tag)
     m1 = secrets.token_bytes(32)
     m2 = bytearray(32)

@@ -1,0 +1,100 @@
+PROTOCOL: STIGMA — 크레딧 · Credits
+
+제작 · Made by
+rorena15 — 기획 · 프로그래밍 · 시나리오 (design, code, writing)
+장면 그림은 로컬 Stable Diffusion XL로 만들었다. Scene art generated locally with Stable Diffusion XL (stabilityai/stable-diffusion-xl-base-1.0, CreativeML OpenRAIL++-M) and madebyollin/sdxl-vae-fp16-fix (MIT).
+
+────────────────────────────────
+음악 · Music (CC BY 3.0)
+
+"Level" / "Menu" music from Godot TPS Demo — © 2018 Christian Fernando Perucchi
+https://github.com/godotengine/tps-demo
+보스전 · 타이틀 · 엔딩 음악으로 사용 (boss, title and ending music). Licensed under CC BY 3.0.
+
+"Loop - House in a Forest" — © 2012 HorrorPen
+https://opengameart.org/content/loop-house-in-a-forest
+밤 · 새벽 탐색 음악으로 사용 (night exploration music). Licensed under CC BY 3.0.
+
+────────────────────────────────
+효과음 · Sound effects
+
+Godot TPS Demo sounds — © 2018 Juan Linietsky, Fernando Miguel Calabró
+https://github.com/godotengine/tps-demo — CC BY 3.0
+원본을 자르고 겹치고 음량을 바꿨다. Modified: cut, layered and level-adjusted.
+
+Kenney — Starter Kit FPS / 3D Platformer / City Builder / Racing sounds
+https://kenney.nl · https://github.com/KenneyNL — CC0 1.0
+
+Freesound: "impact_big" by FFeller (#532873), "impact_small" by dorian.mastin (#381626), "Static" by dotY21 (#335203)
+https://freesound.org — CC0 1.0 (via godotengine/godot-demo-projects)
+
+uisfx UI sounds — https://www.npmjs.com/package/uisfx — CC0 1.0
+
+날씨 환경음은 위 CC0 음원과 게임 자체 음원을 섞어 만들었다. Weather ambience is mixed from the CC0 sounds above and the game's own sounds.
+
+CC BY 3.0: https://creativecommons.org/licenses/by/3.0/
+CC0 1.0: https://creativecommons.org/publicdomain/zero/1.0/
+
+────────────────────────────────
+아이콘 · Icons (CC BY 3.0)
+
+Icons made by Lorc, Delapouite, Sbed and Rihlsul — game-icons.net
+https://game-icons.net · https://github.com/game-icons/icons
+퀵슬롯 소모품과 전투 행동 버튼에 사용. 배경을 지우고 흰 실루엣 PNG로 바꾼 뒤 게임에서 색을 입혔다.
+Used for quick-slot items and combat action buttons. Modified: background removed, rasterized to PNG and recolored in game.
+  Lorc: sticking-plaster, bandage-roll, syringe, pill, gunshot, circuitry, laser-blast, lightning-helix, power-lightning, run
+  Delapouite: health-capsule, opened-food-can, water-flask, water-bottle, barricade, first-aid-kit
+  Sbed: medical-pack, vial · Rihlsul: chocolate-bar
+
+────────────────────────────────
+글꼴 · Fonts (SIL Open Font License 1.1)
+
+D2Coding — Copyright (c) 2015-2016 NHN Corporation (NAVER). Font designed by FONTRIX Inc.
+Noto Emoji — Copyright 2013 Google Inc.
+
+────────────────────────────────
+동적 서사 GM · Narrative GM
+
+GM 모델은 Kakao의 Kanana 1.5 (8B / 2.1B instruct)를 파인튜닝한 것이다.
+The GM models are fine-tuned (modified) versions of Kanana 1.5 8B / 2.1B Instruct by Kakao Corp., licensed under the Apache License 2.0.
+https://huggingface.co/kakao
+
+llama.cpp (llama-server, patched build) — Copyright (c) 2023-2024 The ggml authors — MIT License
+https://github.com/ggml-org/llama.cpp
+  includes cpp-httplib — Copyright (c) Yuji Hirose — MIT License
+  includes nlohmann/json — Copyright (c) 2013-2025 Niels Lohmann — MIT License
+
+────────────────────────────────
+라이브러리 · Libraries
+
+Python — Copyright (c) 2001 Python Software Foundation — PSF License 2.0
+pygame-ce {pygame_ver} — GNU LGPL 2.1 — https://github.com/pygame-community/pygame-ce/releases/tag/{pygame_ver}
+  이 게임은 pygame-ce를 수정하지 않고 쓴다. 이 버전의 소스는 위 주소에서 받을 수 있다.
+  This game uses pygame-ce unmodified; the source code of this exact version is available at the link above.
+SDL2, SDL2_image, SDL2_mixer, SDL2_ttf — Copyright (C) 1997-2025 Sam Lantinga — zlib License
+FreeType — Portions of this software are copyright © 2025 The FreeType Project (www.freetype.org). All rights reserved. — FreeType License
+HarfBuzz — Copyright © the HarfBuzz authors — MIT License
+libpng — Copyright (c) 1995-2025 The PNG Reference Library Authors — PNG Reference Library License v2
+libjpeg-turbo — This software is based in part on the work of the Independent JPEG Group. — IJG License, BSD-3-Clause
+libtiff — Copyright (c) 1988-1997 Sam Leffler, Copyright (c) 1991-1997 Silicon Graphics, Inc. — libtiff License
+libwebp — Copyright (c) 2010 Google Inc. — BSD-3-Clause
+zlib — Copyright (C) 1995-2024 Jean-loup Gailly and Mark Adler — zlib License
+libogg, libvorbis, opus, opusfile, FLAC — Copyright (c) Xiph.Org Foundation and contributors — BSD-3-Clause
+WavPack — Copyright (c) David Bryant — BSD-3-Clause
+libxmp — Copyright (c) Claudio Matsuoka and Hipolito Carraro Jr — MIT License
+mpg123, libsndfile, FluidSynth — GNU LGPL 2.1 (unmodified)
+PortMidi — Copyright (c) Roger B. Dannenberg — MIT License
+
+rich — Copyright (c) 2020 Will McGugan — MIT License
+markdown-it-py — Copyright (c) 2020 ExecutableBookProject, Copyright (c) 2014 Vitaly Puzrin, Alex Kocharin — MIT License
+mdurl — Copyright (c) 2015 Vitaly Puzrin, Alex Kocharin, Copyright (c) 2021 Taneli Hukkinen — MIT License
+Pygments — Copyright (c) 2006-2022 by the respective authors — BSD-2-Clause
+colorama — Copyright (c) 2010 Jonathan Hartley — BSD-3-Clause
+cryptography — Copyright (c) Individual contributors — Apache License 2.0 / BSD-3-Clause
+OpenSSL — Copyright (c) 1998-2025 The OpenSSL Project Authors — Apache License 2.0
+
+Windows 빌드는 Nuitka(Apache 2.0), Mac 빌드는 PyInstaller(GPL 2.0, 부트로더 예외)로 묶었다.
+Built with Nuitka (Apache 2.0) on Windows and PyInstaller (GPL 2.0 with bootloader exception) on macOS.
+
+각 라이선스 전문은 옵션 → 크레딧 → 라이선스 전문에서 볼 수 있다.
+Full license texts: Options → Credits → License texts.

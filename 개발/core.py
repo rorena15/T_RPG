@@ -8,7 +8,8 @@ import sqlite3
 import time
 import db_init
 import constants
-from i18n import t
+from frozen_compat import user_dir
+from i18n import t, db_t
 from sys_log import sys_log, track
 
 _eq_cache: dict = {}
@@ -21,24 +22,30 @@ def resource_path(relative_path):
     return os.path.join(base_path, relative_path)
 
 def get_save_path():
-    if getattr(sys, 'frozen', False):
-        return os.path.join(os.path.dirname(sys.executable), "stigma_save.json")
-    return os.path.join(os.path.abspath("."), "stigma_save.json")
+    return os.path.join(user_dir(), "stigma_save.json")
 
 
 def get_settings_path():
-    if getattr(sys, 'frozen', False):
-        return os.path.join(os.path.dirname(sys.executable), "settings.json")
-    return os.path.join(os.path.abspath("."), "settings.json")
+    return os.path.join(user_dir(), "settings.json")
 
 
 def load_settings() -> dict:
-    defaults = {"bgm_volume": 0.5, "mute": False, "text_speed": 1.0, "gm_mode": "full"}
+    defaults = {"master_volume": 1.0, "bgm_volume": 0.5, "amb_volume": 0.5, "sfx_volume": 0.5, "vol_curve": 2,
+                "mute": False, "text_speed": 1.0, "gm_mode": "full", "combat_speed": 1.0, "font_scale": 1.0,
+                "screen_shake": True, "reduce_motion": False, "fullscreen": False, "autosave": 10}
     try:
         with open(get_settings_path(), encoding="utf-8") as f:
-            return {**defaults, **json.load(f)}
+            saved = json.load(f)
     except Exception:
         return defaults
+    if "vol_curve" not in saved:
+        # 예전 음량 값(실제 크기 = min(1, 값 × 2))을 새 곡선(sound.VOL_CURVE)에서 같은 크기가 되는 값으로 옮긴다 (5% 단위)
+        for k in ("bgm_volume", "sfx_volume"):
+            if k in saved:
+                saved[k] = round(min(1.0, saved[k] * 2) ** (1 / 1.7) * 20) / 20
+        if "bgm_volume" in saved:
+            saved["amb_volume"] = saved["bgm_volume"]   # 환경음은 예전에 음악 음량을 따랐다
+    return {**defaults, **saved}
 
 
 def save_settings(d: dict):
@@ -98,9 +105,37 @@ def init_and_load_db():
         sys.exit()
 
 
-@track
+def roll_equipment(tier_weights=None):
+    """드롭 장비 하나를 고른다: 등급은 tier_weights(기본 GEAR_DROP_TIER_WEIGHTS) 비율, 그 등급 안에서는 무작위. 없으면 None."""
+    import random
+    tw = tier_weights or constants.GEAR_DROP_TIER_WEIGHTS
+    tiers = list(tw)
+    tier = random.choices(tiers, weights=[tw[x] for x in tiers], k=1)[0]
+    try:
+        with sqlite3.connect("stigma_data.db") as conn:
+            rows = conn.execute("SELECT item_id FROM equipment WHERE tier = ? AND item_id != 'WEAPON_NONE'", (tier,)).fetchall()
+    except sqlite3.Error:
+        return None
+    return random.choice(rows)[0] if rows else None
+
+
+
+def grant_gear_drop(player, tier_weights=None):
+    """장비 하나를 굴려 가방에 넣고 알림 문구를 돌려준다. 못 골랐으면 None."""
+    iid = roll_equipment(tier_weights)
+    if not iid:
+        return None
+    player.inventory.append(iid)
+    d = get_equipment_data(iid)
+    import sound
+    sound.sfx("gear")
+    return t('loot_gear', name=db_t(d, 'name'), tier=constants.tier_tag(d.get('tier', 4)))
+
+
 def get_equipment_data(item_id):
-    """장비 데이터는 세션 내 캐시 우선, 미등록 시 SQLite 쿼리."""
+    """장비 데이터는 세션 내 캐시 우선, 미등록 시 SQLite 쿼리.
+    호출 기록(@track)은 붙이지 않는다: 화면이 매 프레임 부르는 단순 조회라 events 기록의 87%를 차지했다.
+    여기서 난 예외는 부른 쪽(기록되는 함수)이나 전역 예외 기록에 그대로 남는다."""
     if item_id in _eq_cache:
         return _eq_cache[item_id]
     if item_id in constants.SPECIAL_ITEMS:
@@ -115,13 +150,15 @@ def get_equipment_data(item_id):
 
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
-    cursor.execute("SELECT name, power, type, tier, slot, slot_weight, description FROM equipment WHERE item_id = ?", (item_id,))
+    cursor.execute("SELECT name, power, type, tier, slot, slot_weight, description, name_en, description_en "
+                   "FROM equipment WHERE item_id = ?", (item_id,))
     row = cursor.fetchone()
     conn.close()
 
     if row:
         result = {"name": row[0], "power": row[1], "type": row[2], "tier": row[3],
-                  "slot": row[4], "slot_weight": row[5], "desc": row[6]}
+                  "slot": row[4], "slot_weight": row[5], "desc": row[6],
+                  "name_en": row[7], "desc_en": row[8]}
     else:
         result = {"name": t('equip_unidentified_scrap'), "power": 5, "type": "kinetic", "tier": 4,
                   "slot": "main_weapon", "slot_weight": 1.5, "desc": t('equip_desc_unregistered')}
@@ -129,13 +166,21 @@ def get_equipment_data(item_id):
     return result
 
 
-def save_data(player, grid):
+def save_data(player, grid, wait=True):
+    """저장하고 결과 문장을 돌려준다. wait=False면 찍지도 기다리지도 않는다 (그림 화면이 그 문장을 직접 보여 준다)."""
     from ui import wait_for_keypress  # 지연 임포트로 순환 참조 방지
+    import playtime
+    playtime.mark(player)   # 저장 직전까지의 플레이 시간
     save_file = {"player": player.to_dict(), "grid": grid.to_dict()}
     try:
         with open(get_save_path(), "w", encoding="utf-8") as f:
             json.dump(save_file, f, ensure_ascii=False, indent=4)
-        print(t('save_success'))
+        import sound
+        sound.sfx("save")
+        msg = t('save_success')
     except Exception as e:
-        print(t('save_fail', e=e))
-    wait_for_keypress()
+        msg = t('save_fail', e=e)
+    if wait:
+        print(msg)
+        wait_for_keypress()
+    return msg

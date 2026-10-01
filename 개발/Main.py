@@ -15,18 +15,24 @@ from rich.console import Console
 from i18n import t, set_lang, db_t
 from updater import check_and_prompt_update
 
-from core import init_and_load_db, get_save_path, save_data, load_settings, save_settings
+from core import init_and_load_db, get_save_path, save_data, load_settings, save_settings, grant_gear_drop
 from ui import (clear_screen, type_text, print_header, print_divider,
                 print_ambient_lore, read_key, wait_for_keypress,
                 ea_center, ea_rpad, log_diary, show_diary,
                 roll_medkit, roll_food, roll_water)
 from player import Player
 from map import GameMap
-from combat import combat_loop, get_encounter_chance, apply_dynamic_scaling
+from combat import combat_loop, get_encounter_chance, apply_dynamic_scaling, pick_enemy, enemy_line
 from quest import handle_random_event, handle_trader, advance_quest, trigger_sudden_quest
-from story import handle_session, run_prologue, run_boss_core_choice, run_ending
+from story import handle_session, run_prologue, run_boss_core_choice, run_ending, boss_prep_view
 from gui import get_terminal
 import gm_bridge
+import gm_server
+import options
+import forge
+import playtime
+import traits
+import scene_art
 
 _console = Console(highlight=False)
 
@@ -51,6 +57,8 @@ def _offer_extra_data(settings, force=False):
     mode = gm_bridge.get_mode()
     if term is None or _i18n.LANG != "ko" or (not force and (mode == "off" or gm_bridge.mode_installed(mode))):
         return
+    if not gm_server.runtime_ok():  # 실행기가 없는 빌드: 모델을 받아도 쓸 수 없다
+        return
     got = download_view.offer(term)
     if got:
         settings["gm_mode"] = got
@@ -60,6 +68,8 @@ def _offer_extra_data(settings, force=False):
 
 @track
 def run_game():
+    import diag
+    diag.purge_plain_logs()   # 예전 버전의 평문 기록(log.txt, DB events 표)은 지운다 — 진단 기록은 이제 암호화
     if not get_terminal():
         if os.name == 'nt':
             os.system('title PROTOCOL: STIGMA — 1막: 낙인')
@@ -72,9 +82,7 @@ def run_game():
     set_lang("ko")  # 기본값
 
     _settings = load_settings()
-    sound.set_bgm_volume(_settings["bgm_volume"])
-    sound.set_mute(_settings["mute"])
-    constants.TEXT_SPEED_MULT = _settings["text_speed"]
+    options.apply(_settings, get_terminal())   # 음량·속도·화면 설정 반영 (options.py)
     gm_bridge.set_mode(_settings["gm_mode"])
 
     _title_scenes = ["neo_city", "ruin_city", "scrap_sea", "junkyard", "lm_cathedral"]
@@ -149,108 +157,9 @@ def run_game():
             time.sleep(0.5)
             sys.exit()
 
-        # ── 옵션 ──────────────────────────────────────────────────────────
+        # ── 옵션 (options.py: 소리 · 화면 · 게임) ───────────────────────────
         if ans == opt_key:
-            _vol_steps  = [0.0, 0.25, 0.5, 0.75, 1.0]
-            _spd_steps  = [("opt_speed_slow", 2.0), ("opt_speed_normal", 1.0),
-                           ("opt_speed_fast", 0.5), ("opt_speed_instant", 0.0)]
-            _opt_scr = None
-            if _term:
-                from screens import MenuScreen
-                _opt_scr = MenuScreen(scene="forge")
-            while True:
-                clear_screen()
-                if _opt_scr:
-                    _vol_pct = int(_settings["bgm_volume"] * 100)
-                    _spd_key = next((k for k, v in _spd_steps if v == _settings["text_speed"]), "opt_speed_normal")
-                    _gm_mode = gm_bridge.get_mode()
-                    _need_data = _gm_mode != "off" and not gm_bridge.mode_installed(_gm_mode)
-                    _o = [("1", t('lang_header')), ("2", f"{t('opt_volume')}   ◀ {_vol_pct}% ▶"),
-                          ("3", f"{t('opt_mute')}   [{t('opt_mute_on') if _settings['mute'] else t('opt_mute_off')}]"),
-                          ("4", f"{t('opt_text_speed')}   [{t(_spd_key)}]"),
-                          ("5", f"{t('opt_gm')}   [{t('opt_gm_' + _gm_mode)}]")]
-                    if _need_data:
-                        _o.append(("6", t('opt_gm_download')))
-                    _o.append(("0", t('diff_back')))
-                    _cur = getattr(_opt_scr, "last", "1")
-                    ok = _opt_scr.ask(t('menu_options'), _o, lines=[t('opt_gm_desc_' + _gm_mode)], back="0",
-                                      start=next((i for i, (k, _) in enumerate(_o) if k == _cur), 0))
-                    _opt_scr.last = ok
-                    if ok == "1":
-                        _lk = _opt_scr.ask(t('lang_header'), [("1", t('lang_ko')), ("2", t('lang_en')), ("0", t('diff_back'))], back="0")
-                        if _lk == "1":
-                            set_lang("ko")
-                        elif _lk == "2":
-                            set_lang("en")
-                        continue
-                    if ok == "6" and _need_data:
-                        _opt_scr.close()
-                        _offer_extra_data(_settings, force=True)
-                        _opt_scr = MenuScreen(scene="forge")
-                        continue
-                    if ok == "0":
-                        _opt_scr.close()
-                        break
-                else:
-                    print_header(t('menu_options'))
-                    print_divider()
-                    _vol_pct  = int(_settings["bgm_volume"] * 100)
-                    _mute_str = t('opt_mute_on') if _settings["mute"] else t('opt_mute_off')
-                    _spd_key  = next((k for k, v in _spd_steps if v == _settings["text_speed"]),
-                                     "opt_speed_normal")
-                    _spd_str  = t(_spd_key)
-                    print(f"  1. {t('lang_header')}")
-                    print(f"  2. {t('opt_volume')}  ◀ {_vol_pct}% ▶")
-                    print(f"  3. {t('opt_mute')}  [{_mute_str}]")
-                    print(f"  4. {t('opt_text_speed')}  [{_spd_str}]")
-                    _gm_mode = gm_bridge.get_mode()
-                    _gm_note = "" if gm_bridge.mode_installed(_gm_mode) else f"  {t('opt_gm_missing')}"
-                    print(f"  5. {t('opt_gm')}  [{t('opt_gm_' + _gm_mode)}]{_gm_note}")
-                    print(f"     {t('opt_gm_desc_' + _gm_mode)}")
-                    _need_data = _gm_mode != "off" and not gm_bridge.mode_installed(_gm_mode)
-                    if _need_data:
-                        print(f"  6. {t('opt_gm_download')}")
-                    print_divider()
-                    print(f"  0. {t('diff_back')}")
-                    print_divider()
-                    ok = read_key()
-                if ok == "0":
-                    break
-                elif ok == "1":
-                    while True:
-                        clear_screen()
-                        print_header(t('lang_header'))
-                        print_divider()
-                        print(f"  1. {t('lang_ko')}")
-                        print(f"  2. {t('lang_en')}")
-                        print_divider()
-                        print(f"  0. {t('diff_back')}")
-                        print_divider()
-                        lk = read_key()
-                        if lk == "1":   set_lang("ko"); break
-                        elif lk == "2": set_lang("en"); break
-                        elif lk == "0": break
-                elif ok == "2":
-                    cur = _vol_steps.index(_settings["bgm_volume"]) if _settings["bgm_volume"] in _vol_steps else 2
-                    _settings["bgm_volume"] = _vol_steps[(cur + 1) % len(_vol_steps)]
-                    sound.set_bgm_volume(_settings["bgm_volume"])
-                    save_settings(_settings)
-                elif ok == "3":
-                    _settings["mute"] = not _settings["mute"]
-                    sound.set_mute(_settings["mute"])
-                    save_settings(_settings)
-                elif ok == "4":
-                    cur = next((i for i, (_, v) in enumerate(_spd_steps) if v == _settings["text_speed"]), 1)
-                    _, _settings["text_speed"] = _spd_steps[(cur + 1) % len(_spd_steps)]
-                    constants.TEXT_SPEED_MULT = _settings["text_speed"]
-                    save_settings(_settings)
-                elif ok == "5":
-                    modes = gm_bridge.MODES
-                    _settings["gm_mode"] = modes[(modes.index(gm_bridge.get_mode()) + 1) % len(modes)]
-                    gm_bridge.set_mode(_settings["gm_mode"])
-                    save_settings(_settings)
-                elif ok == "6" and _need_data:
-                    _offer_extra_data(_settings, force=True)
+            options.run(_settings, _term, offer_data=_offer_extra_data)
             continue
 
         # ── 세이브 로드 ───────────────────────────────────────────────────
@@ -327,6 +236,7 @@ def run_game():
         # 잘못된 입력 → 타이틀 재표시
 
     sound.play_map_ambient()
+    playtime.start()
 
     _ui_mgr = None
     if get_terminal():  # 그림 + 이야기 칸 맵 화면 (map_view.py)
@@ -337,49 +247,101 @@ def run_game():
         if _ui_mgr:
             _ui_mgr.deactivate()
 
+    # 그림 화면 발밑 버튼: (보이는 키, 설명, 쓸 수 있음, 누르면 보낼 키). 글자 키(WASD·F·I·J·C·Q·U)도 그대로 된다 (map_view.KEYMAP)
     _EXPLORE_ACTIONS = [
-        ("WASD", "이동",     True),
-        ("F",    "탐색",     True),
-        ("I",    "인벤토리", True),
-        ("J",    "일지",     True),
-        ("C",    "저장",     True),
-        ("Q",    "종료",     True),
+        ("WASD", t('act_move'),      True, None),
+        ("F",    t('act_search'),    True, "F"),
+        ("I",    t('act_inventory'), True, "I"),
+        ("J",    t('act_diary'),     True, "J"),
+        ("F5",   t('act_save'),      True, "C"),
+        ("Esc",  t('act_quit'),      True, "Q"),
     ]
 
+    _autosaved = player.turn_count   # 마지막으로 자동 저장한 턴
     while True:
         clear_screen()
+        if constants.AUTOSAVE_TURNS and player.turn_count - _autosaved >= constants.AUTOSAVE_TURNS:
+            _autosaved = player.turn_count
+            save_data(player, grid, wait=False)
+            print(t('autosave_done'))
         if player.active_quest and player.turn_count > player.active_quest["deadline"]:
             q = player.active_quest
-            print(t('quest_failed', title=q['title']))
-            log_diary(player, t('quest_fail_diary', title=q['title']))
+            sound.sfx("quest_fail")
+            print(t('quest_failed', title=db_t(q, 'title')))
+            log_diary(player, t('quest_fail_diary', title=db_t(q, 'title')))
             player.active_quest = None
             time.sleep(1.5)
             clear_screen()
 
+        sound.map_mood(scene_art.world_time(player.turn_count))  # 밤·새벽엔 바람 밑에 어두운 음악
+        sound.map_weather(scene_art.world_weather(player.turn_count))  # 날씨 환경음 (산성비·먼지 폭풍 등)
+        if forge.check_hint(player, grid):  # 발칸을 오래 못 만났으면 방향 힌트 (forge.py)
+            time.sleep(1.2)
+        _trait_lines = traits.check_new(player)  # 성향이 새 단계에 닿았으면 알림 (traits.py)
+        if _trait_lines:
+            sound.sfx("job")
+            for _ln in _trait_lines:
+                print(_ln)
+                log_diary(player, _ln.strip())
+            time.sleep(1.2)
+        _actions = _EXPLORE_ACTIONS
+        if grid.at_forge() and grid.forge_known():  # 강화소 칸: U로 발칸 게이츠 / 강화소 (forge.py)
+            _flabel = t('act_forge') if forge.built(grid) else t('act_forge_npc')
+            _actions = _EXPLORE_ACTIONS[:3] + [("E", _flabel, True, "U")] + _EXPLORE_ACTIONS[3:]
         if _ui_mgr:
             _ui_mgr.update(player, grid)
-            _ui_mgr.set_actions(_EXPLORE_ACTIONS)
+            _ui_mgr.set_actions(_actions)
             _ui_mgr.activate()
         else:
             grid.draw()
             player.show_status()
+            if list(grid.player_pos) != list(grid.bunker_pos):
+                print(f"  {t(f'map_danger_{grid.danger_at()}')}" + (t('map_depleted', n=grid.depletion()) if grid.depletion() else ""))
             print(f" {t('cmd_header')}")
             print(f"  {t('cmd_move')}")
             print(f"  {t('cmd_search')}")
             print(f"  {t('cmd_inventory')}")
+            if grid.forge.get("stage", 0) == 1:
+                print(f"  {forge.progress_text(player, grid)}")
+            if grid.at_forge() and grid.forge_known():
+                print(f"  {t('cmd_forge') if forge.built(grid) else t('cmd_forge_npc')}")
             print(f"  {t('cmd_diary')}")
+            print(f"  {t('cmd_quick')}")
             print(f"  {t('cmd_save')}")
             print(f"  {t('cmd_quit')}")
             print_divider()
 
+        playtime.mark(player)                       # 지난 입력 뒤 이벤트·전투 처리 시간
         move = read_key()
+        playtime.mark(player, playtime.IDLE_CAP)    # 입력을 기다린 시간 (자리 비움은 5분까지만)
 
+        if move in Player.QUICK_KEYS:  # 퀵슬롯 1~0: 바로 먹고 마시고 치료 (턴은 쓰지 않는다)
+            _qk = player.quick_item(move)
+            _qmsg = player.use_consumable(_qk) if _qk else None
+            if _qmsg:
+                print(_qmsg)
+            elif _qk:
+                print(t('qs_none_left', name=db_t(constants.CONSUMABLES_DB[_qk], 'name')))
+            else:
+                print(t('qs_empty', n=move))
+            if not _ui_mgr:
+                time.sleep(0.8)
+            continue
+        if move == "\x1b":   # 글 화면에서 Esc
+            move = "Q"
+        elif move == "E":     # 글 화면: E = 강화소 (그림 화면은 map_view.KEYMAP이 바꿔 준다)
+            move = "U"
         if move == "I":
             _off()
             player.manage_inventory()
             continue
+        elif move == "U" and grid.at_forge() and grid.forge_known():
+            _off()
+            forge.visit(player, grid)
+            continue
         elif move == "J":
             _off()
+            sound.sfx("diary")
             show_diary(player)
             continue
         elif move == "C":
@@ -387,11 +349,21 @@ def run_game():
             continue
 
         if move == "F":
+            # 타일마다 수색 횟수(2~4회)가 있고, 다 쓰면 8~14턴 쿨타임 (map.py). 7785fff에서 빠졌던 것을 되살림
+            _can_srch, _ = grid.can_search(player.turn_count)
+            if not _can_srch:
+                print(f"\n  {random.choice(t('tile_exhausted'))}")
+                wait_for_keypress()
+                continue
             player.consume_resources()
+            grid.use_search(player.turn_count)
+            sound.sfx("search")
             print(t('search_start'))
             time.sleep(0.5)
 
-            encounter_chance = get_encounter_chance(player)
+            _danger = grid.danger_at()                     # 칸 위험도: 조우·보상 배율 (constants.DANGER_*)
+            _yield = 1.0 / (1.0 + constants.DEPLETE * grid.depletion())   # 다시 채워진 칸은 덜 나온다
+            encounter_chance = get_encounter_chance(player) * constants.DANGER_ENC[_danger]
             roll = random.random()
 
             if roll < 0.08 and constants.TRADER_ITEMS:
@@ -399,14 +371,13 @@ def run_game():
                 _off()
                 handle_trader(player)
             elif roll < 0.08 + encounter_chance:
-                # 전투 조우 (encounter_chance%)
-                print(t('encounter_warning'))
-                wait_for_keypress()
-                # 바이오 하운드 20% 확률 등장 (재조우 시 이전 타입 유지)
+                # 전투 조우 (encounter_chance%). 적 종류는 combat.pick_enemy (재조우 시 이전 타입 유지)
                 if grid.escaped_enemy_hp is not None:
                     etype = grid.escaped_enemy_type or "drone"
                 else:
-                    etype = "bio_hound" if random.random() < 0.20 else "drone"
+                    etype = pick_enemy(player)
+                print(enemy_line('encounter_warning', etype))
+                wait_for_keypress()
                 _off()
                 sound.play_combat_bgm()
                 result_hp, result_type = combat_loop(player, is_boss=False, current_hp=grid.escaped_enemy_hp, enemy_type=etype)
@@ -416,35 +387,49 @@ def run_game():
             elif roll < 0.08 + encounter_chance + 0.20 and constants.RANDOM_EVENTS:
                 # 랜덤 서사 이벤트 (20%) — 로컬 GM이 판정·서술, GM을 못 쓰면 대본
                 event = random.choice(constants.RANDOM_EVENTS)
-                if not gm_bridge.run_event(player, grid, event):
+                # GM이 꺼져 있어도 그림 화면이 있으면 같은 틀로 대본을 보여 준다 (gm_bridge.run_event_script)
+                if not gm_bridge.run_event(player, grid, event) and not gm_bridge.run_event_script(player, grid, event):
                     _off()
                     handle_random_event(player, event)
             elif roll < 0.08 + encounter_chance + 0.20 + 0.30:
                 # 공탐색 (30%) — 로컬 GM이 서술, GM을 못 쓰면 분위기 로그
                 if not gm_bridge.run_search(player, grid):
+                    sound.sfx("search_empty")
                     _empty = random.choice(t('empty_search_msgs'))
                     print(f"\n  {_empty}")
                     print_ambient_lore()
             else:
-                # 자원 파밍 (나머지 ~22%)
+                # 자원 파밍 (나머지 ~22%). 칸 위험도에 따른 확률(DANGER_GEAR)로 자원 대신 장비
+                _depleted = random.random() > _yield   # 여러 번 뒤진 칸: 이미 누가 다 가져갔다
+                gear_msg = (grant_gear_drop(player, constants.DANGER_TIER_WEIGHTS.get(_danger))
+                            if not _depleted and random.random() < constants.DANGER_GEAR[_danger] else None)
                 item_roll = random.random()
-                if item_roll <= 0.25:
-                    gained = random.randint(10, 25)
+                if _depleted:
+                    sound.sfx("search_empty")
+                    print(f"\n  {random.choice(t('search_depleted'))}")
+                elif gear_msg:
+                    print(gear_msg)
+                elif item_roll <= 0.25:
+                    gained = traits.scrap(player, max(1, round(random.randint(10, 25) * constants.DANGER_SCRAP[_danger])))
                     player.materials += gained
                     advance_quest(player, "scrap", gained)
+                    sound.sfx("loot")
                     print(t('farm_scrap', gained=gained))
                 elif item_roll <= 0.60:
                     if random.random() < 0.5:
                         it = roll_food()
                         player.consumables[it] += 1
+                        sound.sfx("loot", 0.7)
                         print(t('farm_food', name=db_t(constants.CONSUMABLES_DB[it], 'name')))
                     else:
                         it = roll_water()
                         player.consumables[it] += 1
+                        sound.sfx("loot", 0.7)
                         print(t('farm_water', name=db_t(constants.CONSUMABLES_DB[it], 'name')))
                 else:
                     it = roll_medkit()
                     player.consumables[it] += 1
+                    sound.sfx("loot", 0.7)
                     print(t('farm_medkit', name=db_t(constants.CONSUMABLES_DB[it], 'name')))
                 wait_for_keypress()
             # 탐색 퀘스트 진행 및 돌발 퀘스트 (전투 미조우 시)
@@ -456,12 +441,24 @@ def run_game():
         elif move == "Q":
             _off()
             clear_screen()
-            print_header(t("quit_header"))
-            print()
-            type_text(t("quit_prompt"), 0.02)
-            print()
-            print(t("quit_yn"), end="", flush=True)
-            save_choice = read_key()
+            if _ui_mgr:  # 그림 화면: 저장하고 종료 / 저장 없이 종료 / 취소 (방향키·마우스)
+                from screens import MenuScreen
+                _q = MenuScreen(scene="bunker_inside")
+                _qa = _q.ask(t("quit_header"), [("1", t('quit_opt_save')), ("2", t('quit_opt_nosave')), ("0", t('quit_opt_cancel'))],
+                             lines=[t("quit_prompt").strip()], back="0")
+                _q.close()
+                if _qa not in ("1", "2"):
+                    continue
+                save_choice = "Y" if _qa == "1" else "N"
+            else:
+                print_header(t("quit_header"))
+                print()
+                type_text(t("quit_prompt"), 0.02)
+                print()
+                print(t("quit_yn"), end="", flush=True)
+                save_choice = read_key()
+                if save_choice not in ("Y", "N"):  # 예전엔 다른 키면 저장 없이 꺼졌다: 이제는 취소
+                    continue
             if save_choice == 'Y':
                 save_data(player, grid)
                 print(t("quit_saved"))
@@ -475,6 +472,8 @@ def run_game():
             time.sleep(0.8)
             sys.exit()
 
+        if move not in ("W", "A", "S", "D"):  # 모르는 키는 조용히 무시 (예전엔 "이동 불가"를 띄우고 멈췄다)
+            continue
         px, py = grid.player_pos[0], grid.player_pos[1]
         valid_move = False
         if move == "W" and py < grid.size - 1: py += 1; valid_move = True
@@ -493,8 +492,13 @@ def run_game():
             current_loc = tuple(grid.player_pos)
             is_new_tile = current_loc not in grid.visited_tiles
             grid.visited_tiles.add(current_loc)
+            sound.sfx("step")
+            if _ui_mgr:  # 그림 화면: 장면이 옮겨 가는 연출 (map_view.py)
+                _ui_mgr.update(player, grid)
+                _ui_mgr.play_move()
 
             if current_loc == tuple(grid.bunker_pos):
+                sound.sfx("bunker_door")   # 녹슨 무쇠 문
                 if constants.SESSIONS_DB and len(constants.SESSIONS_DB) > 6:
                     _off()
                     handle_session(player, constants.SESSIONS_DB[6])
@@ -502,6 +506,15 @@ def run_game():
                 log_diary(player, t('boss_log_prep'))
                 _off()
                 clear_screen()
+                if constants.AUTOSAVE_TURNS:   # 보스 앞에서는 늘 한 번 (자동 저장을 켰을 때)
+                    save_data(player, grid, wait=False)
+                if get_terminal():   # 그림 화면 (story.boss_prep_view). 아래 터미널 판과 규칙이 같다
+                    boss_prep_view(player, grid)
+                    sound.play_boss_bgm()
+                    combat_loop(player, is_boss=True)
+                    run_boss_core_choice(player)
+                    run_ending(player, grid)
+                    break
                 print_header(t('boss_alert_header'))
                 type_text(t('boss_approach_1'), 0.025)
                 type_text(t('boss_approach_2'), 0.025)
@@ -528,17 +541,20 @@ def run_game():
                         save_data(player, grid)
                     elif prep_cmd == "3":
                         break
-                sound.play_combat_bgm()
+                sound.play_boss_bgm()
                 combat_loop(player, is_boss=True)
                 run_boss_core_choice(player)
-                run_ending(player)
+                run_ending(player, grid)
                 break
             else:
-                session_triggered = False
-                if is_new_tile and constants.SESSIONS_DB and grid.session_index < len(constants.SESSIONS_DB) - 1:
+                if grid.at_forge() and not grid.forge_known():
+                    _off()
+                session_triggered = forge.on_enter(player, grid, is_new_tile)  # 발칸 게이츠를 만나면 이 칸의 세션은 건너뛴다
+                if not session_triggered and is_new_tile and constants.SESSIONS_DB and grid.session_index < len(constants.SESSIONS_DB) - 1:
                     _s_base = 0.40 if grid.session_index < 3 else 0.10
                     _s_prob = max(0.05, _s_base * (1.0 - player.turn_count / 100.0))
                     if random.random() < _s_prob:
+                        sound.sfx("scan")
                         print(t('scan_detected'))
                         time.sleep(1.2)
                         _off()
@@ -548,12 +564,12 @@ def run_game():
 
                 if not session_triggered:
                     if random.random() < get_encounter_chance(player):
-                        print(t('encounter_alert'))
-                        wait_for_keypress()
                         if grid.escaped_enemy_hp is not None:
                             etype = grid.escaped_enemy_type or "drone"
                         else:
-                            etype = "bio_hound" if random.random() < 0.20 else "drone"
+                            etype = pick_enemy(player)
+                        print(enemy_line('encounter_alert', etype))
+                        wait_for_keypress()
                         _off()
                         sound.play_combat_bgm()
                         result_hp, result_type = combat_loop(player, is_boss=False, current_hp=grid.escaped_enemy_hp, enemy_type=etype)

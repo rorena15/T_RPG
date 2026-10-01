@@ -12,6 +12,8 @@
   <학습 venv>/python gen_scenes.py txt [--only camp] [--seeds 2]   # 밑그림 없이 분위기 4가지 x seeds장 (주로 이것)
   python gen_scenes.py pick camp camp_dusk_1 camp_night_0     # 고른 후보 -> assets/scenes/camp/ (게임이 무작위로 씀)
   <학습 venv>/python gen_scenes.py layers [--only camp]         # 고른 그림을 깊이로 3층 분리 (패럴랙스용)
+  <학습 venv>/python gen_scenes.py enemy [--only enemy_hound] [--per 4]   # 적 교전 그림 (가로, 적이 가운데에 선명하게) -> art/cand_enemy/
+  <학습 venv>/python gen_scenes.py enemy_var enemy_hound=<기준 파일> ... [--per 5]   # 기준 그림에서 시간·날씨만 바꾼 변형 -> art/cand_enemy_var/
 """
 import argparse
 import os
@@ -237,12 +239,12 @@ MOOD_FIELD["cold"] = [(8, 10, 13), (26, 34, 44), (44, 58, 70), (22, 26, 30), (7,
 MOOD_FIELD_TINT = {"rain": (170, 160, 70), "toxic": (70, 150, 80), "hq_wall": (60, 60, 150), "neo_city": (50, 60, 130)}
 
 
-def color_field(mood, name, seed, weather=None):
+def color_field(mood, name, seed, weather=None, size=None):
     """형태 없는 색면 밑그림. 하늘·지평선·땅의 색과 밝기만 정해 화풍과 색감을 모든 장면에 맞춘다
     (밑그림 없이 뽑으면 밝은 판타지 풍경화 쪽으로 흘렀다). 약간의 얼룩을 넣어 붓질 여지를 준다."""
     import random
     from PIL import Image, ImageFilter
-    w, h = TXT_SIZE
+    w, h = size or TXT_SIZE
     stops = MOOD_FIELD[mood]
     tint = MOOD_FIELD_TINT.get(name) or WEATHER_TINT.get(weather)
     img = Image.new("RGB", (w, h))
@@ -320,6 +322,122 @@ def txt(only, per, steps, strength=0.86):
         sheet.save(os.path.join(out_dir, f"_{name}_sheet.jpg"), quality=85)
 
 
+# ── 적 교전 그림 (정면 뷰용, docs/기획/v2.1_개발안.md 3-1) ─────────────────────────────────
+# 풍경 속 작은 점이던 적(위 "enemy" 종류)을 화면 가득 키우면 형체가 없다. 전투 화면용은 따로 뽑는다:
+# 가로 비율, 적이 가운데 1/3 안에 선명하게, 배경은 같은 화풍(세피아·저채도·스모그).
+ENEMY_SIZE = (1344, 768)
+# 뽑으면서 배운 것 (2026-09-30):
+# - SDXL의 글 인코더는 77토큰까지만 읽는다. 1·2차는 구도 설명을 앞에 길게 써서 적 묘사 뒤쪽과 화풍, 제외어 대부분이 잘렸다
+#   (제외어에 넣은 사람·거대 로봇이 계속 나왔다). 그래서 적 묘사를 맨 앞에, 전부 짧게 쓴다. 화풍은 색면 밑그림이 잡아 준다.
+# - "facing the viewer"는 앞에 선 사람 뒷모습을 거의 매번 그려 넣었다.
+# - 적마다 시드를 같게 주면 구도가 똑같이 나온다 → 적 이름으로 시드를 흩는다.
+# - 3차: 짧게 줄이자 지시는 들었지만("사람 없음", 쿼드콥터) 그림이 납작한 실루엣 도안이 됐다. "sharp silhouette"를 빼고
+#   붓질·세부 묘사와 "flat colors, vector, silhouette" 제외어를 되살린다 (짧게).
+ENEMY_COMP = "centered, full body, detailed, lit by dim light, scrapyard ground, ruins in smog behind"
+ENEMY_STYLE = "oil painting concept art, visible rough brush strokes, textured, muted sepia, post-apocalyptic"
+ENEMY_NEG = "person, human figure, flat colors, vector, silhouette art, minimalist, photo, 3d render, anime, text, tiny distant subject"
+ENEMY_SUBJECT = {
+    "enemy_drones": "three battered quadcopter combat drones flying low, four rotors each, boxy armored hull, one red sensor eye",
+    "enemy_hound": "a dog sized four legged robot hound, titanium plates, pistons, steel jaw, one glowing sensor slit, crouched to lunge",
+    "enemy_dogs": "a pack of five gaunt mangy feral dogs, glinting eyes, ribs showing, heads low, closing in",
+    "enemy_security": "three faceless armored riot troopers with tall riot shields and rifles, glowing visor slits, advancing in a line",
+    "enemy_collector": "one colossal armored machine on caterpillar tracks, a wide drum of spinning shredder blades across its front, red warning lights",
+}
+ENEMY_EXTRA_NEG = {   # 맨 앞에 붙는다 (잘리지 않게)
+    "enemy_drones": "legs, walker, spider legs, helicopter",
+    "enemy_hound": "giant, towering, monster, kaiju, spikes, fur, flesh, organic",
+    "enemy_dogs": "giant beast, monster, robot, machine",
+    "enemy_security": "giant robot, mech, tank, face",
+    "enemy_collector": "excavator, crane, humanoid robot, legs, tank cannon, flesh",
+}
+
+
+ENEMY_TIME = {"dawn": "dim blue dawn", "morning": "pale morning light", "noon": "washed out midday", "evening": "muddy orange evening",
+              "night": "night, few distant lights"}
+ENEMY_WEATHER = {"smog": "thick smog", "fog": "dense fog", "dust": "yellow dust storm", "acid": "acid rain, wet ground", "ash": "falling ash"}
+
+
+def enemy(only, per, steps, strength=0.9, round_no=0):
+    """적 교전 그림 후보: 색면 밑그림(가로) + img2img. 적마다 시간·날씨를 달리해 per장. -> art/cand_enemy/
+    round_no: 다시 뽑을 때 올린다 (시드와 파일 이름이 달라져 앞선 후보를 덮지 않는다)."""
+    import random as _r
+    import torch
+    from diffusers import AutoencoderKL, StableDiffusionXLImg2ImgPipeline
+    from PIL import Image
+    vae = AutoencoderKL.from_pretrained("madebyollin/sdxl-vae-fp16-fix", torch_dtype=torch.float16)
+    pipe = StableDiffusionXLImg2ImgPipeline.from_pretrained(
+        "stabilityai/stable-diffusion-xl-base-1.0", vae=vae, torch_dtype=torch.float16, variant="fp16",
+        use_safetensors=True).to("cuda")
+    out_dir = os.path.join(OUT, "cand_enemy")
+    os.makedirs(out_dir, exist_ok=True)
+    for name in [x for x in ENEMY_SUBJECT if not only or x in only]:
+        rng = _r.Random(sum(map(ord, name)) + 7 + round_no)
+        pool = [(t, w) for t in ENEMY_TIME for w in ENEMY_WEATHER]
+        rng.shuffle(pool)
+        imgs = []
+        tag = f"r{round_no}_" if round_no else ""
+        for k, (mood, weather) in enumerate(pool[:per]):
+            path = os.path.join(out_dir, f"{name}_{tag}{mood}_{weather}_{k}.jpg")
+            if os.path.exists(path):  # 이어서 뽑기
+                imgs.append(Image.open(path))
+                continue
+            g = torch.Generator("cuda").manual_seed(3000 + 100 * round_no + 17 * (sum(map(ord, name)) % 50) + k)
+            # 사람 제외어는 청소 부대에서 뺀다 (사람 모양 적)
+            base_neg = ENEMY_NEG.replace("person, human figure, ", "") if name == "enemy_security" else ENEMY_NEG
+            neg = f"{ENEMY_EXTRA_NEG[name]}, {base_neg}"
+            img = pipe(prompt=f"{ENEMY_SUBJECT[name]}, {ENEMY_COMP}, {ENEMY_TIME[mood]}, {ENEMY_WEATHER[weather]}, {ENEMY_STYLE}",
+                       negative_prompt=neg, image=color_field(mood, name, 3000 + k, weather, ENEMY_SIZE),
+                       strength=strength, num_inference_steps=steps, guidance_scale=6.5, generator=g).images[0]
+            img.save(path, quality=92)
+            imgs.append(img)
+            print("enemy", path, flush=True)
+        tw, th = ENEMY_SIZE[0] // 2, ENEMY_SIZE[1] // 2
+        sheet = Image.new("RGB", (tw * 2, th * ((len(imgs) + 1) // 2)))
+        for i, img in enumerate(imgs):
+            sheet.paste(img.resize((tw, th)), ((i % 2) * tw, (i // 2) * th))
+        sheet.save(os.path.join(out_dir, f"_{name}_{tag}sheet.jpg"), quality=88)
+
+
+# 같은 적은 생김새가 같아야 한다 (장마다 다른 로봇이 나오면 같은 적으로 읽히지 않는다, 사용자 피드백).
+# 그래서 기준 그림 한 장을 정하고, 거기서 시간·날씨만 바꾼 변형을 만든다: 기준 그림에 그 분위기의 색면을 옅게 섞어
+# 빛을 밀어 주고, 약한 img2img(strength 0.45 안팎)로 다시 칠한다. 형체는 남고 빛과 공기만 달라진다.
+ENEMY_VAR_MOODS = [("dawn", "fog"), ("noon", "dust"), ("evening", "smog"), ("night", "ash"), ("morning", "acid")]
+
+
+def enemy_var(bases, per, steps, strength=0.45, tint=0.4):
+    """bases: {적 이름: 기준 그림 파일(art/cand_enemy 안, 확장자 빼고)}. -> art/cand_enemy_var/<적>_<시간>_<날씨>.jpg"""
+    import torch
+    from diffusers import AutoencoderKL, StableDiffusionXLImg2ImgPipeline
+    from PIL import Image
+    vae = AutoencoderKL.from_pretrained("madebyollin/sdxl-vae-fp16-fix", torch_dtype=torch.float16)
+    pipe = StableDiffusionXLImg2ImgPipeline.from_pretrained(
+        "stabilityai/stable-diffusion-xl-base-1.0", vae=vae, torch_dtype=torch.float16, variant="fp16",
+        use_safetensors=True).to("cuda")
+    out_dir = os.path.join(OUT, "cand_enemy_var")
+    os.makedirs(out_dir, exist_ok=True)
+    for name, base_file in bases.items():
+        base = Image.open(os.path.join(OUT, "cand_enemy", base_file + ".jpg")).convert("RGB").resize(ENEMY_SIZE, Image.LANCZOS)
+        base.save(os.path.join(out_dir, f"{name}_base.jpg"), quality=92)
+        imgs = [base]
+        for k, (mood, weather) in enumerate(ENEMY_VAR_MOODS[:per]):
+            path = os.path.join(out_dir, f"{name}_{mood}_{weather}.jpg")
+            if not os.path.exists(path):
+                init_img = Image.blend(base, color_field(mood, name, 5000 + k, weather, ENEMY_SIZE), tint)
+                base_neg = ENEMY_NEG.replace("person, human figure, ", "") if name == "enemy_security" else ENEMY_NEG
+                g = torch.Generator("cuda").manual_seed(5000 + k)
+                img = pipe(prompt=f"{ENEMY_SUBJECT[name]}, {ENEMY_TIME[mood]}, {ENEMY_WEATHER[weather]}, {ENEMY_STYLE}",
+                           negative_prompt=f"{ENEMY_EXTRA_NEG[name]}, signature, {base_neg}", image=init_img,
+                           strength=strength, num_inference_steps=steps, guidance_scale=6.0, generator=g).images[0]
+                img.save(path, quality=92)
+                print("enemy_var", path, flush=True)
+            imgs.append(Image.open(path))
+        tw, th = ENEMY_SIZE[0] // 3, ENEMY_SIZE[1] // 3
+        sheet = Image.new("RGB", (tw * 3, th * ((len(imgs) + 2) // 3)))
+        for i, img in enumerate(imgs):
+            sheet.paste(img.resize((tw, th)), ((i % 3) * tw, (i // 3) * th))
+        sheet.save(os.path.join(out_dir, f"_{name}_sheet.jpg"), quality=88)
+
+
 def pick(name, files):
     """고른 후보를 assets/scenes/<이름>/ 에 넣는다. 게임은 그중 하나를 무작위로 쓴다.
     files: 후보 파일 이름(확장자 빼고, 예: camp_dusk_1) 여러 개."""
@@ -390,12 +508,13 @@ def layers(only):
 
 def main():
     p = argparse.ArgumentParser()
-    p.add_argument("cmd", choices=["init", "paint", "txt", "pick", "layers"])
+    p.add_argument("cmd", choices=["init", "paint", "txt", "pick", "layers", "enemy", "enemy_var"])
     p.add_argument("args", nargs="*")
     p.add_argument("--only", default="")
     p.add_argument("--n", type=int, default=4)
     p.add_argument("--strength", type=float, default=0.8)  # 0.62는 밑그림 실루엣을 그대로 따라 디테일이 없었다
     p.add_argument("--steps", type=int, default=30)
+    p.add_argument("--round", type=int, default=0, help="enemy: 다시 뽑는 회차 (시드·파일 이름을 바꾼다)")
     p.add_argument("--per", type=int, default=6, help="txt: 장면마다 몇 장 (시간x날씨 조합을 겹치지 않게)")
     a = p.parse_args()
     if a.cmd == "init":
@@ -404,6 +523,11 @@ def main():
         paint([x for x in a.only.split(",") if x], a.n, a.strength, a.steps)
     elif a.cmd == "layers":
         layers([x for x in a.only.split(",") if x])
+    elif a.cmd == "enemy":
+        enemy([x for x in a.only.split(",") if x], min(a.per, 4) if a.per == 6 else a.per, a.steps,
+              0.9 if a.strength == 0.8 else a.strength, a.round)
+    elif a.cmd == "enemy_var":   # 인자: 적=기준파일 ... (예: enemy_hound=enemy_hound_r3_dawn_smog_0)
+        enemy_var(dict(x.split("=", 1) for x in a.args), min(a.per, 5), a.steps, 0.45 if a.strength == 0.8 else a.strength)
     elif a.cmd == "txt":
         txt([x for x in a.only.split(",") if x], a.per, a.steps, 0.86 if a.strength == 0.8 else a.strength)
     else:

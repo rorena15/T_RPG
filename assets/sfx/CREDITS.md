@@ -1,0 +1,25 @@
+# 효과음·음악 출처
+
+`assets/sfx/`의 효과음은 아래 음원을 자르고 겹치고 음량을 맞춰 만들었다.
+
+| 출처 | 쓴 소리 | 라이선스 |
+|---|---|---|
+| Kenney — Starter Kit FPS / 3D Platformer / City Builder / Racing (https://github.com/KenneyNL) | blaster, enemy_destroy, walking, break, placement, removal, impact, engine-motorcycle | CC0 1.0 |
+| Godot TPS Demo — © 2018 Juan Linietsky, Fernando Miguel Calabró (https://github.com/godotengine/tps-demo) | player shoot·step, bullet explode, red robot shoot·hit·charge·explosion, door open/close | CC BY 3.0 (https://creativecommons.org/licenses/by/3.0/) |
+| Freesound — FFeller "impact_big" (#532873), dorian.mastin "impact_small" (#381626), dotY21 "Static" (#335203) (Godot demo projects 경유) | 몸 충돌음, 잡음 | CC0 1.0 |
+| uisfx (https://www.npmjs.com/package/uisfx) | scifi·mechanical·cinematic·organic 테마의 UI 음 (메뉴 이동·확인·뒤로, 퀘스트, 상인, 저장, 스캔, 이벤트 판정, 경고 등) | CC0 1.0 |
+
+CC BY 3.0 음원은 원작자 표기가 필요하다: 게임 안 크레딧(옵션 → 크레딧 · 라이선스, 내용은 `assets/licenses/CREDITS.txt`)과 README에 둔다. 음원을 더하면 CREDITS.txt도 함께 고친다.
+
+## 음악 (`assets/`)
+
+| 파일 | 곡 | 라이선스 |
+|---|---|---|
+| `bgm_boss.ogg` (보스전) | Godot TPS Demo 레벨 음악 — © 2018 Christian Fernando Perucchi (https://github.com/godotengine/tps-demo) | CC BY 3.0 |
+| `bgm_menu.ogg` (타이틀·엔딩) | Godot TPS Demo 메뉴 음악 — © 2018 Christian Fernando Perucchi | CC BY 3.0 |
+| `bgm_night.ogg` (밤·새벽 탐색) | "Loop - House in a Forest" — © 2012 HorrorPen (https://opengameart.org/content/loop-house-in-a-forest) | CC BY 3.0 |
+
+## 날씨 환경음 (`assets/weather_*.wav`)
+
+게임에 있던 바람 소리(`wind.mp3`)와 위 표의 음원(Kenney 엔진음 CC0, Freesound 잡음·충돌음 CC0)을 늘이고 거르고 겹쳐 10초 반복음으로 만들었다.
+스모그(저음 윙윙), 안개(먼 울림), 먼지 폭풍(돌풍·모래), 재(타닥거림·우르릉), 산성비(빗줄기·빗방울·쉿 소리).

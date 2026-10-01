@@ -5,7 +5,10 @@ ROOT   = os.path.dirname(__file__)
 LOCALE = os.path.join(ROOT, "locales", "ko.json")
 
 TARGET_FILES = ["Main.py","combat.py","player.py","skills.py","story.py",
-                "quest.py","ui.py","core.py","map.py","updater.py"]
+                "quest.py","ui.py","core.py","map.py","updater.py",
+                # 그림 화면
+                "event_view.py","map_view.py","combat_view.py","inventory_view.py",
+                "screens.py","intro_view.py","download_view.py","constants.py","upgrade.py","forge.py","credits.py","playtime.py","endings.py","traits.py","options.py"]
 
 # 이 함수의 인자는 내부 전용 — 한국어여도 i18n 불필요
 INTERNAL_FUNCS = {"sys_log","log_error","track","sys.exit","system",
@@ -17,6 +20,10 @@ DATA_ASSIGN_NAMES = {
     "TRADER_ITEMS","SKILL_DEFS","JOB_LABEL","SKILL_SETS",
     "WEAPON_TYPES","SPECIAL_ITEMS","AMBIENT_LORE","SESSIONS_DB",
     "CONSUMABLES_DB","EQUIPMENT","ITEM_DB","bat_content","ENEMY_ART",
+    "SESSION_SCENES",  # 한국어 세션 제목으로 장면 그림을 찾는 표 (화면에 안 나감)
+    "SCENES","SFX","SFX_RAIN","SFX_DEFAULT",  # event_view: 장면 팔레트(키=장소 ID), 한국어 GM 서술에 맞춘 소리 말
+    "JUNKYARD","BUNKER","_WORDISH",           # 장소 ID, 글자 판별 정규식
+    "SLOT_DISPLAY_KO",
 }
 
 ERRORS, WARNS = [], []
@@ -47,7 +54,8 @@ def _data_constant_nodes(tree):
                         if isinstance(child, ast.Constant):
                             data_ids.add(id(child))
         # _log_color: startswith() 인자들 (함수명 _log_color 내부 리터럴)
-        if isinstance(node, ast.FunctionDef) and node.name == "_log_color":
+        # 로그 문구의 낱말로 색을 고르는 함수 (한국어·영어 낱말을 함께 본다)
+        if isinstance(node, ast.FunctionDef) and node.name in ("_log_color", "_log_surfaces"):
             for child in ast.walk(node):
                 if isinstance(child, ast.Constant):
                     data_ids.add(id(child))
@@ -95,6 +103,8 @@ KOREAN_RE  = re.compile(r'[가-힣]')
 T_CALL_RE  = re.compile(r"\bt\(\s*['\"]([^'\"]+)['\"]")
 # 동적 키(f-string): t(f'...')  — 정적 추출 불가, 별도 수집
 T_DYN_RE   = re.compile(r"\bt\(f['\"]([^'\"]+)['\"]")
+# 적 종류별 문구: enemy_line('키', ...) → 기본 키 + '키_<적>' 변형 (combat.py)
+ENEMY_LINE_RE = re.compile(r"\benemy_line\(\s*['\"]([^'\"]+)['\"]")
 
 used_keys  = set()
 dyn_prefixes = set()
@@ -108,6 +118,9 @@ for fname in TARGET_FILES:
 
     # 정적 t() 키 수집
     used_keys.update(T_CALL_RE.findall(src))
+    for k in ENEMY_LINE_RE.findall(src):
+        used_keys.add(k)
+        dyn_prefixes.add(k + "_")
 
     # 동적 t(f'...{var}...') 키 프리픽스 수집 (누락 오탐 방지)
     for m in T_DYN_RE.findall(src):
@@ -135,8 +148,6 @@ for fname in TARGET_FILES:
             continue
         val = node.value
         if not KOREAN_RE.search(val):
-            continue
-        if len(val.strip()) <= 3:
             continue
         caller = _caller_name(parent_map, node)
         if caller in INTERNAL_FUNCS:

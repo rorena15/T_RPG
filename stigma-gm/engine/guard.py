@@ -134,16 +134,55 @@ def _load_wm_hashes():
 _WM_SIG, _WM_FRAME = _load_wm_hashes()
 
 
-def _wm_leak(narration):
+def _wm_hits(text):
     sig, frame = set(), set()
-    for tok in re.findall(r"[가-힣]+", narration):
+    for tok in re.findall(r"[가-힣]+", text):
         for k in range(1, min(len(tok), 4) + 1):
             h = hashlib.sha256((_WM_SALT + tok[:k]).encode()).hexdigest()[:16]
             if h in _WM_SIG:
                 sig.add(h)
             elif h in _WM_FRAME:
                 frame.add(h)
+    return sig, frame
+
+
+def _wm_leak(narration):
+    sig, frame = _wm_hits(narration)
     return len(sig) >= 2 or (bool(_WM_FRAME) and len(frame) == len(_WM_FRAME) and bool(sig))
+
+
+def strip_reserved(narration):
+    """검사에 걸린 줄만 지운 서술과 지운 줄 수를 돌려준다.
+    통째로 다시 생성하면 재시도가 쌓여 대본으로 넘어가는 턴이 나왔다. 줄만 지우면 나머지 서술은 그대로 쓸 수 있다.
+    지운 뒤에도 걸리면 check_narration이 재생성시킨다. 배경과 수치는 비공개 문서."""
+    lines = narration.splitlines()
+    bad = [i for i, x in enumerate(lines) if _wm_leak(x)]
+    if not bad:
+        return narration, 0
+    if _WM_FRAME:
+        bad += [i for i, x in enumerate(lines) if i not in bad and len(_wm_hits(x)[1]) == len(_WM_FRAME)]
+    kept = [x for i, x in enumerate(lines) if i not in bad]
+    return "\n".join(kept).strip(), len(bad)
+
+
+_EMPTY = {"delta": dict, "weights": dict, "flags": list}
+
+
+def repair_output(out):
+    """검증 전에, 뜻이 하나로 읽히는 모양 실수만 고친다 (8B가 자주 낸다: "items": [] 50번, flags 빠뜨림 29번 / 417번).
+    빈 목록으로 쓴 items는 '없음', 빠진 키는 '변화 없음'이다. 내용이 있는 잘못된 모양은 그대로 두어 검증에서 걸리게 한다.
+    고쳤으면 True."""
+    if not isinstance(out, dict):
+        return False
+    changed = False
+    if out.get("items") == [] or "items" not in out:
+        out["items"] = {"add": [], "remove": []}
+        changed = True
+    for k, kind in _EMPTY.items():
+        if k not in out:
+            out[k] = kind()
+            changed = True
+    return changed
 
 
 def check_narration(narration):
@@ -206,6 +245,16 @@ def check_output(state, roll, out):
     errs = []
     if not isinstance(out, dict) or set(out) != TOP_KEYS:
         return [f"top-level keys {sorted(out) if isinstance(out, dict) else type(out).__name__}"]
+    # 모양이 틀린 JSON(예: "items": [])은 아래 검사가 .get/.items에서 터져 게임까지 멈췄다. 형식 위반으로 돌려 재생성한다
+    kinds = {k: type(out[k]).__name__ for k in ("delta", "weights", "items") if not isinstance(out[k], dict)}
+    if out["check"] is not None and not isinstance(out["check"], dict):
+        kinds["check"] = type(out["check"]).__name__
+    if kinds:
+        return [f"bad type {kinds}"]
+    for key in ("add", "remove"):
+        v = out["items"].get(key, [])
+        if not isinstance(v, list) or not all(isinstance(x, str) for x in v):
+            return [f"items.{key} must be a list of names"]
     c = out["check"]
     if c is not None:
         if c.get("stat") not in STATS:
