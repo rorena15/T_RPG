@@ -58,7 +58,7 @@ jobs:
 
       - name: 시험용 키 + 빌드
         run: |
-          pip install numpy cryptography
+          pip install numpy cryptography pyyaml tqdm   # tqdm·yaml: llama.cpp gguf-py가 불러온다
           python stigma-gm/tools/llama_patch/smoke_test.py genkey --src llama --out testkey.json
           bash stigma-gm/tools/llama_patch/build_server.sh llama
 
