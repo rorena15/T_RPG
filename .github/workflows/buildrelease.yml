@@ -230,7 +230,7 @@ jobs:
   #   여기서 빌드해 runtime_tag에 올려 둔다 (다음 빌드부터는 받기만). 둘 다 없으면 동적 서사 없이 빌드.
   # 자세한 내용: stigma-gm/MAC_GM.md
   build-mac:
-    needs: build-windows   # Windows가 릴리즈를 먼저 생성한 뒤 파일만 추가
+    # Windows와 동시에 빌드한다. 릴리스는 Windows 작업이 만들므로 올리기는 upload-mac에서 한다
     runs-on: macos-14
     permissions:
       contents: write
@@ -306,10 +306,25 @@ jobs:
       - name: Mac 앱 빌드
         run: python 개발/build_exe.py --name "${{ github.event.inputs.exe_name }}"
 
-      # Windows 작업이 만든 릴리스에 파일만 더한다. 릴리스를 새로 만들지 않게 gh로 올린다
-      # (action-gh-release는 draft를 태그로 못 찾으면 정식 릴리스를 새로 만들어 Latest가 될 수 있다)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mac-app
+          path: 개발/dist/${{ github.event.inputs.exe_name }}_mac_arm64.zip
+          retention-days: 1
+
+  # Windows 작업이 만든 릴리스에 Mac 파일만 더한다. 릴리스를 새로 만들지 않게 gh로 올린다
+  # (action-gh-release는 draft를 태그로 못 찾으면 정식 릴리스를 새로 만들어 Latest가 될 수 있다)
+  upload-mac:
+    needs: [build-windows, build-mac]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: mac-app
+
       - name: Mac 앱 릴리즈에 업로드
         env:
           GH_TOKEN: ${{ github.token }}
-        run: |
-          gh release upload "${{ github.event.inputs.version }}" "개발/dist/${{ github.event.inputs.exe_name }}_mac_arm64.zip" --clobber -R "${{ github.repository }}"
+        run: gh release upload "${{ github.event.inputs.version }}" "${{ github.event.inputs.exe_name }}_mac_arm64.zip" --clobber -R "${{ github.repository }}"
