@@ -5,7 +5,7 @@
 보통은 sim.py가 게임 코드를 여러 벌 복사해 병렬로 부른다 (같은 폴더에서 동시에 돌리면 stigma_data.db가 서로 덮인다).
 
 사람처럼 하는 것: 부위마다 센 장비 장착·남는 장비 분해, 고철이 모이면 강화소에서 강화, 발칸 의뢰 수락·보고,
-쇠 두드리는 소리(힌트)를 따라가기, 배고프면 먹기, 행상인에게서 물·식량 사기, 물·식량이 바닥나면 파밍을 접고 방공호로, 일반 전투에서 체력이 반 밑이면 후퇴(flee), 보스 학습 지수 끊기.
+쇳물 냄새(힌트)를 따라가기, 배고프면 먹기, 행상인에게서 물·식량 사기, 물·식량이 바닥나면 파밍을 접고 방공호로, 일반 전투에서 체력이 반 밑이면 후퇴(flee), 보스 학습 지수 끊기.
 환경 변수로 수치를 바꿔 볼 수 있다: BOSS_ATK, BOSS_HP, BOSS_MULT, BOSS_ATKM(난이도별 보스 공격력 배율), BOSS_REF, ENEMY_DIFF(일반 적 난이도 배율),
 NO_UPG(강화 안 함), NO_HINT(발칸 힌트 끔), FORGE_MULT(강화 몇 번분 고철이 모이면 강화소로, 기본 2), TRACE(턴별 상태 출력),
 BOT_FOCUS(스토리·이벤트 선택: random 기본 / kinetic / scrap / cyber — 그 성향 선택지를 고른다),
@@ -177,7 +177,7 @@ def bot_read_key(_depth=1):
             fm = float(os.environ.get("FORGE_MULT", "2"))   # 고철이 강화 몇 번분 모이면 강화소로 갈지
             want_forge = UPG and not g.at_forge() and (pl.materials >= fm * need or (not farming and pl.materials >= need))
         else:
-            # 의뢰 조건을 채웠거나, 쇠 두드리는 소리(힌트)를 들었으면 그쪽으로 (사람처럼 지도 표시를 따라간다)
+            # 의뢰 조건을 채웠거나, 쇳물 냄새(힌트)를 맡았으면 그쪽으로 (사람처럼 지도 표시를 따라간다)
             want_forge = (st == 1 and forge.ready(pl, g)) or (st == 0 and forge.hinted(g))
         if want_forge:
             x, y = g.player_pos; fx, fy = g.forge_pos

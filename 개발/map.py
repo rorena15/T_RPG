@@ -176,7 +176,7 @@ class GameMap:
                     built = self.forge.get("stage", 0) >= 2
                     row += (Fore.MAGENTA + Style.BRIGHT + "[ U ]" if built else Fore.MAGENTA + "[ u ]") + RST
                 elif [x, y] == self.forge_pos and self.forge.get("hint"):
-                    row += Fore.MAGENTA + Style.DIM + "[ ? ]" + RST   # 쇠 두드리는 소리가 나는 곳
+                    row += Fore.MAGENTA + Style.DIM + "[ ? ]" + RST   # 쇳물 냄새가 나는 곳
                 elif (x, y) in self.visited_tiles:
                     row += Fore.WHITE + Style.DIM + "[ ■ ]" + RST
                 else:

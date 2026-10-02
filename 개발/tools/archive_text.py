@@ -42,7 +42,7 @@ def block(text):
 def export(lang):
     src, dst = paths(lang)
     d = json.load(open(src, encoding="utf-8"))
-    done = confirmed()
+    done = confirmed() if lang == "ko" else set()   # 확정 목록은 한국어 원고 기준
     out = ["# 기록 보관소 원고", "",
            "고친 뒤 `개발/`에서 `python tools/archive_text.py import`로 게임에 반영한다.",
            "`###` 줄의 키(| 앞)와 ``` 줄은 건드리지 않는다. 제목·이름(| 뒤)과 블록 안 글은 자유롭게 고친다.",

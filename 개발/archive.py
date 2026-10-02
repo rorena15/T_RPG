@@ -37,14 +37,14 @@ FRAGMENTS = [(f"a{i:02d}", "a", None) for i in range(1, 11)] + [("a11", "a", "hi
     [(f"b{i:02d}", "b", s) for i, s in enumerate(SCENES, 1)] + \
     [(f"c{i:02d}", "c", "border_zone") for i in range(1, 7)]
 SERIES = ["a", "b", "c"]
-FRAGMENT_CHANCE = 0.35   # 빈 탐색에서 주울 확률 (주울 것이 남아 있을 때)
+FRAGMENT_CHANCE = 0.2    # 빈 탐색에서 주울 확률 (주울 것이 남아 있을 때). 수집품이라 드물게
 HIDDEN_ID = "a11"
 HIDDEN_NEED = 5          # 히든 이벤트: 일지 A를 이만큼 모은 뒤부터
 HIDDEN_CHANCE = 0.03     # 랜덤 이벤트 자리에서 이 확률로 (평생 한 번)
 # 핸드폰(개인 휴대용 인터페이스)에 남은 기록: 주워도 태양열 충전기를 얻기 전에는 읽을 수 없다
 PHONES = {"b04", "b06", "b08"}
 CHARGER_AT = "lm_powerplant"   # 핸드폰을 하나라도 가진 채 이 칸을 빈 탐색하면
-CHARGER_CHANCE = 0.3           # 이 확률로 충전기 (평생 한 번, 새 게임에도 남는다)
+CHARGER_CHANCE = 0.2           # 이 확률로 충전기 (평생 한 번, 새 게임에도 남는다)
 
 
 def _path():
@@ -75,7 +75,8 @@ _text = {}
 
 
 def text():
-    """지금 언어의 보관소 글. {"enemy": {키: {"name", "stages": [..]}}, "scene": {..}, "fragment": {..}}"""
+    """지금 언어의 보관소 글. {"scene": {키: {"title", "text"}}, "fragment": {..}, "hidden": {..}}
+    영어는 본문 단어 일부를 *로 가린다 (바랜 기록을 읽는 느낌, 문맥으로 뜻은 통하게). 원문 파일은 깨끗하게 둔다."""
     lang = i18n.LANG
     if lang not in _text:
         try:
@@ -83,7 +84,39 @@ def text():
                 _text[lang] = json.load(f)
         except Exception:
             _text[lang] = {}
+        if lang in MASK_LANGS:
+            d = _text[lang]
+            for sec in ("scene", "fragment"):
+                for key, e in d.get(sec, {}).items():
+                    e["text"] = mask(e["text"], key)
+            if d.get("hidden"):
+                d["hidden"]["text"] = mask(d["hidden"]["text"], "hidden")
     return _text[lang]
+
+
+MASK_LANGS = {"en"}
+MASK_RATE = 0.18   # 네 글자 이상 단어 가운데 가릴 비율
+_WORD = None
+
+
+def mask(s, seed):
+    """단어 일부를 *로 가린다. 첫 글자와 끝 글자는 남기고 가운데 한두 글자만. 같은 글은 늘 같은 자리가 가려진다."""
+    import re
+    import zlib
+    global _WORD
+    if _WORD is None:
+        _WORD = re.compile(r"[A-Za-z]{4,}")
+    rng = random.Random(zlib.crc32(seed.encode("utf-8")))
+
+    def one(m):
+        w = m.group(0)
+        if rng.random() >= MASK_RATE:
+            return w
+        inner = list(range(1, len(w) - 1))
+        for i in rng.sample(inner, 1 if len(w) < 7 else 2):
+            w = w[:i] + "*" + w[i + 1:]
+        return w
+    return _WORD.sub(one, s)
 
 
 def enemy_name(key):

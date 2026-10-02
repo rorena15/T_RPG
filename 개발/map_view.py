@@ -376,7 +376,7 @@ class MapView(EventView):
                         ex = sx - 3 + k * 5
                         pygame.draw.line(c, dcol, (ex, sy + hh - 4), (ex + 3, sy + hh - 4), 2)
             if pos == list(g.forge_pos) and forge.hinted(g):
-                # 쇠 두드리는 소리가 나는 곳: 흐린 호박색 파동 두 겹 (정확한 모습은 가 봐야 안다)
+                # 쇳물 냄새가 나는 곳: 흐린 호박색 파동 두 겹 (정확한 모습은 가 봐야 안다)
                 for k in (0.0, 0.5):
                     ph = (pulse + k) % 1.0
                     rw = int(6 + ph * (ISO_W - 2))

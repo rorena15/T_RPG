@@ -13,7 +13,7 @@ from ui import clear_screen, print_divider, print_header, read_key, type_text, w
 
 NEED_KILLS = 3
 NEED_SCRAP = 40
-HINT_TURN = 12   # 이때까지 발칸을 못 만났으면 쇠 두드리는 소리로 방향을 알려 준다 (강화 없이는 보스를 못 이기니까)
+HINT_TURN = 12   # 이때까지 발칸을 못 만났으면 쇳물 냄새로 방향을 알려 준다 (강화 없이는 보스를 못 이기니까)
 
 
 def hinted(grid):

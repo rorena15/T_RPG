@@ -132,6 +132,14 @@ rows = dict((f, (txt, ok)) for f, txt, ok in archive.fragment_rows("b"))
 check("충전 뒤에는 열림", rows["b06"] == ("문자 기록", True) and archive.load()["charger"])
 check("충전기는 한 번만", "충전기" not in (archive.roll_fragment(P(), G(), rng) or ""))
 
+# 영어 가리기: 같은 글은 늘 같은 자리, 첫·끝 글자는 남고, 짧은 낱말은 안 가린다
+src = "The train stopped in the tunnel and nobody came back for the passengers waiting inside " * 4
+m = archive.mask(src, "b08")
+check("가리기 고정", m == archive.mask(src, "b08") and m != src)
+check("글자 수 그대로", len(m) == len(src))
+check("첫·끝 글자 유지", all(a[0] == b[0] and a[-1] == b[-1] for a, b in zip(src.split(), m.split())))
+check("세 글자 이하는 그대로", all(a == b for a, b in zip(src.split(), m.split()) if len(a) <= 3))
+
 # 실제 글 파일이 있으면 형식 확인
 for lang in ("ko", "en"):
     path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "locales", f"archive_{lang}.json")
