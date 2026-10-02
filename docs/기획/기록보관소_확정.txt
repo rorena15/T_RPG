@@ -35,3 +35,9 @@ fragment.b03
 fragment.b12
 fragment.b04
 fragment.b08
+scene.lm_amusement
+scene.lm_subway
+scene.lm_powerplant
+scene.lm_apartments
+scene.lm_bridge
+scene.lm_airport
