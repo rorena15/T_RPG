@@ -1,5 +1,4 @@
 # 확정한 기록 보관소 글. 원고(기록보관소_원고_ko.md)에서 빠진다. 한 줄에 하나.
-enemy.drone.1
 scene.lm_school
 scene.lm_hospital
 scene.lm_station
