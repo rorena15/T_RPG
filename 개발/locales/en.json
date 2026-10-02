@@ -1090,5 +1090,6 @@
   "arc_kills": "{n} kills",
   "arc_next": "Next page",
   "arc_prev": "Previous page",
-  "arc_page": "Page {n} / {total}"
+  "arc_page": "Page {n} / {total}",
+  "arc_fragment_found_a": "  [RECORD] Picked up a page torn from a notebook: '{title}'. Read it in Options → Archive."
 }

@@ -167,7 +167,8 @@ def roll_fragment(player, grid, rng=random):
     fid = rng.choice(pool)
     d["fragments"].append(fid)
     _save(d)
-    return t('arc_fragment_found', title=fragment_entry(fid)["title"])
+    key = 'arc_fragment_found_a' if fid.startswith("a") else 'arc_fragment_found'   # 일지 A는 찢겨 나온 공책 한 장
+    return t(key, title=fragment_entry(fid)["title"])
 
 
 # ── 보기 ─────────────────────────────────────────────────────────────────

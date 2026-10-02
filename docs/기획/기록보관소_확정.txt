@@ -7,3 +7,15 @@ scene.lm_mall
 scene.lm_cathedral
 fragment.b02
 fragment.c01
+fragment.a01
+fragment.a02
+fragment.a03
+fragment.a04
+fragment.a05
+fragment.a06
+fragment.a07
+fragment.a08
+fragment.a09
+fragment.a10
+fragment.a11
+hidden
