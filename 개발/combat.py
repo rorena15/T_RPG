@@ -1,6 +1,7 @@
 # combat.py — 전투 시스템
 # 의존성: constants, core, ui, sys_log
 
+import archive
 import collections
 import math
 import random
@@ -131,6 +132,7 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
         atk = base_atk
         player.alert_level = min(100, player.alert_level + spec["alert"])
 
+    arc_notes = [archive.meet_enemy(enemy_type, is_boss)]   # 기록 보관소: 알림은 이겼을 때 같이 찍는다
     base_atk = int(base_atk * constants.ENEMY_ATK_MULT)  # 적 공격력 일괄 조정 (보스 페이즈 2도 이 값을 기준으로 오른다)
     if not is_boss:  # 탐색 중 만나는 적은 난이도별로 한 번 더 (보스는 BOSS_DIFF_ATK로 따로 맞춘다)
         base_atk = int(base_atk * constants.ENEMY_DIFF_ATK.get(player.difficulty, 1.0))
@@ -716,6 +718,9 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
     print_header(t('combat_win_header'))
     print(f"\n{Fore.GREEN + Style.BRIGHT}" + enemy_line('combat_win_msg', enemy_type, is_boss, name=name))
     player.enemies_defeated += 1
+    arc_notes.append(archive.defeat_enemy(enemy_type, is_boss))
+    for note in dict.fromkeys(n for n in arc_notes if n):
+        print(note)
 
     if not is_boss:
         drop_roll = random.random()

@@ -195,3 +195,124 @@ def story_page(scene, title, lines, tag="", location=JUNKYARD, player=None, foot
         v.wait_key({"ENTER", "ESC", " "})
     finally:
         v.close()
+
+
+ARCHIVE_PAGE = 8   # 보관소 목록 한 쪽에 몇 개
+
+
+def _archive_read(scene, title, lines, tag):
+    """보관소 글 한 편: 그 장면 그림 옆에 글이 타자 치듯 떠오른다. 키를 누르면 돌아간다."""
+    scr = MenuScreen(scene=scene, card=False)
+    v = scr.view
+    try:
+        v.log = []
+        v.add("title", tag=tag, title=title)
+        entry = v.add("narr", lines=list(lines))
+        v.footer = [("Enter", t('ui_back'))]
+        v.open()
+        scr._opened = True
+        v.type_out(entry)
+        v.wait_key({"ENTER", "ESC", " "})
+    finally:
+        scr.close()
+
+
+def _archive_pick(scr, title, rows, tag, lines=None):
+    """rows: [(키, 글, 열림)]. 쪽 넘김이 있는 목록. 고른 열린 키 또는 None(뒤로)."""
+    page = 0
+    pages = max(1, -(-len(rows) // ARCHIVE_PAGE))
+    while True:
+        part = rows[page * ARCHIVE_PAGE:(page + 1) * ARCHIVE_PAGE]
+        items = [(str(i + 1), text if ok or text else "???") for i, (_, text, ok) in enumerate(part)]
+        if page + 1 < pages:
+            items.append((">", t('arc_next')))
+        if page:
+            items.append(("<", t('arc_prev')))
+        items.append(("0", t('ui_back')))
+        head = list(lines or []) + ([t('arc_page', n=page + 1, total=pages)] if pages > 1 else [])
+        k = scr.ask(title, items, tag=tag, lines=head, back="0")
+        if k in (None, "0"):
+            return None
+        if k == ">":
+            page += 1
+        elif k == "<":
+            page -= 1
+        elif k.isdigit() and part[int(k) - 1][2]:
+            return part[int(k) - 1][0]
+
+
+def show_archive():
+    """옵션의 기록 보관소: 결말 기록, 적 이야기, 장면 이야기, 일기 조각. 보기만 한다 (archive.py)."""
+    import archive
+    import endings
+    tag = t('tag_record')
+    while True:
+        c = archive.counts()
+        scr = MenuScreen(scene="bunker_inside", card=False)
+        try:
+            items = [("1", t('arc_menu_endings', n=c["endings"][0], total=c["endings"][1])),
+                     ("2", t('arc_menu_enemy', n=c["enemy"][0], total=c["enemy"][1])),
+                     ("3", t('arc_menu_scene', n=c["scene"][0], total=c["scene"][1])),
+                     ("4", t('arc_menu_fragment', n=c["fragment"][0], total=c["fragment"][1])),
+                     ("0", t('ui_back'))]
+            k = scr.ask(t('opt_archive'), items, tag=tag, lines=[t('arc_intro')], back="0")
+            if k in (None, "0"):
+                return
+            if k == "1":
+                scr.message(t('opt_endings'), endings.codex_lines(), tag=tag)
+                continue
+            if k == "2":
+                rows = [(key, f"{name}  {n}/{tot}" if name else "", bool(name))
+                        for key, name, n, tot in archive.enemy_list()]
+                key = _archive_pick(scr, t('arc_menu_enemy_title'), rows, tag)
+                if key:
+                    scr.close()
+                    _show_enemy(key)
+                continue
+            if k == "3":
+                rows = [(s, title or "", bool(title)) for s, title in archive.scene_list()]
+                while True:
+                    s = _archive_pick(scr, t('arc_menu_scene_title'), rows, tag)
+                    if not s:
+                        break
+                    e = archive.scene_entry(s)
+                    scr.close()
+                    _archive_read(s, e["title"], e["text"].split("\n"), tag)
+                continue
+            if k == "4":
+                series = [(s, t(f'arc_series_{s}'), True) for s in archive.SERIES if archive.fragment_list(s)]
+                s = _archive_pick(scr, t('arc_menu_fragment_title'), series, tag)
+                if not s:
+                    continue
+                rows = [(fid, title or "", bool(title)) for fid, title in archive.fragment_list(s)]
+                while True:
+                    fid = _archive_pick(scr, t(f'arc_series_{s}'), rows, tag, lines=[t(f'arc_series_{s}_desc')])
+                    if not fid:
+                        break
+                    e = archive.fragment_entry(fid)
+                    scr.close()
+                    _archive_read("bunker_inside", e["title"], e["text"].split("\n"), tag)
+        finally:
+            scr.close()
+
+
+def _show_enemy(key):
+    """적 하나: 단계를 골라 읽는다. 닫힌 단계는 여는 조건만 보인다."""
+    import archive
+    entry = archive.enemy_entry(key)
+    scene = archive.ENEMY_SCENE[key]
+    tag = t('tag_record')
+    while True:
+        rec = archive.load()["enemies"].get(key, {})
+        opened = archive._enemy_open(rec, key)
+        need = archive.stages(key)
+        rows = [(i, t('arc_stage', n=i + 1) if i < opened else t('arc_locked_kills', n=need[i]), i < opened)
+                for i in range(min(len(need), len(entry["stages"])))]
+        scr = MenuScreen(scene=scene, card=False)
+        try:
+            i = _archive_pick(scr, entry["name"], rows, tag, lines=[t('arc_kills', n=rec.get("kills", 0))])
+        finally:
+            scr.close()
+        if i is None:
+            return
+        _archive_read(scene, f"{entry['name']} · {t('arc_stage', n=i + 1)}", entry["stages"][i].split("\n"), tag)

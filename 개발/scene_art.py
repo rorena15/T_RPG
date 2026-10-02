@@ -59,6 +59,7 @@ INDOOR_WORDS = ["안으로", "들어간", "내부", "실내"]
 NAME_RE = re.compile(r"^(?P<scene>.+)_(?P<time>dawn|morning|noon|evening|night|dim|cold)_(?P<weather>[a-z]+)_\d+\.jpg$")
 RECENT = deque(maxlen=6)   # 최근에 보여 준 그림 (같은 그림 반복 방지)
 SEEN = set()               # 이번 실행에서 본 그림
+_RECORDED = set()          # 이번 실행에서 기록 보관소에 남긴 장면
 _index = None
 
 
@@ -155,11 +156,26 @@ def choose(location, motif=None, text="", turn=0, search=False, stable=None):
             elif abs(score - best_score) < 1e-9:
                 best.append(path)
     if stable is not None:
-        return random.Random(str(stable)).choice(sorted(best))
-    pick = random.choice(best)
-    RECENT.append(pick)
-    SEEN.add(pick)
+        pick = random.Random(str(stable)).choice(sorted(best))
+    else:
+        pick = random.choice(best)
+        RECENT.append(pick)
+        SEEN.add(pick)
+    _record(pick)
     return pick
+
+
+def _record(path):
+    """기록 보관소: 이 장면을 본 적이 있다고 남긴다 (archive.see_scene). 같은 실행에서는 한 번만."""
+    scene = os.path.basename(os.path.dirname(path))
+    if scene in _RECORDED:
+        return
+    _RECORDED.add(scene)
+    try:
+        import archive
+        archive.see_scene(scene)
+    except Exception:
+        pass
 
 
 def tile_scene(location, pos):

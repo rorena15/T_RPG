@@ -2,7 +2,7 @@
 
   개발/ 폴더에서:  python tools/ui/shot.py <출력 폴더> [ko|en]
 
-찍는 화면: 보스 준비, 코어 선택, 외곽 조우, 2막 예고, 대본 이벤트(선택·단순·무기), 결말 기록,
+찍는 화면: 보스 준비, 코어 선택, 외곽 조우, 2막 예고, 대본 이벤트(선택·단순·무기), 결말 기록, 기록 보관소,
 전투(최근 공방만 남는 기록, [센서] 알림, 대기 알림). 선택은 미리 정한 키로 넘기고 타자·대기는 건너뛴다.
 입력 루프 자체(choose / wait_key)는 loop_test.py가 실제 키 이벤트로 돌려 본다. 세이브는 임시 폴더에 쓴다.
 """
@@ -48,7 +48,7 @@ def snap(view, label):
     pygame.image.save(term._canvas, path)
     log("  shot", os.path.basename(path))
 
-def _choose(self, menu, n, extra=()):
+def _choose(self, menu, n, extra=(), adjust=()):
     menu["sel"] = menu.get("start", 0)
     snap(self, "choose")
     menu.pop("sel", None)
@@ -120,6 +120,16 @@ from screens import MenuScreen
 def codex():
     screens.show_codex()
 run("codex", codex)
+
+# 6-1. 기록 보관소: 시험용 글로 메뉴 → 적(단계 읽기) → 장면 → 일기 조각
+import archive
+archive._text[LANG] = {
+    "enemy": {"drone": {"name": "스캐브 드론", "stages": ["첫 기록 본문입니다. 두 문장째입니다.", "둘째 기록", "셋째 기록"]}},
+    "scene": {"lm_school": {"title": "무너진 학교", "text": "운동장에 그어진 선은 아직 남아 있다.\n두 번째 줄."}},
+    "fragment": {"a01": {"title": "첫날", "text": "오늘 눈을 떴다."}},
+}
+archive.load = lambda: {"enemies": {"drone": {"met": True, "kills": 3}}, "scenes": ["lm_school"], "fragments": ["a01"]}
+run("archive", screens.show_archive, ["2", "1", "1", "0", "3", "1", "0", "4", "1", "1", "0", "0"])
 
 # 7. 전투의 [센서] 알림: 드론 전투를 몇 턴 돌린다
 endings.unlock = lambda *a, **k: False

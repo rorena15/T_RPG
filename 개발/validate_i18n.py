@@ -8,7 +8,7 @@ TARGET_FILES = ["Main.py","combat.py","player.py","skills.py","story.py",
                 "quest.py","ui.py","core.py","map.py","updater.py",
                 # 그림 화면
                 "event_view.py","map_view.py","combat_view.py","inventory_view.py",
-                "screens.py","intro_view.py","download_view.py","constants.py","upgrade.py","forge.py","credits.py","playtime.py","endings.py","traits.py","options.py"]
+                "screens.py","intro_view.py","download_view.py","constants.py","upgrade.py","forge.py","credits.py","playtime.py","endings.py","traits.py","options.py","archive.py"]
 
 # 이 함수의 인자는 내부 전용 — 한국어여도 i18n 불필요
 INTERNAL_FUNCS = {"sys_log","log_error","track","sys.exit","system",

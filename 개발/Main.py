@@ -1,4 +1,5 @@
 import frozen_compat  # noqa: F401  Nuitka exe에서 PyInstaller 전제 경로를 맞춘다. 반드시 첫 import
+import archive
 import math
 import random
 import sys
@@ -398,6 +399,10 @@ def run_game():
                     _empty = random.choice(t('empty_search_msgs'))
                     print(f"\n  {_empty}")
                     print_ambient_lore()
+                _frag = archive.roll_fragment(player, grid)   # 기록 보관소: 빈 탐색에서 일기 조각 (자원 확률과 무관)
+                if _frag:
+                    sound.sfx("loot")
+                    print(_frag)
             else:
                 # 자원 파밍 (나머지 ~22%). 칸 위험도에 따른 확률(DANGER_GEAR)로 자원 대신 장비
                 _depleted = random.random() > _yield   # 여러 번 뒤진 칸: 이미 누가 다 가져갔다

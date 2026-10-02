@@ -66,7 +66,7 @@ def _rows(page, settings):
     import gm_bridge
     if page == "main":
         return [("1", t('opt_cat_sound'), "go", "sound"), ("2", t('opt_cat_display'), "go", "display"),
-                ("3", t('opt_cat_game'), "go", "game"), ("4", t('opt_endings'), "go", "endings"),
+                ("3", t('opt_cat_game'), "go", "game"), ("4", t('opt_archive'), "go", "endings"),
                 ("5", t('opt_credits'), "go", "credits")]
     if page == "sound":
         rows = [(str(i + 1), f"{t(label)}   ◀ {round(settings[name] * 100)}% ▶", "vol", name)
@@ -158,8 +158,8 @@ def run(settings, term, offer_data=None):
                 continue
             elif name == "endings":
                 if scr:
-                    from screens import show_codex
-                    show_codex()
+                    from screens import show_archive
+                    show_archive()
                 else:
                     import endings
                     from ui import clear_screen, print_header, wait_for_keypress
