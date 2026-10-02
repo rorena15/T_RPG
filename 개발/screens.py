@@ -216,11 +216,13 @@ def _archive_read(scene, title, lines, tag):
                 y += 40
             y += 14
             rows, left = [], self.shown
-            for para in lines:
-                for ln in (self._wrap(self.f_story, para, width) if para.strip() else [""]):
+            for para in lines:   # 기록은 한 줄 = 종이의 한 줄. 빈 줄만 반 줄 띄운다
+                if not para.strip():
+                    rows.append(None)
+                    continue
+                for ln in self._wrap(self.f_story, para, width):
                     rows.append(ln[:max(0, left)])
                     left -= len(ln)
-                rows.append(None)   # 문단 사이 반 줄
             while rows and rows[-1] is None:
                 rows.pop()
             per = (H - 140 - y) // (self.LH_S - 2)
