@@ -140,6 +140,15 @@ check("글자 수 그대로", len(m) == len(src))
 check("첫·끝 글자 유지", all(a[0] == b[0] and a[-1] == b[-1] for a, b in zip(src.split(), m.split())))
 check("세 글자 이하는 그대로", all(a == b for a, b in zip(src.split(), m.split()) if len(a) <= 3))
 
+# 지도: 랜드마크 기록과 증언은 그 칸에서만 주우므로, 그 장면들이 5×5 지도에 한 칸 이상 있어야 한다
+import importlib
+importlib.reload(scene_art)   # 위에서 tile_scene을 가짜로 바꿔 두었다
+from event_view import JUNKYARD
+on_map = {scene_art.tile_scene(JUNKYARD, (x, y)) for x in range(5) for y in range(5)}
+if scene_art.index():
+    need = {w for _, _, w in archive.FRAGMENTS if w not in (None, "hidden")} | {archive.CHARGER_AT}
+    check("줍는 칸이 모두 지도에 있음", not (need - on_map))
+
 # 실제 글 파일이 있으면 형식 확인
 for lang in ("ko", "en"):
     path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "locales", f"archive_{lang}.json")

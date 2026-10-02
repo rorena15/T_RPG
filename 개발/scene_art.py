@@ -57,6 +57,8 @@ THREAT_WORDS = ["위협", "습격", "공격", "사냥", "으르렁", "추격", "
 INDOOR_WORDS = ["안으로", "들어간", "내부", "실내"]
 
 NAME_RE = re.compile(r"^(?P<scene>.+)_(?P<time>dawn|morning|noon|evening|night|dim|cold)_(?P<weather>[a-z]+)_\d+\.jpg$")
+GRID_SIDE = 5               # 맵 한 변 (map.GameMap.size)
+GRID_CELLS = GRID_SIDE * GRID_SIDE
 RECENT = deque(maxlen=6)   # 최근에 보여 준 그림 (같은 그림 반복 방지)
 SEEN = set()               # 이번 실행에서 본 그림
 _RECORDED = set()          # 이번 실행에서 기록 보관소에 남긴 장면
@@ -181,11 +183,16 @@ def _record(path):
 def tile_scene(location, pos):
     """맵 칸마다 정해진 장면 (같은 칸에 돌아오면 같은 곳). 그림이 있는 장면 중에서 고른다."""
     idx = index()
-    pool = [s for s in LOCATION_POOL.get(location, TERRAIN) if s in idx and s not in INTERIORS] or \
+    pool = [s for s in LOCATION_POOL.get(location, TERRAIN) if s in idx and (s not in INTERIORS or s in LANDMARKS)] or \
         [s for s in LOCATION_POOL.get(location, TERRAIN) if s in idx]
     if not pool:
         return None
-    return pool[(pos[0] * 7 + pos[1] * 13 + 3) % len(pool)]
+    # 25칸에 장면을 고정 순서로 나눈다: 모든 장면이 한 칸 이상 나오게 (예전 식은 쇼핑몰이 한 칸도 안 나왔다.
+    # 기록 보관소의 랜드마크 기록은 그 칸에서만 주우므로, 빠진 장면이 있으면 그 기록은 영영 못 줍는다)
+    cells = GRID_CELLS
+    order = (pool * (cells // len(pool) + 1))[:max(cells, len(pool))]
+    random.Random(len(pool) * 7919 + 1).shuffle(order)
+    return order[(pos[0] * GRID_SIDE + pos[1]) % len(order)]
 
 
 def layers(path):
