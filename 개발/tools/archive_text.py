@@ -99,11 +99,11 @@ def import_(lang):
                 d["enemy"][cur]["name"] = title
                 d["enemy"][cur]["stages"][stage - 1] = text
             elif cur in archive.SCENES:
-                d["scene"][cur] = {"title": title, "text": text}
+                d["scene"][cur] = {**d["scene"].get(cur, {}), "title": title, "text": text}
             elif cur == "hidden":
                 d["hidden"] = {"title": title, "text": text}
             elif cur in frags:
-                d["fragment"][cur] = {"title": title, "text": text}
+                d["fragment"][cur] = {**d["fragment"].get(cur, {}), "title": title, "text": text}
             else:
                 sys.exit(f"모르는 키: {cur}")
             n += 1

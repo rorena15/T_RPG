@@ -42,7 +42,7 @@ HIDDEN_CHANCE = 0.03     # 랜덤 이벤트 자리에서 이 확률로 (평생 �
 # 핸드폰(개인 휴대용 인터페이스)에 남은 기록: 주워도 태양열 충전기를 얻기 전에는 읽을 수 없다
 PHONES = {"b04", "b06", "b08"}
 CHARGER_AT = "lm_powerplant"   # 핸드폰을 하나라도 가진 채 이 칸을 빈 탐색하면
-CHARGER_CHANCE = 0.5           # 이 확률로 충전기 (평생 한 번, 새 게임에도 남는다)
+CHARGER_CHANCE = 0.3           # 이 확률로 충전기 (평생 한 번, 새 게임에도 남는다)
 
 
 def _path():
@@ -178,6 +178,8 @@ def roll_fragment(player, grid, rng=random):
     _save(d)
     if not readable(fid, d):
         return t('arc_phone_found')
+    if fragment_entry(fid).get("found"):   # 글마다 주운 자리를 따로 적어 둔 것 (예: 서랍 안의 편지)
+        return t('arc_found_custom', msg=fragment_entry(fid)["found"])
     key = 'arc_fragment_found_a' if fid.startswith("a") else 'arc_fragment_found'   # 일지 A는 찢겨 나온 공책 한 장
     return t(key, title=fragment_entry(fid)["title"])
 

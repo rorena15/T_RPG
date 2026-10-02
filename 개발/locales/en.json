@@ -1094,5 +1094,6 @@
   "arc_fragment_found_a": "  [RECORD] Picked up a page torn from a notebook: '{title}'. Read it in Options → Archive.",
   "arc_phone_found": "  [RECORD] Picked up a personal portable interface with a dead battery.\n  What is this thing? Looks like a personal portable interface, an old-fashioned one. There has to be some way to power it.",
   "arc_phone_locked": "Dead personal portable interface",
-  "arc_charger_found": "  [RECORD] Picked up a solar charger. Plugged into the personal portable interface, the screen lights up. Read it in Options → Archive."
+  "arc_charger_found": "  [RECORD] Picked up a solar charger. Plugged into the personal portable interface, the screen lights up. Read it in Options → Archive.",
+  "arc_found_custom": "  [RECORD] {msg} Read it in Options → Archive."
 }
