@@ -19,3 +19,8 @@ fragment.a09
 fragment.a10
 fragment.a11
 hidden
+fragment.c02
+fragment.c03
+fragment.c04
+fragment.c05
+fragment.c06
