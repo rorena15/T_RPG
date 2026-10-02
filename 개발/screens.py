@@ -345,7 +345,7 @@ def show_archive():
                 s = _archive_pick(scr, t('arc_menu_fragment_title'), series, tag)
                 if not s:
                     continue
-                rows = [(fid, title or "", bool(title)) for fid, title in archive.fragment_list(s)]
+                rows = archive.fragment_rows(s)
                 while True:
                     fid = _archive_pick(scr, t(f'arc_series_{s}'), rows, tag, lines=[t(f'arc_series_{s}_desc')])
                     if not fid:

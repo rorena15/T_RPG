@@ -39,6 +39,10 @@ FRAGMENT_CHANCE = 0.35   # 빈 탐색에서 주울 확률 (주울 것이 남아 
 HIDDEN_ID = "a11"
 HIDDEN_NEED = 5          # 히든 이벤트: 일지 A를 이만큼 모은 뒤부터
 HIDDEN_CHANCE = 0.03     # 랜덤 이벤트 자리에서 이 확률로 (평생 한 번)
+# 핸드폰(개인 휴대용 인터페이스)에 남은 기록: 주워도 태양열 충전기를 얻기 전에는 읽을 수 없다
+PHONES = {"b04", "b06", "b08"}
+CHARGER_AT = "lm_powerplant"   # 핸드폰을 하나라도 가진 채 이 칸을 빈 탐색하면
+CHARGER_CHANCE = 0.5           # 이 확률로 충전기 (평생 한 번, 새 게임에도 남는다)
 
 
 def _path():
@@ -53,7 +57,7 @@ def load():
     except Exception:
         d = {}
     return {"enemies": dict(d.get("enemies", {})), "scenes": list(d.get("scenes", [])),
-            "fragments": list(d.get("fragments", []))}
+            "fragments": list(d.get("fragments", [])), "charger": bool(d.get("charger"))}
 
 
 def _save(d):
@@ -151,8 +155,6 @@ def see_scene(scene):
 def roll_fragment(player, grid, rng=random):
     """빈 탐색 뒤에 부른다. 조각을 주우면 알림 문장, 아니면 None."""
     d = load()
-    if rng.random() >= FRAGMENT_CHANCE:
-        return None
     here = None
     try:
         import scene_art
@@ -160,6 +162,13 @@ def roll_fragment(player, grid, rng=random):
         here = scene_art.tile_scene(JUNKYARD, grid.player_pos)
     except Exception:
         pass
+    if (not d["charger"] and here == CHARGER_AT and PHONES & set(d["fragments"])
+            and rng.random() < CHARGER_CHANCE):
+        d["charger"] = True
+        _save(d)
+        return t('arc_charger_found')
+    if rng.random() >= FRAGMENT_CHANCE:
+        return None
     pool = [fid for fid, _, where in FRAGMENTS
             if fid not in d["fragments"] and fragment_entry(fid) and where in (None, here)]
     if not pool:
@@ -167,8 +176,15 @@ def roll_fragment(player, grid, rng=random):
     fid = rng.choice(pool)
     d["fragments"].append(fid)
     _save(d)
+    if not readable(fid, d):
+        return t('arc_phone_found')
     key = 'arc_fragment_found_a' if fid.startswith("a") else 'arc_fragment_found'   # 일지 A는 찢겨 나온 공책 한 장
     return t(key, title=fragment_entry(fid)["title"])
+
+
+def readable(fid, d=None):
+    """핸드폰 기록은 충전기가 있어야 읽힌다."""
+    return fid not in PHONES or (d or load())["charger"]
 
 
 # ── 보기 ─────────────────────────────────────────────────────────────────
@@ -214,6 +230,18 @@ def fragment_list(series):
     return [(fid, fragment_entry(fid)["title"] if fid in have else None)
             for fid, s, where in FRAGMENTS
             if s == series and fragment_entry(fid) and (where != "hidden" or fid in have)]
+
+
+def fragment_rows(series):
+    """보관소 목록 줄: [(id, 보일 글, 열 수 있는지)]. 충전 전 핸드폰은 이름만 보이고 열리지 않는다."""
+    d = load()
+    out = []
+    for fid, title in fragment_list(series):
+        if title and not readable(fid, d):
+            out.append((fid, t('arc_phone_locked'), False))
+        else:
+            out.append((fid, title or "", bool(title)))
+    return out
 
 
 # ── 히든 이벤트: 죽은 사람의 품에 안긴 일지 ─────────────────────────────────

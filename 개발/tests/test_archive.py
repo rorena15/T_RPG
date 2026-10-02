@@ -116,6 +116,20 @@ c = archive.counts()
 check("집계", c["enemy"] == (6, 6) and c["scene"] == (1, 1) and c["fragment"] == (4, 4) and c["endings"][0] == 2)
 check("파일에 남음", json.load(open(os.path.join(TMP, "archive.json"), encoding="utf-8"))["fragments"][:3] == ["a01", "b01", "c01"])
 
+# 핸드폰: 주워도 충전기 전에는 못 읽고, 핸드폰을 가진 채 발전소 칸 빈 탐색에서 충전기
+archive._text["ko"]["fragment"]["b06"] = {"title": "문자 기록", "text": "글"}
+here["pos"] = "lm_mall"
+check("핸드폰 줍기 알림", "휴대용 인터페이스" in (archive.roll_fragment(P(), G(), rng) or ""))
+rows = dict((f, (txt, ok)) for f, txt, ok in archive.fragment_rows("b"))
+check("충전 전에는 못 엶", rows["b06"] == (i18n.t('arc_phone_locked'), False))
+here["pos"] = "lm_school"
+check("발전소 칸이 아니면 충전기 없음", "충전기" not in (archive.roll_fragment(P(), G(), rng) or ""))
+here["pos"] = "lm_powerplant"
+check("발전소 칸에서 충전기", "충전기" in (archive.roll_fragment(P(), G(), rng) or ""))
+rows = dict((f, (txt, ok)) for f, txt, ok in archive.fragment_rows("b"))
+check("충전 뒤에는 열림", rows["b06"] == ("문자 기록", True) and archive.load()["charger"])
+check("충전기는 한 번만", "충전기" not in (archive.roll_fragment(P(), G(), rng) or ""))
+
 # 실제 글 파일이 있으면 형식 확인
 for lang in ("ko", "en"):
     path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "locales", f"archive_{lang}.json")
