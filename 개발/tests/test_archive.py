@@ -18,10 +18,8 @@ i18n.set_lang("ko")
 TMP = tempfile.mkdtemp()
 frozen_compat.user_dir = lambda: TMP   # archive·endings가 부를 때마다 읽는다
 
-# 시험용 글: 드론·보스만 적 글, 장면 둘, 조각 a01·b01(학교)·c01(경계)
+# 시험용 글: 장면 둘, 조각 a01·b01(학교)·c01(경계). 적 도감은 글 없이 그림만 (assets/scenes/enemy_*)
 archive._text["ko"] = {
-    "enemy": {"drone": {"name": "드론", "stages": ["하나", "둘", "셋"]},
-              "boss": {"name": "컬렉터", "stages": ["하나", "둘", "셋"]}},
     "scene": {"lm_school": {"title": "학교", "text": "글"}, "junkyard": {"title": "처리장", "text": "글"}},
     "fragment": {"a01": {"title": "첫날", "text": "글"}, "b01": {"title": "알림장", "text": "글"},
                  "c01": {"title": "지침", "text": "글"}},
@@ -53,7 +51,7 @@ class AlwaysRng:
         return seq[0]
 
 
-# 적: 만남 → 1단계, 첫 승리 → 2단계, 10승 → 3단계. 보스는 3승
+# 적: 만남 → 그림 1장, 첫 승리 → 2장, 10승 → 남은 그림 전부. 보스는 3승
 check("만남 알림", archive.meet_enemy("drone") is not None)
 check("다시 만나면 알림 없음", archive.meet_enemy("drone") is None)
 check("첫 승리 알림", archive.defeat_enemy("drone") is not None)
@@ -61,14 +59,17 @@ for _ in range(8):
     check_mid = archive.defeat_enemy("drone")
 check("9승까지는 새 단계 없음", check_mid is None)
 check("10승 알림", archive.defeat_enemy("drone") is not None)
-check("드론 3/3", [x for x in archive.enemy_list() if x[0] == "drone"][0][2:] == (3, 3))
+n_drone = len(archive.enemy_images("drone"))
+check("드론 10승에 그림 전부", n_drone >= 3 and [x for x in archive.enemy_list() if x[0] == "drone"][0][2:] == (n_drone, n_drone))
 archive.meet_enemy(None, is_boss=True)
 for _ in range(3):
     archive.defeat_enemy(None, is_boss=True)
-check("보스 3승에 3/3", [x for x in archive.enemy_list() if x[0] == "boss"][0][2:] == (3, 3))
-check("글 없는 적은 목록에 없음", [x[0] for x in archive.enemy_list()] == ["drone", "boss"])
-check("글 없는 적도 기록은 남음", archive.meet_enemy("dogs") is None and "dogs" in archive.load()["enemies"])
-check("닫힌 단계는 조건만", archive.enemy_pages("drone")[-1] == "셋")
+n_boss = len(archive.enemy_images("boss"))
+check("보스 3승에 그림 전부", [x for x in archive.enemy_list() if x[0] == "boss"][0][2:] == (n_boss, n_boss))
+check("들개 만나면 그림 1장", archive.meet_enemy("dogs") is not None
+      and [x for x in archive.enemy_list() if x[0] == "dogs"][0][1:3] == (archive.enemy_name("dogs"), 1))
+check("못 만난 적은 이름 없음", [x for x in archive.enemy_list() if x[0] == "security"][0][1] is None)
+check("이름에서 꼬리표 뗌", "[" not in archive.enemy_name("boss"))
 
 # 장면: 목록에 없는 장면(적 그림)은 남기지 않는다
 archive.see_scene("lm_school")
@@ -113,7 +114,8 @@ before = archive.load()
 endings.unlock("pioneer", "combat")
 check("결말 기록 후에도 보관소 그대로", archive.load() == before)
 c = archive.counts()
-check("집계", c["enemy"] == (6, 6) and c["scene"] == (1, 1) and c["fragment"] == (4, 4) and c["endings"][0] == 2)
+tot = sum(len(archive.enemy_images(k)) for k in archive.ENEMIES)
+check("집계", c["enemy"] == (n_drone + n_boss + 1, tot) and c["scene"] == (1, 1) and c["fragment"] == (4, 4) and c["endings"][0] == 2)
 check("파일에 남음", json.load(open(os.path.join(TMP, "archive.json"), encoding="utf-8"))["fragments"][:3] == ["a01", "b01", "c01"])
 
 # 핸드폰: 주워도 충전기 전에는 못 읽고, 핸드폰을 가진 채 발전소 칸 빈 탐색에서 충전기
@@ -135,8 +137,7 @@ for lang in ("ko", "en"):
     path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "locales", f"archive_{lang}.json")
     if os.path.exists(path):
         d = json.load(open(path, encoding="utf-8"))
-        bad = [k for k in d.get("enemy", {}) if k not in archive.ENEMIES]
-        bad += [k for k in d.get("scene", {}) if k not in archive.SCENES]
+        bad = [k for k in d.get("scene", {}) if k not in archive.SCENES]
         bad += [k for k in d.get("fragment", {}) if k not in {f for f, _, _ in archive.FRAGMENTS}]
         check(f"archive_{lang}.json 키", not bad)
 

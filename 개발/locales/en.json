@@ -1067,7 +1067,7 @@
   "autosave_done": "  [SYSTEM] Autosaved.",
   "opt_archive": "Archive",
   "arc_intro": "Everything you have seen and found so far. It stays when you start a new game.",
-  "arc_new": "  [RECORD] {kind} '{name}' — a new story opened in the Archive.",
+  "arc_new": "  [RECORD] {kind} '{name}' — a new picture opened in the Archive.",
   "arc_kind_enemy": "Enemy",
   "arc_kind_scene": "Scene",
   "arc_kind_fragment": "Diary fragment",
@@ -1095,5 +1095,7 @@
   "arc_phone_found": "  [RECORD] Picked up a personal portable interface with a dead battery.\n  What is this thing? Looks like a personal portable interface, an old-fashioned one. There has to be some way to power it.",
   "arc_phone_locked": "Dead personal portable interface",
   "arc_charger_found": "  [RECORD] Picked up a solar charger. Plugged into the personal portable interface, the screen lights up. Read it in Options → Archive.",
-  "arc_found_custom": "  [RECORD] {msg} Read it in Options → Archive."
+  "arc_found_custom": "  [RECORD] {msg} Read it in Options → Archive.",
+  "arc_images": "Pictures {n}/{total}",
+  "arc_flip": "Flip"
 }

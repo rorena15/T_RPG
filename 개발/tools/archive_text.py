@@ -47,8 +47,7 @@ def export(lang):
            "고친 뒤 `개발/`에서 `python tools/archive_text.py import`로 게임에 반영한다.",
            "`###` 줄의 키(| 앞)와 ``` 줄은 건드리지 않는다. 제목·이름(| 뒤)과 블록 안 글은 자유롭게 고친다.",
            f"확정한 글 {len(done)}편은 빠져 있다 (docs/기획/기록보관소_확정.txt).", ""]
-    out += ["## 적 도감", "", "기록 1 = 처음 만남, 기록 2 = 처음 이김, 기록 3 = 10번 이김 (컬렉터는 3번)", ""]
-    for key in archive.ENEMIES:
+    for key in archive.ENEMIES if "enemy" in d else []:   # 적 도감은 그림만 쓰기로 해서 지금은 글이 없다
         e = d["enemy"][key]
         left = [(i, st) for i, st in enumerate(e["stages"], 1) if f"enemy.{key}.{i}" not in done]
         if not left:

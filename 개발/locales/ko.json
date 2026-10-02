@@ -1067,7 +1067,7 @@
   "autosave_done": "  [SYSTEM] 자동 저장했습니다.",
   "opt_archive": "기록 보관소",
   "arc_intro": "지금까지 보고 주운 것들입니다. 새 게임을 시작해도 남습니다.",
-  "arc_new": "  [기록] {kind} '{name}' — 기록 보관소에 새 이야기가 열렸습니다.",
+  "arc_new": "  [기록] {kind} '{name}' — 기록 보관소에 새 그림이 열렸습니다.",
   "arc_kind_enemy": "적",
   "arc_kind_scene": "장면",
   "arc_kind_fragment": "일기 조각",
@@ -1095,5 +1095,7 @@
   "arc_phone_found": "  [기록] 배터리가 나간 개인 휴대용 인터페이스를 주웠습니다.\n  이건 무슨 물건이지 개인 휴대용 인터페이스 같은데 구식방법 같다 무슨 방법이 있지 않을까",
   "arc_phone_locked": "전원 꺼진 개인 휴대용 인터페이스",
   "arc_charger_found": "  [기록] 태양열 충전기를 주웠습니다. 개인 휴대용 인터페이스에 연결하니 화면이 켜집니다. 옵션 → 기록 보관소에서 읽을 수 있습니다.",
-  "arc_found_custom": "  [기록] {msg} 옵션 → 기록 보관소에서 읽을 수 있습니다."
+  "arc_found_custom": "  [기록] {msg} 옵션 → 기록 보관소에서 읽을 수 있습니다.",
+  "arc_images": "그림 {n}/{total}",
+  "arc_flip": "넘기기"
 }

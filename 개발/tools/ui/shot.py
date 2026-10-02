@@ -138,7 +138,7 @@ def _read_events(self):   # 보관소 읽기 화면은 직접 키를 기다린�
     snap(self, "read")
     return [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_ESCAPE)]
 EventView._events = _read_events
-run("archive", screens.show_archive, ["2", "1", "1", "0", "3", "1", "0", "4", "1", "1", "0", "0"])
+run("archive", screens.show_archive, ["2", "1", "3", "1", "0", "4", "1", "1", "0", "0"])
 run("hidden", lambda: screens.run_hidden_event(new_player(), g))
 EventView._events = _orig_events
 

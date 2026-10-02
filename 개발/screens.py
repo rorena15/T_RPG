@@ -358,25 +358,66 @@ def show_archive():
 
 
 def _show_enemy(key):
-    """적 하나: 단계를 골라 읽는다. 닫힌 단계는 여는 조건만 보인다."""
+    """적 하나: 열린 그림을 화면 가득 띄우고 ←→(A·D, 휠)로 넘긴다. Esc·Enter·0·클릭(뒤로)으로 닫는다."""
+    import pygame
     import archive
-    entry = archive.enemy_entry(key)
-    scene = archive.ENEMY_SCENE[key]
-    tag = t('tag_record')
-    while True:
-        rec = archive.load()["enemies"].get(key, {})
-        opened = archive._enemy_open(rec, key)
-        need = archive.stages(key)
-        rows = [(i, t('arc_stage', n=i + 1) if i < opened else t('arc_locked_kills', n=need[i]), i < opened)
-                for i in range(min(len(need), len(entry["stages"])))]
-        scr = MenuScreen(scene=scene, card=False)
-        try:
-            i = _archive_pick(scr, entry["name"], rows, tag, lines=[t('arc_kills', n=rec.get("kills", 0))])
-        finally:
-            scr.close()
-        if i is None:
-            return
-        _archive_read(scene, f"{entry['name']} · {t('arc_stage', n=i + 1)}", entry["stages"][i].split("\n"), tag)
+    from event_view import AMBER, BG, INK, INK_DIM, FOOT_H
+
+    rec = archive.load()["enemies"].get(key, {})
+    paths = archive.open_images(key, rec)
+    if not paths:
+        return
+    name, kills, total = archive.enemy_name(key), rec.get("kills", 0), len(archive.enemy_images(key))
+    cache = {}
+
+    class GalleryView(EventView):
+        def render(self, canvas):
+            W, H = canvas.get_size()
+            canvas.fill(BG)
+            path = paths[self.i]
+            if path not in cache:
+                cache.clear()
+                img = pygame.image.load(path).convert()
+                scale = max(W / img.get_width(), (H - FOOT_H) / img.get_height())   # 화면을 채우고 넘치는 쪽은 잘라 낸다
+                cache[path] = pygame.transform.smoothscale(img, (int(img.get_width() * scale), int(img.get_height() * scale)))
+            img = cache[path]
+            canvas.blit(img, ((W - img.get_width()) // 2, (H - FOOT_H - img.get_height()) // 2))
+            shade = pygame.Surface((W, 120), pygame.SRCALPHA)
+            shade.fill((0, 0, 0, 150))
+            canvas.blit(shade, (0, 0))
+            canvas.blit(self.f_mono.render(t('tag_record'), True, AMBER), (36, 24))
+            canvas.blit(self.f_title.render(name, True, INK), (36, 48))
+            info = f"{self.i + 1} / {len(paths)}   ·   {t('arc_kills', n=kills)}   ·   {t('arc_images', n=len(paths), total=total)}"
+            canvas.blit(self.f_mono.render(info, True, INK_DIM), (36, 92))
+            self._draw_footer(canvas, W, H)
+
+    v = GalleryView(get_terminal(), None, None, JUNKYARD, scene=archive.ENEMY_SCENE[key])
+    v.i = 0
+    v.footer = [("←→", t('arc_flip')), ("Esc", t('ui_back'), "ENTER")]
+    v.open()
+    try:
+        while True:
+            for ev in v._events():
+                if ev.type == pygame.MOUSEWHEEL:
+                    v.i = (v.i - ev.y) % len(paths)
+                    continue
+                if ev.type == pygame.MOUSEMOTION:
+                    v._foot_hover = v.foot_at(ev.pos)
+                    continue
+                if ev.type == pygame.MOUSEBUTTONDOWN and ev.button == 1:
+                    if v.foot_at(ev.pos) == "ENTER":
+                        sound.sfx("ui_back")
+                        return
+                    v.i = (v.i + 1) % len(paths)
+                    continue
+                if ev.type != pygame.KEYDOWN:
+                    continue
+                if ev.key in (pygame.K_ESCAPE, pygame.K_RETURN, pygame.K_KP_ENTER, pygame.K_0, pygame.K_SPACE):
+                    return
+                step = {pygame.K_LEFT: -1, pygame.K_a: -1, pygame.K_RIGHT: 1, pygame.K_d: 1}.get(ev.key, 0)
+                v.i = (v.i + step) % len(paths)
+    finally:
+        v.close()
 
 
 def run_hidden_event(player, grid):

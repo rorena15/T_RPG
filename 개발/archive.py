@@ -1,10 +1,10 @@
-"""기록 보관소: 적 이야기, 장면 이야기, 일기 조각. 보는 것만 있고 게임 수치에는 손대지 않는다.
+"""기록 보관소: 적 그림, 장면 이야기, 일기 조각. 보는 것만 있고 게임 수치에는 손대지 않는다.
 
 열린 기록은 세이브와 따로 archive.json에 남겨 새 게임을 시작해도 이어진다 (결말 기록 endings.json과 같은 자리).
 글은 locales/archive_<언어>.json에 있다. 글이 없는 항목은 목록에도 세지 않는다 (글을 나중에 채워도 된다).
 
 열리는 때
-  적      처음 만남 / 처음 이김 / 여러 번 이김 (ENEMY_STAGES). 보스는 3번
+  적      처음 만남 / 처음 이김 / 여러 번 이김 (ENEMY_STAGES, 보스는 3번)에 그림이 한 장씩, 마지막에 남은 그림 전부
   장면    그 그림이 처음 화면에 나왔을 때 (scene_art.choose)
   일기    빈 탐색에서 줍는다 (roll_fragment). 묶음마다 줍는 곳이 다르다 (FRAGMENTS)
           일지의 마지막 장은 랜덤 이벤트 자리의 히든 이벤트로만 (hidden_ready, run_hidden_event)
@@ -20,6 +20,8 @@ from i18n import t
 ENEMIES = ["drone", "bio_hound", "dogs", "security", "boss"]
 ENEMY_SCENE = {"drone": "enemy_drones", "bio_hound": "enemy_hound", "dogs": "enemy_dogs",
                "security": "enemy_security", "boss": "enemy_collector"}
+ENEMY_NAME_KEY = {"drone": "enemy_drone_name", "bio_hound": "enemy_bio_name", "dogs": "enemy_dogs_name",
+                  "security": "enemy_sec_name", "boss": "enemy_boss_name"}
 ENEMY_STAGES = {"boss": (0, 1, 3)}   # 단계별로 필요한 처치 수 (0 = 만나기만 하면)
 DEFAULT_STAGES = (0, 1, 10)
 
@@ -84,9 +86,27 @@ def text():
     return _text[lang]
 
 
-def enemy_entry(key):
-    e = text().get("enemy", {}).get(key)
-    return e if e and e.get("stages") else None
+def enemy_name(key):
+    """적 이름 (게임 안 이름에서 [변이체]·[BOSS] 같은 꼬리표는 뗀다)."""
+    return t(ENEMY_NAME_KEY[key]).split(" [")[0]
+
+
+def enemy_images(key):
+    """이 적의 그림 파일들 (assets/scenes/<적 장면>/, 이름순)."""
+    try:
+        import scene_art
+        return sorted(p for p, _, _ in scene_art.index().get(ENEMY_SCENE[key], []))
+    except Exception:
+        return []
+
+
+def open_images(key, rec=None):
+    """열린 그림들. 단계마다 한 장씩, 마지막 단계에서는 남은 그림 전부."""
+    if rec is None:
+        rec = load()["enemies"].get(key, {})
+    n = _enemy_open(rec, key)
+    imgs = enemy_images(key)
+    return imgs if n >= len(stages(key)) else imgs[:n]
 
 
 def scene_entry(scene):
@@ -126,8 +146,7 @@ def meet_enemy(enemy_type, is_boss=False):
     before = _enemy_open(rec, key)
     rec["met"] = True
     _save(d)
-    entry = enemy_entry(key)
-    return _notice("enemy", entry["name"]) if entry and _enemy_open(rec, key) > before else None
+    return _notice("enemy", enemy_name(key)) if enemy_images(key) and _enemy_open(rec, key) > before else None
 
 
 def defeat_enemy(enemy_type, is_boss=False):
@@ -138,8 +157,7 @@ def defeat_enemy(enemy_type, is_boss=False):
     rec["met"] = True
     rec["kills"] = rec.get("kills", 0) + 1
     _save(d)
-    entry = enemy_entry(key)
-    return _notice("enemy", entry["name"]) if entry and _enemy_open(rec, key) > before else None
+    return _notice("enemy", enemy_name(key)) if enemy_images(key) and _enemy_open(rec, key) > before else None
 
 
 def see_scene(scene):
@@ -191,33 +209,16 @@ def readable(fid, d=None):
 
 # ── 보기 ─────────────────────────────────────────────────────────────────
 def enemy_list():
-    """[(키, 이름 또는 None(못 만남), 열린 단계 수, 전체 단계 수)]. 글이 있는 적만."""
+    """[(키, 이름 또는 None(못 만남), 열린 그림 수, 전체 그림 수)]. 그림이 있는 적만."""
     d = load()
     out = []
     for key in ENEMIES:
-        entry = enemy_entry(key)
-        if not entry:
+        imgs = enemy_images(key)
+        if not imgs:
             continue
-        n = _enemy_open(d["enemies"].get(key, {}), key)
-        total = min(len(stages(key)), len(entry["stages"]))
-        out.append((key, entry["name"] if n else None, min(n, total), total))
+        rec = d["enemies"].get(key, {})
+        out.append((key, enemy_name(key) if rec.get("met") else None, len(open_images(key, rec)), len(imgs)))
     return out
-
-
-def enemy_pages(key):
-    """적 하나의 읽을 줄들. 열린 단계는 글, 닫힌 단계는 여는 조건."""
-    entry = enemy_entry(key)
-    rec = load()["enemies"].get(key, {})
-    n = _enemy_open(rec, key)
-    lines = []
-    for i, body in enumerate(entry["stages"][:len(stages(key))]):
-        if i:
-            lines.append("")
-        if i < n:
-            lines += body.split("\n")
-        else:
-            lines.append(t('arc_locked_kills', n=stages(key)[i]))
-    return lines
 
 
 def scene_list():
