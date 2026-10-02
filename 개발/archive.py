@@ -14,6 +14,7 @@ import json
 import os
 import random
 
+import constants
 import i18n
 from i18n import t
 
@@ -206,10 +207,14 @@ def roll_fragment(player, grid, rng=random):
     """빈 탐색 뒤에 부른다. 조각을 주우면 알림 문장, 아니면 None."""
     d = load()
     here = None
+    node_map = getattr(grid, "is_node_map", False)
     try:
-        import scene_art
-        from event_view import JUNKYARD
-        here = scene_art.tile_scene(JUNKYARD, grid.player_pos)
+        if node_map:   # 지점 지도: 지점마다 장면이 적혀 있다 (그림 파일이 없어도)
+            here = grid.scene_at()
+        else:
+            import scene_art
+            from event_view import JUNKYARD
+            here = scene_art.tile_scene(JUNKYARD, grid.player_pos)
     except Exception:
         pass
     if (not d["charger"] and here == CHARGER_AT and PHONES & set(d["fragments"])
@@ -217,10 +222,16 @@ def roll_fragment(player, grid, rng=random):
         d["charger"] = True
         _save(d)
         return t('arc_charger_found')
-    if rng.random() >= FRAGMENT_CHANCE:
-        return None
-    pool = [fid for fid, _, where in FRAGMENTS
-            if fid not in d["fragments"] and fragment_entry(fid) and where in (None, here)]
+    # 지점 지도: 랜드마크·경계 지대에서는 그곳 기록(B·C)이 일지 A보다 먼저 (찾아간 보람이 있게)
+    place = [fid for fid, _, where in FRAGMENTS
+             if here and where == here and fid not in d["fragments"] and fragment_entry(fid)] if node_map else []
+    if place and rng.random() < constants.NODE_PLACE_CHANCE:
+        pool = place
+    else:
+        if rng.random() >= FRAGMENT_CHANCE:
+            return None
+        pool = [fid for fid, _, where in FRAGMENTS
+                if fid not in d["fragments"] and fragment_entry(fid) and where in (None, here)]
     if not pool:
         return None
     fid = rng.choice(pool)

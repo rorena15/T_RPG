@@ -59,6 +59,7 @@ INDOOR_WORDS = ["안으로", "들어간", "내부", "실내"]
 NAME_RE = re.compile(r"^(?P<scene>.+)_(?P<time>dawn|morning|noon|evening|night|dim|cold)_(?P<weather>[a-z]+)_\d+\.jpg$")
 GRID_SIDE = 5               # 맵 한 변 (map.GameMap.size)
 GRID_CELLS = GRID_SIDE * GRID_SIDE
+NODE_SCENES = None          # 지점 지도일 때 {(x, y): 장면} (node_map.NodeMap이 넣는다)
 RECENT = deque(maxlen=6)   # 최근에 보여 준 그림 (같은 그림 반복 방지)
 SEEN = set()               # 이번 실행에서 본 그림
 _RECORDED = set()          # 이번 실행에서 기록 보관소에 남긴 장면
@@ -183,6 +184,9 @@ def _record(path):
 def tile_scene(location, pos):
     """맵 칸마다 정해진 장면 (같은 칸에 돌아오면 같은 곳). 그림이 있는 장면 중에서 고른다."""
     idx = index()
+    if NODE_SCENES is not None and tuple(pos) in NODE_SCENES:   # 지점 지도: 지점마다 적힌 장면 (node_map.py)
+        s = NODE_SCENES[tuple(pos)]
+        return s if s in idx else None
     pool = [s for s in LOCATION_POOL.get(location, TERRAIN) if s in idx and (s not in INTERIORS or s in LANDMARKS)] or \
         [s for s in LOCATION_POOL.get(location, TERRAIN) if s in idx]
     if not pool:

@@ -308,6 +308,13 @@ DANGER_TIER_WEIGHTS = {2: {4: 62, 3: 34, 2: 4}}   # 위험한 칸의 장비 등�
 # ── 탐색 수확 체감: 다 뒤진 칸이 다시 채워질 때마다(map.py cycles) 파밍량이 1 / (1 + DEPLETE × 횟수) ──
 DEPLETE = 0.35
 
+# ── 지점 지도 (node_map.py, docs/기획/지점지도_설계.md). 시험 중이라 기본은 꺼 둔다: 봇(tools/balance)에서만 켠다 ──
+NODE_MAP = False
+NODE_COUNT = 50                       # 지점 수
+ROAD_ENC = 0.5                        # 2턴 이상 길: 중간 턴마다 조우 확률 배율
+ZONE_ENEMY_MULT = (1.0, 1.15, 1.35)   # 권역(위험도)별 일반 적 체력·공격 배율
+NODE_PLACE_CHANCE = 0.3               # 랜드마크·경계 지대 지점 빈 탐색에서 그곳 기록(B·C)이 나올 확률 (일지 A보다 먼저)
+
 # 강화 (upgrade.py): 시도 1회 고철 = max(1, floor(α·(k+1)^1.2)) × 이 배율
 UPGRADE_COST_MULT    = 3
 ESCAPE_WEIGHTS       = (60, 20, 10, 5, 5)  # SAFE / NORMAL / 1.5X / 2.0X / LUCKY

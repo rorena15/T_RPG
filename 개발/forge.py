@@ -35,7 +35,7 @@ def check_hint(player, grid):
         return False
     grid.forge["hint"] = True
     sound.sfx("amb_clang")
-    print(t('forge_hint', dir=direction(grid), d=grid.forge_dist()))
+    print(t('forge_hint_node' if getattr(grid, "is_node_map", False) else 'forge_hint', dir=direction(grid), d=grid.forge_dist()))
     log_diary(player, t('forge_hint_diary'))
     return True
 

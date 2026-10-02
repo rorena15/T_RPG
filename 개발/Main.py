@@ -98,7 +98,7 @@ def run_game():
     _offer_extra_data(_settings)
 
     player = Player()
-    grid = GameMap()
+    grid = _new_map()
 
     while True:  # 타이틀 ~ 설정 루프
         clear_screen()
@@ -166,7 +166,7 @@ def run_game():
         # ── 세이브 로드 ───────────────────────────────────────────────────
         if ans == "2" and has_save:
             player = Player()
-            grid = GameMap()
+            grid = _new_map()
             try:
                 with open(get_save_path(), "r", encoding="utf-8") as f:
                     data = json.load(f)
@@ -182,7 +182,7 @@ def run_game():
         # ── 새로운 게임 ───────────────────────────────────────────────────
         if ans == "1":
             player = Player()
-            grid = GameMap()
+            grid = _new_map()
             go_back = False
 
             _diff_scr = None
@@ -278,6 +278,13 @@ def run_game():
         sound.map_weather(scene_art.world_weather(player.turn_count))  # 날씨 환경음 (산성비·먼지 폭풍 등)
         if forge.check_hint(player, grid):  # 발칸을 오래 못 만났으면 방향 힌트 (forge.py)
             time.sleep(1.2)
+        if getattr(grid, "is_node_map", False):   # 지점 지도: 이 지점의 권역(적 세기)과 방공호 힌트
+            player.zone_danger = grid.danger_at()
+            _bh = grid.bunker_hint_check()
+            if _bh:
+                print(_bh)
+                log_diary(player, _bh.strip())
+                time.sleep(1.2)
         _trait_lines = traits.check_new(player)  # 성향이 새 단계에 닿았으면 알림 (traits.py)
         if _trait_lines:
             sound.sfx("job")
@@ -481,21 +488,34 @@ def run_game():
             time.sleep(0.8)
             sys.exit()
 
-        if move not in ("W", "A", "S", "D"):  # 모르는 키는 조용히 무시 (예전엔 "이동 불가"를 띄우고 멈췄다)
+        if getattr(grid, "is_node_map", False):   # 지점 지도: G로 이어진 지점 고르기 (조작은 3단계 화면에서 다시 정한다)
+            if move != "G":
+                continue
+            _dest = _pick_node(grid)
+            if _dest is None:
+                continue
+            _road(player, grid, _dest)
+            px, py = _dest
+            valid_move = True
+        elif move not in ("W", "A", "S", "D"):  # 모르는 키는 조용히 무시 (예전엔 "이동 불가"를 띄우고 멈췄다)
             continue
-        px, py = grid.player_pos[0], grid.player_pos[1]
-        valid_move = False
-        if move == "W" and py < grid.size - 1: py += 1; valid_move = True
-        elif move == "S" and py > 0: py -= 1; valid_move = True
-        elif move == "A" and px > 0: px -= 1; valid_move = True
-        elif move == "D" and px < grid.size - 1: px += 1; valid_move = True
         else:
-            print(f"\n{t('move_blocked')}")
-            time.sleep(0.5)
-            continue
+            px, py = grid.player_pos[0], grid.player_pos[1]
+            valid_move = False
+            if move == "W" and py < grid.size - 1: py += 1; valid_move = True
+            elif move == "S" and py > 0: py -= 1; valid_move = True
+            elif move == "A" and px > 0: px -= 1; valid_move = True
+            elif move == "D" and px < grid.size - 1: px += 1; valid_move = True
+            else:
+                print(f"\n{t('move_blocked')}")
+                time.sleep(0.5)
+                continue
 
         if valid_move:
             grid.player_pos = [px, py]
+            if getattr(grid, "is_node_map", False):
+                grid.arrive()
+                player.zone_danger = grid.danger_at()
             player.consume_resources()
 
             current_loc = tuple(grid.player_pos)
@@ -588,6 +608,44 @@ def run_game():
                     else:
                         if random.random() < 0.2:
                             print_ambient_lore()
+
+
+def _new_map():
+    """지점 지도는 시험 중이라 constants.NODE_MAP을 켰을 때만 (node_map.py, 봇 전용)."""
+    if constants.NODE_MAP:
+        from node_map import NodeMap
+        return NodeMap()
+    return GameMap()
+
+
+def _pick_node(grid):
+    """지점 지도: 이어진 지점 중 하나를 번호로 고른다. 0이면 취소 (None)."""
+    roads = grid.neighbors()
+    for i, (q, n) in enumerate(roads, 1):
+        print(f"  {t('node_road', n=i, name=grid.label(q), turns=n)}")
+    print(f"  {t('node_road_cancel')}")
+    while True:
+        _pick = read_key()
+        if _pick in ("0", "\x1b"):
+            return None
+        if _pick.isdigit() and 1 <= int(_pick) <= len(roads):
+            return list(roads[int(_pick) - 1][0])
+
+
+def _road(player, grid, dest):
+    """지점 지도: 2턴 이상인 길은 가는 동안 한 턴마다 자원이 줄고 조우만 굴린다 (도착 턴은 원래 이동 처리)."""
+    player.zone_danger = max(grid.danger_at(), grid.danger_at(dest))
+    for _ in range(grid.edge_len(grid.player_pos, dest) - 1):
+        player.consume_resources()
+        if random.random() < get_encounter_chance(player) * constants.ROAD_ENC:
+            etype = (grid.escaped_enemy_type or "drone") if grid.escaped_enemy_hp is not None else pick_enemy(player)
+            print(enemy_line('encounter_alert', etype))
+            wait_for_keypress()
+            sound.play_combat_bgm()
+            result_hp, result_type = combat_loop(player, is_boss=False, current_hp=grid.escaped_enemy_hp, enemy_type=etype)
+            grid.escaped_enemy_hp = result_hp
+            grid.escaped_enemy_type = result_type
+            sound.resume_map_ambient()
 
 
 if __name__ == "__main__":

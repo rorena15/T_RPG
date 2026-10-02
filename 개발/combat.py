@@ -136,6 +136,11 @@ def combat_loop(player, is_boss=False, current_hp=None, enemy_type="drone"):
     base_atk = int(base_atk * constants.ENEMY_ATK_MULT)  # 적 공격력 일괄 조정 (보스 페이즈 2도 이 값을 기준으로 오른다)
     if not is_boss:  # 탐색 중 만나는 적은 난이도별로 한 번 더 (보스는 BOSS_DIFF_ATK로 따로 맞춘다)
         base_atk = int(base_atk * constants.ENEMY_DIFF_ATK.get(player.difficulty, 1.0))
+        zone = getattr(player, "zone_danger", None)   # 지점 지도: 먼 권역의 적은 더 세다 (Main이 지점마다 넣는다)
+        if zone is not None:
+            base_atk = int(base_atk * constants.ZONE_ENEMY_MULT[zone])
+            if current_hp is None:
+                hp = int(hp * constants.ZONE_ENEMY_MULT[zone])
     atk = base_atk
 
     scene = "enemy_collector" if is_boss else (constants.ENEMY_TYPES.get(enemy_type) or constants.ENEMY_TYPES["drone"])["scene"]
