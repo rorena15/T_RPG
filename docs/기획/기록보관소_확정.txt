@@ -32,3 +32,6 @@ fragment.b09
 fragment.b10
 fragment.b11
 fragment.b03
+fragment.b12
+fragment.b04
+fragment.b08
