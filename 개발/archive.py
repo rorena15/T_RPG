@@ -95,17 +95,17 @@ def text():
 
 
 MASK_LANGS = {"en"}
-MASK_RATE = 0.18   # 네 글자 이상 단어 가운데 가릴 비율
+MASK_RATE = 0.07   # 다섯 글자 이상 단어 가운데 가릴 비율 (너무 많으면 읽기 불편하다)
 _WORD = None
 
 
 def mask(s, seed):
-    """단어 일부를 *로 가린다. 첫 글자와 끝 글자는 남기고 가운데 한두 글자만. 같은 글은 늘 같은 자리가 가려진다."""
+    """단어 일부를 *로 가린다. 첫 글자와 끝 글자는 남기고 가운데 한 글자만. 같은 글은 늘 같은 자리가 가려진다."""
     import re
     import zlib
     global _WORD
     if _WORD is None:
-        _WORD = re.compile(r"[A-Za-z]{4,}")
+        _WORD = re.compile(r"[A-Za-z]{5,}")
     rng = random.Random(zlib.crc32(seed.encode("utf-8")))
 
     def one(m):
@@ -113,9 +113,8 @@ def mask(s, seed):
         if rng.random() >= MASK_RATE:
             return w
         inner = list(range(1, len(w) - 1))
-        for i in rng.sample(inner, 1 if len(w) < 7 else 2):
-            w = w[:i] + "*" + w[i + 1:]
-        return w
+        i = rng.choice(inner)
+        return w[:i] + "*" + w[i + 1:]
     return _WORD.sub(one, s)
 
 
