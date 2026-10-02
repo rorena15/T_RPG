@@ -945,7 +945,7 @@
   "credits_missing": "({f} not found)",
   "credits_term_more": "Any key: next page · 0: close",
   "credits_term_end": "Any key: close",
-  "forge_hint": "\n  [SIGNAL] The wind carries the smell of molten metal. {dir}, about {d} tiles. Someone out here is still melting steel.",
+  "forge_hint": "\n  [SIGNAL] The wind carries the smell of molten metal. {dir}, about {d} tiles. Someone seems to be out here in these ruins.",
   "forge_hint_diary": "[SIGNAL] A smell of molten metal somewhere. Marked on the map",
   "map_hint_dist": "Molten metal smell · {dir} {n} tiles",
   "dir_n": "north",

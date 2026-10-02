@@ -945,7 +945,7 @@
   "credits_missing": "({f} 파일을 찾지 못했습니다)",
   "credits_term_more": "아무 키: 다음 쪽 · 0: 닫기",
   "credits_term_end": "아무 키: 닫기",
-  "forge_hint": "\n  [신호] 바람에 쇳물 냄새가 실려 온다. {dir}, 약 {d}칸. 이 폐허 어딘가에서 아직 쇠를 녹이는 누군가가 있다.",
+  "forge_hint": "\n  [신호] 바람에 쇳물 냄새가 실려 온다. {dir}, 약 {d}칸. 이 폐허에 누군가 있는 것 같다.",
   "forge_hint_diary": "[신호] 어딘가에서 쇳물 냄새가 난다. 지도에 표시",
   "map_hint_dist": "쇳물 냄새 · {dir} {n}칸",
   "dir_n": "북쪽",
