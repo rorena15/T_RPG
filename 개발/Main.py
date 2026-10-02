@@ -387,11 +387,15 @@ def run_game():
                 sound.resume_map_ambient()
             elif roll < 0.08 + encounter_chance + 0.20 and constants.RANDOM_EVENTS:
                 # 랜덤 서사 이벤트 (20%) — 로컬 GM이 판정·서술, GM을 못 쓰면 대본
-                event = random.choice(constants.RANDOM_EVENTS)
-                # GM이 꺼져 있어도 그림 화면이 있으면 같은 틀로 대본을 보여 준다 (gm_bridge.run_event_script)
-                if not gm_bridge.run_event(player, grid, event) and not gm_bridge.run_event_script(player, grid, event):
-                    _off()
-                    handle_random_event(player, event)
+                if archive.hidden_ready():   # 기록 보관소 히든: 일지의 마지막 장 (평생 한 번, 수치 변화 없음)
+                    from screens import run_hidden_event
+                    run_hidden_event(player, grid)
+                else:
+                    event = random.choice(constants.RANDOM_EVENTS)
+                    # GM이 꺼져 있어도 그림 화면이 있으면 같은 틀로 대본을 보여 준다 (gm_bridge.run_event_script)
+                    if not gm_bridge.run_event(player, grid, event) and not gm_bridge.run_event_script(player, grid, event):
+                        _off()
+                        handle_random_event(player, event)
             elif roll < 0.08 + encounter_chance + 0.20 + 0.30:
                 # 공탐색 (30%) — 로컬 GM이 서술, GM을 못 쓰면 분위기 로그
                 if not gm_bridge.run_search(player, grid):

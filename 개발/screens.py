@@ -201,20 +201,79 @@ ARCHIVE_PAGE = 8   # 보관소 목록 한 쪽에 몇 개
 
 
 def _archive_read(scene, title, lines, tag):
-    """보관소 글 한 편: 그 장면 그림 옆에 글이 타자 치듯 떠오른다. 키를 누르면 돌아간다."""
-    scr = MenuScreen(scene=scene, card=False)
-    v = scr.view
+    """보관소 글 한 편: 그 장면 그림 옆에 글이 타자 치듯 떠오른다 (아무 키나 누르면 다 보인다).
+    글이 길면 ↑↓·휠 한 줄, PgUp/PgDn 한 쪽으로 넘긴다. Esc·Enter·0·클릭(뒤로)으로 닫는다."""
+    import pygame
+    from event_view import AMBER, INK, INK_DIM, TYPE_CPS
+
+    class ReadView(EventView):
+        def _draw_column(self, c, W, H):
+            x, width, y = self._col_x, W - self._col_x - 36, 40
+            c.blit(self.f_mono.render(tag, True, AMBER), (x, y))
+            y += 26
+            for ln in self._wrap(self.f_title, title, width):
+                c.blit(self.f_title.render(ln, True, INK), (x, y))
+                y += 40
+            y += 14
+            rows, left = [], self.shown
+            for para in lines:
+                for ln in (self._wrap(self.f_story, para, width) if para.strip() else [""]):
+                    rows.append(ln[:max(0, left)])
+                    left -= len(ln)
+                rows.append(None)   # 문단 사이 반 줄
+            while rows and rows[-1] is None:
+                rows.pop()
+            per = (H - 140 - y) // (self.LH_S - 2)
+            self.max_off = max(0, len(rows) - per)
+            if self.shown < total:   # 떠오르는 중에는 지금 쓰는 줄이 보이게 따라 내려간다
+                last = max((i for i, r in enumerate(rows) if r), default=0)
+                self.off = max(0, last - per + 1)
+            self.off = max(0, min(self.off, self.max_off))
+            for r in rows[self.off:self.off + per]:
+                if r is None:
+                    y += (self.LH_S - 2) // 2
+                    continue
+                c.blit(self.f_story.render(r, True, INK), (x, y))
+                y += self.LH_S - 2
+            if self.max_off:
+                c.blit(self.f_mono.render(f"{self.off + 1}-{min(len(rows), self.off + per)} / {len(rows)}",
+                                          True, INK_DIM), (x, H - 120))
+
+    total = sum(len(p) for p in lines)
+    v = ReadView(get_terminal(), None, None, JUNKYARD, scene=scene)
+    v.off, v.max_off, v.shown = 0, 0, 0
+    v.footer = [("↑↓", t('ui_select')), ("PgUp/PgDn", t('diary_page')), ("Esc", t('ui_back'), "ENTER")]
+    v.open()
+    start = pygame.time.get_ticks()
     try:
-        v.log = []
-        v.add("title", tag=tag, title=title)
-        entry = v.add("narr", lines=list(lines))
-        v.footer = [("Enter", t('ui_back'))]
-        v.open()
-        scr._opened = True
-        v.type_out(entry)
-        v.wait_key({"ENTER", "ESC", " "})
+        while True:
+            if v.shown < total:
+                v.shown = int((pygame.time.get_ticks() - start) / 1000 * TYPE_CPS)
+            for ev in v._events():
+                if ev.type == pygame.MOUSEWHEEL:
+                    v.off = max(0, min(v.max_off, v.off - ev.y * 3))
+                    continue
+                if ev.type == pygame.MOUSEMOTION:
+                    v._foot_hover = v.foot_at(ev.pos)
+                    continue
+                if ev.type == pygame.MOUSEBUTTONDOWN and ev.button == 1:
+                    if v.foot_at(ev.pos) == "ENTER":
+                        sound.sfx("ui_back")
+                        return
+                    v.shown = total
+                    continue
+                if ev.type != pygame.KEYDOWN:
+                    continue
+                if v.shown < total:   # 처음 누르는 키는 글을 다 펼친다
+                    v.shown = total
+                    continue
+                if ev.key in (pygame.K_ESCAPE, pygame.K_RETURN, pygame.K_KP_ENTER, pygame.K_0, pygame.K_SPACE):
+                    return
+                step = {pygame.K_UP: -1, pygame.K_w: -1, pygame.K_DOWN: 1, pygame.K_s: 1,
+                        pygame.K_PAGEUP: -10, pygame.K_PAGEDOWN: 10}.get(ev.key, 0)
+                v.off = max(0, min(v.max_off, v.off + step))
     finally:
-        scr.close()
+        v.close()
 
 
 def _archive_pick(scr, title, rows, tag, lines=None):
@@ -316,3 +375,18 @@ def _show_enemy(key):
         if i is None:
             return
         _archive_read(scene, f"{entry['name']} · {t('arc_stage', n=i + 1)}", entry["stages"][i].split("\n"), tag)
+
+
+def run_hidden_event(player, grid):
+    """히든 이벤트: 쓰레기 더미에 기대 숨진 사람이 일지를 품에 안고 있다 (archive.hidden_ready).
+    동적 서사가 켜져 있어도 정해진 글로만 보여 준다. 마지막 장을 기록하고 알림을 찍는다."""
+    import archive
+    e = archive.text()["hidden"]
+    if get_terminal() is None:
+        print(f"\n  [{e['title']}]")
+        for para in e["text"].split("\n"):
+            print(f"  {para}")
+    else:   # 글이 길어 보관소와 같은 스크롤 읽기 화면으로
+        _archive_read("junkyard", e["title"], e["text"].split("\n"), t('gm_tag_event'))
+    sound.sfx("loot")
+    print(archive.take_hidden())

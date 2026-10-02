@@ -73,10 +73,12 @@ check("닫힌 단계는 조건만", archive.enemy_pages("drone")[-1] == "셋")
 # 장면: 목록에 없는 장면(적 그림)은 남기지 않는다
 archive.see_scene("lm_school")
 archive.see_scene("enemy_drones")
-check("장면 열림", archive.scene_list() == [("junkyard", None), ("lm_school", "학교")])
+check("장면 열림", archive.scene_list() == [("lm_school", "학교")])
+archive.see_scene("junkyard")
+check("랜드마크가 아닌 장면은 기록 안 함", "junkyard" not in archive.load()["scenes"])
 check("적 그림은 장면 기록 아님", "enemy_drones" not in archive.load()["scenes"])
 
-# 일기: 학교 칸이 아니면 b01 안 나옴, 경계 낮으면 c01 안 나옴
+# 일기: 학교 칸이 아니면 b01, 경계 지대가 아니면 c01이 안 나온다
 import scene_art
 here = {"pos": "junkyard"}
 scene_art.tile_scene = lambda loc, pos: here["pos"]
@@ -85,21 +87,34 @@ never = AlwaysRng()
 never.random = lambda: 0.99
 check("확률을 못 넘으면 없음", archive.roll_fragment(P(), G(), never) is None)
 check("어디서나 a01", "첫날" in (archive.roll_fragment(P(), G(), rng) or ""))
-check("학교 칸 아니고 경계 낮으면 더 없음", archive.roll_fragment(P(), G(), rng) is None)
+check("학교·경계 지대 칸이 아니면 더 없음", archive.roll_fragment(P(), G(), rng) is None)
 here["pos"] = "lm_school"
 check("학교 칸에서 b01", "알림장" in (archive.roll_fragment(P(), G(), rng) or ""))
-p = P()
-p.alert_level = archive.ALERT_FRAGMENT
-check("경계 높을 때 c01", "지침" in (archive.roll_fragment(p, G(), rng) or ""))
-check("다 주우면 없음", archive.roll_fragment(p, G(), rng) is None)
+here["pos"] = "border_zone"
+check("경계 지대에서 c01", "지침" in (archive.roll_fragment(P(), G(), rng) or ""))
+check("다 주우면 없음", archive.roll_fragment(P(), G(), rng) is None)
+
+# 히든: 일지 A가 HIDDEN_NEED개 모이기 전에는 안 나오고, 찾기 전까지 목록에 없다
+archive._text["ko"]["hidden"] = {"title": "품에 안긴 일지", "text": "글"}
+archive._text["ko"]["fragment"]["a11"] = {"title": "마지막 장", "text": "글"}
+check("A 1개로는 히든 없음", not archive.hidden_ready(rng))
+check("숨은 조각은 목록에 없음", [f for f, _ in archive.fragment_list("a")] == ["a01"])
+d = archive.load()
+d["fragments"] += ["a02", "a03", "a04", "a05"]
+archive._save(d)
+check("A 5개면 히든 가능", archive.hidden_ready(rng))
+check("히든 확률", not archive.hidden_ready(never))
+check("마지막 장 기록", "마지막 장" in archive.take_hidden() and not archive.hidden_ready(rng))
+check("찾은 뒤 목록에 보임", ("a11", "마지막 장") in archive.fragment_list("a"))
+check("빈 탐색으로는 a11 안 나옴", all(w == "hidden" for f, _, w in archive.FRAGMENTS if f == "a11"))
 
 # 결말 기록과 따로: endings.unlock이 archive.json을 지우지 않는다
 before = archive.load()
 endings.unlock("pioneer", "combat")
 check("결말 기록 후에도 보관소 그대로", archive.load() == before)
 c = archive.counts()
-check("집계", c["enemy"] == (6, 6) and c["scene"] == (1, 2) and c["fragment"] == (3, 3) and c["endings"][0] == 2)
-check("파일에 남음", json.load(open(os.path.join(TMP, "archive.json"), encoding="utf-8"))["fragments"] == ["a01", "b01", "c01"])
+check("집계", c["enemy"] == (6, 6) and c["scene"] == (1, 1) and c["fragment"] == (4, 4) and c["endings"][0] == 2)
+check("파일에 남음", json.load(open(os.path.join(TMP, "archive.json"), encoding="utf-8"))["fragments"][:3] == ["a01", "b01", "c01"])
 
 # 실제 글 파일이 있으면 형식 확인
 for lang in ("ko", "en"):

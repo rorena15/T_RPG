@@ -129,7 +129,19 @@ archive._text[LANG] = {
     "fragment": {"a01": {"title": "첫날", "text": "오늘 눈을 떴다."}},
 }
 archive.load = lambda: {"enemies": {"drone": {"met": True, "kills": 3}}, "scenes": ["lm_school"], "fragments": ["a01"]}
+archive._text[LANG]["scene"]["lm_school"]["text"] = "\n".join(["긴 글 시험 문단입니다. 운동장 선은 아직 남아 있고, 철봉 하나가 비스듬히 기울어 있다. 누가 매일 그 선을 다시 긋는지는 모른다."] * 14)
+archive._text[LANG]["hidden"] = {"title": "품에 안긴 일지", "text": "시험 문단 하나.\n시험 문단 둘."}
+archive._text[LANG]["fragment"]["a11"] = {"title": "마지막 장", "text": "글"}
+archive.take_hidden = lambda: "  [기록] 시험 알림"
+_orig_events = EventView._events
+def _read_events(self):   # 보관소 읽기 화면은 직접 키를 기다린다: 찍고 키 하나 (처음은 글 펼치기, 다음은 닫기)
+    snap(self, "read")
+    return [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_ESCAPE)]
+EventView._events = _read_events
 run("archive", screens.show_archive, ["2", "1", "1", "0", "3", "1", "0", "4", "1", "1", "0", "0"])
+run("hidden", lambda: screens.run_hidden_event(new_player(), g))
+EventView._events = _orig_events
+
 
 # 7. 전투의 [센서] 알림: 드론 전투를 몇 턴 돌린다
 endings.unlock = lambda *a, **k: False

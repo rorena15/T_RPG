@@ -7,6 +7,7 @@
   적      처음 만남 / 처음 이김 / 여러 번 이김 (ENEMY_STAGES). 보스는 3번
   장면    그 그림이 처음 화면에 나왔을 때 (scene_art.choose)
   일기    빈 탐색에서 줍는다 (roll_fragment). 묶음마다 줍는 곳이 다르다 (FRAGMENTS)
+          일지의 마지막 장은 랜덤 이벤트 자리의 히든 이벤트로만 (hidden_ready, run_hidden_event)
 빈 탐색은 원래 얻는 것이 없는 결과라, 조각을 얹어도 자원·장비 확률은 그대로다.
 """
 import json
@@ -22,24 +23,22 @@ ENEMY_SCENE = {"drone": "enemy_drones", "bio_hound": "enemy_hound", "dogs": "ene
 ENEMY_STAGES = {"boss": (0, 1, 3)}   # 단계별로 필요한 처치 수 (0 = 만나기만 하면)
 DEFAULT_STAGES = (0, 1, 10)
 
-# 적 그림은 적 이야기로 본다
-SCENES = ["junkyard", "scrap_sea", "crane", "ruin_city", "border_zone",
-          "lm_hospital", "lm_station", "lm_highway", "lm_amusement", "lm_school", "lm_mall", "lm_cathedral",
-          "lm_subway", "lm_powerplant", "lm_apartments", "lm_bridge", "lm_airport",
-          "neo_city", "bunker", "bunker_inside", "bunker_stairs", "ruin_factory", "ruin_server", "forge",
-          "barricade", "basin_storm", "basin_valley", "broadcast", "camera", "camp", "container", "crate",
-          "drones", "fig_hacker", "fig_scavengers", "fig_trader", "figure", "hq_wall", "rain", "signal",
-          "slum_fans", "tower", "toxic"]
+# 장면 이야기는 랜드마크만 (지금 그곳을 아는 사람의 말). 같은 곳의 붕괴 전 목소리는 일기 묶음 B
+SCENES = ["lm_school", "lm_hospital", "lm_station", "lm_highway", "lm_amusement", "lm_mall",
+          "lm_cathedral", "lm_subway", "lm_powerplant", "lm_apartments", "lm_bridge", "lm_airport"]
 
-# 일기 조각: (id, 묶음, 줍는 곳). 줍는 곳 None = 어디서나, 장면 이름 = 그 랜드마크 칸에서만, "alert" = 경계가 높을 때
-FRAGMENTS = [(f"a{i:02d}", "a", None) for i in range(1, 13)] + \
-    [(f"b{i:02d}", "b", s) for i, s in enumerate(
-        ["lm_school", "lm_hospital", "lm_station", "lm_highway", "lm_amusement", "lm_mall",
-         "lm_cathedral", "lm_subway", "lm_powerplant", "lm_apartments", "lm_bridge", "lm_airport"], 1)] + \
-    [(f"c{i:02d}", "c", "alert") for i in range(1, 7)]
+# 일기 조각: (id, 묶음, 줍는 곳). None = 어디서나, 장면 이름 = 그 칸에서만, "hidden" = 히든 이벤트로만
+#   A 먼저 버려진 자의 일지: 시간 순으로 이어진 10편 (줍는 순서는 무작위, 보관소에서는 번호순) + 숨은 마지막 장
+#   B 구시대의 기록: 랜드마크마다 붕괴 직전 그곳 사람의 목소리
+#   C 쫓겨난 자들의 증언: 방벽이 보이는 경계 지대 칸에서
+FRAGMENTS = [(f"a{i:02d}", "a", None) for i in range(1, 11)] + [("a11", "a", "hidden")] + \
+    [(f"b{i:02d}", "b", s) for i, s in enumerate(SCENES, 1)] + \
+    [(f"c{i:02d}", "c", "border_zone") for i in range(1, 7)]
 SERIES = ["a", "b", "c"]
 FRAGMENT_CHANCE = 0.35   # 빈 탐색에서 주울 확률 (주울 것이 남아 있을 때)
-ALERT_FRAGMENT = 40      # 네오 아크 문서는 경계가 이 이상일 때만
+HIDDEN_ID = "a11"
+HIDDEN_NEED = 5          # 히든 이벤트: 일지 A를 이만큼 모은 뒤부터
+HIDDEN_CHANCE = 0.03     # 랜덤 이벤트 자리에서 이 확률로 (평생 한 번)
 
 
 def _path():
@@ -161,10 +160,8 @@ def roll_fragment(player, grid, rng=random):
         here = scene_art.tile_scene(JUNKYARD, grid.player_pos)
     except Exception:
         pass
-    alert = getattr(player, "alert_level", 0)
     pool = [fid for fid, _, where in FRAGMENTS
-            if fid not in d["fragments"] and fragment_entry(fid)
-            and (where is None or where == here or (where == "alert" and alert >= ALERT_FRAGMENT))]
+            if fid not in d["fragments"] and fragment_entry(fid) and where in (None, here)]
     if not pool:
         return None
     fid = rng.choice(pool)
@@ -211,9 +208,31 @@ def scene_list():
 
 
 def fragment_list(series):
+    """[(id, 제목 또는 None)]. 숨은 조각은 찾기 전까지 목록에 없다."""
     have = set(load()["fragments"])
     return [(fid, fragment_entry(fid)["title"] if fid in have else None)
-            for fid, s, _ in FRAGMENTS if s == series and fragment_entry(fid)]
+            for fid, s, where in FRAGMENTS
+            if s == series and fragment_entry(fid) and (where != "hidden" or fid in have)]
+
+
+# ── 히든 이벤트: 죽은 사람의 품에 안긴 일지 ─────────────────────────────────
+def hidden_ready(rng=random):
+    """랜덤 이벤트 자리에서 부른다. 이번에 히든 이벤트를 띄울지."""
+    if not (text().get("hidden") and fragment_entry(HIDDEN_ID)):
+        return False
+    have = load()["fragments"]
+    if HIDDEN_ID in have or sum(1 for f in have if f.startswith("a")) < HIDDEN_NEED:
+        return False
+    return rng.random() < HIDDEN_CHANCE
+
+
+def take_hidden():
+    """히든 이벤트를 본 뒤: 마지막 장을 기록한다. 알림 문장."""
+    d = load()
+    if HIDDEN_ID not in d["fragments"]:
+        d["fragments"].append(HIDDEN_ID)
+        _save(d)
+    return t('arc_fragment_found', title=fragment_entry(HIDDEN_ID)["title"])
 
 
 def counts():
