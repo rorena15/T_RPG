@@ -58,7 +58,8 @@ def ready(player, grid):
 
 def progress_text(player, grid):
     """의뢰 진행 한 줄 (맵 화면·터미널 상태)."""
-    return t('forge_q_progress', k=min(kills(player, grid), NEED_KILLS), nk=NEED_KILLS,
+    key = 'forge_q_progress_node' if getattr(grid, "is_node_map", False) else 'forge_q_progress'   # 지점 지도는 길로 걸리는 턴
+    return t(key, k=min(kills(player, grid), NEED_KILLS), nk=NEED_KILLS,
              s=min(player.materials, NEED_SCRAP), ns=NEED_SCRAP, d=grid.forge_dist())
 
 

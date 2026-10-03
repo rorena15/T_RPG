@@ -15,7 +15,7 @@ import forge
 import node_map
 import scene_art
 from event_view import AMBER, BG, INK, INK_DIM, INK_FAINT, RED, TEAL, GREEN, VIOLET, _lerp
-from i18n import t
+from i18n import db_t, t
 from map_view import MapView
 
 TILE_W, TILE_H = 22, 11     # 지점 하나의 마름모 (센서)
@@ -41,23 +41,33 @@ class NodeMapView(MapView):
     _road_hover = None
     _road_rows = ()          # [(Rect, 키)] 오른쪽 길 목록 (마우스)
 
+    def update(self, player, grid):
+        moved = list(grid.player_pos) != self._pos
+        super().update(player, grid)
+        if moved:   # 자리를 옮겼다: 마우스로 짚던 길과 큰 지도는 내려놓는다
+            self._road_hover = None
+            self.big_map = False
+        if self._move and self._move["t0"] is None:
+            # 장면 넘김 연출은 칸 한 개 기준이라, 길의 방향(가로·세로 중 큰 쪽)만 남긴다
+            dx, dy = self._move["d"]
+            self._move["d"] = ((dx > 0) - (dx < 0), 0) if abs(dx) >= abs(dy) else (0, (dy > 0) - (dy < 0))
+            self._move["from"] = tuple(self._move["from"])
+
     # ── 입력 ─────────────────────────────────────────────────────────────
     def on_input(self, ev):
         if ev.type == pygame.KEYDOWN and ev.key == pygame.K_m:
-            self.big_map = not self.big_map
-            return None
+            return "M"   # 큰 지도 열고 닫기는 Main.py가 한다 (발밑 버튼과 같은 길)
         if ev.type == pygame.KEYDOWN and ev.key == pygame.K_ESCAPE and self.big_map:
-            self.big_map = False
+            self.big_map = False   # 큰 지도만 닫는다 (뜻 없는 Esc라 gui가 버린다: 종료 메뉴로 가지 않는다)
             return None
-        if ev.type in (pygame.MOUSEMOTION, pygame.MOUSEBUTTONDOWN):
+        if ev.type in (pygame.MOUSEMOTION, pygame.MOUSEBUTTONDOWN) and not self.big_map:
             cx, cy = self.to_canvas(ev.pos)
             hit = next((k for r, k in self._road_rows if r.collidepoint(cx, cy)), None)
             keys = self.grid.road_keys()
             self._road_hover = keys.get(hit) if hit else None
             if hit and ev.type == pygame.MOUSEBUTTONDOWN and ev.button == 1:
                 return hit
-            if ev.type == pygame.MOUSEBUTTONDOWN:
-                return None
+            # 길 목록 밖: 발밑 버튼·퀵슬롯은 EventView가 받는다 (아래로 넘긴다)
         if ev.type == pygame.KEYDOWN and ev.key in self.KEYMAP:
             return self.KEYMAP[ev.key]
         return super(MapView, self).on_input(ev)
@@ -98,18 +108,48 @@ class NodeMapView(MapView):
         c.blit(seen, (x + width - seen.get_width(), y + 66))
         y += 104
 
+        # 상태 (칸 지도 화면과 같은 줄들: map_view.MapView._draw_column)
         weapon = getattr(self, "_weapon_text", "")
         dg = g.danger_at()
-        lines = [(weapon, INK), (self._items_line(), INK_DIM)]
+        lines = [
+            (weapon, INK),
+            (f"VIT {p.vit}   INT {p.int_s}   DEX {p.dex}", INK),
+            (t('map_stats', df=p.calc_def_base(), eva=p.calc_eva_rate() * 100, crt=p.calc_crt_rate() * 100), INK_DIM),
+            (self._items_line(), INK_DIM),
+        ]
         if list(g.player_pos) != list(g.bunker_pos):
             dep = g.depletion()
             lines.append((t(f'map_danger_{dg}') + (t('map_depleted', n=dep) if dep else ""), (GREEN, AMBER, RED)[dg]))
         for text, col in lines:
             c.blit(self.f_sans.render(text, True, col), (x, y))
             y += 28
-        if g.forge.get("stage", 0) == 1:
+        # 경보 게이지
+        al = max(0, min(100, p.alert_level))
+        col = RED if al >= 70 else (AMBER if al >= 40 else GREEN)
+        label = t('alert_danger') if al >= 70 else (t('alert_caution') if al >= 40 else t('alert_safe'))
+        c.blit(self.f_mono.render(t('map_alert'), True, INK_DIM), (x, y + 4))
+        bx, bw = x + 44, 220
+        pygame.draw.line(c, (46, 44, 42), (bx, y + 12), (bx + bw, y + 12), 3)
+        pygame.draw.line(c, col, (bx, y + 12), (bx + int(bw * al / 100), y + 12), 3)
+        c.blit(self.f_mono.render(f"{al} · {label.strip('[]')}", True, col), (bx + bw + 10, y + 4))
+        y += 30
+        # 돌발 퀘스트 · 발칸 의뢰 · 강화소까지 (길 기준 턴)
+        if p.active_quest:
+            q = p.active_quest
+            c.blit(self.f_sans.render(t('map_quest', title=db_t(q, 'title'), left=max(0, q["deadline"] - p.turn_count)), True, AMBER), (x, y))
+            y += 26
+        fs = g.forge.get("stage", 0)
+        if fs == 1:
             c.blit(self.f_sans.render(forge.progress_text(p, g), True, AMBER), (x, y))
-            y += 28
+            y += 26
+        if fs >= 2 or g.forge.get("met"):
+            fd = g.forge_dist()
+            key = ('map_at_forge' if fs >= 2 else 'map_at_vulkan') if fd == 0 else ('nmap_forge_dist' if fs >= 2 else 'nmap_vulkan_dist')
+            c.blit(self.f_sans.render(t(key, n=fd), True, AMBER), (x, y))
+            y += 26
+        elif forge.hinted(g):
+            c.blit(self.f_sans.render(t('nmap_hint_dist', dir=forge.direction(g), n=g.forge_dist()), True, _lerp(BG, AMBER, 0.75)), (x, y))
+            y += 26
 
         # 이어진 길
         y += 14
@@ -187,6 +227,10 @@ class NodeMapView(MapView):
         now = pygame.time.get_ticks()
         pulse = (now % 1400) / 1400
         cxw, cyw = center if center else g.player_pos
+        e0 = self._move_progress()
+        if center is None and e0 is not None and self._move:   # 센서도 길을 따라 함께 움직인다
+            fx0, fy0 = self._move["from"]
+            cxw, cyw = fx0 + (cxw - fx0) * e0, fy0 + (cyw - fy0) * e0
         k = rect.w / 2 / span
         sq = 0.62
 
@@ -334,8 +378,13 @@ class NodeMapView(MapView):
                 pygame.draw.ellipse(w_, (*AMBER, int(150 * (1 - ph))), (20 - rw // 2, 12 - rw // 4, rw, rw // 2), 1)
                 c.blit(w_, (sx - 20, sy - 14))
 
-        # 나: 핑 고리 + 낙인 표식
-        sx, sy = scr(here)
+        # 나: 핑 고리 + 낙인 표식 (이동 중이면 이전 지점에서 길을 따라 미끄러져 온다)
+        e = self._move_progress()
+        if e is not None and self._move:
+            fx0, fy0 = self._move["from"]
+            sx, sy = scr((fx0 + (here[0] - fx0) * e, fy0 + (here[1] - fy0) * e))
+        else:
+            sx, sy = scr(here)
         ty = sy - 4
         ring = pygame.Surface((TILE_W + 14, TILE_H + 14), pygame.SRCALPHA)
         rw = int(8 + pulse * (TILE_W + 4))

@@ -122,10 +122,11 @@ def trader_key(p):
             return str(min(opts)[1] + 1)
     return "0"
 
-# ── 지점 지도 (NODE_MAP=1, node_map.py) ─────────────────────────────────────
+# ── 지점 지도 (constants.NODE_MAP 기본, NODE_MAP=0이면 옛 칸 지도로) ─────────────
 # 사람이 아는 것만 쓴다: 들른 지점에서 나가는 길, 드러난 지점, 멀리 보이는 랜드마크, 방공호 힌트 방향.
 # BOT_COLLECT=1이면 랜드마크·경계 지대를 찾아다니는 수집형 (기록 B·C 측정용).
-NODE = os.environ.get("NODE_MAP") == "1"
+NODE = os.environ.get("NODE_MAP", "1" if constants.NODE_MAP else "0") == "1"
+constants.NODE_MAP = NODE
 COLLECT = os.environ.get("BOT_COLLECT") == "1"
 if NODE:
     import tempfile, archive, node_map
@@ -169,14 +170,12 @@ def node_paths(g, allow_bunker=False):
     return dist, prev
 
 def node_step(g, target, dist, prev):
-    """target 쪽 첫 지점으로 가는 키 ("G" + 고를 번호는 P["node_pick"])."""
+    """target 쪽 첫 지점으로 가는 길의 키 (W·A·S·D, NodeMap.road_keys)."""
     p = tuple(target)
     while prev.get(p) != tuple(g.player_pos):
         p = prev[p]
-    roads = [q for q, _ in g.neighbors()]
-    P["node_pick"] = str(roads.index(p) + 1)
     M["moves"] += 1
-    return "G"
+    return next(k for k, q in g.road_keys().items() if tuple(q) == p)
 
 def node_go(g, target, allow_bunker=False):
     """target으로. 아는 길로 못 가면 target에 가장 가까워 보이는 안개 가장자리 지점으로."""
@@ -253,10 +252,8 @@ def node_move(pl, g, farming, want_forge):
             return node_step(g, max(cands, key=score), dist, prev)
     k = node_go(g, bunker_target(g), allow_bunker=True)
     if k: return k
-    roads = g.neighbors()   # 길이 안 보이면 아무 데로나 (안 생겨야 한다)
-    M["stuck"] = M.get("stuck", 0) + 1
-    P["node_pick"] = str(random.randrange(len(roads)) + 1)
-    return "G"
+    M["stuck"] = M.get("stuck", 0) + 1   # 길이 안 보이면 아무 데로나 (안 생겨야 한다)
+    return random.choice(list(g.road_keys()))
 
 pending = []
 def key_for_consumable_menu(p, want):
@@ -274,7 +271,6 @@ def bot_read_key(_depth=1):
     p = P["p"] if not hasattr(p, "hp") else p
     if pending: return pending.pop(0)
     if line.startswith("diff_ans"): return DIFF_KEY
-    if line.startswith("_pick = read_key()"): return P.pop("node_pick", "0")   # 지점 지도: 고른 길 (node_move)
     if line.startswith("skip_ans"): return "0"
     if fn == "run_game" and line.startswith("ans"): return "1"
     if line.startswith("move = read_key()"):
@@ -412,10 +408,16 @@ for m in (ui, combat, quest, story, player_mod, Main, core, updater, forge):
 _orig_move_key = bot_read_key
 def main_read_key():
     k = bot_read_key(2)
-    if k == "__USE__":
+    while True:
+        if NODE and k in ("W", "A", "S", "D") and pending and pending[0] == "__USE__":
+            # 지점 지도: 먹고(치료하고) 나서 길을 나선다 (길이 2~3턴이라, 도착한 뒤에 먹으면 그사이 굶는다)
+            pending.pop(0)
+            P["p"].use_consumable_menu()
+            return k
+        if k != "__USE__":
+            return k
         P["p"].use_consumable_menu()
-        return bot_read_key(2) if not pending else pending.pop(0)
-    return k
+        k = bot_read_key(2) if not pending else pending.pop(0)   # 먹은 뒤 다음 행동 (또 먹고 출발할 수도 있다)
 Main.read_key = main_read_key
 # 전투 기록
 _orig_combat = combat.combat_loop

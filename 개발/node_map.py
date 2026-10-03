@@ -88,6 +88,8 @@ class NodeMap(GameMap):
                 n = adj[p].pop(q); adj[q].pop(p)
                 if not self._connected(adj, start):
                     adj[p][q] = adj[q][p] = n
+        if any(len(e) > _MAX_DEG for e in adj.values()):   # 끊지 못한 갈림길: 키가 W·A·S·D 넷뿐이라 쓸 수 없다
+            return False
 
         def ring(p):
             r = math.hypot((p[0] - start[0]) / rx, p[1] / ry)
@@ -134,7 +136,7 @@ class NodeMap(GameMap):
         self.start_pos, self.bunker_pos, self.forge_pos = start, list(bunker), list(forge)
         self.danger = {p: nd["ring"] for p, nd in nodes.items()}   # 위험도 = 권역 (설계 2-2)
         import scene_art
-        scene_art.NODE_SCENES = {p: nd["scene"] for p, nd in nodes.items()}
+        scene_art.NODE_SCENES = {p: nd["scene"] for p, nd in nodes.items() if nd["scene"]}   # 방공호는 원래 장면 묶음에서
         return True
 
     @staticmethod
@@ -266,12 +268,17 @@ class NodeMap(GameMap):
     def draw(self, turn_count: int = 0):
         """시험용 글 화면: 지금 지점과 이어진 길만 (지도 그림은 3단계)."""
         print(f"  {t('node_here', name=self.label(), n=len(self.visited_tiles), total=len(self.nodes))}")
-        for i, (q, n) in enumerate(self.neighbors(), 1):
-            print(f"    {t('node_road', n=i, name=self.label(q), turns=n)}")
+        for k, q in sorted(self.road_keys().items(), key=lambda kv: "WASD".index(kv[0])):
+            print(f"    {t('node_road', n=k, name=self.label(q), turns=self.edge_len(self.player_pos, q))}")
 
     def label(self, pos=None):
         p = tuple(pos if pos is not None else self.player_pos)
         nd = self.nodes[p]
         if p == tuple(self.bunker_pos):
             return t('node_kind_bunker')
-        return nd["scene"] if nd["kind"] == "landmark" else t(f"node_kind_{nd['kind']}")
+        if nd["kind"] == "landmark":   # 기록 보관소의 장면 제목 (예: 무너진 병원)
+            import archive
+            ent = archive.scene_entry(nd["scene"])
+            if ent and ent.get("title"):
+                return ent["title"]
+        return t(f"node_kind_{nd['kind']}")

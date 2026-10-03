@@ -240,9 +240,14 @@ def run_game():
     playtime.start()
 
     _ui_mgr = None
-    if get_terminal():  # 그림 + 이야기 칸 맵 화면 (map_view.py)
-        from map_view import MapView
-        _ui_mgr = MapView(get_terminal(), player, grid)
+    _node_map = getattr(grid, "is_node_map", False)
+    if get_terminal():  # 그림 + 이야기 칸 맵 화면 (map_view.py, 지점 지도는 node_map_view.py)
+        if _node_map:
+            from node_map_view import NodeMapView
+            _ui_mgr = NodeMapView(get_terminal(), player, grid)
+        else:
+            from map_view import MapView
+            _ui_mgr = MapView(get_terminal(), player, grid)
 
     def _off():
         if _ui_mgr:
@@ -257,6 +262,8 @@ def run_game():
         ("F5",   t('act_save'),      True, "C"),
         ("Esc",  t('act_quit'),      True, "Q"),
     ]
+    if _node_map:   # 지점 지도: M으로 지금까지 본 지도 전체
+        _EXPLORE_ACTIONS.insert(2, ("M", t('act_map'), True, "M"))
 
     _autosaved = player.turn_count   # 마지막으로 자동 저장한 턴
     while True:
@@ -414,6 +421,15 @@ def run_game():
                 if _frag:
                     sound.sfx("loot")
                     print(_frag)
+                    if archive.PICKED:   # 주운 글은 그 자리에서 읽는다 (그 지점의 장면 그림을 배경으로)
+                        from screens import read_fragments
+                        _off()
+                        if _node_map:
+                            _here = grid.scene_at()
+                        else:
+                            from event_view import JUNKYARD
+                            _here = scene_art.tile_scene(JUNKYARD, grid.player_pos)
+                        read_fragments(list(archive.PICKED), _here)
             else:
                 # 자원 파밍 (나머지 ~22%). 칸 위험도에 따른 확률(DANGER_GEAR)로 자원 대신 장비
                 _depleted = random.random() > _yield   # 여러 번 뒤진 칸: 이미 누가 다 가져갔다
@@ -488,13 +504,16 @@ def run_game():
             time.sleep(0.8)
             sys.exit()
 
-        if getattr(grid, "is_node_map", False):   # 지점 지도: G로 이어진 지점 고르기 (조작은 3단계 화면에서 다시 정한다)
-            if move != "G":
+        if _node_map:   # 지점 지도: 이어진 길마다 W·A·S·D 하나 (node_map.road_keys), M은 큰 지도
+            if move == "M":
+                if _ui_mgr:
+                    _ui_mgr.big_map = not _ui_mgr.big_map
                 continue
-            _dest = _pick_node(grid)
-            if _dest is None:
+            _dest = grid.road_keys().get(move)
+            if _dest is None:   # 그쪽으로 난 길이 없다: 조용히 무시
                 continue
-            _road(player, grid, _dest)
+            _dest = list(_dest)
+            _road(player, grid, _dest, _off)
             px, py = _dest
             valid_move = True
         elif move not in ("W", "A", "S", "D"):  # 모르는 키는 조용히 무시 (예전엔 "이동 불가"를 띄우고 멈췄다)
@@ -527,6 +546,7 @@ def run_game():
                 _ui_mgr.play_move()
 
             if current_loc == tuple(grid.bunker_pos):
+                player.zone_danger = None   # 보스전·외곽 조우는 권역 배율 없이 (방공호는 대개 방벽 아래 권역이다)
                 sound.sfx("bunker_door")   # 녹슨 무쇠 문
                 if constants.SESSIONS_DB and len(constants.SESSIONS_DB) > 6:
                     _off()
@@ -624,22 +644,9 @@ def _new_map():
     return GameMap()
 
 
-def _pick_node(grid):
-    """지점 지도: 이어진 지점 중 하나를 번호로 고른다. 0이면 취소 (None)."""
-    roads = grid.neighbors()
-    for i, (q, n) in enumerate(roads, 1):
-        print(f"  {t('node_road', n=i, name=grid.label(q), turns=n)}")
-    print(f"  {t('node_road_cancel')}")
-    while True:
-        _pick = read_key()
-        if _pick in ("0", "\x1b"):
-            return None
-        if _pick.isdigit() and 1 <= int(_pick) <= len(roads):
-            return list(roads[int(_pick) - 1][0])
-
-
-def _road(player, grid, dest):
-    """지점 지도: 2턴 이상인 길은 가는 동안 한 턴마다 자원이 줄고 조우만 굴린다 (도착 턴은 원래 이동 처리)."""
+def _road(player, grid, dest, off=lambda: None):
+    """지점 지도: 2턴 이상인 길은 가는 동안 한 턴마다 자원이 줄고 조우만 굴린다 (도착 턴은 원래 이동 처리).
+    off: 그림 지도 화면을 내리는 함수 (전투 화면을 열기 전에, 다른 조우와 같게)."""
     player.zone_danger = max(grid.danger_at(), grid.danger_at(dest))
     for _ in range(grid.edge_len(grid.player_pos, dest) - 1):
         player.consume_resources()
@@ -647,6 +654,7 @@ def _road(player, grid, dest):
             etype = (grid.escaped_enemy_type or "drone") if grid.escaped_enemy_hp is not None else pick_enemy(player)
             print(enemy_line('encounter_alert', etype))
             wait_for_keypress()
+            off()
             sound.play_combat_bgm()
             result_hp, result_type = combat_loop(player, is_boss=False, current_hp=grid.escaped_enemy_hp, enemy_type=etype)
             grid.escaped_enemy_hp = result_hp

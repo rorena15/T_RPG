@@ -420,6 +420,22 @@ def _show_enemy(key):
         v.close()
 
 
+def read_fragments(fids, scene="bunker_inside"):
+    """방금 주운 일기 조각을 그 자리에서 읽는다 (보관소와 같은 읽기 화면). 글 화면이면 본문을 그대로 찍는다."""
+    import archive
+    for fid in fids:
+        e = archive.fragment_entry(fid)
+        if not e:
+            continue
+        tag = t(f'arc_series_{fid[0]}')
+        if get_terminal() is None:
+            print(f"\n  [{e['title']}]")
+            for para in e["text"].split("\n"):
+                print(f"  {para}")
+        else:
+            _archive_read(scene or "bunker_inside", e["title"], e["text"].split("\n"), tag)
+
+
 def run_hidden_event(player, grid):
     """히든 이벤트: 쓰레기 더미에 기대 숨진 사람이 일지를 품에 안고 있다 (archive.hidden_ready).
     동적 서사가 켜져 있어도 정해진 글로만 보여 준다. 마지막 장을 기록하고 알림을 찍는다."""

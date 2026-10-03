@@ -203,8 +203,12 @@ def see_scene(scene):
         _save(d)
 
 
+PICKED = []   # 방금 주워 지금 읽을 수 있는 조각 (roll_fragment가 채운다. Main이 그 자리에서 읽기 화면을 연다)
+
+
 def roll_fragment(player, grid, rng=random):
-    """빈 탐색 뒤에 부른다. 조각을 주우면 알림 문장, 아니면 None."""
+    """빈 탐색 뒤에 부른다. 조각을 주우면 알림 문장, 아니면 None. 바로 읽을 조각은 PICKED에 남긴다."""
+    PICKED.clear()
     d = load()
     here = None
     node_map = getattr(grid, "is_node_map", False)
@@ -221,6 +225,7 @@ def roll_fragment(player, grid, rng=random):
             and rng.random() < CHARGER_CHANCE):
         d["charger"] = True
         _save(d)
+        PICKED.extend(f for f, _, _ in FRAGMENTS if f in PHONES and f in d["fragments"])   # 이제야 켜지는 핸드폰들
         return t('arc_charger_found')
     # 지점 지도: 랜드마크·경계 지대에서는 그곳 기록(B·C)이 일지 A보다 먼저 (찾아간 보람이 있게)
     place = [fid for fid, _, where in FRAGMENTS
@@ -239,6 +244,7 @@ def roll_fragment(player, grid, rng=random):
     _save(d)
     if not readable(fid, d):
         return t('arc_phone_found')
+    PICKED.append(fid)
     if fragment_entry(fid).get("found"):   # 글마다 주운 자리를 따로 적어 둔 것 (예: 서랍 안의 편지)
         return t('arc_found_custom', msg=fragment_entry(fid)["found"])
     key = 'arc_fragment_found_a' if fid.startswith("a") else 'arc_fragment_found'   # 일지 A는 찢겨 나온 공책 한 장

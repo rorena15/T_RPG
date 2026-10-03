@@ -88,7 +88,9 @@ never = AlwaysRng()
 never.random = lambda: 0.99
 check("확률을 못 넘으면 없음", archive.roll_fragment(P(), G(), never) is None)
 check("어디서나 a01", "첫날" in (archive.roll_fragment(P(), G(), rng) or ""))
+check("주운 a01은 바로 읽을 목록에", archive.PICKED == ["a01"])
 check("학교·경계 지대 칸이 아니면 더 없음", archive.roll_fragment(P(), G(), rng) is None)
+check("못 주우면 읽을 목록도 빔", archive.PICKED == [])
 here["pos"] = "lm_school"
 check("학교 칸에서 b01", "알림장" in (archive.roll_fragment(P(), G(), rng) or ""))
 here["pos"] = "border_zone"
@@ -122,12 +124,14 @@ check("파일에 남음", json.load(open(os.path.join(TMP, "archive.json"), enco
 archive._text["ko"]["fragment"]["b06"] = {"title": "문자 기록", "text": "글"}
 here["pos"] = "lm_mall"
 check("핸드폰 줍기 알림", "휴대용 인터페이스" in (archive.roll_fragment(P(), G(), rng) or ""))
+check("충전 전 핸드폰은 바로 읽지 않음", archive.PICKED == [])
 rows = dict((f, (txt, ok)) for f, txt, ok in archive.fragment_rows("b"))
 check("충전 전에는 못 엶", rows["b06"] == (i18n.t('arc_phone_locked'), False))
 here["pos"] = "lm_school"
 check("발전소 칸이 아니면 충전기 없음", "충전기" not in (archive.roll_fragment(P(), G(), rng) or ""))
 here["pos"] = "lm_powerplant"
 check("발전소 칸에서 충전기", "충전기" in (archive.roll_fragment(P(), G(), rng) or ""))
+check("충전기를 찾으면 주워 둔 핸드폰을 바로 읽음", archive.PICKED == ["b06"])
 rows = dict((f, (txt, ok)) for f, txt, ok in archive.fragment_rows("b"))
 check("충전 뒤에는 열림", rows["b06"] == ("문자 기록", True) and archive.load()["charger"])
 check("충전기는 한 번만", "충전기" not in (archive.roll_fragment(P(), G(), rng) or ""))
