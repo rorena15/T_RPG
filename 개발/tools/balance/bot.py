@@ -135,6 +135,8 @@ if NODE:
     if os.environ.get("ZONE_MULT"): constants.ZONE_ENEMY_MULT = tuple(float(x) for x in os.environ["ZONE_MULT"].split(","))
     if os.environ.get("ROAD_ENC"): constants.ROAD_ENC = float(os.environ["ROAD_ENC"])
     if os.environ.get("NODE_SEARCH"): constants.NODE_SEARCH = tuple(int(x) for x in os.environ["NODE_SEARCH"].split(","))
+    if os.environ.get("NODE_TRADER"): constants.NODE_TRADER_ARRIVE = float(os.environ["NODE_TRADER"])
+    if os.environ.get("NODE_FOOD"): constants.NODE_FOOD_BONUS = float(os.environ["NODE_FOOD"])
     if os.environ.get("NODE_FORGE"): node_map._FORGE_TURNS = tuple(int(x) for x in os.environ["NODE_FORGE"].split(","))
     if os.environ.get("NODE_UNIT"): node_map._UNIT = float(os.environ["NODE_UNIT"])
     _ARC = os.path.join(tempfile.mkdtemp(), "archive.json")   # 판마다 빈 기록 보관소 (진짜 archive.json은 건드리지 않는다)
@@ -208,7 +210,7 @@ def bunker_target(g):
 
 def node_move(pl, g, farming, want_forge):
     if os.environ.get("TRACE"):
-        sys.stderr.write(f"  node_move farming={farming} want_forge={want_forge} bunker_seen={tuple(g.bunker_pos) in g.revealed} goal={P.get('edge_goal')}\n")
+        sys.stderr.write(f"  node_move farming={farming} want_forge={want_forge} bunker_seen={tuple(g.bunker_pos) in g.revealed} goal={P.get('edge_goal')} far={P.get('far_goal')}\n")
     if want_forge:
         M["forge_moves"] = M.get("forge_moves", 0) + 1
         k = node_go(g, g.forge_pos)
@@ -233,10 +235,19 @@ def node_move(pl, g, farming, want_forge):
                 s += 8
             return s + random.random() * 0.1
         cands = [q for q in dist if q != tuple(g.player_pos) and q != tuple(g.bunker_pos) and searchable(q)]
-        if COLLECT and not cands or (COLLECT and g.sighted() and random.random() < 0.3):
-            far = g.sighted()   # 멀리 보이는 랜드마크 쪽으로
-            if far:
-                k = node_go(g, min(far, key=lambda q: node_map._dist(q, g.player_pos)))
+        if COLLECT:
+            # 멀리 보이는 곳(높은 랜드마크·방벽 아래)으로. 한 번 정하면 드러날 때까지 그대로, 경계 지대에 아직 못 갔으면 그쪽 먼저
+            far = g.sighted()
+            goal = P.get("far_goal")
+            if goal is None or goal in g.visited_tiles:   # 드러난 뒤에도 실제로 닿을 때까지 그대로
+                been_border = any(g.nodes[tuple(p)]["kind"] == "border" for p in g.visited_tiles)
+                border = [q for q in far if g.nodes[q]["kind"] == "border"] if not been_border else []
+                pool = border or far
+                chance = 0.5 if border else 0.3
+                goal = min(pool, key=lambda q: node_map._dist(q, g.player_pos)) if pool and (not cands or random.random() < chance) else None
+                P["far_goal"] = goal
+            if goal:
+                k = node_go(g, goal)
                 if k: return k
         if cands:
             return node_step(g, max(cands, key=score), dist, prev)

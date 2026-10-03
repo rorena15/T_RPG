@@ -181,8 +181,9 @@ class NodeMap(GameMap):
         self.reveal(self.player_pos)
 
     def sighted(self):
-        """안개 너머에서도 보이는 높은 랜드마크 (아직 드러나지 않은 것)."""
-        return [p for p, nd in self.nodes.items() if nd.get("scene") in TALL and p not in self.revealed]
+        """안개 너머에서도 보이는 곳 (아직 드러나지 않은 것): 높은 랜드마크와 방벽 아래 경계 지대 (방벽은 어디서나 보인다)."""
+        return [p for p, nd in self.nodes.items()
+                if (nd.get("scene") in TALL or nd["kind"] == "border") and p not in self.revealed]
 
     def kind_at(self, pos=None):
         return self.nodes[tuple(pos if pos is not None else self.player_pos)]["kind"]

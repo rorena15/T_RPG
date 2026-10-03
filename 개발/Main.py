@@ -431,7 +431,7 @@ def run_game():
                     advance_quest(player, "scrap", gained)
                     sound.sfx("loot")
                     print(t('farm_scrap', gained=gained))
-                elif item_roll <= 0.60:
+                elif item_roll <= 0.60 + (constants.NODE_FOOD_BONUS if getattr(grid, "is_node_map", False) else 0):   # 지점 지도: 물·식량 조금 더
                     if random.random() < 0.5:
                         it = roll_food()
                         player.consumables[it] += 1
@@ -590,6 +590,12 @@ def run_game():
                         handle_session(player, constants.SESSIONS_DB[grid.session_index])
                         grid.session_index += 1
                         session_triggered = True
+                # 지점 지도: 길이 멀어 굶기 쉬우니, 어느 지점이든 도착하면 가끔 떠도는 행상인 (설계 7-1)
+                if not session_triggered and getattr(grid, "is_node_map", False) and constants.TRADER_ITEMS \
+                        and random.random() < constants.NODE_TRADER_ARRIVE:
+                    _off()
+                    handle_trader(player)
+                    session_triggered = True
 
                 if not session_triggered:
                     if random.random() < get_encounter_chance(player):
