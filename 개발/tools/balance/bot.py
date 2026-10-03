@@ -122,6 +122,131 @@ def trader_key(p):
             return str(min(opts)[1] + 1)
     return "0"
 
+# ── 지점 지도 (NODE_MAP=1, node_map.py) ─────────────────────────────────────
+# 사람이 아는 것만 쓴다: 들른 지점에서 나가는 길, 드러난 지점, 멀리 보이는 랜드마크, 방공호 힌트 방향.
+# BOT_COLLECT=1이면 랜드마크·경계 지대를 찾아다니는 수집형 (기록 B·C 측정용).
+NODE = os.environ.get("NODE_MAP") == "1"
+COLLECT = os.environ.get("BOT_COLLECT") == "1"
+if NODE:
+    import tempfile, archive, node_map
+    constants.NODE_MAP = True
+    if os.environ.get("NODE_COUNT"): constants.NODE_COUNT = int(os.environ["NODE_COUNT"])
+    if os.environ.get("PLACE_CHANCE"): constants.NODE_PLACE_CHANCE = float(os.environ["PLACE_CHANCE"])
+    if os.environ.get("ZONE_MULT"): constants.ZONE_ENEMY_MULT = tuple(float(x) for x in os.environ["ZONE_MULT"].split(","))
+    if os.environ.get("ROAD_ENC"): constants.ROAD_ENC = float(os.environ["ROAD_ENC"])
+    if os.environ.get("NODE_SEARCH"): constants.NODE_SEARCH = tuple(int(x) for x in os.environ["NODE_SEARCH"].split(","))
+    if os.environ.get("NODE_FORGE"): node_map._FORGE_TURNS = tuple(int(x) for x in os.environ["NODE_FORGE"].split(","))
+    if os.environ.get("NODE_UNIT"): node_map._UNIT = float(os.environ["NODE_UNIT"])
+    _ARC = os.path.join(tempfile.mkdtemp(), "archive.json")   # 판마다 빈 기록 보관소 (진짜 archive.json은 건드리지 않는다)
+    archive._path = lambda: _ARC
+
+def known_adj(g):
+    """봇이 아는 길: 들른 지점에서 나가는 길만 (안개 속 지점끼리의 길은 모른다)."""
+    adj = {}
+    for p in g.visited_tiles:
+        for q, n in g.edges[tuple(p)].items():
+            adj.setdefault(tuple(p), {})[q] = n
+            adj.setdefault(q, {})[tuple(p)] = n
+    return adj
+
+def node_paths(g, allow_bunker=False):
+    """지금 자리에서 아는 길로 갈 수 있는 지점까지 (거리, 이전 지점). 방공호는 목적지일 때만 지나간다."""
+    import heapq
+    adj, src, bunker = known_adj(g), tuple(g.player_pos), tuple(g.bunker_pos)
+    dist, prev, pq = {src: 0}, {}, [(0, src)]
+    while pq:
+        d, p = heapq.heappop(pq)
+        if d > dist[p] or (p == bunker and p != src):
+            continue
+        for q, w in adj.get(p, {}).items():
+            if q == bunker and not allow_bunker:
+                continue
+            if d + w < dist.get(q, 1e9):
+                dist[q], prev[q] = d + w, p
+                heapq.heappush(pq, (d + w, q))
+    return dist, prev
+
+def node_step(g, target, dist, prev):
+    """target 쪽 첫 지점으로 가는 키 ("G" + 고를 번호는 P["node_pick"])."""
+    p = tuple(target)
+    while prev.get(p) != tuple(g.player_pos):
+        p = prev[p]
+    roads = [q for q, _ in g.neighbors()]
+    P["node_pick"] = str(roads.index(p) + 1)
+    M["moves"] += 1
+    return "G"
+
+def node_go(g, target, allow_bunker=False):
+    """target으로. 아는 길로 못 가면 target에 가장 가까워 보이는 안개 가장자리 지점으로."""
+    dist, prev = node_paths(g, allow_bunker)
+    target = tuple(target)
+    if target in dist and target != tuple(g.player_pos):
+        return node_step(g, target, dist, prev)
+    edge = [q for q in dist if q not in g.visited_tiles and q != tuple(g.bunker_pos)]
+    if not edge:
+        return None
+    # 한 번 정한 안개 가장자리 지점은 닿을 때까지 그대로 (매번 다시 고르면 점수가 비슷한 두 곳 사이를 오간다: 시드 20075)
+    goal = P.get("edge_goal")
+    if not (goal and goal[0] == target and goal[1] in edge):
+        goal = (target, min(edge, key=lambda q: dist[q] + node_map._dist(q, target) / node_map._UNIT))
+        P["edge_goal"] = goal
+    return node_step(g, goal[1], dist, prev)
+
+def bunker_target(g):
+    """방공호가 드러났으면 그 자리, 아니면 마지막으로 본 힌트 방향으로 멀리 (사람이 기억하는 만큼만)."""
+    if tuple(g.bunker_pos) in g.revealed:
+        P.setdefault("bunker_turn", P["p"].turn_count)
+        return tuple(g.bunker_pos)
+    if P.get("hint_tier") != g.bunker_hint:   # 새 힌트를 봤다: 그때 자리에서 힌트가 말한 방위를 기억한다
+        import math
+        P["hint_tier"] = g.bunker_hint
+        dx, dy = g.bunker_pos[0] - g.player_pos[0], g.bunker_pos[1] - g.player_pos[1]
+        step = 45 if g.bunker_hint > 0 else 90
+        ang = math.radians(round(math.degrees(math.atan2(dy, dx)) / step) * step)
+        P["hint_aim"] = (g.player_pos[0] + 60 * math.cos(ang), g.player_pos[1] + 60 * math.sin(ang))
+    return P.get("hint_aim", (g.player_pos[0], g.player_pos[1] + 60))
+
+def node_move(pl, g, farming, want_forge):
+    if os.environ.get("TRACE"):
+        sys.stderr.write(f"  node_move farming={farming} want_forge={want_forge} bunker_seen={tuple(g.bunker_pos) in g.revealed} goal={P.get('edge_goal')}\n")
+    if want_forge:
+        M["forge_moves"] = M.get("forge_moves", 0) + 1
+        k = node_go(g, g.forge_pos)
+        if k: return k
+    if farming and g.can_search(pl.turn_count)[0]:
+        M["searches"] += 1; M["danger_srch"][g.danger_at()] += 1; return "F"
+    if farming:
+        dist, prev = node_paths(g)
+        hp_ok = pl.hp >= pl.max_hp * 0.6
+        import upgrade
+        geared = upgrade.level(pl, pl.equipment["main_weapon"]) >= 3   # 사람처럼: 무기를 손보기 전엔 방벽 아래(적이 세다)를 피한다
+        def searchable(q):
+            td = g.tile_data.get(q)
+            return td is None or td["remaining"] > 0 or td["cooldown_until"] <= pl.turn_count + dist[q]
+        def score(q):
+            d = g.danger_at(q)
+            pref = {"smart": d if hp_ok else -d, "safe": -d, "any": 0}.get(DANGER_MODE, 0)
+            if DANGER_MODE == "smart" and d == 2 and not geared:
+                pref = -3
+            s = 6 * (q not in g.tile_data) - 2 * g.depletion(q) + 2 * pref - dist[q]
+            if COLLECT and g.kind_at(q) in ("landmark", "border") and g.depletion(q) == 0:
+                s += 8
+            return s + random.random() * 0.1
+        cands = [q for q in dist if q != tuple(g.player_pos) and q != tuple(g.bunker_pos) and searchable(q)]
+        if COLLECT and not cands or (COLLECT and g.sighted() and random.random() < 0.3):
+            far = g.sighted()   # 멀리 보이는 랜드마크 쪽으로
+            if far:
+                k = node_go(g, min(far, key=lambda q: node_map._dist(q, g.player_pos)))
+                if k: return k
+        if cands:
+            return node_step(g, max(cands, key=score), dist, prev)
+    k = node_go(g, bunker_target(g), allow_bunker=True)
+    if k: return k
+    roads = g.neighbors()   # 길이 안 보이면 아무 데로나 (안 생겨야 한다)
+    M["stuck"] = M.get("stuck", 0) + 1
+    P["node_pick"] = str(random.randrange(len(roads)) + 1)
+    return "G"
+
 pending = []
 def key_for_consumable_menu(p, want):
     avail = [k for k, v in p.consumables.items() if v > 0]
@@ -138,6 +263,7 @@ def bot_read_key(_depth=1):
     p = P["p"] if not hasattr(p, "hp") else p
     if pending: return pending.pop(0)
     if line.startswith("diff_ans"): return DIFF_KEY
+    if line.startswith("_pick = read_key()"): return P.pop("node_pick", "0")   # 지점 지도: 고른 길 (node_move)
     if line.startswith("skip_ans"): return "0"
     if fn == "run_game" and line.startswith("ans"): return "1"
     if line.startswith("move = read_key()"):
@@ -179,6 +305,8 @@ def bot_read_key(_depth=1):
         else:
             # 의뢰 조건을 채웠거나, 쇳물 냄새(힌트)를 맡았으면 그쪽으로 (사람처럼 지도 표시를 따라간다)
             want_forge = (st == 1 and forge.ready(pl, g)) or (st == 0 and forge.hinted(g))
+        if NODE:
+            return node_move(pl, g, farming, want_forge)
         if want_forge:
             x, y = g.player_pos; fx, fy = g.forge_pos
             M["forge_moves"] = M.get("forge_moves", 0) + 1
@@ -343,6 +471,16 @@ if pl:
              tier=pl.get_highest_tier(), atk=pl.get_attack_power(), inv=len(pl.inventory), job=getattr(pl, "job_class", None),
              weights=dict(pl.weights), traits={k: traits.tier(pl, k) for k in traits.KEYS}, enemies=pl.enemies_defeated)
 M["beh"] = dict(combat.BEH_STATS)
+if NODE and P.get("g") is not None:   # 지점 지도: 들른 곳·기록 보관소
+    g_ = P["g"]
+    seen = {tuple(p) for p in g_.visited_tiles}
+    M["node"] = {"count": len(g_.nodes), "visited": len(seen),
+                 "landmarks": sum(1 for p in seen if g_.nodes[p]["kind"] == "landmark"),
+                 "border": sum(1 for p in seen if g_.nodes[p]["kind"] == "border"),
+                 "bunker_found_turn": P.get("bunker_turn")}
+    frags = archive.load()["fragments"]
+    M["frag"] = {s: sum(1 for f in frags if f.startswith(s)) for s in "abc"}
+    M["charger"] = archive.load()["charger"]
 if P.get("g") is not None:
     M["cycles"] = sum(td.get("cycles", 0) for td in P["g"].tile_data.values())
 sys.__stdout__.write(json.dumps(M, ensure_ascii=False) + "\n")

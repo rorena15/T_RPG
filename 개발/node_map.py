@@ -23,7 +23,7 @@ _SPACING = 4.2      # 지점끼리 최소 거리
 _UNIT = 3.0         # 이 거리마다 길 1턴
 _MAX_DEG = 4
 _BUNKER_TURNS = (8, 10)   # 출발지에서 방공호까지 최단 턴
-_FORGE_TURNS = (3, 6)
+_FORGE_TURNS = (2, 4)    # 강화하러 오가는 길이 길면 장비가 약한 채로 보스에 닿는다
 
 
 def _dist(a, b):
@@ -193,6 +193,9 @@ class NodeMap(GameMap):
     def forge_dist(self) -> int:
         return self.path_dist(self.player_pos, self.forge_pos)
 
+    def _new_tile_data(self) -> dict:
+        return {"remaining": random.randint(*constants.NODE_SEARCH), "cooldown_until": 0}
+
     def is_blocked(self, pos):
         return False
 
@@ -214,7 +217,7 @@ class NodeMap(GameMap):
             return None
         d = self.path_dist(self.player_pos, self.bunker_pos)
         tier = 0 if d >= 7 else (1 if d >= 4 else 2)
-        if tier == self.bunker_hint:
+        if tier <= self.bunker_hint:   # 더 가까워질 때만 (경계에 걸린 두 지점을 오가면 문장이 번갈아 나왔다: 시드 20075)
             return None
         self.bunker_hint = tier
         return t(f"bunker_hint_{tier}", dir=self.bunker_direction(fine=tier > 0))

@@ -51,7 +51,8 @@ def run_one(game_dir, diff, farm, seed, env):
     return {"diff": diff, "farm": farm, "seed": seed, "result": r.get("result"), "forge": r.get("forge_last"),
             "turns": r.get("turns"), "state": r.get("boss_state"), "ending": r.get("ending"), "end": r.get("end"),
             **{k: r.get(k) for k in ("traits", "weights", "beh", "danger_srch", "cycles", "enemies", "scrap_end",
-                                     "bot_jam", "bot_guard", "searches", "hp", "job")}}
+                                     "bot_jam", "bot_guard", "searches", "hp", "job",
+                                     "node", "frag", "charger", "stuck", "moves")}}   # 뒤 다섯은 지점 지도 (NODE_MAP=1)
 
 
 def simulate(diffs, farms, n, jobs, seed0, env, out_path):
