@@ -38,7 +38,6 @@
 ├── diag.py              # 진단 기록 (개발자 공개키로 암호화해 diag/에)
 ├── sys_log.py           # 로그 · 호출 추적 → diag
 ├── updater.py           # GitHub 릴리스 자동 업데이트
-├── database.json        # 서사 텍스트 · 소모품 · 이벤트 데이터
 ├── master_formulas.json # 데미지 · 스케일링 · 확률 밸런스 수식
 ├── art_gen/             # 장면 그림 만들기 (로컬 SDXL)
 ├── options.py           # 옵션 화면(소리 · 화면 · 게임)과 설정 적용
@@ -47,9 +46,11 @@
 ├── tools/ui/            # 그림 화면 점검: 창 없이 화면을 PNG로 저장(shot.py), 입력 루프 시험(loop_test.py)
 ├── tests/               # 단독 실행 시험 (python tests/test_gm_renamed.py: GM 응답의 예전 브랜드명 대응)
 ├── validate_i18n.py     # 언어 파일 검증 (키 일치 · 코드 속 한글 금지)
-└── locales/
-    ├── ko.json          # 한국어 (825키)
-    └── en.json          # 영어 (825키)
+└── text/                  # 게임 글 전부 (text/README.md: 어느 파일에 무엇이 있는지, 고치는 법)
+    ├── ko.json · en.json                # 화면·알림·안내 문구
+    ├── archive_ko.json · archive_en.json  # 기록 보관소 글
+    ├── story.json                       # 스토리 세션 · 랜덤 이벤트 · 풍경 문장 · 소모품
+    └── equipment.json                   # 장비 이름 · 설명 (수치는 db_init.py)
 ```
 
 ## 동적 서사 (로컬 GM) 내부

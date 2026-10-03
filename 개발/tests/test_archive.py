@@ -155,7 +155,7 @@ if scene_art.index():
 
 # 실제 글 파일이 있으면 형식 확인
 for lang in ("ko", "en"):
-    path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "locales", f"archive_{lang}.json")
+    path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "text", f"archive_{lang}.json")
     if os.path.exists(path):
         d = json.load(open(path, encoding="utf-8"))
         bad = [k for k in d.get("scene", {}) if k not in archive.SCENES]

@@ -8,6 +8,7 @@ import sqlite3
 import time
 import db_init
 import constants
+import i18n
 from frozen_compat import user_dir
 from i18n import t, db_t
 from sys_log import sys_log, track
@@ -84,7 +85,7 @@ def init_and_load_db():
     else:
         sys_log(" [SYSTEM LOG] Local device database integrity check complete.", level="INFO", show=False)
 
-    json_file_path = resource_path("database.json")
+    json_file_path = i18n.text_path("story.json")   # 세션·이벤트·풍경 문장·소모품 (text/story.json)
     if not os.path.exists(json_file_path):
         sys_log(f" [SYSTEM FATAL] Narrative file '{json_file_path}' is missing. Cannot start entry.", level="FATAL")
         sys.exit()
@@ -98,6 +99,10 @@ def init_and_load_db():
             constants.SESSIONS_DB     = db_data.get("SESSIONS_DB", [])
             constants.RANDOM_EVENTS   = db_data.get("RANDOM_EVENTS", [])
             constants.TRADER_ITEMS    = db_data.get("TRADER_ITEMS", [])
+            for _it in constants.TRADER_ITEMS:   # 행상인 물품 이름은 소모품 목록에서 (text/story.json의 CONSUMABLES_DB 한 곳만 고치면 된다)
+                _c = constants.CONSUMABLES_DB.get(_it["id"], {})
+                _it.setdefault("name", _c.get("name", _it["id"]))
+                _it.setdefault("name_en", _c.get("name_en"))
         sys_log(" [SYSTEM LOG] Parsing completed for structured narrative and biometric consumables data.", level="INFO")
         time.sleep(0.6)
     except Exception as e:

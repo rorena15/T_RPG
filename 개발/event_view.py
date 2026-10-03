@@ -1503,7 +1503,7 @@ class EventView:
         d = constants.CONSUMABLES_DB.get(key)
         if not d:
             return "", INK_FAINT
-        # 칸이 좁아 짧은 이름 (locales의 qs_short_<id>, 없으면 이름의 마지막 낱말)
+        # 칸이 좁아 짧은 이름 (text/ko.json의 qs_short_<id>, 없으면 이름의 마지막 낱말)
         k = f"qs_short_{key}"
         label = i18n.t(k) if i18n.has(k) else i18n.db_t(d, 'name').split()[-1]
         col = RED if d["type"] == "hp" else (AMBER if d["type"] == "food" else TEAL)

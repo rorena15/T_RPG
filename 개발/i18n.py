@@ -14,9 +14,17 @@ def _res(path: str) -> str:
     return os.path.join(base, path)
 
 
+TEXT_DIR = "text"   # 게임 글은 모두 이 폴더에 (text/README.md). 이름은 영문: Mac이 한글 파일 이름을 자모로 풀어 저장하는 경우가 있다
+
+
+def text_path(name: str) -> str:
+    """text 폴더의 파일 경로 (빌드에서도 같은 자리: build_exe.py가 text/를 통째로 넣는다)."""
+    return _res(os.path.join(TEXT_DIR, name))
+
+
 def set_lang(lang: str) -> bool:
     global _strings, LANG
-    path = _res(os.path.join("locales", f"{lang}.json"))
+    path = text_path(f"{lang}.json")
     if not os.path.exists(path):
         return False
     with open(path, "r", encoding="utf-8") as f:
@@ -68,7 +76,7 @@ def has(key: str) -> bool:
 
 
 def db_t(obj: dict, field: str) -> str:
-    """database.json 객체에서 현재 언어에 맞는 필드를 반환."""
+    """text/story.json 객체에서 현재 언어에 맞는 필드를 반환."""
     if LANG == 'en':
         val = obj.get(f'{field}_en')
         if val is not None:

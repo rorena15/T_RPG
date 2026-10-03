@@ -11,8 +11,8 @@ CANON = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 con = sqlite3.connect(SRC + "stigma_data.db")
 items = {r[0] for r in con.execute("select name from equipment")}
 items |= {r[0] for r in con.execute("select name from consumables")}
-with open(SRC + "database.json", encoding="utf-8") as f:
-    items |= {x["name"] for x in json.load(f)["TRADER_ITEMS"]}
+with open(SRC + "text/story.json", encoding="utf-8") as f:   # 행상인 물품 이름은 소모품 목록에 (TRADER_ITEMS에는 id만)
+    items |= {x["name"] for x in json.load(f)["CONSUMABLES_DB"].values()}
 
 tiers = dict(con.execute("select name, tier from equipment"))
 text = io.open(CANON, encoding="utf-8").read()

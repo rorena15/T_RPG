@@ -113,7 +113,7 @@ def main():
             if 30 <= len(para) <= 260:
                 snippets.append({"src": os.path.basename(rel), "text": para})
 
-    db = json.load(open(os.path.join(g, "개발", "database.json"), encoding="utf-8"))
+    db = json.load(open(os.path.join(g, "개발", "text", "story.json"), encoding="utf-8"))
     script = []
     for ev in db["RANDOM_EVENTS"] + db["SESSIONS_DB"]:
         script.append(ev["title"] + ". " + " ".join(ev["text"].split()))

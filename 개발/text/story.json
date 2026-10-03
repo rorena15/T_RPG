@@ -924,13 +924,13 @@
     }
   ],
   "TRADER_ITEMS": [
-    {"id": "MED_PER_10",  "name": "소형 반창고 팩",     "name_en": "Small Bandage Pack",        "cost": 15},
-    {"id": "MED_FIX_100", "name": "구형 진통제",         "name_en": "Outdated Analgesic",        "cost": 20},
-    {"id": "MED_FIX_300", "name": "군용 지혈제",         "name_en": "Military Hemostatic",       "cost": 60},
-    {"id": "FOOD_ONLY",   "name": "건조 단백질 블록",     "name_en": "Dry Protein Block",         "cost": 12},
-    {"id": "FOOD_BOTH",   "name": "수분 함유 전투식량",   "name_en": "Hydrated Combat Ration",    "cost": 25},
-    {"id": "WATER_ONLY",  "name": "탁한 정수 팩",        "name_en": "Murky Purified Pack",       "cost": 12},
-    {"id": "WATER_BOTH",  "name": "미네랄 보충수",        "name_en": "Mineral Supplement Water",  "cost": 22},
-    {"id": "MED_PER_50",  "name": "응급 지혈대",         "name_en": "Emergency Tourniquet",      "cost": 45}
+    {"id": "MED_PER_10",        "cost": 15},
+    {"id": "MED_FIX_100",        "cost": 20},
+    {"id": "MED_FIX_300",       "cost": 60},
+    {"id": "FOOD_ONLY",         "cost": 12},
+    {"id": "FOOD_BOTH",    "cost": 25},
+    {"id": "WATER_ONLY",       "cost": 12},
+    {"id": "WATER_BOTH",  "cost": 22},
+    {"id": "MED_PER_50",      "cost": 45}
   ]
 }

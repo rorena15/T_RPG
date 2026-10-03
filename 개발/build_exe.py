@@ -72,11 +72,10 @@ def main():
         "--include-package=rich._unicode_data",  # rich가 importlib로 불러 정적 분석에 안 잡힌다
         "--include-package=cryptography.hazmat.primitives",  # 진단 기록 암호화 (diag.py가 함수 안에서 불러온다)
         "--nofollow-import-to=pygments",  # 게임은 rich.console만 쓴다. pygments C 파일에서 cl 출력 디코딩이 깨졌다
-        f"--include-data-files={os.path.join(HERE, 'database.json')}=database.json",
         f"--include-data-files={os.path.join(HERE, 'master_formulas.json')}=master_formulas.json",
         f"--include-data-files={os.path.join(HERE, 'gm_models.json')}=gm_models.json",
         f"--include-data-files={os.path.join(HERE, 'gm', 'lore_snippets.json')}=gm/lore_snippets.json",
-        f"--include-data-dir={os.path.join(HERE, 'locales')}=locales",
+        f"--include-data-dir={os.path.join(HERE, 'text')}=text",   # 게임 글 전부 (화면 문구·보관소·이야기·장비)
         f"--include-data-dir={os.path.join(ROOT, 'assets')}=assets",
     ]
     if gm_ready:

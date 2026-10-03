@@ -2,7 +2,7 @@
 import ast, json, re, sys, os
 
 ROOT   = os.path.dirname(__file__)
-LOCALE = os.path.join(ROOT, "locales", "ko.json")
+LOCALE = os.path.join(ROOT, "text", "ko.json")
 
 TARGET_FILES = ["Main.py","combat.py","player.py","skills.py","story.py",
                 "quest.py","ui.py","core.py","map.py","updater.py",

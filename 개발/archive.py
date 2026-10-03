@@ -1,7 +1,7 @@
 """기록 보관소: 적 그림, 장면 이야기, 일기 조각. 보는 것만 있고 게임 수치에는 손대지 않는다.
 
 열린 기록은 세이브와 따로 archive.json에 남겨 새 게임을 시작해도 이어진다 (결말 기록 endings.json과 같은 자리).
-글은 locales/archive_<언어>.json에 있다. 글이 없는 항목은 목록에도 세지 않는다 (글을 나중에 채워도 된다).
+글은 text/archive_<언어>.json에 있다. 글이 없는 항목은 목록에도 세지 않는다 (글을 나중에 채워도 된다).
 
 열리는 때
   적      처음 만남 / 처음 이김 / 여러 번 이김 (ENEMY_STAGES, 보스는 3번)에 그림이 한 장씩, 마지막에 남은 그림 전부
@@ -81,7 +81,7 @@ def text():
     lang = i18n.LANG
     if lang not in _text:
         try:
-            with open(i18n._res(os.path.join("locales", f"archive_{lang}.json")), encoding="utf-8") as f:
+            with open(i18n.text_path(f"archive_{lang}.json"), encoding="utf-8") as f:
                 _text[lang] = json.load(f)
         except Exception:
             _text[lang] = {}

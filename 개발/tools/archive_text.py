@@ -1,7 +1,7 @@
 """기록 보관소 글 ↔ 원고 파일 (사람이 읽고 고치기 쉬운 마크다운).
 
-  python tools/archive_text.py export [ko]   locales/archive_ko.json → docs/기획/기록보관소_원고_ko.md
-  python tools/archive_text.py import [ko]   원고 → locales/archive_ko.json (키가 빠지거나 늘면 멈춘다)
+  python tools/archive_text.py export [ko]   text/archive_ko.json → docs/기획/기록보관소_원고_ko.md
+  python tools/archive_text.py import [ko]   원고 → text/archive_ko.json (키가 빠지거나 늘면 멈춘다)
 
 원고 형식: "### 키 | 제목" 다음 ```text 블록이 본문. 적은 "### 키 | 이름" 아래 "#### 기록 N" 블록.
 블록 안의 줄바꿈이 그대로 기록의 줄이 된다. 키와 ``` 줄만 건드리지 않으면 된다.
@@ -23,7 +23,7 @@ WHERE = {None: "어디서나", "hidden": "히든 이벤트로만", "border_zone"
 
 
 def paths(lang):
-    return (os.path.join(DEV, "locales", f"archive_{lang}.json"),
+    return (os.path.join(DEV, "text", f"archive_{lang}.json"),
             os.path.join(os.path.dirname(DEV), "docs", "기획", f"기록보관소_원고_{lang}.md"))
 
 

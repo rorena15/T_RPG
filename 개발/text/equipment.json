@@ -1,0 +1,2780 @@
+{
+  "WEAPON_NONE": {
+    "name": "맨손",
+    "description": "[기본] 기본 제공되는 생체 타격 수단.",
+    "name_en": "Bare Hands",
+    "description_en": "[Basic] The organic striking tools you were born with."
+  },
+  "WEAPON_SCRAP_01": {
+    "name": "녹슨 고철 칼날",
+    "description": "[T=4 급조] 폐차의 서스펜션 스프링을 거칠게 갈아낸 날붙이. 쳇소리가 울린다.",
+    "name_en": "Rusted Scrap Blade",
+    "description_en": "[T=4 Makeshift] A blade roughly ground from a wrecked car's suspension spring. It rings with a grating whine."
+  },
+  "WEAPON_SCRAP_02": {
+    "name": "폐기된 리벳 건",
+    "description": "[T=4 급조] 공사장에서 주운 가스식 리벳 건. 거친 마찰음과 함께 철심을 발사한다.",
+    "name_en": "Discarded Rivet Gun",
+    "description_en": "[T=4 Makeshift] A gas-powered rivet gun scavenged from a construction site. Fires iron spikes with a harsh grinding noise."
+  },
+  "WEAPON_SCRAP_03": {
+    "name": "방전식 스패너",
+    "description": "[T=4 급조] 규격 외 대형 스패너에 구형 배터리를 감아 타격 시 스파크가 튄다.",
+    "name_en": "Discharge Spanner",
+    "description_en": "[T=4 Makeshift] An oversized off-spec spanner wrapped with an old battery. Sparks fly on impact."
+  },
+  "WEAPON_SCRAP_04": {
+    "name": "오염된 화염 파이프",
+    "description": "[T=4 급조] 가스 배관에 필터 없이 가솔린을 직결하여 불을 뿜는 리스크 높은 화포다.",
+    "name_en": "Contaminated Flame Pipe",
+    "description_en": "[T=4 Makeshift] A high-risk flamethrower made by hooking gasoline straight into a gas pipe with no filter."
+  },
+  "WEAPON_SCRAP_05": {
+    "name": "철근 콘크리트 둔기",
+    "description": "[T=4 급조] 무너진 건물 잔해에서 뜯어낸, 콘크리트 덩어리가 고정된 무거운 철근이다.",
+    "name_en": "Rebar Concrete Bludgeon",
+    "description_en": "[T=4 Makeshift] A heavy length of rebar torn from collapsed rubble, a chunk of concrete still fixed to its end."
+  },
+  "WEAPON_SCRAP_06": {
+    "name": "날카로운 유리 파편 창",
+    "description": "[T=4 급조] 기업 빌딩의 깨진 강화유리를 긴 파이프 끝에 절연 테이프로 묶은 창이다.",
+    "name_en": "Sharp Glass Shard Spear",
+    "description_en": "[T=4 Makeshift] A spear made by taping shattered tempered glass from a corporate tower to the end of a long pipe."
+  },
+  "WEAPON_SCRAP_07": {
+    "name": "마모된 공업용 톱날",
+    "description": "[T=4 급조] 이가 다 빠진 원형 톱날에 가죽을 감아 손잡이를 만든 조잡한 투척 도검이다.",
+    "name_en": "Worn Industrial Sawblade",
+    "description_en": "[T=4 Makeshift] A crude throwing blade: a toothless circular saw with leather wrapped on as a grip."
+  },
+  "WEAPON_SCRAP_08": {
+    "name": "배선 노출형 초크 스틱",
+    "description": "[T=4 급조] 고압 전선을 실리콘 봉에 감아 물리 타격과 전류 충격을 동시에 준다.",
+    "name_en": "Exposed-Wire Choke Stick",
+    "description_en": "[T=4 Makeshift] High-voltage cable coiled around a silicone rod, delivering blunt force and electric shock at once."
+  },
+  "WEAPON_SCRAP_09": {
+    "name": "급조 화약 파이프 폭포",
+    "description": "[T=4 급조] 쇠파이프 내부에서 화약을 터트려 산탄을 흩뿌리는 1회성 느낌의 조잡한 총이다.",
+    "name_en": "Makeshift Powder Pipe Burst",
+    "description_en": "[T=4 Makeshift] A crude gun that detonates gunpowder inside an iron pipe to spray shot. Feels single-use."
+  },
+  "WEAPON_SCRAP_10": {
+    "name": "녹슨 정크야드 소형 도끼",
+    "description": "[T=4 급조] 폐기물 처리장에서 굴러다니던, 날이 무뎌진 고철 소형 도끼디.",
+    "name_en": "Rusted Junkyard Hatchet",
+    "description_en": "[T=4 Makeshift] A dull-edged scrap hatchet that was lying around a waste processing yard."
+  },
+  "DECK_SCRAP_01": {
+    "name": "반쯤 탄버린 메인보드",
+    "description": "[T=4 급조] 불타버린 기업 터미널에서 칩셋 몇 개만 건져 올린 조잡한 연산판.",
+    "name_en": "Half-Burnt Motherboard",
+    "description_en": "[T=4 Makeshift] A crude compute board built from a few chipsets salvaged out of a burnt corporate terminal."
+  },
+  "DECK_SCRAP_02": {
+    "name": "침수된 단말기",
+    "description": "[T=4 급조] 하수 노드에서 건져내 물기만 닦아냄. 화면이 분초 단위로 깜빡임.",
+    "name_en": "Waterlogged Terminal",
+    "description_en": "[T=4 Makeshift] Fished out of a sewer node and merely wiped dry. The screen flickers every few seconds."
+  },
+  "DECK_SCRAP_03": {
+    "name": "구형 신호 수신기",
+    "description": "[T=4 급조] 통신이 끊긴 기지국의 라우터를 손목에 고무줄로 묶은 야매 장치.",
+    "name_en": "Old Signal Receiver",
+    "description_en": "[T=4 Makeshift] A bootleg rig: a router from a dead cell tower strapped to the wrist with rubber bands."
+  },
+  "DECK_SCRAP_04": {
+    "name": "크래킹용 트랜지스터",
+    "description": "[T=4 급조] 아날로그 라디오 소자를 역배선하여 방화벽 패킷을 강제로 꼬는 모듈.",
+    "name_en": "Cracking Transistor",
+    "description_en": "[T=4 Makeshift] A module that reverse-wires analog radio components to forcibly tangle firewall packets."
+  },
+  "DECK_SCRAP_05": {
+    "name": "폐차 내비게이션 덱",
+    "description": "[T=4 급조] 버려진 이륜차의 GPS 기판을 넷 포스용 OS로 강제 인코딩한 사이버덱.",
+    "name_en": "Wrecked-Car Navigation Deck",
+    "description_en": "[T=4 Makeshift] A cyberdeck made by force-encoding an abandoned motorbike's GPS board with a Net Force OS."
+  },
+  "DECK_SCRAP_06": {
+    "name": "녹슨 연산용 마이크로 칩",
+    "description": "[T=4 급조] 고철 청소 드론의 두뇌에서 추출한, 회로가 반쯤 타버린 코어 판넬.",
+    "name_en": "Rusted Compute Microchip",
+    "description_en": "[T=4 Makeshift] A core panel pulled from the brain of a scrap-cleaning drone, its circuits half burnt out."
+  },
+  "DECK_SCRAP_07": {
+    "name": "급조 구리 와이어 패널",
+    "description": "[T=4 급조] 구리 와이어를 코일 형태로 감아 미세 전자기 신호를 낚아채는 장치.",
+    "name_en": "Makeshift Copper Wire Panel",
+    "description_en": "[T=4 Makeshift] A device of copper wire wound into coils to snag faint electromagnetic signals."
+  },
+  "DECK_SCRAP_08": {
+    "name": "바코드 스캐너 개조 가젯",
+    "description": "[T=4 급조] 구시대 상점의 바코드 리더기를 개조해 기초 방화벽 코드를 읽는 리더기.",
+    "name_en": "Modded Barcode Scanner Gadget",
+    "description_en": "[T=4 Makeshift] An old-world store barcode reader modified to read basic firewall code."
+  },
+  "DECK_SCRAP_09": {
+    "name": "통신 불량형 무전 모듈",
+    "description": "[T=4 급조] 노이즈가 심해 마스터 AI조차 분석을 포기하게 만드는 구형 아날로그 통신기.",
+    "name_en": "Faulty Radio Module",
+    "description_en": "[T=4 Makeshift] An old analog transceiver so noisy that even the Master AI gives up analyzing it."
+  },
+  "DECK_SCRAP_10": {
+    "name": "스캐벤저 커스텀 로그 보드",
+    "description": "[T=4 급조] 폐기된 계산기 액정 여러 개를 직렬로 연결해 로그 텍스트를 파싱하는 장치.",
+    "name_en": "Scavenger Custom Log Board",
+    "description_en": "[T=4 Makeshift] A device that parses log text using several discarded calculator displays wired in series."
+  },
+  "CYBER_SCRAP_01": {
+    "name": "재고철 유압 실린더",
+    "description": "[T=4 급조] 화물용 승강기에서 추출한 실린더. 구동 시 거친 철 비명소리 유도.",
+    "name_en": "Reclaimed Hydraulic Cylinder",
+    "description_en": "[T=4 Makeshift] A cylinder pulled from a freight elevator. Lets out a harsh metallic shriek when it moves."
+  },
+  "CYBER_SCRAP_02": {
+    "name": "노출된 구리 인공 신경",
+    "description": "[T=4 급조] 피복이 벗겨진 전선을 척수에 직접 납땜하여 상시 미세 전율 발생.",
+    "name_en": "Exposed Copper Neural Wiring",
+    "description_en": "[T=4 Makeshift] Stripped wires soldered straight onto the spine, causing constant faint tremors."
+  },
+  "CYBER_SCRAP_03": {
+    "name": "폐기물 분쇄용 인공 손",
+    "description": "[T=4 급조] 산업용 분쇄기 집게발을 소형화해 손목에 용접한 조잡한 의체 손.",
+    "name_en": "Waste-Crusher Prosthetic Hand",
+    "description_en": "[T=4 Makeshift] A crude cybernetic hand: an industrial crusher claw miniaturized and welded to the wrist."
+  },
+  "CYBER_SCRAP_04": {
+    "name": "급조용 모터 심장",
+    "description": "[T=4 급조] 이륜차 시동 모터 구동축을 인공 심장 박동에 동기화시킨 바이오웨어.",
+    "name_en": "Makeshift Motor Heart",
+    "description_en": "[T=4 Makeshift] Bioware that syncs a motorbike starter motor's drive shaft with an artificial heartbeat."
+  },
+  "CYBER_SCRAP_05": {
+    "name": "녹슨 서보 모터 발목",
+    "description": "[T=4 급조] 청소용 가전제품 모터를 발목 관절에 박아 넣어 틱당 소음이 심함.",
+    "name_en": "Rusted Servo Ankle",
+    "description_en": "[T=4 Makeshift] A vacuum cleaner motor jammed into the ankle joint. Very noisy with every tick."
+  },
+  "CYBER_SCRAP_06": {
+    "name": "폐가전 배선 인공 근육",
+    "description": "[T=4 급조] 버려진 고무 튜브와 구리선 다발을 꼬아 만든 조잡한 신체 강화 인프라.",
+    "name_en": "Junk-Wire Artificial Muscle",
+    "description_en": "[T=4 Makeshift] Crude body-augmentation made by twisting discarded rubber tubes and copper wire bundles."
+  },
+  "CYBER_SCRAP_07": {
+    "name": "드론 관절 이식 팔",
+    "description": "[T=4 급조] 파괴된 정찰 드론의 날개 축 관절을 어깨뼈에 억지로 나사로 박은 의체.",
+    "name_en": "Drone-Joint Grafted Arm",
+    "description_en": "[T=4 Makeshift] A cybernetic arm: a wrecked recon drone's wing-axle joint forcibly screwed into the shoulder blade."
+  },
+  "CYBER_SCRAP_08": {
+    "name": "아날로그 압력 감지 인공 눈",
+    "description": "[T=4 급조] 렌즈가 깨진 구형 아날로그 카메라의 조리개를 안구 적출 부위에 박은 장치.",
+    "name_en": "Analog Pressure-Sensing Eye",
+    "description_en": "[T=4 Makeshift] The aperture of a broken-lens analog camera set into an empty eye socket."
+  },
+  "CYBER_SCRAP_09": {
+    "name": "고철 철판 갈비뼈 보강재",
+    "description": "[T=4 급조] 흉부 손상을 막기 위해 양 가슴에 고철 판넬을 리벳으로 직접 박아 넣은 부품.",
+    "name_en": "Scrap-Plate Rib Brace",
+    "description_en": "[T=4 Makeshift] Scrap panels riveted directly onto both sides of the chest to prevent thoracic damage."
+  },
+  "CYBER_SCRAP_10": {
+    "name": "구형 메모리 인젝터 필터",
+    "description": "[T=4 급조] 뇌 손상을 막기 위해 정수기 필터와 메모리 소자를 직렬 연결해 목 뒤에 박은 의체.",
+    "name_en": "Old Memory Injector Filter",
+    "description_en": "[T=4 Makeshift] A water purifier filter wired in series with a memory chip and set into the back of the neck to prevent brain damage."
+  },
+  "BACK_SCRAP_01": {
+    "name": "고철 리어카 프레임",
+    "description": "[T=4 급조] 부서진 리어카의 바퀴와 뼈대를 등에 가죽 끈으로 묶은 조잡한 짐틀.",
+    "name_en": "Scrap Handcart Frame",
+    "description_en": "[T=4 Makeshift] A crude pack frame: a broken handcart's wheels and skeleton strapped to the back with leather."
+  },
+  "BACK_SCRAP_02": {
+    "name": "녹슨 철판 보관함",
+    "description": "[T=4 급조] 배전반 철제 박스를 문짝 채로 가죽 벨트에 연결해 매달고 다니는 가방.",
+    "name_en": "Rusted Steel Lockbox",
+    "description_en": "[T=4 Makeshift] A metal switchboard box, door and all, slung from a leather belt as a bag."
+  },
+  "BACK_SCRAP_03": {
+    "name": "와이어 결속 슬링 백팩",
+    "description": "[T=4 급조] 찢어진 천막 조각을 구리 와이어로 깁고 기워 만든 슬링백.",
+    "name_en": "Wire-Bound Sling Pack",
+    "description_en": "[T=4 Makeshift] A sling bag patched together from torn tarp scraps stitched with copper wire."
+  },
+  "BACK_SCRAP_04": {
+    "name": "드론 날개 급조 하네스",
+    "description": "[T=4 급조] 드론 프로펠러 가드를 가슴에 고정해 등 뒤의 무게 중심을 잡아주는 장치.",
+    "name_en": "Drone-Wing Makeshift Harness",
+    "description_en": "[T=4 Makeshift] A drone propeller guard fixed to the chest to balance the weight on the back."
+  },
+  "BACK_SCRAP_05": {
+    "name": "반쯤 타버린 태양광 패널",
+    "description": "[T=4 급조] 표면이 다 깨져 미세 전류만 간신히 생산하는 배낭형 구형 충전판.",
+    "name_en": "Half-Burnt Solar Panel",
+    "description_en": "[T=4 Makeshift] An old backpack charging panel with a shattered surface that barely produces a trickle of current."
+  },
+  "BACK_SCRAP_06": {
+    "name": "폐타이어 고무 배낭",
+    "description": "[T=4 급조] 오토바이 폐타이어를 잘라 지퍼 대신 구리선으로 입구를 봉하는 가방.",
+    "name_en": "Scrap-Tire Rubber Backpack",
+    "description_en": "[T=4 Makeshift] A bag cut from a motorcycle tire, its opening sealed with copper wire instead of a zipper."
+  },
+  "BACK_SCRAP_07": {
+    "name": "공업용 방열 환풍기",
+    "description": "[T=4 급조] 의체 과열을 막기 위해 PC용 쿨러 여러 개를 등판에 납땜해 붙인 냉각 장치.",
+    "name_en": "Industrial Heat-Vent Fan",
+    "description_en": "[T=4 Makeshift] A cooling rig of several PC fans soldered to a back plate to keep the chassis from overheating."
+  },
+  "BACK_SCRAP_08": {
+    "name": "무선 안테나 지지용 백팩",
+    "description": "[T=4 급조] 길거리의 신호등 안테나 기둥을 배낭 프레임에 묶어 신호 감도를 올리는 장치.",
+    "name_en": "Radio Antenna Backpack",
+    "description_en": "[T=4 Makeshift] A traffic-light antenna pole lashed to a backpack frame to boost signal sensitivity."
+  },
+  "BACK_SCRAP_09": {
+    "name": "오염된 매트리스 가죽 주머니",
+    "description": "[T=4 급조] 버려진 침대 매트리스 가죽을 뜯어내 자원을 무식하게 담는 거대한 자루.",
+    "name_en": "Contaminated Mattress-Hide Sack",
+    "description_en": "[T=4 Makeshift] A huge sack torn from discarded mattress covers, stuffed with resources without care."
+  },
+  "BACK_SCRAP_10": {
+    "name": "급조 배터리 고정 리그",
+    "description": "[T=4 급조] 여러 종류의 수명이 다한 건전지들을 직렬로 묶어 등에 고정하는 프레임.",
+    "name_en": "Makeshift Battery Rig",
+    "description_en": "[T=4 Makeshift] A frame that straps a series of assorted dead batteries to the back."
+  },
+  "FACE_SCRAP_01": {
+    "name": "고철 파편 마스크",
+    "description": "[T=4 급조] 철판 조각에 눈구멍 두 개만 대충 뚫어 가죽 끈으로 안면에 고정한 마스크.",
+    "name_en": "Scrap Shard Mask",
+    "description_en": "[T=4 Makeshift] A steel plate with two rough eyeholes, strapped to the face with leather."
+  },
+  "FACE_SCRAP_02": {
+    "name": "금이 간 방독면 면체",
+    "description": "[T=4 급조] 필터 정화 기능은 상실되었으나 안면 물리 타격은 간신히 막아주는 방독면.",
+    "name_en": "Cracked Gas Mask Shell",
+    "description_en": "[T=4 Makeshift] Its filter no longer purifies anything, but it barely stops blows to the face."
+  },
+  "FACE_SCRAP_03": {
+    "name": "구형 아날로그 용접면",
+    "description": "[T=4 급조] 플라스틱 용접용 차광 안경. 시야가 좁아지나 정면 불꽃 스파크를 방어.",
+    "name_en": "Old Analog Welding Mask",
+    "description_en": "[T=4 Makeshift] Plastic welding shade goggles. Narrows your vision but blocks sparks from the front."
+  },
+  "FACE_SCRAP_04": {
+    "name": "비닐 테이프 선글라스",
+    "description": "[T=4 급조] 다리 부러진 안경을 비닐 테이프로 머리에 감은 장치. 멋 외엔 효과 미미.",
+    "name_en": "Tape-Wrapped Sunglasses",
+    "description_en": "[T=4 Makeshift] Glasses with broken arms taped around the head. Little effect beyond style."
+  },
+  "FACE_SCRAP_05": {
+    "name": "바이크 안전모 파편",
+    "description": "[T=4 급조] 앞 유리가 날아간 깨진 오토바이 헬멧. 턱끈이 닳아 있어 덜렁거림.",
+    "name_en": "Shattered Bike Helmet",
+    "description_en": "[T=4 Makeshift] A cracked motorcycle helmet missing its visor. The worn chin strap dangles loose."
+  },
+  "FACE_SCRAP_06": {
+    "name": "오염된 필터 마스크",
+    "description": "[T=4 급조] 먼지와 고철 가루를 거르기 위해 헝겊을 여러 겹 겹쳐 만든 입 가리개.",
+    "name_en": "Contaminated Filter Mask",
+    "description_en": "[T=4 Makeshift] A mouth cover of layered rags to filter out dust and scrap powder."
+  },
+  "FACE_SCRAP_07": {
+    "name": "박살 난 디스플레이 고글",
+    "description": "[T=4 급조] 깨진 모니터 액정 유리를 눈앞에 고정해 미세 텍스트 연산을 파싱하는 눈가리개.",
+    "name_en": "Smashed Display Goggles",
+    "description_en": "[T=4 Makeshift] A blindfold of cracked monitor glass fixed before the eyes to parse tiny text computations."
+  },
+  "FACE_SCRAP_08": {
+    "name": "유선 전화기 송수신기 밴드",
+    "description": "[T=4 급조] 전선 끊긴 수화기를 머리에 밴드로 묶어 귀를 보호하는 조잡한 헤드셋.",
+    "name_en": "Landline Handset Band",
+    "description_en": "[T=4 Makeshift] A crude headset: a cord-cut phone receiver banded to the head to protect the ears."
+  },
+  "FACE_SCRAP_09": {
+    "name": "두꺼운 가죽 눈가리개",
+    "description": "[T=4 급조] 마스터 AI의 스캔 레이저 광량을 물리적으로 줄여 인지력을 유지하는 밴드.",
+    "name_en": "Thick Leather Blindfold",
+    "description_en": "[T=4 Makeshift] A band that physically dims the Master AI's scan lasers to preserve perception."
+  },
+  "FACE_SCRAP_10": {
+    "name": "철조망 안면 보호대",
+    "description": "[T=4 급조] 가시철사를 둥글게 말아 얼굴 정면에 배치한 기괴하고 위협적인 마스크.",
+    "name_en": "Barbed Wire Face Guard",
+    "description_en": "[T=4 Makeshift] A grotesque, menacing mask of barbed wire coiled across the front of the face."
+  },
+  "TOP_SCRAP_01": {
+    "name": "방사능 누더기 코트",
+    "description": "[T=4 급조] 오염된 황무지 먼지가 겹겹이 쌓인, 출처를 알 수 없는 낡은 롱코트.",
+    "name_en": "Irradiated Rag Coat",
+    "description_en": "[T=4 Makeshift] A worn long coat of unknown origin, caked in layer upon layer of contaminated wasteland dust."
+  },
+  "TOP_SCRAP_02": {
+    "name": "두꺼운 타이어 장갑 패드",
+    "description": "[T=4 급조] 대형 트럭 타이어를 잘라 양 어깨와 흉부에 리벳으로 고정시킨 방어구.",
+    "name_en": "Thick Tire Armor Pads",
+    "description_en": "[T=4 Makeshift] Armor cut from a large truck tire and riveted onto the shoulders and chest."
+  },
+  "TOP_SCRAP_03": {
+    "name": "가죽 포대기 숄더 가드",
+    "description": "[T=4 급조] 부서진 소파의 가죽 가공 조각을 겹쳐 어깨 관절을 보호하는 덧옷.",
+    "name_en": "Leather Sack Shoulder Guard",
+    "description_en": "[T=4 Makeshift] An overgarment of layered leather scraps from a broken sofa to protect the shoulder joints."
+  },
+  "TOP_SCRAP_04": {
+    "name": "기업제 폐기 방탄 천 조각",
+    "description": "[T=4 급조] 기업 보안 부대가 버린, 군데군데 찢어지고 구멍 난 섬유 가슴 보호대.",
+    "name_en": "Discarded Corporate Ballistic Scraps",
+    "description_en": "[T=4 Makeshift] A fiber chest guard dumped by corporate security, torn and holed all over."
+  },
+  "TOP_SCRAP_05": {
+    "name": "플라스틱 가로수 덮개 갑옷",
+    "description": "[T=4 급조] 가로수 보호용 플라스틱 판넬을 가슴과 배에 묶어 충격을 분산하는 외장.",
+    "name_en": "Plastic Tree-Guard Armor",
+    "description_en": "[T=4 Makeshift] Plastic street-tree guard panels tied over the chest and belly to spread impacts."
+  },
+  "TOP_SCRAP_06": {
+    "name": "녹슨 드럼통 반쪽 흉갑",
+    "description": "[T=4 급조] 철제 드럼통을 반으로 잘라 몸을 감싸게 만든, 무겁고 둔탁한 상의.",
+    "name_en": "Rusted Half-Drum Breastplate",
+    "description_en": "[T=4 Makeshift] A heavy, clumsy top made from a steel drum cut in half to wrap the body."
+  },
+  "TOP_SCRAP_07": {
+    "name": "와이어 엮음 고철 사슬갑",
+    "description": "[T=4 급조] 수천 개의 구리 와이어 고리를 수작업으로 엮어 만든 나름 촘촘한 조끼.",
+    "name_en": "Wire-Woven Scrap Mail",
+    "description_en": "[T=4 Makeshift] A fairly tight vest hand-woven from thousands of copper wire rings."
+  },
+  "TOP_SCRAP_08": {
+    "name": "공업용 절연 고무 패딩",
+    "description": "[T=4 급조] 변전소 바닥의 절연 고무 매트를 잘라 안감으로 덧댄 전기 방어용 패딩.",
+    "name_en": "Industrial Insulating Rubber Padding",
+    "description_en": "[T=4 Makeshift] Anti-shock padding lined with insulating rubber mats cut from a substation floor."
+  },
+  "TOP_SCRAP_09": {
+    "name": "컴퓨터 본체 케이스 장갑",
+    "description": "[T=4 급조] PC 데스크탑의 철제 측면 커버를 가슴에 덧대어 찌르기를 방어하는 외장.",
+    "name_en": "PC Case Armor",
+    "description_en": "[T=4 Makeshift] A desktop PC's steel side panel strapped to the chest to stop stabs."
+  },
+  "TOP_SCRAP_10": {
+    "name": "스캐벤저 징박힌 조끼",
+    "description": "[T=4 급조] 면 조끼에 못과 나사를 촘촘히 박아 접근하는 적에게 상처를 주는 옷.",
+    "name_en": "Scavenger Studded Vest",
+    "description_en": "[T=4 Makeshift] A cotton vest densely studded with nails and screws to wound anyone who gets close."
+  },
+  "BOTTOM_SCRAP_01": {
+    "name": "기름때 절은 작업바지",
+    "description": "[T=4 급조] 하수 노드와 정크야드를 구르며 엔진오일이 고착되어 뻣뻣해진 청바지.",
+    "name_en": "Grease-Soaked Work Pants",
+    "description_en": "[T=4 Makeshift] Jeans stiffened with caked engine oil from rolling through sewer nodes and junkyards."
+  },
+  "BOTTOM_SCRAP_02": {
+    "name": "절연 고무 테이프 오버롤",
+    "description": "[T=4 급조] 멜빵바지 전체를 검은색 절연 테이프로 칭칭 감아 방수와 방전 기능을 넣은 옷.",
+    "name_en": "Insulating Tape Overalls",
+    "description_en": "[T=4 Makeshift] Overalls wrapped head to toe in black electrical tape for waterproofing and anti-discharge."
+  },
+  "BOTTOM_SCRAP_03": {
+    "name": "데드존 유목민용 누더기 바지",
+    "description": "[T=4 급조] 수많은 천 조각을 와이어로 기워 기차 바지처럼 만든 황무지 생존용 바지.",
+    "name_en": "Dead Zone Nomad Rag Pants",
+    "description_en": "[T=4 Makeshift] Wasteland survival pants made of countless cloth scraps stitched together with wire."
+  },
+  "BOTTOM_SCRAP_04": {
+    "name": "가죽 시트 마개조 바지",
+    "description": "[T=4 급조] 자동차 시트 가죽을 뜯어 허벅지와 정강이 부위에 덧댄 튼튼한 하의.",
+    "name_en": "Heavily Modded Car-Seat Pants",
+    "description_en": "[T=4 Makeshift] Sturdy pants patched at the thighs and shins with leather torn from car seats."
+  },
+  "BOTTOM_SCRAP_05": {
+    "name": "공업용 플라스틱 정강이받이",
+    "description": "[T=4 급조] PVC 파이프를 반으로 쪼개 무릎 아래에 묶은 조잡한 정강이 보호 가드.",
+    "name_en": "Industrial Plastic Shin Guards",
+    "description_en": "[T=4 Makeshift] Crude shin guards: PVC pipe split in half and tied below the knees."
+  },
+  "BOTTOM_SCRAP_06": {
+    "name": "군용 텐트 천 가방 바지",
+    "description": "[T=4 급조] 버려진 방수 텐트 천으로 만든 주머니가 엄청 많은 스캐벤저용 하의.",
+    "name_en": "Military Tent Cargo Pants",
+    "description_en": "[T=4 Makeshift] Scavenger pants with a huge number of pockets, made from discarded waterproof tent canvas."
+  },
+  "BOTTOM_SCRAP_07": {
+    "name": "철판 오버레이 전술 스커트",
+    "description": "[T=4 급조] 허리춤에 가벼운 양철판 여러 장을 매달아 하반신 피격 확률을 줄인 장비.",
+    "name_en": "Plate-Overlay Tactical Skirt",
+    "description_en": "[T=4 Makeshift] Light tin plates hung from the waist to reduce the chance of lower-body hits."
+  },
+  "BOTTOM_SCRAP_08": {
+    "name": "소방용 호스 직조 하의",
+    "description": "[T=4 급조] 튼튼한 소방 호스를 잘라 이어 붙여 만든 칼날 저항력이 높은 특수 바지.",
+    "name_en": "Fire-Hose Woven Pants",
+    "description_en": "[T=4 Makeshift] Special pants spliced from tough fire hose, highly resistant to blades."
+  },
+  "BOTTOM_SCRAP_09": {
+    "name": "오염된 컨베이어 벨트 가드",
+    "description": "[T=4 급조] 공장 폐허의 고무 컨베이어 벨트를 잘라 골반과 둔부를 감싼 장갑 하의.",
+    "name_en": "Contaminated Conveyor-Belt Guard",
+    "description_en": "[T=4 Makeshift] Armored pants of rubber conveyor belt from ruined factories, wrapping the pelvis and hips."
+  },
+  "BOTTOM_SCRAP_10": {
+    "name": "스쿼터 로우 라이징 데님",
+    "description": "[T=4 급조] 무릎 부위가 다 터져나가 고철 파편을 쇠사슬로 대충 묶어 둔 낡은 청바지.",
+    "name_en": "Squatter Low-Rise Denim",
+    "description_en": "[T=4 Makeshift] Worn jeans with blown-out knees, scrap shards loosely chained over the holes."
+  },
+  "SHOES_SCRAP_01": {
+    "name": "타이어 급조 장화",
+    "description": "[T=4 급조] 폐타이어의 트레드 부위를 잘라 밑창으로 삼고 철사로 고정한 장화.",
+    "name_en": "Makeshift Tire Boots",
+    "description_en": "[T=4 Makeshift] Boots soled with tread cut from scrap tires and fastened with wire."
+  },
+  "SHOES_SCRAP_02": {
+    "name": "철사 결속 안전화",
+    "description": "[T=4 급조] 앞코의 철판이 드러난 낡은 공사용 안전화를 머리카락 같은 철사로 감은 신발.",
+    "name_en": "Wire-Bound Safety Shoes",
+    "description_en": "[T=4 Makeshift] Worn construction safety shoes with exposed steel toes, wound with hair-thin wire."
+  },
+  "SHOES_SCRAP_03": {
+    "name": "서보 모터 리미터 해제 부츠",
+    "description": "[T=4 급조] 망가진 의체 신발의 서보 모터를 강제로 직렬 연결해 삐걱거리며 걷는 신발.",
+    "name_en": "Limiter-Off Servo Boots",
+    "description_en": "[T=4 Makeshift] Broken cybernetic shoes with their servo motors forcibly wired in series. They creak with every step."
+  },
+  "SHOES_SCRAP_04": {
+    "name": "공업용 두꺼운 고무 장화",
+    "description": "[T=4 급조] 화학 공장에서 쓰이던 장화. 방사능 오염 소모 지표 차감에 미세 기여.",
+    "name_en": "Thick Industrial Rubber Boots",
+    "description_en": "[T=4 Makeshift] Boots from a chemical plant. Slightly reduces radiation contamination drain."
+  },
+  "SHOES_SCRAP_05": {
+    "name": "스프링 장착 고철 신발",
+    "description": "[T=4 급조] 밑창에 자동차 밸브 스프링을 용접해 기동 턴 속도(INIT) 로그를 자극함.",
+    "name_en": "Spring-Loaded Scrap Shoes",
+    "description_en": "[T=4 Makeshift] Car valve springs welded to the soles, nudging your turn speed (INIT)."
+  },
+  "SHOES_SCRAP_06": {
+    "name": "케블라 조각 덧댄 운동화",
+    "description": "[T=4 급조] 굴러다니던 운동화 표면에 방탄 천 조각들을 본드로 덕지덕지 붙인 신발.",
+    "name_en": "Kevlar-Patched Sneakers",
+    "description_en": "[T=4 Makeshift] Stray sneakers with scraps of ballistic cloth glued all over them."
+  },
+  "SHOES_SCRAP_07": {
+    "name": "양철판 보강 사막화",
+    "description": "[T=4 급조] 밑창에 대못이 뚫고 들어오는 것을 막기 위해 군용 사막화 안에 양철판을 깐 신발.",
+    "name_en": "Tin-Reinforced Desert Boots",
+    "description_en": "[T=4 Makeshift] Military desert boots lined with tin plates to stop nails from piercing the soles."
+  },
+  "SHOES_SCRAP_08": {
+    "name": "고철 징박힌 가죽 장화",
+    "description": "[T=4 급조] 통가죽 장화 밑바닥에 나사못을 수십 개 박아 접지력을 올린 황무지용 신발.",
+    "name_en": "Scrap-Studded Leather Boots",
+    "description_en": "[T=4 Makeshift] Wasteland boots: full-leather boots with dozens of screws driven into the soles for grip."
+  },
+  "SHOES_SCRAP_09": {
+    "name": "비닐 랩 포장 단화",
+    "description": "[T=4 급조] 신발이 다 터져 가죽 조각들을 발에 대고 공업용 스트레치 필름으로 감싼 신발.",
+    "name_en": "Plastic-Wrapped Flats",
+    "description_en": "[T=4 Makeshift] Shoes burst apart, held together by leather scraps and industrial stretch film."
+  },
+  "SHOES_SCRAP_10": {
+    "name": "드론 스키드 마개조 슈즈",
+    "description": "[T=4 급조] 소형 드론의 착륙용 받침대(스키드) 프레임을 샌들처럼 발밑에 고정한 신발.",
+    "name_en": "Modded Drone-Skid Shoes",
+    "description_en": "[T=4 Makeshift] A small drone's landing-skid frame strapped under the feet like sandals."
+  },
+  "NECK_SCRAP_01": {
+    "name": "구리 와이어 목걸이",
+    "description": "[T=4 급조] 변전소에서 잘라온 굵은 구리선을 목 모양에 맞게 둥글게 구부린 목걸이.",
+    "name_en": "Copper Wire Necklace",
+    "description_en": "[T=4 Makeshift] Thick copper cable cut from a substation and bent round to fit the neck."
+  },
+  "NECK_SCRAP_02": {
+    "name": "타버린 램(RAM) 펜던트",
+    "description": "[T=4 급조] 과열로 회로가 완전히 타버린 대기업 서버용 RAM 소자를 줄에 매단 장신구.",
+    "name_en": "Burnt RAM Pendant",
+    "description_en": "[T=4 Makeshift] A trinket: a megacorp server RAM stick, its circuits fried by overheating, hung on a cord."
+  },
+  "NECK_SCRAP_03": {
+    "name": "드론 카메라 렌즈 초커",
+    "description": "[T=4 급조] 격추된 정찰 드론의 광학 렌즈 가이드를 가죽 끈으로 목에 타이트하게 감은 초커.",
+    "name_en": "Drone Camera Lens Choker",
+    "description_en": "[T=4 Makeshift] A choker made from a downed recon drone's optical lens guide, strapped tight with leather."
+  },
+  "NECK_SCRAP_04": {
+    "name": "식식거리는 인공 성대 밴드",
+    "description": "[T=4 급조] 구형 음성 변조기 부품을 목에 대어 목소리를 기계 로그음으로 바꾸는 목띠.",
+    "name_en": "Wheezing Artificial Voicebox Band",
+    "description_en": "[T=4 Makeshift] A neckband of old voice-changer parts that turns your voice into mechanical log tones."
+  },
+  "NECK_SCRAP_05": {
+    "name": "기업 사원증 인식표",
+    "description": "[T=4 급조] 이미 사망한 기업 하청 직원의 플라스틱 ID 카드를 쇠사슬에 매단 펜던트.",
+    "name_en": "Corporate Employee ID Tag",
+    "description_en": "[T=4 Makeshift] A pendant: the plastic ID card of a long-dead corporate subcontractor on a chain."
+  },
+  "NECK_SCRAP_06": {
+    "name": "퓨즈 소자 직렬 목걸이",
+    "description": "[T=4 급조] 끊어진 공업용 고전압 과부하 방지 퓨즈 5개를 엮어 만든 기해한 목걸이.",
+    "name_en": "Series Fuse Necklace",
+    "description_en": "[T=4 Makeshift] A bizarre necklace strung from five blown industrial high-voltage overload fuses."
+  },
+  "NECK_SCRAP_07": {
+    "name": "기계 괴수 냉각선 목걸이",
+    "description": "[T=4 급조] 바이오 하운드의 목덜미에서 뽑아낸 투명한 냉각수 튜브를 엮은 목걸이.",
+    "name_en": "Mech-Beast Coolant Necklace",
+    "description_en": "[T=4 Makeshift] A necklace braided from clear coolant tubes pulled from a Bio Hound's nape."
+  },
+  "NECK_SCRAP_08": {
+    "name": "사이버덱 접지 플러그 초커",
+    "description": "[T=4 급조] 사이버덱을 신체와 접지시킬 때 쓰던 고장 난 플라스틱 커넥터 목걸이.",
+    "name_en": "Cyberdeck Ground-Plug Choker",
+    "description_en": "[T=4 Makeshift] A broken plastic connector once used to ground a cyberdeck to the body, worn as a necklace."
+  },
+  "NECK_SCRAP_09": {
+    "name": "탄피 정렬 목걸이",
+    "description": "[T=4 급조] 저항군 소총의 빈 탄피 10개를 구리선으로 엮어 가슴팍에 늘어뜨린 장신구.",
+    "name_en": "Shell Casing Necklace",
+    "description_en": "[T=4 Makeshift] Ten spent Resistance rifle casings strung on copper wire, hanging across the chest."
+  },
+  "NECK_SCRAP_10": {
+    "name": "양철 캔 뚜껑 목걸이",
+    "description": "[T=4 급조] 구시대 통조림 캔 고리 수십 개를 엮어 만든, 움직일 때마다 찰랑거리는 장신구.",
+    "name_en": "Tin Can Pull-Tab Necklace",
+    "description_en": "[T=4 Makeshift] Dozens of old-world can pull-tabs woven together. It jingles with every move."
+  },
+  "RING_SCRAP_01": {
+    "name": "녹슨 너트 반지",
+    "description": "[T=4 급조] 공장 바닥에 굴러다니던 육각 고철 너트를 손가락 사이즈에 맞춰 대충 갈아낸 반지.",
+    "name_en": "Rusted Nut Ring",
+    "description_en": "[T=4 Makeshift] A hex nut from a factory floor, roughly ground down to finger size."
+  },
+  "RING_SCRAP_02": {
+    "name": "기계 괴수 이빨 반지",
+    "description": "[T=4 급조] 기계 견형 괴수의 티타늄 합금 송곳니 부러진 조각을 구리선으로 감아 만든 반지.",
+    "name_en": "Mech-Beast Fang Ring",
+    "description_en": "[T=4 Makeshift] A broken titanium-alloy fang of a canine mech-beast, wrapped in copper wire."
+  },
+  "RING_SCRAP_03": {
+    "name": "가공된 납땜 와셔 반지",
+    "description": "[T=4 급조] 전선 연결용 구리 와셔를 여러 겹 겹쳐 납땜질로 손가락에 맞춘 반지.",
+    "name_en": "Soldered Washer Ring",
+    "description_en": "[T=4 Makeshift] Several copper wiring washers stacked and soldered to fit the finger."
+  },
+  "RING_SCRAP_04": {
+    "name": "광섬유 케이블 매듭 반지",
+    "description": "[T=4 급조] 형광 노란빛이 도는 끊어진 광섬유 케이블을 세련되게 꼬아 만든 매듭 반지.",
+    "name_en": "Fiber-Optic Knot Ring",
+    "description_en": "[T=4 Makeshift] A knot ring neatly twisted from a snapped fiber-optic cable glowing fluorescent yellow."
+  },
+  "RING_SCRAP_05": {
+    "name": "사이버덱 다이얼 노브 반지",
+    "description": "[T=4 급조] 망가진 사이버덱의 볼륨 조절용 알루미늄 다이얼을 떼어 손가락에 박은 반지.",
+    "name_en": "Cyberdeck Dial Knob Ring",
+    "description_en": "[T=4 Makeshift] The aluminum volume dial pried off a broken cyberdeck and fitted onto a finger."
+  },
+  "RING_SCRAP_06": {
+    "name": "소형 스프링 반지",
+    "description": "[T=4 급조] 정밀 기계 내부의 소형 리턴 스프링을 손가락에 감아둔 조잡한 가젯 반지.",
+    "name_en": "Small Spring Ring",
+    "description_en": "[T=4 Makeshift] A crude gadget ring: a tiny return spring from precision machinery coiled around the finger."
+  },
+  "RING_SCRAP_07": {
+    "name": "LED 소자 발광 반지",
+    "description": "[T=4 급조] 수명이 다해가는 빨간색 LED 전구를 수은전지와 연결해 손가락에서 상시 빛남.",
+    "name_en": "LED Glow Ring",
+    "description_en": "[T=4 Makeshift] A dying red LED wired to a mercury cell, glowing on your finger at all times."
+  },
+  "RING_SCRAP_08": {
+    "name": "기업 보안 칩셋 인장 반지",
+    "description": "[T=4 급조] 만기된 기업 도어락 해제용 마이크로 스마트 칩셋을 고철 판에 붙인 인장 반지.",
+    "name_en": "Corporate Security Chip Signet",
+    "description_en": "[T=4 Makeshift] A signet ring: an expired corporate door-lock smart chip mounted on a scrap plate."
+  },
+  "RING_SCRAP_09": {
+    "name": "피복 벗긴 와이어 3중 반지",
+    "description": "[T=4 급조] 삼색 전선(적, 청, 황)의 피복을 벗겨 쉴드선처럼 꼬아 만든 가벼운 반지.",
+    "name_en": "Stripped Triple-Wire Ring",
+    "description_en": "[T=4 Makeshift] A light ring of red, blue, and yellow wires stripped and twisted like shielded cable."
+  },
+  "RING_SCRAP_10": {
+    "name": "구형 프록시 키 카드 조각",
+    "description": "[T=4 급조] 가상 은신처 노드 세탁 시 사용하던 일회용 보안 카드의 칩 조각을 붙인 반지.",
+    "name_en": "Old Proxy Key Card Fragment",
+    "description_en": "[T=4 Makeshift] A ring set with the chip of a disposable security card once used to launder virtual safehouse nodes."
+  },
+  "PART_SCRAP_01": {
+    "name": "조잡한 전류 바이패스",
+    "description": "[T=4 급조] [공격] 특화 스킬 [의체 오버클럭] 지속 시간 1턴 증가 / [페널티] 가동 중 매 턴 생명력(HP) 100 고정 감소.",
+    "name_en": "Crude Current Bypass",
+    "description_en": "[T=4 Makeshift] [Combat] Unique skill [Overclock] duration +1 turn / [Penalty] Lose a fixed 100 HP every turn while active."
+  },
+  "PART_SCRAP_02": {
+    "name": "녹슨 납땜 방열판",
+    "description": "[T=4 급조] [연산] 사이버덱 기본 가용 RAM 소모 스킬의 위력 +2% / [페널티] 해킹 성공 시 방화벽 지수(Alert) 추가 +3 가산.",
+    "name_en": "Rusted Solder Heatsink",
+    "description_en": "[T=4 Makeshift] [Net] Power of basic RAM-cost cyberdeck skills +2% / [Penalty] Firewall index (Alert) +3 extra on successful hacks."
+  },
+  "PART_SCRAP_03": {
+    "name": "구형 방전 캐패시터",
+    "description": "[T=4 급조] [공격] 치명타 확률 상시 +3% / [페널티] 전투 시작 시 행동 턴 우선권 지수(INIT)가 무조건 -5 감산.",
+    "name_en": "Old Discharge Capacitor",
+    "description_en": "[T=4 Makeshift] [Combat] Crit chance +3% permanently / [Penalty] Initiative index (INIT) always -5 at the start of combat."
+  },
+  "PART_SCRAP_04": {
+    "name": "리사이클 저항 코일",
+    "description": "[T=4 급조] [연산] [그리드 침투] 시 기본 RAM 회복 딜레이 1턴 단축 / [페널티] 최대 RAM 용량이 해당 전투 중 강제로 -1 잠금 고정.",
+    "name_en": "Recycled Resistor Coil",
+    "description_en": "[T=4 Makeshift] [Net] Base RAM recovery delay -1 turn during [Grid Intrude] / [Penalty] Max RAM forcibly locked at -1 for that combat."
+  },
+  "PART_SCRAP_05": {
+    "name": "무선 안테나 리시버 팁",
+    "description": "[T=4 급조] [유틸] 필드 탐색 시 1%의 유령 데이터 박스 탐지율 +0.5% 가산 / [페널티] 적 기계 괴수 기습 조우율 1.5배 증가.",
+    "name_en": "Radio Antenna Receiver Tip",
+    "description_en": "[T=4 Makeshift] [Utility] +0.5% to the 1% ghost data box detection rate when searching the field / [Penalty] Mech-beast ambush rate x1.5."
+  },
+  "PART_SCRAP_06": {
+    "name": "윤활유 수동 주입 펌프",
+    "description": "[T=4 급조] [공격] [바이오 적출] 성공 확률 상시 +2% 증가 / [페널티] 턴 종료 시마다 허기/갈증 지수가 무조건 +1 가속 차감.",
+    "name_en": "Manual Lubricant Pump",
+    "description_en": "[T=4 Makeshift] [Combat] [Bio Reap] success chance +2% permanently / [Penalty] Hunger/thirst drain always +1 faster at end of each turn."
+  },
+  "PART_SCRAP_07": {
+    "name": "오염된 프록시 필터 칩",
+    "description": "[T=4 급조] [연산] [프로토콜 위조] 로그 위조 성공률 +2% 보정 / [페널티] 위조 실패 시 가해지는 뇌 손상 대미지 2배 폭증.",
+    "name_en": "Contaminated Proxy Filter Chip",
+    "description_en": "[T=4 Makeshift] [Net] [Protocol Glitch] log forgery success +2% / [Penalty] Brain damage from a failed forgery doubled."
+  },
+  "PART_SCRAP_08": {
+    "name": "클럭 오버 스파크 소자",
+    "description": "[T=4 급조] [공격] 주무기 기본 공격 대미지 배율 +5% 증폭 / [페널티] 스킬 풀 가동 시 5%의 확률로 무기 기능이 1턴간 강제 정지.",
+    "name_en": "Clock-Over Spark Element",
+    "description_en": "[T=4 Makeshift] [Combat] Main weapon basic attack damage multiplier +5% / [Penalty] 5% chance the weapon shuts down for 1 turn when skills run at full load."
+  },
+  "PART_SCRAP_09": {
+    "name": "납땜 고정식 메모리 덤프",
+    "description": "[T=4 급조] [연산] 해킹 디버프 상태 이상 누적 공식 저항력 상시 +5% / [페널티] 전투 도망치기(Flee) 성공 확률 -10% 감쇄.",
+    "name_en": "Soldered Memory Dump",
+    "description_en": "[T=4 Makeshift] [Net] Resistance to hacking debuff stacking +5% permanently / [Penalty] Flee success chance -10%."
+  },
+  "PART_SCRAP_10": {
+    "name": "드론 자이로 센서 피팅",
+    "description": "[T=4 급조] [공격] 행동 턴 우선권 지수(INIT) 상시 +6 가산 / [페널티] 내 물리 방어력 베이스 수치가 강제로 -5 고정 차감.",
+    "name_en": "Drone Gyro Sensor Fitting",
+    "description_en": "[T=4 Makeshift] [Combat] Initiative index (INIT) +6 permanently / [Penalty] Base physical defense fixed at -5."
+  },
+  "WEAPON_STD_01": {
+    "name": "스크랩 연합 제식 소총",
+    "description": "[T=3 규격] 7.62mm 탄환을 안정적으로 격발하는 저항군의 든든한 주력 제식 화기.",
+    "name_en": "Scrap Coalition Service Rifle",
+    "description_en": "[T=3 Standard] The Resistance's dependable standard-issue rifle, firing 7.62mm rounds reliably."
+  },
+  "WEAPON_STD_02": {
+    "name": "초진동 고철 단검",
+    "description": "[T=3 규격] 내장 팩이 고속 진동을 일으켜 기계의 표면 장갑을 분초 단위로 파쇄하는 암살검.",
+    "name_en": "Ultrasonic Scrap Dagger",
+    "description_en": "[T=3 Standard] An assassin's blade whose built-in pack vibrates at high speed, shredding machine plating in seconds."
+  },
+  "WEAPON_STD_03": {
+    "name": "레일 마그네틱 피스톨",
+    "description": "[T=3 규격] 간결하게 정렬된 전자기 레일로 탄자를 아음속 돌파시키는 규격 권총.",
+    "name_en": "Rail Magnetic Pistol",
+    "description_en": "[T=3 Standard] A standard pistol that pushes slugs through subsonic speed along neatly aligned electromagnetic rails."
+  },
+  "WEAPON_STD_04": {
+    "name": "정크야드 헤비 슬레지",
+    "description": "[T=3 규격] 공업용 유압 가속 노즐을 헤드에 결합해 강철 파쇄력을 극대화한 중둔기.",
+    "name_en": "Junkyard Heavy Sledge",
+    "description_en": "[T=3 Standard] A heavy maul with an industrial hydraulic accelerator nozzle fused to its head for maximum steel-crushing force."
+  },
+  "WEAPON_STD_05": {
+    "name": "고전압 스파크 세이버",
+    "description": "[T=3 규격] 검신을 따라 플라즈마 아크가 상시 순환하여 타격 시 전류 방전을 일으키는 도검.",
+    "name_en": "High-Voltage Spark Saber",
+    "description_en": "[T=3 Standard] A sword with a plasma arc constantly circling its blade, discharging current on every hit."
+  },
+  "WEAPON_STD_06": {
+    "name": "개조형 컴팩트 샷건",
+    "description": "[T=3 규격] 근접 격돌 시 십만 배수 대미지의 순간 폭발력이 뛰어난 스캐벤저용 산탄총.",
+    "name_en": "Modified Compact Shotgun",
+    "description_en": "[T=3 Standard] A scavenger shotgun with devastating burst damage in close-quarters clashes."
+  },
+  "WEAPON_STD_07": {
+    "name": "주파수 간섭형 리볼버",
+    "description": "[T=3 규격] 실린더에 디지털 파쇄 코드를 인코딩한 특수 탄환을 장전해 쏘는 권총.",
+    "name_en": "Frequency-Jamming Revolver",
+    "description_en": "[T=3 Standard] A revolver that fires special rounds with digital shredding code encoded into the cylinder."
+  },
+  "WEAPON_STD_08": {
+    "name": "저항군 정밀 저격총",
+    "description": "[T=3 규격] 긴 총열과 수동 볼트액션 장치를 채택해 원거리 저격 로그를 안정적으로 띄우는 화기.",
+    "name_en": "Resistance Precision Sniper Rifle",
+    "description_en": "[T=3 Standard] A long-barreled manual bolt-action rifle that reliably delivers long-range sniper logs."
+  },
+  "WEAPON_STD_09": {
+    "name": "하부 레일 부착식 유탄기",
+    "description": "[T=3 규격] 위력 상한점에 도달한 규격 화포로 광역 파편 파괴 스크립트를 살포하는 무기.",
+    "name_en": "Underbarrel Grenade Launcher",
+    "description_en": "[T=3 Standard] A standard launcher at the peak of its power bracket, spraying a wide-area shrapnel destruction script."
+  },
+  "WEAPON_STD_10": {
+    "name": "서보 구동식 컴뱃 나이프",
+    "description": "[T=3 규격] 손잡이에 소형 서보 모터가 탑재되어 찌르기 턴 속도와 관통력을 보조하는 단검.",
+    "name_en": "Servo-Driven Combat Knife",
+    "description_en": "[T=3 Standard] A dagger with a small servo motor in the grip that boosts thrust speed and penetration."
+  },
+  "DECK_STD_01": {
+    "name": "황무지 스쿼터 커스텀 덱",
+    "description": "[T=3 규격] 방화벽 우회 노드용 리눅스 셸이 규격 하드웨어로 납땜된 해커들의 표준 기기.",
+    "name_en": "Wasteland Squatter Custom Deck",
+    "description_en": "[T=3 Standard] The hacker's standard rig: a Linux shell for firewall-bypass nodes soldered onto standard hardware."
+  },
+  "DECK_STD_02": {
+    "name": "리사이클 크래커 v2",
+    "description": "[T=3 규격] 기업의 폐기 통신 단말기를 다크넷 전용 프로토콜로 리빌딩한 넷포스용 사이버덱.",
+    "name_en": "Recycled Cracker v2",
+    "description_en": "[T=3 Standard] A Net Force cyberdeck rebuilt from a discarded corporate comms terminal with darknet-only protocols."
+  },
+  "DECK_STD_03": {
+    "name": "주파수 재밍 보드",
+    "description": "[T=3 규격] 주변 마스터 AI 신호망에 주기적인 화이트 노이즈를 송출해 동기화를 방해하는 장치.",
+    "name_en": "Frequency Jamming Board",
+    "description_en": "[T=3 Standard] A device that disrupts sync by periodically broadcasting white noise into nearby Master AI signal nets."
+  },
+  "DECK_STD_04": {
+    "name": "리눅스 아키텍처 데크",
+    "description": "[T=3 규격] 구시대 오픈소스 OS를 이식하여 패킷 변조 오차율이 극히 낮은 연산 장치.",
+    "name_en": "Linux Architecture Deck",
+    "description_en": "[T=3 Standard] A compute unit running a transplanted old-world open-source OS, with an extremely low packet-tampering error rate."
+  },
+  "DECK_STD_05": {
+    "name": "매트릭스 신호 바이패서",
+    "description": "[T=3 규격] 가상 은신처 노드 세탁 시 신호 추적 회로를 아날로그 방식으로 우회시키는 덱.",
+    "name_en": "Matrix Signal Bypasser",
+    "description_en": "[T=3 Standard] A deck that routes around signal-tracing circuits the analog way when laundering virtual safehouse nodes."
+  },
+  "DECK_STD_06": {
+    "name": "정크야드 마더보드 덱",
+    "description": "[T=3 규격] 구형 컴퓨터의 노스브릿지 칩셋을 마개조해 다중 패킷 투사 효율을 올린 가젯.",
+    "name_en": "Junkyard Motherboard Deck",
+    "description_en": "[T=3 Standard] A gadget with a heavily modded old northbridge chipset for more efficient multi-packet projection."
+  },
+  "DECK_STD_07": {
+    "name": "디지털 스머글러 링크",
+    "description": "[T=3 규격] 게릴라 인필트레이터가 자원 강제 인출(스머글링) 시 데이터 패킷을 압축하는 덱.",
+    "name_en": "Digital Smuggler Link",
+    "description_en": "[T=3 Standard] A deck that compresses data packets when a guerrilla infiltrator forcibly extracts (smuggles) resources."
+  },
+  "DECK_STD_08": {
+    "name": "방화벽 인지용 센서 보드",
+    "description": "[T=3 규격] 도시 진입 시 방화벽 추적 지수(Alert)의 변동을 정수 단위로 역추적하는 연산 장치.",
+    "name_en": "Firewall-Aware Sensor Board",
+    "description_en": "[T=3 Standard] A compute unit that back-traces every point of change in the firewall trace index (Alert) upon entering the city."
+  },
+  "DECK_STD_09": {
+    "name": "오픈 넷 릴레이 서버 칩",
+    "description": "[T=3 규격] 무선 주파수 음영 지역에서도 가상 현실 프로토콜 균열을 안정적으로 유지하는 기기.",
+    "name_en": "Open Net Relay Server Chip",
+    "description_en": "[T=3 Standard] A device that keeps a stable breach in virtual reality protocols even in radio dead spots."
+  },
+  "DECK_STD_10": {
+    "name": "저항군 전술 로그 연산기",
+    "description": "[T=3 규격] 전투 턴 종료 시마다 적 기계 괴수의 정보 분석 로그를 최적화해 주는 사이버덱.",
+    "name_en": "Resistance Tactical Log Processor",
+    "description_en": "[T=3 Standard] A cyberdeck that optimizes analysis logs on enemy mech-beasts at the end of every combat turn."
+  },
+  "CYBER_STD_01": {
+    "name": "강화 티타늄 인공 관절",
+    "description": "[T=3 규격] 규격화된 티타늄 합금으로 무릎과 팔꿈치 관절의 물리 하중 한도를 높인 부품.",
+    "name_en": "Reinforced Titanium Joint",
+    "description_en": "[T=3 Standard] Standardized titanium-alloy parts that raise the physical load limits of knees and elbows."
+  },
+  "CYBER_STD_02": {
+    "name": "정크야드 서보 모터",
+    "description": "[T=3 규격] 스크랩 연합 공방에서 정밀 리빌딩된 고토크 모터. 신체 악력을 물리 고정.",
+    "name_en": "Junkyard Servo Motor",
+    "description_en": "[T=3 Standard] A high-torque motor precision-rebuilt in a Scrap Coalition workshop. Locks in your grip strength."
+  },
+  "CYBER_STD_03": {
+    "name": "규격형 합성 근섬유 다발",
+    "description": "[T=3 규격] 생체 전류에 반응하는 인공 폴리머 섬유를 허벅지에 덧대어 기동력을 상향함.",
+    "name_en": "Standard Synthetic Muscle Bundle",
+    "description_en": "[T=3 Standard] Artificial polymer fibers that react to bio-current, layered on the thighs to raise mobility."
+  },
+  "CYBER_STD_04": {
+    "name": "아날로그 유압식 척수 바",
+    "description": "[T=3 규격] 척추 기둥에 외골격 격자 프레임을 나사로 단단히 고정해 인벤토리 무게를 분산함.",
+    "name_en": "Analog Hydraulic Spine Bar",
+    "description_en": "[T=3 Standard] An exoskeletal lattice frame screwed firmly to the spinal column to spread inventory weight."
+  },
+  "CYBER_STD_05": {
+    "name": "바이오 링크 피드 커넥터",
+    "description": "[T=3 규격] 고유 스킬 포인트(SP) 주입 시 신경 신호 전달 효율을 안정화하는 목 뒤 이식 부품.",
+    "name_en": "Bio-Link Feed Connector",
+    "description_en": "[T=3 Standard] A nape implant that stabilizes neural signal transfer when unique skill points (SP) are injected."
+  },
+  "CYBER_STD_06": {
+    "name": "강화 황동 인공 심장 밸브",
+    "description": "[T=3 규격] 혈류 공급량을 모터 전압으로 수동 제어하여 신체 생명력(HP) 베이스를 보조함.",
+    "name_en": "Reinforced Brass Heart Valve",
+    "description_en": "[T=3 Standard] Manually regulates blood flow via motor voltage to support your base Vitality (HP)."
+  },
+  "CYBER_STD_07": {
+    "name": "디지털 시각 센서 렌즈",
+    "description": "[T=3 규격] 안구 의체에 장착하는 규격 조리개 렌즈. 적의 유효 방어력을 분초 단위로 스캔.",
+    "name_en": "Digital Optic Sensor Lens",
+    "description_en": "[T=3 Standard] A standard aperture lens for cybernetic eyes. Scans enemy effective defense second by second."
+  },
+  "CYBER_STD_08": {
+    "name": "충격 감쇄용 늑골 장갑판",
+    "description": "[T=3 규격] 흉부에 경량 합금 플레이트를 리벳 격자로 박아내어 물리 DEF 베이스를 상승시킴.",
+    "name_en": "Shock-Absorbing Rib Plating",
+    "description_en": "[T=3 Standard] Light alloy plates riveted in a grid across the chest to raise base physical DEF."
+  },
+  "CYBER_STD_09": {
+    "name": "피복형 신경 절연 케이블",
+    "description": "[T=3 규격] 다이렉트 넷 접속 시 가해지는 가상 방화벽의 쇼크 반동을 완만하게 튕겨내는 선.",
+    "name_en": "Sheathed Neural Insulation Cable",
+    "description_en": "[T=3 Standard] Wiring that gently deflects the shock recoil of virtual firewalls during direct net access."
+  },
+  "CYBER_STD_10": {
+    "name": "서보 구동형 인공 무릎 격자",
+    "description": "[T=3 규격] 낙하 충격과 급격한 턴 전환 시 모터 베어링이 역토크를 걸어 관절을 보호함.",
+    "name_en": "Servo-Driven Knee Lattice",
+    "description_en": "[T=3 Standard] Motor bearings apply counter-torque to protect the joint from falls and sharp turns."
+  },
+  "BACK_STD_01": {
+    "name": "대용량 고철 배낭",
+    "description": "[T=3 규격] 방수 텐트 천과 강철 프레임을 결합해 무게 한도를 +10kg 올린 가방.",
+    "name_en": "High-Capacity Scrap Backpack",
+    "description_en": "[T=3 Standard] A bag of waterproof tent canvas on a steel frame that raises carry weight by +10kg."
+  },
+  "BACK_STD_02": {
+    "name": "강화 황동 냉각 라디에이터",
+    "description": "[T=3 규격] 의체 가동 시 발생하는 고열을 구리 파이프와 냉각 팬으로 외부 방출하는 장치.",
+    "name_en": "Reinforced Brass Radiator",
+    "description_en": "[T=3 Standard] A device that vents the heat of running cybernetics outward through copper pipes and cooling fans."
+  },
+  "BACK_STD_03": {
+    "name": "스크랩 연합 탄약 벨트 리그",
+    "description": "[T=3 규격] 전면 돌파 시 소총 탄창과 유탄을 빠르게 스왑할 수 있도록 설계된 전술 하네스.",
+    "name_en": "Scrap Coalition Ammo Belt Rig",
+    "description_en": "[T=3 Standard] A tactical harness designed for fast rifle mag and grenade swaps during frontal assaults."
+  },
+  "BACK_STD_04": {
+    "name": "소형 가솔린 발전 팩",
+    "description": "[T=3 규격] 거점 물리 장벽 가동 및 배터리 충전용 전류 신호를 상시 공급하는 소형 등짐 발전기.",
+    "name_en": "Compact Gasoline Generator Pack",
+    "description_en": "[T=3 Standard] A small backpack generator that constantly supplies current for base barriers and battery charging."
+  },
+  "BACK_STD_05": {
+    "name": "무선 지프 안테나 마스트",
+    "description": "[T=3 규격] 주파수 역추적 스킬 가동 시 필드 내 숨겨진 자원 박스 탐지 성공률을 보조함.",
+    "name_en": "Wireless Jeep Antenna Mast",
+    "description_en": "[T=3 Standard] Improves the detection rate of hidden resource boxes in the field when running Signal Trace."
+  },
+  "BACK_STD_06": {
+    "name": "케블라 보강 하드 셸 가방",
+    "description": "[T=3 규격] 등 뒤에서 날아오는 기습 파편 타격을 완벽히 흡수하는 경량 방탄 하드 백팩.",
+    "name_en": "Kevlar-Reinforced Hard-Shell Bag",
+    "description_en": "[T=3 Standard] A light ballistic hard backpack that fully absorbs surprise shrapnel hits from behind."
+  },
+  "BACK_STD_07": {
+    "name": "다중 배터리 슬롯 뱅크",
+    "description": "[T=3 규격] 수명이 다해가는 셀 여러 개를 병렬 연결해 사이버덱 가용 전력을 보전하는 백팩.",
+    "name_en": "Multi-Battery Slot Bank",
+    "description_en": "[T=3 Standard] A backpack wiring several dying cells in parallel to conserve the cyberdeck's available power."
+  },
+  "BACK_STD_08": {
+    "name": "드론 격납용 가죽 홀스터",
+    "description": "[T=3 규격] 자동화 엔지니어의 자율 군집 드론 2기를 안전하게 접어 등 뒤에 장착하는 리그.",
+    "name_en": "Leather Drone Holster",
+    "description_en": "[T=3 Standard] A rig that safely folds an automation engineer's two autonomous swarm drones onto the back."
+  },
+  "BACK_STD_09": {
+    "name": "신체 방전용 접지 앵커 레일",
+    "description": "[T=3 규격] 디지털 역해킹 뇌 손상 반동을 물리 충격파로 치환해 지면으로 흘리는 접지선.",
+    "name_en": "Discharge Ground Anchor Rail",
+    "description_en": "[T=3 Standard] A ground line that converts the brain-damage recoil of digital counter-hacks into a shockwave and sinks it into the earth."
+  },
+  "BACK_STD_10": {
+    "name": "방사능 차단 납 안감 배낭",
+    "description": "[T=3 규격] 방사능 오염 분지 횡단 시 내부 수집 자원의 오염 데이터 수치 파손을 차단함.",
+    "name_en": "Lead-Lined Rad-Shield Pack",
+    "description_en": "[T=3 Standard] Keeps collected resources from contamination damage when crossing irradiated basins."
+  },
+  "FACE_STD_01": {
+    "name": "정크야드 방진 고글",
+    "description": "[T=3 규격] 데드존의 황무지 모래 폭풍을 완벽히 차단하고 기초 가시성을 확보하는 고글.",
+    "name_en": "Junkyard Dust Goggles",
+    "description_en": "[T=3 Standard] Goggles that fully block the Dead Zone's wasteland sandstorms and keep basic visibility."
+  },
+  "FACE_STD_02": {
+    "name": "스크랩 연합 전술 마스크",
+    "description": "[T=3 규격] 필터가 규격화되어 교체가 용이한 방독면. 가시철사 슬래시 타격을 방어.",
+    "name_en": "Scrap Coalition Tactical Mask",
+    "description_en": "[T=3 Standard] A gas mask with standardized, easily swapped filters. Guards against barbed-wire slashes."
+  },
+  "FACE_STD_03": {
+    "name": "야간 열영상 스캐너 HUD",
+    "description": "[T=3 규격] 어두운 폐공장이나 노드 기지 내부에서 기계 괴수의 열원 신호를 파싱하는 안경.",
+    "name_en": "Night Thermal Scanner HUD",
+    "description_en": "[T=3 Standard] Glasses that parse mech-beast heat signatures inside dark ruined factories and node bases."
+  },
+  "FACE_STD_04": {
+    "name": "조리개 가변형 단안경",
+    "description": "[T=3 규격] 카메라 셔터 기믹을 눈앞에 박아 치명타 확률 지수 가중치를 보조함.",
+    "name_en": "Variable-Aperture Monocle",
+    "description_en": "[T=3 Standard] A camera-shutter gimmick set before the eye to boost your crit chance weighting."
+  },
+  "FACE_STD_05": {
+    "name": "공업용 내열성 투명 안면창",
+    "description": "[T=3 규격] 메카니컬 테크가 용접 시 튀는 초고열 스파크와 가속 파편을 막아주는 보호 마스크.",
+    "name_en": "Industrial Heat-Resistant Face Shield",
+    "description_en": "[T=3 Standard] A protective mask that stops the searing sparks and flying debris of Mechanical Tech welding."
+  },
+  "FACE_STD_06": {
+    "name": "구형 군용 방탄 헬멧 바이저",
+    "description": "[T=3 규격] 앞면 유리에 방탄 코팅이 덧대어져 정면 저격 탄환의 대미지 배율을 감쇄함.",
+    "name_en": "Old Military Ballistic Visor",
+    "description_en": "[T=3 Standard] A ballistic-coated faceplate that reduces the damage multiplier of frontal sniper rounds."
+  },
+  "FACE_STD_07": {
+    "name": "저항군 위장 안면 도색 마스크",
+    "description": "[T=3 규격] 탐색 필드 턴 진행 시 기습 조우율을 소폭 경감해 주는 텍스트 힌트용 외장.",
+    "name_en": "Resistance Camo Face-Paint Mask",
+    "description_en": "[T=3 Standard] A text-hint cosmetic that slightly lowers ambush rates during field exploration turns."
+  },
+  "FACE_STD_08": {
+    "name": "음성 위조 패킷 마우스피스",
+    "description": "[T=3 규격] 내 신체 음성 신호를 마스터 AI의 감시망 레이더가 인지하지 못하게 세탁함.",
+    "name_en": "Voice-Forging Packet Mouthpiece",
+    "description_en": "[T=3 Standard] Launders your vocal signals so the Master AI's surveillance radar cannot recognize them."
+  },
+  "FACE_STD_09": {
+    "name": "광섬유 오버레이 셰이드",
+    "description": "[T=3 규격] 가상 현실의 강렬한 레이저 광량을 필터링해 지력(INT) 인지력 마비를 예방함.",
+    "name_en": "Fiber-Optic Overlay Shade",
+    "description_en": "[T=3 Standard] Filters the intense laser light of virtual reality to prevent Intellect (INT) perception paralysis."
+  },
+  "FACE_STD_10": {
+    "name": "리사이클 덴탈 보안 마스크",
+    "description": "[T=3 규격] 얇은 금속 메쉬망을 겹쳐 턱과 입 주위 신체 절단 로그 활성화를 방어함.",
+    "name_en": "Recycled Dental Security Mask",
+    "description_en": "[T=3 Standard] Layered thin metal mesh guards the jaw and mouth against dismemberment logs."
+  },
+  "TOP_STD_01": {
+    "name": "스크랩 연합 가죽 방포의",
+    "description": "[T=3 규격] 두꺼운 괴수 가죽에 방수 코팅을 입혀 방사능 오염 틱 누적을 경감하는 코트.",
+    "name_en": "Scrap Coalition Leather Duster",
+    "description_en": "[T=3 Standard] A coat of thick beast hide with waterproof coating that reduces radiation contamination ticks."
+  },
+  "TOP_STD_02": {
+    "name": "규격형 케블라 전술 조끼",
+    "description": "[T=3 규격] 아날로그 전투 시 파편 대미지를 안정적으로 차감해 주는 방탄 섬유 조끼.",
+    "name_en": "Standard Kevlar Tactical Vest",
+    "description_en": "[T=3 Standard] A ballistic fiber vest that reliably reduces shrapnel damage in analog combat."
+  },
+  "TOP_STD_03": {
+    "name": "고철 리벳 보강형 흉갑",
+    "description": "[T=3 규격] 강철판을 규격 가죽 조끼 위에 리벳으로 촘촘히 박아 물리 DEF 베이스를 올림.",
+    "name_en": "Scrap-Riveted Breastplate",
+    "description_en": "[T=3 Standard] Steel plates densely riveted onto a standard leather vest to raise base physical DEF."
+  },
+  "TOP_STD_04": {
+    "name": "저항군 위장 필드 자켓",
+    "description": "[T=3 규격] 데드존 황무지 95% 공간 색상과 동화되는 정크 코트. 기습 방어에 유리.",
+    "name_en": "Resistance Camo Field Jacket",
+    "description_en": "[T=3 Standard] A junk coat that blends into the colors of the Dead Zone wasteland covering 95% of the world. Good against ambushes."
+  },
+  "TOP_STD_05": {
+    "name": "내열성 절연 공업용 슈트",
+    "description": "[T=3 규격] 메카니컬 테크 공방의 고열 방출구나 전기 스파크 대미지를 90% 차단하는 옷.",
+    "name_en": "Heat-Resistant Insulated Work Suit",
+    "description_en": "[T=3 Standard] A suit that blocks 90% of damage from Mechanical Tech workshop heat vents and electrical sparks."
+  },
+  "TOP_STD_06": {
+    "name": "경량 두랄루민 플레이트 조끼",
+    "description": "[T=3 규격] 항공기 동체 조각을 뜯어 가슴을 보호하게 만든 가볍고 견고한 하이브리드 상의.",
+    "name_en": "Light Duralumin Plate Vest",
+    "description_en": "[T=3 Standard] A light yet sturdy hybrid top made from aircraft fuselage scraps shaped to guard the chest."
+  },
+  "TOP_STD_07": {
+    "name": "의체 케이블 보호용 가죽 코트",
+    "description": "[T=3 규격] 외부로 노출된 의체 구동 실린더와 구리선을 덮어 기습 절단 로그를 예방함.",
+    "name_en": "Cybernetic Cable-Guard Leather Coat",
+    "description_en": "[T=3 Standard] Covers exposed cybernetic drive cylinders and copper wiring to prevent ambush severing logs."
+  },
+  "TOP_STD_08": {
+    "name": "방사능 납 보강 방포 셔츠",
+    "description": "[T=3 규격] 납 와셔를 촘큼히 엮어 내부에 덧댄, 무겁지만 물리 오염 저항력이 높은 조끼.",
+    "name_en": "Lead-Reinforced Rad Shirt",
+    "description_en": "[T=3 Standard] A heavy vest lined with densely woven lead washers, highly resistant to physical contamination."
+  },
+  "TOP_STD_09": {
+    "name": "사이버덱 거치형 전술 패딩",
+    "description": "[T=3 규격] 흉부에 사이버덱 슬롯 전용 하드 케이스가 빌트인된 넷포스 게릴라용 상의.",
+    "name_en": "Cyberdeck-Mount Tactical Padding",
+    "description_en": "[T=3 Standard] A Net Force guerrilla top with a built-in hard case for a cyberdeck slot on the chest."
+  },
+  "TOP_STD_10": {
+    "name": "스크랩 유목민 중장갑 코트",
+    "description": "[T=3 규격] 가죽 코트 위에 폐타이어와 양철판을 복합 레이어로 엮은 하드코어 생존 외장.",
+    "name_en": "Scrap Nomad Heavy Coat",
+    "description_en": "[T=3 Standard] Hardcore survival armor: a leather coat layered with scrap tires and tin plates."
+  },
+  "BOTTOM_STD_01": {
+    "name": "구형 절연 전술 바지",
+    "description": "[T=3 규격] 군용 방수 바지에 절연 전선을 가랑이 사이마다 보강해 시스템 쇼크를 차단함.",
+    "name_en": "Old Insulated Tactical Pants",
+    "description_en": "[T=3 Standard] Military waterproof pants reinforced with insulated wiring at every seam to block system shock."
+  },
+  "BOTTOM_STD_02": {
+    "name": "강화 무릎 보호패드 오버롤",
+    "description": "[T=3 규격] 두꺼운 가죽 멜빵바지에 두랄루민 무릎 보호대를 리벳 작업해 관절을 보호함.",
+    "name_en": "Reinforced Knee-Pad Overalls",
+    "description_en": "[T=3 Standard] Thick leather overalls with riveted duralumin knee guards to protect the joints."
+  },
+  "BOTTOM_STD_03": {
+    "name": "데드존 사냥꾼용 방포 바지",
+    "description": "[T=3 규격] 황무지의 날카로운 고철 파편 가시넝쿨에 바지가 찢어지는 것을 막아주는 하의.",
+    "name_en": "Dead Zone Hunter Duster Pants",
+    "description_en": "[T=3 Standard] Pants that won't tear on the wasteland's thorny tangles of sharp scrap shards."
+  },
+  "BOTTOM_STD_04": {
+    "name": "자동차 시트 가죽 중장갑 하의",
+    "description": "[T=3 규격] 대형 세단의 천연가죽 시트를 통째로 뜯어 바지 전면에 덧댄 질긴 방어구.",
+    "name_en": "Car-Seat Leather Heavy Pants",
+    "description_en": "[T=3 Standard] Tough armor made from a large sedan's genuine leather seat torn off whole and patched onto the front."
+  },
+  "BOTTOM_STD_05": {
+    "name": "PVC 파이프 정강이 가드 하의",
+    "description": "[T=3 규격] 정강이 전면에 규격 PVC 가드를 장착해 적 견형 괴수의 하체 물어뜯기를 차단함.",
+    "name_en": "PVC Pipe Shin-Guard Pants",
+    "description_en": "[T=3 Standard] Standard PVC guards on the shins block canine beasts from mauling your lower body."
+  },
+  "BOTTOM_STD_06": {
+    "name": "스크랩 연합 다용도 포켓 바지",
+    "description": "[T=3 규격] 고철 부품 분해용 공구와 퓨즈를 부위별로 20개 이상 수납할 수 있는 전술 하의.",
+    "name_en": "Scrap Coalition Utility Pants",
+    "description_en": "[T=3 Standard] Tactical pants that hold 20+ tools and fuses for dismantling scrap parts, sorted by pocket."
+  },
+  "BOTTOM_STD_07": {
+    "name": "양철 플레이트 오버 하의",
+    "description": "[T=3 규격] 기존 누더기 바지 위에 양철판 레이어를 가죽 끈으로 둘러 다리 절단을 방어함.",
+    "name_en": "Tin-Plate Over-Pants",
+    "description_en": "[T=3 Standard] Tin-plate layers strapped over old rag pants with leather to guard the legs against severing."
+  },
+  "BOTTOM_STD_08": {
+    "name": "소방 호스 직조 전술 멜빵바지",
+    "description": "[T=3 규격] 고압 방수 직물 천을 멜빵 형태로 구조화하여 내구도 마모 속도가 극히 느린 하의.",
+    "name_en": "Fire-Hose Woven Tactical Overalls",
+    "description_en": "[T=3 Standard] High-pressure waterproof fabric structured into overalls. Wears down extremely slowly."
+  },
+  "BOTTOM_STD_09": {
+    "name": "컨베이어 벨트 고무 허벅지 패드",
+    "description": "[T=3 규격] 공장 라인의 두꺼운 고무 벨트를 잘라 양측 허벅지 동력선 노출을 방어한 하의.",
+    "name_en": "Conveyor-Belt Rubber Thigh Pads",
+    "description_en": "[T=3 Standard] Pants with thick factory conveyor-belt rubber guarding the exposed power lines on both thighs."
+  },
+  "BOTTOM_STD_10": {
+    "name": "저항군 제식 하이브리드 진",
+    "description": "[T=3 규격] 무릎 아래는 티타늄 매쉬, 위는 케블라 청바지로 조율된 스캐벤저 리더용 하의.",
+    "name_en": "Resistance Standard Hybrid Jeans",
+    "description_en": "[T=3 Standard] Scavenger-leader pants: titanium mesh below the knee, Kevlar denim above."
+  },
+  "SHOES_STD_01": {
+    "name": "강화 플라스틱 워커",
+    "description": "[T=3 규격] 앞코에 단단한 공업용 수지가 내장되어 발가락 뼈대 록업(Lock-up) 에러를 방어함.",
+    "name_en": "Reinforced Plastic Walkers",
+    "description_en": "[T=3 Standard] Hard industrial resin in the toe cap prevents toe-bone lock-up errors."
+  },
+  "SHOES_STD_02": {
+    "name": "접지력 보강형 전술 전투화",
+    "description": "[T=3 규격] 기름이 흥건한 폐공장 바닥이나 미끄러운 유령 노드 타일에서 선턴(INIT)을 보조함.",
+    "name_en": "Grip-Reinforced Combat Boots",
+    "description_en": "[T=3 Standard] Helps you act first (INIT) on oil-slicked factory floors and slippery ghost node tiles."
+  },
+  "SHOES_STD_03": {
+    "name": "강철 징박힌 사막 기동 장화",
+    "description": "[T=3 규격] 모래 필드 타일 이동 시 미세 슬립 현상을 지워 허기 지표 감쇄 속도를 보전함.",
+    "name_en": "Steel-Studded Desert Boots",
+    "description_en": "[T=3 Standard] Eliminates micro-slips on sand tiles, slowing hunger drain."
+  },
+  "SHOES_STD_04": {
+    "name": "공업용 두꺼운 가이거 내산화",
+    "description": "[T=3 규격] 산성 액체나 방사능 융융 분지 타일 진입 시 오염 스택 틱 수치를 -1 경감함.",
+    "name_en": "Thick Industrial Geiger Acid Boots",
+    "description_en": "[T=3 Standard] Reduces contamination stack ticks by -1 when entering acid pools or molten radioactive basin tiles."
+  },
+  "SHOES_STD_05": {
+    "name": "의체 동력 밸브 서보 부츠",
+    "description": "[T=3 규격] 신발 뒤축에 소형 리턴 서보 기믹을 장착해 행동 턴 우선권 지수를 실시간 가산함.",
+    "name_en": "Cybernetic Power-Valve Servo Boots",
+    "description_en": "[T=3 Standard] A small return-servo gimmick in the heel raises your initiative index in real time."
+  },
+  "SHOES_STD_06": {
+    "name": "방탄 천 조각 하이브리드 스니커즈",
+    "description": "[T=3 규격] 가벼운 천 운동화 표면에 케블라 조각을 덧대어 기동력과 방어력을 절충한 신발.",
+    "name_en": "Ballistic-Patch Hybrid Sneakers",
+    "description_en": "[T=3 Standard] Light canvas sneakers patched with Kevlar, balancing mobility and defense."
+  },
+  "SHOES_STD_07": {
+    "name": "양철판 내장 스크랩 슈즈",
+    "description": "[T=3 규격] 95%의 불모지 바닥에 깔린 대못 함정 정밀 해제 실패 시 반동 타격을 무력화함.",
+    "name_en": "Tin-Lined Scrap Shoes",
+    "description_en": "[T=3 Standard] Negates recoil damage from failing to disarm the nail traps covering 95% of the barren ground."
+  },
+  "SHOES_STD_08": {
+    "name": "나사못 징 보강 통가죽 부츠",
+    "description": "[T=3 규격] 두꺼운 소가죽 장화에 공업용 소형 나사못 30개를 박아 접지력을 극대화한 장화.",
+    "name_en": "Screw-Studded Full-Leather Boots",
+    "description_en": "[T=3 Standard] Thick cowhide boots with 30 small industrial screws driven in for maximum grip."
+  },
+  "SHOES_STD_09": {
+    "name": "스트레치 필름 강화 작업화",
+    "description": "[T=3 규격] 마모된 등산화 외벽에 고강도 에폭시 접착제와 필름을 롤링해 내구성을 보강함.",
+    "name_en": "Stretch-Film Reinforced Work Shoes",
+    "description_en": "[T=3 Standard] Worn hiking boots rolled in high-strength epoxy and film for durability."
+  },
+  "SHOES_STD_10": {
+    "name": "드론 스키드 프레임 샌들",
+    "description": "[T=3 규격] 파괴된 드론의 하부 스키드 탄성을 이용해 민첩 실효 가치 연산을 돕는 신발.",
+    "name_en": "Drone-Skid Frame Sandals",
+    "description_en": "[T=3 Standard] Uses the spring of a wrecked drone's landing skid to boost the effective value of Agility."
+  },
+  "NECK_STD_01": {
+    "name": "솔더링 칩셋 펜던트",
+    "description": "[T=3 규격] 구형 라디오 메인 칩셋 여러 개를 징크 와이어에 납땜해 정교하게 늘어뜨린 목걸이.",
+    "name_en": "Soldered Chipset Pendant",
+    "description_en": "[T=3 Standard] A necklace of several old radio chipsets soldered onto zinc wire and neatly draped."
+  },
+  "NECK_STD_02": {
+    "name": "가공된 납땜 와셔 초커",
+    "description": "[T=3 규격] 전선 접지용 황동 와셔 20개를 가죽 띠에 촘촘히 박아 목 동력선을 방어하는 초커.",
+    "name_en": "Machined Solder Washer Choker",
+    "description_en": "[T=3 Standard] A choker of 20 brass grounding washers set tightly into a leather band to guard the neck's power lines."
+  },
+  "NECK_STD_03": {
+    "name": "드론 조리개 광학 렌즈 링",
+    "description": "[T=3 규격] 정찰 드론의 깨지지 않은 줌 렌즈 경동을 목걸이 펜던트로 삼아 센서 연산을 돕는 가젯.",
+    "name_en": "Drone Aperture Lens Ring",
+    "description_en": "[T=3 Standard] A gadget pendant made from a recon drone's unbroken zoom lens barrel that aids sensor computation."
+  },
+  "NECK_STD_04": {
+    "name": "저항군 식식 인공 성대 초커",
+    "description": "[T=3 규격] 아날로그 무선 마이크 소자를 목에 직결해 팀원과의 무선 연산 감도 로그를 올림.",
+    "name_en": "Resistance Wheezing Voicebox Choker",
+    "description_en": "[T=3 Standard] An analog wireless mic element wired to the throat, raising radio link sensitivity with your team."
+  },
+  "NECK_STD_05": {
+    "name": "하청 업체 플라스틱 ID 목걸이",
+    "description": "[T=3 규격] 기업 하층부에서 쓰이던 보안 식별 초커. 특정 유령 노드 진입 조건 텍스트 힌트 제공.",
+    "name_en": "Subcontractor Plastic ID Necklace",
+    "description_en": "[T=3 Standard] A security ID choker from the corporate lower tiers. Gives text hints on entry conditions for certain ghost nodes."
+  },
+  "NECK_STD_06": {
+    "name": "고전압 과부하 퓨즈 펜던트",
+    "description": "[T=3 규격] 변전소 폐허에서 수집한 유리 관 퓨즈 3개를 은선으로 엮어 연산 오염 저항을 보조함.",
+    "name_en": "High-Voltage Overload Fuse Pendant",
+    "description_en": "[T=3 Standard] Three glass tube fuses from substation ruins strung on silver wire, aiding computational contamination resistance."
+  },
+  "NECK_STD_07": {
+    "name": "바이오 하운드 냉각수 초커",
+    "description": "[T=3 규격] 기계 괴수의 냉각 배관을 목에 감아 의체 구동 시 신경망 체감 온도 상승을 억제함.",
+    "name_en": "Bio Hound Coolant Choker",
+    "description_en": "[T=3 Standard] A mech-beast's cooling line wrapped around the neck to curb neural heat buildup when cybernetics run."
+  },
+  "NECK_STD_08": {
+    "name": "사이버덱 매쉬 접지 밴드",
+    "description": "[T=3 규격] 사이버덱 구동 시 튀는 미세 서지를 목덜미 가죽 패드로 흡수해 뇌 손상을 방어함.",
+    "name_en": "Cyberdeck Mesh Ground Band",
+    "description_en": "[T=3 Standard] A leather nape pad that absorbs micro-surges from a running cyberdeck to prevent brain damage."
+  },
+  "NECK_STD_09": {
+    "name": "소총 빈 탄피 직렬 목걸이",
+    "description": "[T=3 규격] 스크랩 연합 공방에서 세련되게 세척한 5.56mm 빈 탄피들을 가죽 선에 정렬한 목걸이.",
+    "name_en": "Series Rifle Casing Necklace",
+    "description_en": "[T=3 Standard] Spent 5.56mm casings, cleanly polished in a Scrap Coalition workshop, lined up on a leather cord."
+  },
+  "NECK_STD_10": {
+    "name": "양철 캔 링 3중 레이어 목걸이",
+    "description": "[T=3 규격] 알루미늄 캔 고리 백여 개를 사슬 메일 형태로 직조해 쇄골 부위를 보호하는 장신구.",
+    "name_en": "Triple-Layer Can-Tab Necklace",
+    "description_en": "[T=3 Standard] A hundred-odd aluminum can tabs woven like chain mail to protect the collarbones."
+  },
+  "RING_STD_01": {
+    "name": "연마된 황동 와셔 반지",
+    "description": "[T=3 규격] 정밀 배선반의 황동 와셔 내경을 정교하게 갈아내 손가락에 맞춘 규격 반지.",
+    "name_en": "Ground Brass Washer Ring",
+    "description_en": "[T=3 Standard] A standard ring: a brass washer from a precision switchboard, its bore carefully ground to fit the finger."
+  },
+  "RING_STD_02": {
+    "name": "티타늄 하운드 송곳니 반지",
+    "description": "[T=3 규격] 기계 괴수의 부러진 이빨 표면에 다크넷 식별 코드를 새겨 넣은 저항군 표식 반지.",
+    "name_en": "Titanium Hound Fang Ring",
+    "description_en": "[T=3 Standard] A Resistance token ring: a mech-beast's broken fang engraved with darknet ID codes."
+  },
+  "RING_STD_03": {
+    "name": "육각 고철 너트 정밀 반지",
+    "description": "[T=3 규격] 공장 바닥의 녹슨 너트를 스패너로 가공해 표면의 녹을 벗겨내고 은도금한 반지.",
+    "name_en": "Precision Hex Nut Ring",
+    "description_en": "[T=3 Standard] A rusty factory nut shaped with a spanner, stripped of rust, and silver-plated."
+  },
+  "RING_STD_04": {
+    "name": "형광 광섬유 매듭 고리",
+    "description": "[T=3 규격] 끊어진 통신선 내부의 광섬유 가닥들을 정교하게 결속해 미세 전류를 흐르게 한 반지.",
+    "name_en": "Fluorescent Fiber Knot Loop",
+    "description_en": "[T=3 Standard] A ring of fiber strands from a severed comms line, finely bound to carry a faint current."
+  },
+  "RING_STD_05": {
+    "name": "알루미늄 볼륨 노브 가젯 링",
+    "description": "[T=3 규격] 사이버덱의 패킷 출력 다이얼을 떼어 손가락 스위치 링으로 마개조한 반지.",
+    "name_en": "Aluminum Volume-Knob Gadget Ring",
+    "description_en": "[T=3 Standard] A cyberdeck's packet output dial pried off and modded into a finger switch ring."
+  },
+  "RING_STD_06": {
+    "name": "정밀 리턴 스프링 결속 고리",
+    "description": "[T=3 규격] 계단식 스탯 효율 체감 법칙 구간 진입 시 미세 장력 피드백을 주는 가젯 반지.",
+    "name_en": "Precision Return-Spring Loop",
+    "description_en": "[T=3 Standard] A gadget ring that gives slight tension feedback when you enter a stepped stat-diminishing bracket."
+  },
+  "RING_STD_07": {
+    "name": "수은전지 연동 발광 LED 반지",
+    "description": "[T=3 규격] 소형 다이오드 전구와 전지를 연결해 어두운 노드 서버실 키패드를 비추는 반지.",
+    "name_en": "Mercury-Cell LED Ring",
+    "description_en": "[T=3 Standard] A ring with a tiny diode bulb and cell that lights keypads in dark node server rooms."
+  },
+  "RING_STD_08": {
+    "name": "만기된 기업 스마트 칩셋 인장",
+    "description": "[T=3 규격] 대기업 도어락 해제용 만료 RFID 칩을 납땜해 만든 정보 엔지니어용 반지.",
+    "name_en": "Expired Corporate Smart-Chip Signet",
+    "description_en": "[T=3 Standard] An info-engineer's ring soldered from an expired RFID chip once used to open megacorp door locks."
+  },
+  "RING_STD_09": {
+    "name": "삼색 복합 와이어 쉴드 반지",
+    "description": "[T=3 규격] 전선 세 가닥을 꼬아 의체 손가락 마디마디의 전력 누출을 방어하는 접지 반지.",
+    "name_en": "Tri-Color Composite Wire Shield Ring",
+    "description_en": "[T=3 Standard] A grounding ring of three twisted wires that stops power leaks at every cybernetic knuckle."
+  },
+  "RING_STD_10": {
+    "name": "일회용 우회 프록시 키 반지",
+    "description": "[T=3 규격] 가상 은신처 데이터 세탁 성공 로그를 1회 보장해 주는 스마트 소자가 박힌 반지.",
+    "name_en": "Disposable Bypass Proxy Key Ring",
+    "description_en": "[T=3 Standard] A ring with a smart element that guarantees one successful virtual safehouse data laundering log."
+  },
+  "PART_STD_01": {
+    "name": "규격형 마그네틱 가속기",
+    "description": "[T=3 규격] [공격] 주무기 기본 스킬 위력 계산 시 고유 위력 지수 알파 상시 +2 증가 / [페널티] 사격 턴 종료 시마다 허기/갈증 지수가 무조건 +2 가속 감산.",
+    "name_en": "Standard Magnetic Accelerator",
+    "description_en": "[T=3 Standard] [Combat] Unique power index alpha +2 permanently for main weapon basic skills / [Penalty] Hunger/thirst always drain +2 faster at the end of each firing turn."
+  },
+  "PART_STD_02": {
+    "name": "강화형 동적 과열 방열판",
+    "description": "[T=3 규격] [연산] [그리드 침투] 성공 시 연산 가속율 +3% 보정 / [페널티] 가동 중 도시 내부 방화벽 추적 지수(Alert) 매 턴 마다 +5 가산 누적.",
+    "name_en": "Reinforced Dynamic Heatsink",
+    "description_en": "[T=3 Standard] [Net] Compute acceleration +3% on successful [Grid Intrude] / [Penalty] In-city firewall trace index (Alert) +5 every turn while active."
+  },
+  "PART_STD_03": {
+    "name": "서보 기믹 클록 충전기",
+    "description": "[T=3 규격] [공격] 치명타 확률 상시 +5% 증가 / [페널티] 내 물리 방어력 베이스 수치가 강제로 -8 고정 차감.",
+    "name_en": "Servo Gimmick Clock Charger",
+    "description_en": "[T=3 Standard] [Combat] Crit chance +5% permanently / [Penalty] Base physical defense fixed at -8."
+  },
+  "PART_STD_04": {
+    "name": "동합금 정밀 저항 링 코일",
+    "description": "[T=3 규격] [연산] 가용 RAM 소모 스킬 구동 시 10% 확률로 소모 RAM 1 환급 / [페널티] 최대 RAM 용량이 해당 전투 완료 전까지 강제로 -1 잠금.",
+    "name_en": "Copper-Alloy Precision Resistor Coil",
+    "description_en": "[T=3 Standard] [Net] 10% chance to refund 1 RAM when using RAM-cost skills / [Penalty] Max RAM forcibly locked at -1 until the combat ends."
+  },
+  "PART_STD_05": {
+    "name": "광학 스캔 주파수 수신 팁",
+    "description": "[T=3 규격] [유틸] 필드 탐색 시 1%의 유령 데이터 박스 탐지 성공률 +1.0% 가산 / [페널티] 필드 이동 타일 타격 시 기계 괴수 레이드 발생 확률 1.2배 증가.",
+    "name_en": "Optical Scan Frequency Tip",
+    "description_en": "[T=3 Standard] [Utility] +1.0% to the 1% ghost data box detection rate when searching the field / [Penalty] Mech-beast raid chance x1.2 when moving across field tiles."
+  },
+  "PART_STD_06": {
+    "name": "유압식 윤활 공급 인젝터",
+    "description": "[T=3 규격] [공격] [바이오 적출] 발동 확률 상시 +4% 추가 보정 / [페널티] 인벤토리 소지 무게 한도가 영구히 -5kg 록업.",
+    "name_en": "Hydraulic Lubricant Injector",
+    "description_en": "[T=3 Standard] [Combat] [Bio Reap] trigger chance +4% permanently / [Penalty] Inventory carry weight limit permanently locked at -5kg."
+  },
+  "PART_STD_07": {
+    "name": "우회 프록시 암호화 래퍼",
+    "description": "[T=3 규격] [연산] [프로토콜 위조] 로그 위조 성공률 상시 +4% 보정 / [페널티] 위조 실패 반동에 의한 연산 오염 스택 매 시도 시 +10 즉시 가산.",
+    "name_en": "Bypass Proxy Encryption Wrapper",
+    "description_en": "[T=3 Standard] [Net] [Protocol Glitch] log forgery success +4% permanently / [Penalty] +10 computational contamination stack on every failed forgery attempt."
+  },
+  "PART_STD_08": {
+    "name": "플라즈마 오버클럭 노즐",
+    "description": "[T=3 규격] [공격] 주무기 최종 표기 대미지 배율 +7% 영구 증폭 / [페널티] 스킬 10회 초과 사용 시 패턴 노출 페널티 수치가 판당 5%에서 8%로 가속 삭감.",
+    "name_en": "Plasma Overclock Nozzle",
+    "description_en": "[T=3 Standard] [Combat] Main weapon final damage multiplier +7% permanently / [Penalty] Beyond 10 skill uses, the pattern exposure penalty rises from 5% to 8% per use."
+  },
+  "PART_STD_09": {
+    "name": "메모리 덤프 가속 모듈 팩",
+    "description": "[T=3 규격] [연산] 상태 이상 및 속성 저항력 공식 상시 +6% 가산 보정 / [페널티] 전투 패배 위기 시 패널티 없는 도주 로그 선택지 완전 봉쇄.",
+    "name_en": "Memory Dump Accelerator Pack",
+    "description_en": "[T=3 Standard] [Net] Status effect and elemental resistance +6% permanently / [Penalty] Penalty-free flee option completely sealed when facing defeat."
+  },
+  "PART_STD_10": {
+    "name": "드론 자이로 벨로시티 센서",
+    "description": "[T=3 규격] [공격] 행동 턴 우선권 지수(INIT) 상시 +10 큰 폭 가산 / [페널티] 신체 생명력 백배수 연산의 베이스 축이 강제로 -200 차감 고정.",
+    "name_en": "Drone Gyro Velocity Sensor",
+    "description_en": "[T=3 Standard] [Combat] Initiative index (INIT) +10 permanently / [Penalty] Base axis of the x100 Vitality calculation fixed at -200."
+  },
+  "WEAPON_REF_01": {
+    "name": "바이오 코어 리퍼 나이프",
+    "description": "[T=2 정제] 변종 기계 괴수의 절단 톱날을 의체 제어선에 오버레이하여 기계와 육체를 동시에 찢어발기는 화기.",
+    "name_en": "Bio-Core Ripper Knife",
+    "description_en": "[T=2 Refined] A mutant mech-beast's cutting sawblade overlaid onto cybernetic control lines, tearing machine and flesh apart at once."
+  },
+  "WEAPON_REF_02": {
+    "name": "주파수 파쇄 스패너",
+    "description": "[T=2 정제] 적의 내부 주파수를 오염시켜 논리 회로를 직접 과부하 폭발시키는 엔지니어용 둔기.",
+    "name_en": "Frequency Shredder Spanner",
+    "description_en": "[T=2 Refined] An engineer's bludgeon that corrupts an enemy's internal frequency to overload and blow its logic circuits directly."
+  },
+  "WEAPON_REF_03": {
+    "name": "신경 오염 플라즈마 건",
+    "description": "[T=2 정제] 괴수의 사체에서 적출한 방전 점막을 총열로 삼아 생체 오염 패킷 대미지를 방출하는 총기.",
+    "name_en": "Neurotoxic Plasma Gun",
+    "description_en": "[T=2 Refined] A gun whose barrel is a discharge membrane harvested from a beast's corpse, emitting bio-contamination packet damage."
+  },
+  "WEAPON_REF_04": {
+    "name": "하운드 티타늄 조 암 (Jaw-Arm)",
+    "description": "[T=2 정제] 기계 견형 괴수의 유압식 턱 구조를 의체 팔 하부에 연동한 극단적 압착 무력 장치.",
+    "name_en": "Hound Titanium Jaw-Arm",
+    "description_en": "[T=2 Refined] An extreme crushing device linking a canine mech-beast's hydraulic jaw to the underside of a cybernetic arm."
+  },
+  "WEAPON_REF_05": {
+    "name": "공명식 파일 벙커",
+    "description": "[T=2 정제] 압축 가솔린 팩과 괴수의 열원 방출구를 결합해 장갑 베이스를 일격에 궤멸시키는 중화기.",
+    "name_en": "Resonant Pile Bunker",
+    "description_en": "[T=2 Refined] A heavy weapon fusing a compressed gasoline pack with a beast's heat vent to annihilate base armor in one strike."
+  },
+  "WEAPON_REF_06": {
+    "name": "하이브리드 아크 블레이드",
+    "description": "[T=2 정제] 민첩과 체력의 공명을 읽어내어 검신에 흐르는 생체 전류 배율을 동적으로 조절하는 도검.",
+    "name_en": "Hybrid Arc Blade",
+    "description_en": "[T=2 Refined] A sword that reads the resonance of Agility and Vitality to dynamically tune the bio-current flowing through its blade."
+  },
+  "WEAPON_REF_07": {
+    "name": "전술형 주파수 리볼버",
+    "description": "[T=2 정제] 주파수 역추적 스킬과 연동 시 적의 유효 방어력을 추가 차감하는 특제 마그네틱 권총.",
+    "name_en": "Tactical Frequency Revolver",
+    "description_en": "[T=2 Refined] A custom magnetic pistol that further reduces enemy effective defense when linked with Signal Trace."
+  },
+  "WEAPON_REF_08": {
+    "name": "의체 오버클럭 엑스 (Ax)",
+    "description": "[T=2 정제] 의체 오버클럭 가동 시 가해지는 반동 에너지를 전방 가속력으로 변환하는 대형 도끼.",
+    "name_en": "Overclock Ax",
+    "description_en": "[T=2 Refined] A great axe that turns the recoil energy of an active Overclock into forward momentum."
+  },
+  "WEAPON_REF_09": {
+    "name": "정제형 전자기 파쇄포",
+    "description": "[T=2 정제] 위력 극대화 모델로, 대미지 공식 적용 시 십만 배수 실대미지의 순간 화력이 고정점에 수렴함.",
+    "name_en": "Refined EM Shredder Cannon",
+    "description_en": "[T=2 Refined] A max-power model: under the damage formula, its burst of true damage converges on a fixed peak."
+  },
+  "WEAPON_REF_10": {
+    "name": "바이오 리퍼 초진동 피스톨",
+    "description": "[T=2 정제] 사체 해체 시 적출한 미세 진동 소자를 공이 핀에 박아 연사력을 수배로 올린 탄도 권총.",
+    "name_en": "Bio-Ripper Ultrasonic Pistol",
+    "description_en": "[T=2 Refined] A ballistic pistol with micro-vibration elements from dismantled corpses set into the firing pin, multiplying its rate of fire."
+  },
+  "DECK_REF_01": {
+    "name": "바이오 하운드 역설계 덱",
+    "description": "[T=2 정제] 괴수의 인공 척수 신경망을 마더보드로 사용하여 가용 RAM 회복 효율을 비약적으로 올린 사이버덱.",
+    "name_en": "Bio Hound Reverse-Engineered Deck",
+    "description_en": "[T=2 Refined] A cyberdeck using a beast's artificial spinal network as its motherboard, vastly improving RAM recovery."
+  },
+  "DECK_REF_02": {
+    "name": "정제형 백도어 링크 v3",
+    "description": "[T=2 정제] 도시 내부 방화벽 추적 지수(Alert)의 누적 트리거 연산을 인위적으로 지연시키는 해킹 기기.",
+    "name_en": "Refined Backdoor Link v3",
+    "description_en": "[T=2 Refined] A hacking rig that artificially delays the trigger calculations of the in-city firewall trace index (Alert)."
+  },
+  "DECK_REF_03": {
+    "name": "그리드 인젝션 마스터",
+    "description": "[T=2 정제] 특화 스킬 [그리드 침투] 가동 시 기초 RAM 소모량을 강제로 -1 줄여주는 연산 장치.",
+    "name_en": "Grid Injection Master",
+    "description_en": "[T=2 Refined] A compute unit that forcibly cuts the base RAM cost of the unique skill [Grid Intrude] by 1."
+  },
+  "DECK_REF_04": {
+    "name": "프로토콜 에러 이미터",
+    "description": "[T=2 정제] 마스터 AI가 투사하는 가상현실 법칙 코드에 백도어 글리치 로그를 상시 유포하는 사이버덱.",
+    "name_en": "Protocol Error Emitter",
+    "description_en": "[T=2 Refined] A cyberdeck that constantly spreads backdoor glitch logs into the reality-law code projected by the Master AI."
+  },
+  "DECK_REF_05": {
+    "name": "하이브리드 시그널 프로세서",
+    "description": "[T=2 정제] 지력과 민첩의 격차가 3 이하일 때 탐색 필드의 유령 데이터 박스 적출 확률을 증폭함.",
+    "name_en": "Hybrid Signal Processor",
+    "description_en": "[T=2 Refined] Amplifies the chance to extract ghost data boxes in the field when Intellect and Agility are within 3 of each other."
+  },
+  "DECK_REF_06": {
+    "name": "현실 왜곡 스크립트 팩",
+    "description": "[T=2 정제] [프로토콜 위조] 성공 시 출력을 변격하여 적의 팀킬 유도 확률을 보조하는 덱.",
+    "name_en": "Reality Distortion Script Pack",
+    "description_en": "[T=2 Refined] A deck that warps the output of a successful [Protocol Glitch], raising the chance to induce enemy friendly fire."
+  },
+  "DECK_REF_07": {
+    "name": "자동화 군집 드론 제어덱",
+    "description": "[T=2 정제] 센트리 포탑 및 제어 알고리즘의 사거리와 오버클럭 가속율을 동적 상향하는 기기.",
+    "name_en": "Automated Swarm Drone Control Deck",
+    "description_en": "[T=2 Refined] A rig that dynamically raises the range and overclock acceleration of sentry turrets and their control algorithms."
+  },
+  "DECK_REF_08": {
+    "name": "노드 세탁 전용 프록시 덱",
+    "description": "[T=2 정제] 가상 은신처 갱신 주기 실패 시 가해지는 지명수배 디버프의 발동 턴을 유예함.",
+    "name_en": "Node-Laundering Proxy Deck",
+    "description_en": "[T=2 Refined] Delays the onset of the Wanted debuff incurred when a virtual safehouse refresh cycle fails."
+  },
+  "DECK_REF_09": {
+    "name": "괴수 연산 장치 적출 덱",
+    "description": "[T=2 정제] 기계 괴수의 지능 코어를 사이버덱 연산자로 바이패스하여 패킷 스캔 속도를 올린 장치.",
+    "name_en": "Beast Compute-Core Extraction Deck",
+    "description_en": "[T=2 Refined] A device that bypasses a mech-beast's intelligence core into a cyberdeck operator to speed up packet scans."
+  },
+  "DECK_REF_10": {
+    "name": "다크넷 아나키스트 링크",
+    "description": "[T=2 정제] 네오 아크 내부 전투 시 총괄국 평판 감쇄 페널티를 논리적으로 무마하는 변격 연산 장치.",
+    "name_en": "Darknet Anarchist Link",
+    "description_en": "[T=2 Refined] A warped compute unit that logically smooths over the Bureau reputation decay penalty during fights inside Neo Arc."
+  },
+  "CYBER_REF_01": {
+    "name": "괴수 적출 바이오 인공척수",
+    "description": "[T=2 정제] 기계 괴수의 중추 척수를 내 육체에 직결하여 기본 스탯 효율 함수 f(A)에 상시 보정을 주는 의체.",
+    "name_en": "Beast-Harvested Bio Spine",
+    "description_en": "[T=2 Refined] A cybernetic implant wiring a mech-beast's central spine into your body, permanently boosting the base stat efficiency function f(A)."
+  },
+  "CYBER_REF_02": {
+    "name": "신경 동기화 티타늄 골격",
+    "description": "[T=2 정제] 티타늄 프레임과 유기 인공 신경을 정밀 융합하여 물리 DEF 베이스와 생명력을 동시 인코딩함.",
+    "name_en": "Neuro-Synced Titanium Skeleton",
+    "description_en": "[T=2 Refined] Titanium framing precisely fused with organic artificial nerves, encoding base physical DEF and Vitality together."
+  },
+  "CYBER_REF_03": {
+    "name": "유기체 융합 의체 팔",
+    "description": "[T=2 정제] 민첩과 체력의 하이브리드 가치를 추적하여 [바이오 적출] 시 부품 내구도 파쇄 수치를 올리는 의체.",
+    "name_en": "Organic Fusion Cyber-Arm",
+    "description_en": "[T=2 Refined] A cybernetic arm that tracks the hybrid value of Agility and Vitality to raise part-durability shredding on [Bio Reap]."
+  },
+  "CYBER_REF_04": {
+    "name": "나나 탄소 섬유 인공 심장",
+    "description": "[T=2 정제] 생체 피로도를 감지하여 허기/갈증 감소 속도 가중치를 영구 최적화하는 하이엔드 인공 장기.",
+    "name_en": "Nano Carbon-Fiber Heart",
+    "description_en": "[T=2 Refined] A high-end artificial organ that senses bodily fatigue and permanently optimizes hunger/thirst drain weighting."
+  },
+  "CYBER_REF_05": {
+    "name": "센서 오버클럭 안구 의체",
+    "description": "[T=2 정제] 적의 취약점과 배선 로그를 스캔하여 내 대미지를 영구적 방어력 감소 디버프로 치환하는 안구.",
+    "name_en": "Sensor-Overclock Cyber-Eye",
+    "description_en": "[T=2 Refined] An eye that scans enemy weak points and wiring logs, turning your damage into a lasting defense-down debuff."
+  },
+  "CYBER_REF_06": {
+    "name": "유압식 고토크 대퇴 골격",
+    "description": "[T=2 정제] 70%의 성장이 스킬로 제한된 한계를 하드웨어 출력으로 메우는 컴뱃 포스 특화 다리 의체.",
+    "name_en": "Hydraulic High-Torque Femur Frame",
+    "description_en": "[T=2 Refined] Combat Force leg cybernetics that fill the limits of skill-capped 70% growth with raw hardware output."
+  },
+  "CYBER_REF_07": {
+    "name": "방화벽 인지형 피포 의체",
+    "description": "[T=2 정제] 사이버덱 과부하 시 발생하는 뇌 손상 필터 수치를 물리 충격파로 상쇄 배출하는 목 뒤 의체.",
+    "name_en": "Firewall-Aware Nape Implant",
+    "description_en": "[T=2 Refined] A nape implant that cancels and vents the brain-damage filter value from cyberdeck overload as a physical shockwave."
+  },
+  "CYBER_REF_08": {
+    "name": "괴수 장갑판 이식 흉골",
+    "description": "[T=2 정제] 중장갑 프로토콜과 시너지를 내어 물리 거점 방벽 내구도 실시간 재생 연산을 돕는 부품.",
+    "name_en": "Beast-Plate Grafted Sternum",
+    "description_en": "[T=2 Refined] A part that synergizes with heavy-armor protocols to aid real-time regeneration of base barrier durability."
+  },
+  "CYBER_REF_09": {
+    "name": "광섬유 직결 뇌파 증폭기",
+    "description": "[T=2 정제] 가용 RAM 용량 수식을 실시간 가속하여 넷 포스 스킬의 연속 투사 한계를 확장하는 이식 장치.",
+    "name_en": "Fiber-Linked Brainwave Amplifier",
+    "description_en": "[T=2 Refined] An implant that accelerates the available RAM formula in real time, extending how many Net Force skills you can chain."
+  },
+  "CYBER_REF_10": {
+    "name": "서보 링크 관절 모터 팩",
+    "description": "[T=2 정제] 안전 리미터가 해제된 관절 모터의 회전율을 정제하여 선제 턴 판정(INIT)을 보조하는 부품.",
+    "name_en": "Servo-Link Joint Motor Pack",
+    "description_en": "[T=2 Refined] Refines the rotation of limiter-free joint motors to help win first-turn checks (INIT)."
+  },
+  "BACK_REF_01": {
+    "name": "오버클럭 쿨러 팩",
+    "description": "[T=2 정제] 의체 및 사이버덱의 연산 과부하를 액체 질소 순환 장치로 급속 동결하는 고출력 라디에이터.",
+    "name_en": "Overclock Cooler Pack",
+    "description_en": "[T=2 Refined] A high-output radiator that flash-freezes compute overload in cybernetics and cyberdecks with a liquid nitrogen loop."
+  },
+  "BACK_REF_02": {
+    "name": "바이오 연료 인젝터 탱크",
+    "description": "[T=2 정제] 황무지 괴수 사체에서 정제한 액체 에너지를 실시간 주입하여 이동 시 생체 자원을 세이브하는 팩.",
+    "name_en": "Bio-Fuel Injector Tank",
+    "description_en": "[T=2 Refined] A pack that injects liquid energy refined from wasteland beast corpses in real time, saving bodily resources while moving."
+  },
+  "BACK_REF_03": {
+    "name": "주파수 동적 교란 방전기",
+    "description": "[T=2 정제] 탐색 필드 횡단 시 적 기계 괴수의 무선 리시버를 교란하여 기습 조우율을 최소화하는 장치.",
+    "name_en": "Dynamic Frequency Jamming Discharger",
+    "description_en": "[T=2 Refined] Jams enemy mech-beasts' radio receivers while crossing the field, minimizing ambush rates."
+  },
+  "BACK_REF_04": {
+    "name": "경량 플라즈마 배터리 셀",
+    "description": "[T=2 정제] 센트리 포탑 배치 및 거점 물리 장벽 사수 시 전력 신호 지수를 제로섬으로 통제하는 전원 팩.",
+    "name_en": "Light Plasma Battery Cell",
+    "description_en": "[T=2 Refined] A power pack that holds the power signal index to zero-sum when deploying sentry turrets and holding base barriers."
+  },
+  "BACK_REF_05": {
+    "name": "무선 매트릭스 확장 안테나",
+    "description": "[T=2 정제] 가상 은신처의 위장 지수를 상시 보정하여 마스터 AI의 추적 알고리즘 우회를 돕는 마스트.",
+    "name_en": "Wireless Matrix Extension Antenna",
+    "description_en": "[T=2 Refined] A mast that constantly tunes your virtual safehouse's camouflage index to help evade the Master AI's tracking algorithms."
+  },
+  "BACK_REF_06": {
+    "name": "하이브리드 탄약 복합 리그",
+    "description": "[T=2 정제] 무기와 공구를 양측에 동시 거치하여 하이브리드 스타일 전용 비밀 퀘스트 조건 만족을 돕는 하네스.",
+    "name_en": "Hybrid Ammo Composite Rig",
+    "description_en": "[T=2 Refined] A harness that mounts weapons and tools on both sides, helping meet the conditions of hybrid-style secret quests."
+  },
+  "BACK_REF_07": {
+    "name": "가이거 카운터 연동 배낭",
+    "description": "[T=2 정제] 방사능 용융 분지 진입 시 환경 오염 스택의 정수 누적 수치를 물리적으로 차단하는 백팩.",
+    "name_en": "Geiger-Linked Backpack",
+    "description_en": "[T=2 Refined] A backpack that physically blocks environmental contamination stacks from accruing in molten radioactive basins."
+  },
+  "BACK_REF_08": {
+    "name": "군집 드론 정비 오토 랙",
+    "description": "[T=2 정제] 포탑의 스킬 발동률 및 치명타 배율 계산 가중치를 동적으로 서포트하는 하드쉘 등짐.",
+    "name_en": "Swarm Drone Maintenance Auto-Rack",
+    "description_en": "[T=2 Refined] A hard-shell pack that dynamically supports turret skill trigger rates and crit multiplier weighting."
+  },
+  "BACK_REF_09": {
+    "name": "의체 중량 분산 서보 하네스",
+    "description": "[T=2 정제] 인벤토리 소지 무게 한도를 비약적으로 늘려 고티어 유물 장비 파밍 시 무게 제약을 지워주는 리그.",
+    "name_en": "Cybernetic Weight-Distribution Servo Harness",
+    "description_en": "[T=2 Refined] A rig that vastly raises carry weight, removing weight limits when farming high-tier relic gear."
+  },
+  "BACK_REF_10": {
+    "name": "스캐벤저 마스터 전술 배낭",
+    "description": "[T=2 정제] 불모지 깊은 곳의 유령 데이터 박스 적출 성공 로그 발생 시 드롭 자원량을 정량 가산하는 배낭.",
+    "name_en": "Scavenger Master Tactical Pack",
+    "description_en": "[T=2 Refined] Adds a fixed amount to dropped resources when you successfully extract a ghost data box deep in the barrens."
+  },
+  "FACE_REF_01": {
+    "name": "광학 스캔 HUD 고글",
+    "description": "[T=2 정제] 전투 시 행동 턴 우선권 및 선제 턴 판정 시 치명타 확률 가중치 소수점을 보조하는 고글.",
+    "name_en": "Optical Scan HUD Goggles",
+    "description_en": "[T=2 Refined] Goggles that fine-tune crit chance weighting during initiative and first-turn checks in combat."
+  },
+  "FACE_REF_02": {
+    "name": "괴수 장갑판 보강 헬멧",
+    "description": "[T=2 정제] 기계 괴수의 하드웨어 외피를 두상에 맞게 압착 성형하여 헤드샷 치명타 대미지를 무력화하는 투구.",
+    "name_en": "Beast-Plate Reinforced Helmet",
+    "description_en": "[T=2 Refined] A helm press-molded from mech-beast hardware shell to fit the skull, nullifying headshot crit damage."
+  },
+  "FACE_REF_03": {
+    "name": "방화벽 역추적 모놀로그 마스크",
+    "description": "[T=2 정제] 네오 아크 도시 내부 타일 체류 시 방화벽 추적 지수 가속 구간을 정밀 필터링하는 전면 마스크.",
+    "name_en": "Firewall Counter-Trace Monologue Mask",
+    "description_en": "[T=2 Refined] A full-face mask that precisely filters the firewall trace acceleration bracket while you remain on Neo Arc city tiles."
+  },
+  "FACE_REF_04": {
+    "name": "조리개 가변형 바이오 센서",
+    "description": "[T=2 정제] 민첩 스탯의 실효 가치 함수 f(A)와 시너지를 내어 적 회로 저격 확률을 한계치까지 올리는 단안경.",
+    "name_en": "Variable-Aperture Bio Sensor",
+    "description_en": "[T=2 Refined] A monocle that synergizes with Agility's effective value function f(A) to push circuit-sniping chance to its limit."
+  },
+  "FACE_REF_05": {
+    "name": "정제형 절연 가스 안면창",
+    "description": "[T=2 정제] 상태 이상 및 속성 저항력 공식의 분모 상수를 안정적으로 가산하는 화학전 특화 마스크.",
+    "name_en": "Refined Insulated Gas Visor",
+    "description_en": "[T=2 Refined] A chemical-warfare mask that steadily raises the denominator constant of the status and elemental resistance formula."
+  },
+  "FACE_REF_06": {
+    "name": "하이브리드 공명 스펙트럼 HUD",
+    "description": "[T=2 정제] 스탯 3종이 동률일 때 발동하는 [하이브리드 공명] 특성의 수치 파싱을 동적 최적화하는 고글.",
+    "name_en": "Hybrid Resonance Spectrum HUD",
+    "description_en": "[T=2 Refined] Goggles that dynamically optimize parsing of the [Hybrid Resonance] trait, which triggers when all three stats are equal."
+  },
+  "FACE_REF_07": {
+    "name": "사이버 보안 부대 필터 마스크",
+    "description": "[T=2 정제] 기업 청소 부대의 방독면을 탈취하여 가상 연산 오염 스택의 누적 속도를 차단하는 장비.",
+    "name_en": "Cyber Security Squad Filter Mask",
+    "description_en": "[T=2 Refined] A gas mask stolen from a corporate cleanup squad that blocks the buildup of virtual compute contamination stacks."
+  },
+  "FACE_REF_08": {
+    "name": "주파수 역추적 안동안 HUD",
+    "description": "[T=2 정제] 필드 내 숨겨진 자원 노드 탐지 확률과 치명타 배율 증폭 연산을 실시간 링크하는 시각 장치.",
+    "name_en": "Signal Trace Monocular HUD",
+    "description_en": "[T=2 Refined] A visual device that links hidden resource node detection and crit multiplier amplification in real time."
+  },
+  "FACE_REF_09": {
+    "name": "가죽 플랩 부착형 전술 가드",
+    "description": "[T=2 정제] 인간형 약탈자 레이드 상시 발생 시 적의 기습 대미지 가중치를 퍼센트 단위로 감쇄하는 마스크.",
+    "name_en": "Leather-Flap Tactical Guard",
+    "description_en": "[T=2 Refined] A mask that reduces enemy ambush damage weighting by a percentage during constant human raider raids."
+  },
+  "FACE_REF_10": {
+    "name": "나노 격자 안면 보호 가젯",
+    "description": "[T=2 정제] 입 주위의 바이오 의체 제어선을 보호하여 [바이오 적출] 스킬의 발동 확률 보정을 사수함.",
+    "name_en": "Nano-Lattice Face Guard Gadget",
+    "description_en": "[T=2 Refined] Protects the bio-cybernetic control lines around the mouth, preserving the [Bio Reap] trigger chance bonus."
+  },
+  "TOP_REF_01": {
+    "name": "견형 괴수 가죽 방탄조끼",
+    "description": "[T=2 정제] 바이오 하운드의 질긴 가죽과 케블라를 정밀 융합하여 물리 DEF 베이스의 뼈대를 구축한 상의.",
+    "name_en": "Canine-Beast Hide Ballistic Vest",
+    "description_en": "[T=2 Refined] A top that builds the frame of base physical DEF from a Bio Hound's tough hide precisely fused with Kevlar."
+  },
+  "TOP_REF_02": {
+    "name": "바이오웨어 동기화 코트",
+    "description": "[T=2 정제] 30%의 자유 AP 중 체력 스탯 투자 효율을 가죽 안감의 신경 소자와 동기화하는 특수 코트.",
+    "name_en": "Bioware Sync Coat",
+    "description_en": "[T=2 Refined] A special coat whose lining's neural elements sync with how efficiently you invest the 30% free AP into Vitality."
+  },
+  "TOP_REF_03": {
+    "name": "정제형 두랄루민 플레이트 조끼",
+    "description": "[T=2 정제] 고철 폐기장의 항공기 합금을 고열 정제하여 물리 방어력 베이스 수치를 계단식 상향한 흉갑.",
+    "name_en": "Refined Duralumin Plate Vest",
+    "description_en": "[T=2 Refined] A breastplate of scrapyard aircraft alloy, heat-refined to raise base physical defense in steps."
+  },
+  "TOP_REF_04": {
+    "name": "다크넷 아나키스트 가죽 코트",
+    "description": "[T=2 정제] 메인 시티의 그리드를 마비시키는 테러리스트들의 의복으로, 지명수배 디버프 패널티를 완화함.",
+    "name_en": "Darknet Anarchist Leather Coat",
+    "description_en": "[T=2 Refined] Garb of the terrorists who paralyze the main city's grid. Eases the Wanted debuff penalty."
+  },
+  "TOP_REF_05": {
+    "name": "매드 엔지니어 전술 작업복",
+    "description": "[T=2 정제] 괴수의 사체와 폐기물을 조립할 때 발생하는 랜덤 편차 수식을 안정적인 고점으로 고정하는 옷.",
+    "name_en": "Mad Engineer Tactical Workwear",
+    "description_en": "[T=2 Refined] Clothing that locks the random variance of assembling beast corpses and junk to a stable high point."
+  },
+  "TOP_REF_06": {
+    "name": "체제 순응형 바이오웨어 슈트",
+    "description": "[T=2 정제] 중앙 통제 총괄국 평판 가중치가 플러스일 때 표기 생명력을 추가 증폭시키는 기업제 하청 코트.",
+    "name_en": "Conformist Bioware Suit",
+    "description_en": "[T=2 Refined] A corporate subcontractor coat that further amplifies displayed Vitality while your Bureau reputation weight is positive."
+  },
+  "TOP_REF_07": {
+    "name": "물리 보루 수비대장 중갑옷",
+    "description": "[T=2 정제] 거점 습격 레이드 성공 로그 발생 시 적의 장비 위력을 역탈취하는 알고리즘이 내장된 상의.",
+    "name_en": "Bastion Garrison Captain Heavy Armor",
+    "description_en": "[T=2 Refined] A top with a built-in algorithm that steals enemy weapon power back on a successful base raid log."
+  },
+  "TOP_REF_08": {
+    "name": "정전기 흡수형 매쉬 조끼",
+    "description": "[T=2 정제] 뇌 손상 및 시스템 쇼크 상태 이상 누적 수치가 100에 도달하는 턴을 수학적으로 지연시키는 의류.",
+    "name_en": "Static-Absorbing Mesh Vest",
+    "description_en": "[T=2 Refined] Clothing that mathematically delays the turn at which brain damage and system shock stacks reach 100."
+  },
+  "TOP_REF_09": {
+    "name": "하이브리드 공명 전술 재킷",
+    "description": "[T=2 정제] 세 스탯의 밸런스가 균등할 때 주력 특화 스킬의 가중치 변환율 성능을 온전히 보전하는 옷.",
+    "name_en": "Hybrid Resonance Tactical Jacket",
+    "description_en": "[T=2 Refined] Fully preserves your main unique skill's weight conversion rate when all three stats are evenly balanced."
+  },
+  "TOP_REF_10": {
+    "name": "스캐벤저 리더용 하드 체인갑",
+    "description": "[T=2 정제] 강철 고리와 괴수 뼈 조각을 복합 배열하여 타격 시 적에게 역으로 파쇄 페널티를 주는 코트.",
+    "name_en": "Scavenger Leader Hard Chain Mail",
+    "description_en": "[T=2 Refined] A coat of steel rings and beast bone shards in a composite array that inflicts a shredding penalty back on attackers."
+  },
+  "BOTTOM_REF_01": {
+    "name": "중위 전술형 경량 하의",
+    "description": "[T=2 정제] 하체 의체 구동부의 마찰을 제로에 가깝게 조율하여 행동 턴 우선권 지수(INIT)를 가속하는 바지.",
+    "name_en": "Mid-Tier Tactical Light Pants",
+    "description_en": "[T=2 Refined] Pants that tune friction in lower-body cybernetic drives to near zero, accelerating your initiative index (INIT)."
+  },
+  "BOTTOM_REF_02": {
+    "name": "괴수 장갑판 보강 허벅지 가드",
+    "description": "[T=2 정제] 적 기계 괴수의 유효 방어 관통 수치를 물리적으로 차감 상쇄하는 하드코어 하의.",
+    "name_en": "Beast-Plate Thigh Guards",
+    "description_en": "[T=2 Refined] Hardcore pants that physically offset enemy mech-beasts' defense penetration."
+  },
+  "BOTTOM_REF_03": {
+    "name": "방사능 용융 분지 전용 하의",
+    "description": "[T=2 정제] 황무지 최심부 이동 시 정수 1 단위로 쌓이는 오염 스택 저항력을 한계치까지 올리는 바지.",
+    "name_en": "Radioactive Basin Pants",
+    "description_en": "[T=2 Refined] Pants that push resistance to the contamination stacks that build 1 at a time in the deep wasteland to its limit."
+  },
+  "BOTTOM_REF_04": {
+    "name": "가상 현실 위장 패턴 바지",
+    "description": "[T=2 정제] 네오 아크 슬럼 노드 체류 시 방화벽 추적 지수 가속 연산식을 강제로 다운시키는 특수 하의.",
+    "name_en": "VR Camouflage Pattern Pants",
+    "description_en": "[T=2 Refined] Special pants that forcibly lower the firewall trace acceleration formula while in Neo Arc slum nodes."
+  },
+  "BOTTOM_REF_05": {
+    "name": "하이브리드 조율사 전술 바지",
+    "description": "[T=2 정제] 체력과 민첩의 격차가 3 이하일 때 스킬 위력 공식의 마스터 보너스 가중치를 추가 보정함.",
+    "name_en": "Hybrid Tuner Tactical Pants",
+    "description_en": "[T=2 Refined] Adds to the master bonus weight of the skill power formula when Vitality and Agility are within 3 of each other."
+  },
+  "BOTTOM_REF_06": {
+    "name": "유압 실린더 보호용 레깅스",
+    "description": "[T=2 정제] 다리 유압 의체의 마모를 막아 허기/갈증 생존 지표 소모 속도 감쇄율을 극대화하는 하의.",
+    "name_en": "Hydraulic Cylinder Guard Leggings",
+    "description_en": "[T=2 Refined] Pants that prevent wear on hydraulic leg cybernetics, maximizing reduction of hunger/thirst drain."
+  },
+  "BOTTOM_REF_07": {
+    "name": "다크넷 인필트레이터 카고",
+    "description": "[T=2 정제] 드롭 자원 강제 인출(스머글링) 성공 로그 발생 시 은닉 자원의 30% 약탈 페널티를 무력화하는 바지.",
+    "name_en": "Darknet Infiltrator Cargo",
+    "description_en": "[T=2 Refined] Pants that nullify the 30% plunder penalty on hidden resources when a forced extraction (smuggling) succeeds."
+  },
+  "BOTTOM_REF_08": {
+    "name": "고전압 절연 메쉬 오버롤",
+    "description": "[T=2 정제] 연산 오염(RAM 0 고정) 페널티 발동 임계점을 수학적 모델 장벽으로 방어하는 특수 멜빵바지.",
+    "name_en": "High-Voltage Insulated Mesh Overalls",
+    "description_en": "[T=2 Refined] Special overalls that guard the threshold of the compute contamination (RAM locked at 0) penalty with a mathematical barrier."
+  },
+  "BOTTOM_REF_09": {
+    "name": "정크야드 마스터 장인 바지",
+    "description": "[T=2 정제] 고철 정제 및 급조 무기 제작 한도 시 지력과 민첩의 실효 가치 변환을 최적화하는 하의.",
+    "name_en": "Junkyard Master Artisan Pants",
+    "description_en": "[T=2 Refined] Pants that optimize the effective value conversion of Intellect and Agility at the limits of scrap refining and makeshift weapon crafting."
+  },
+  "BOTTOM_REF_10": {
+    "name": "티타늄 격자 보강형 전투 바지",
+    "description": "[T=2 정제] 하반신 절단 로그 활성화를 물리적으로 거부하는 스캐벤저 돌격 대원용 규격 외 하의.",
+    "name_en": "Titanium-Lattice Combat Pants",
+    "description_en": "[T=2 Refined] Off-spec pants for scavenger assault troops that physically refuse lower-body severing logs."
+  },
+  "SHOES_REF_01": {
+    "name": "충격 흡수 서보 부츠",
+    "description": "[T=2 정제] 발바닥 서보 모터 베어링이 턴 전환 시 가속 토크를 걸어 턴 우선권을 영구 보조하는 신발.",
+    "name_en": "Shock-Absorbing Servo Boots",
+    "description_en": "[T=2 Refined] Servo bearings in the soles apply accelerating torque on turn changes, permanently aiding initiative."
+  },
+  "SHOES_REF_02": {
+    "name": "바이오 하운드 발톱 접지화",
+    "description": "[T=2 정제] 괴수의 발톱 소자를 밑창에 박아내어 사막 필드 타일 슬립으로 인한 생존 지표 고갈을 사수함.",
+    "name_en": "Bio Hound Claw Grip Shoes",
+    "description_en": "[T=2 Refined] Beast claw elements set into the soles prevent survival drain from slipping on desert tiles."
+  },
+  "SHOES_REF_03": {
+    "name": "정제형 내산 가이거 장화",
+    "description": "[T=2 정제] 환경 오염 스택 틱 수치를 소수점 단위까지 정밀 감쇄 제어하는 오염 지대 특화 부츠.",
+    "name_en": "Refined Acid-Proof Geiger Boots",
+    "description_en": "[T=2 Refined] Contamination-zone boots that precisely damp environmental contamination stack ticks down to the decimal."
+  },
+  "SHOES_REF_04": {
+    "name": "리미터 해제 광전사 슈즈",
+    "description": "[T=2 정제] 관절 모터 안전 장치를 끄고 척수 신경을 직결하여 기습 성공 시 적 턴 동결 로그를 유도함.",
+    "name_en": "Limiter-Off Berserker Shoes",
+    "description_en": "[T=2 Refined] Disables joint-motor safeties and wires in the spinal nerves directly, inducing enemy turn-freeze logs on a successful ambush."
+  },
+  "SHOES_REF_05": {
+    "name": "하이브리드 공명 경량 워커",
+    "description": "[T=2 정제] 세 스탯이 균등할 때 행동 턴 우선권 지수(INIT) 계산식을 최고 한계치까지 부스팅하는 신발.",
+    "name_en": "Hybrid Resonance Light Walkers",
+    "description_en": "[T=2 Refined] Shoes that boost the initiative index (INIT) formula to its limit when all three stats are equal."
+  },
+  "SHOES_REF_06": {
+    "name": "방화벽 우회 패킷 슈즈",
+    "description": "[T=2 정제] 도시 내부 기습 조우율 3배 증가 페널티 조항을 가상 주파수 위장으로 상쇄하는 부츠.",
+    "name_en": "Firewall-Bypass Packet Shoes",
+    "description_en": "[T=2 Refined] Boots that offset the tripled in-city ambush rate penalty with virtual frequency camouflage."
+  },
+  "SHOES_REF_07": {
+    "name": "물리 보루 건설대장 안전화",
+    "description": "[T=2 정제] 거점 건설 및 방어 비용 감면 연산식과 시너지를 내는 중장갑 엔지니어용 신발.",
+    "name_en": "Bastion Construction Captain Safety Boots",
+    "description_en": "[T=2 Refined] Heavy-armor engineer shoes that synergize with base construction and defense cost reduction formulas."
+  },
+  "SHOES_REF_08": {
+    "name": "도주 프로토콜 가속화 장화",
+    "description": "[T=2 정제] 게릴라 인필트레이터가 전투 로그에서 페널티 없이 즉시 도주할 수 있는 확률을 가속함.",
+    "name_en": "Escape Protocol Accelerator Boots",
+    "description_en": "[T=2 Refined] Raises the chance a guerrilla infiltrator can instantly flee combat without penalty."
+  },
+  "SHOES_REF_09": {
+    "name": "티타늄 아웃솔 전술 부츠",
+    "description": "[T=2 정제] 함정 해제 실패 시 발생하는 대미지 연산식의 유효 방어력을 강제로 정점 고정하는 신발.",
+    "name_en": "Titanium-Outsole Tactical Boots",
+    "description_en": "[T=2 Refined] Shoes that forcibly pin your effective defense at its peak in the damage formula for failed trap disarms."
+  },
+  "SHOES_REF_10": {
+    "name": "드론 자이로 벨로시티 슈즈",
+    "description": "[T=2 정제] 민첩 스탯의 실효 가치 변환 함수 f(A) 임계점 과부하 구간을 수학적으로 유예하는 장화.",
+    "name_en": "Drone Gyro Velocity Shoes",
+    "description_en": "[T=2 Refined] Boots that mathematically delay the overload bracket of Agility's effective value function f(A)."
+  },
+  "NECK_REF_01": {
+    "name": "생체 신호 안정 목걸이",
+    "description": "[T=2 정제] 물리/연산 오염 틱 누적 시 거점 인프라 복구 보정값을 턴당 +2 영구 감쇄하는 장신구.",
+    "name_en": "Bio-Signal Stabilizer Necklace",
+    "description_en": "[T=2 Refined] A trinket that permanently improves base infrastructure recovery by +2 per turn as physical/compute contamination ticks accrue."
+  },
+  "NECK_REF_02": {
+    "name": "공명 가중 동기 초커",
+    "description": "[T=2 정제] 하이브리드 스킬의 공명율 가중치 계수를 강제로 최고 수치인 1.0으로 동기화하는 초커.",
+    "name_en": "Resonance-Weighted Sync Choker",
+    "description_en": "[T=2 Refined] A choker that forcibly syncs the resonance weight coefficient of hybrid skills to its maximum of 1.0."
+  },
+  "NECK_REF_03": {
+    "name": "하운드 인공 척수액 초커",
+    "description": "[T=2 정제] 기계 괴수의 냉각 튜브 신호를 목 동력선에 동기화해 의체 신경망 마모를 방어함.",
+    "name_en": "Hound Spinal Fluid Choker",
+    "description_en": "[T=2 Refined] Syncs a mech-beast's coolant tube signals to the neck's power lines, preventing wear on your cybernetic nervous system."
+  },
+  "NECK_REF_04": {
+    "name": "사이버덱 서지 흡수 펜던트",
+    "description": "[T=2 정제] 다이렉트 넷 접속 시 마스터 AI 방화벽이 가하는 시스템 쇼크 반동을 완만하게 튕겨냄.",
+    "name_en": "Cyberdeck Surge-Absorbing Pendant",
+    "description_en": "[T=2 Refined] Gently deflects the system shock recoil from the Master AI firewall during direct net access."
+  },
+  "NECK_REF_05": {
+    "name": "비밀 NPC 신뢰의 인장 목걸이",
+    "description": "[T=2 정제] 주력 스탯 격차가 3 이하일 때 비밀 NPC가 개방하는 히든 의뢰의 최종 보상 수령 체인.",
+    "name_en": "Secret NPC Trust Seal Necklace",
+    "description_en": "[T=2 Refined] A chain that claims the final reward of hidden jobs a secret NPC opens when your main stats are within 3 of each other."
+  },
+  "NECK_REF_06": {
+    "name": "평판 동적 평형 초커",
+    "description": "[T=2 정제] 진영 평판 지수 수치 변동 시 대미지 공식의 평판 가중치 연산 마진을 최적화함.",
+    "name_en": "Dynamic Reputation Equilibrium Choker",
+    "description_en": "[T=2 Refined] Optimizes the reputation weight margin of the damage formula as faction reputation shifts."
+  },
+  "NECK_REF_07": {
+    "name": "가이거 계수기 빌트인 체인",
+    "description": "[T=2 정제] 환경 위험 구역 타일 진입 시 허기/갈증 소모 속도 지표 계산의 최소 정수선 유지를 도움.",
+    "name_en": "Built-In Geiger Counter Chain",
+    "description_en": "[T=2 Refined] Helps keep hunger/thirst drain at its minimum integer floor when entering hazardous environment tiles."
+  },
+  "NECK_REF_08": {
+    "name": "0티어 유물 결속 완화 장치",
+    "description": "[T=2 정제] 종결급 유물 장비 도배 시 발생하는 오프라인 생존 자원 광속 고갈 페널티를 미세 경감함.",
+    "name_en": "Tier-0 Relic Binding Dampener",
+    "description_en": "[T=2 Refined] Slightly eases the rapid offline survival resource depletion penalty from stacking endgame relic gear."
+  },
+  "NECK_REF_09": {
+    "name": "정제형 퓨즈 소자 펜던트",
+    "description": "[T=2 정제] 과도한 스킬 포인트(SP) 주입으로 인한 회로 과열 실패 로그 발생 시 보정 확률을 가산함.",
+    "name_en": "Refined Fuse Element Pendant",
+    "description_en": "[T=2 Refined] Raises the correction chance when circuits overheat and fail from excessive skill point (SP) injection."
+  },
+  "NECK_REF_10": {
+    "name": "스스럼 인공 성대 메쉬 초커",
+    "description": "[T=2 정제] 아나키스트 가상 테러리스트들의 통신 세탁 전용으로 쓰이는 정제된 주파수 초커.",
+    "name_en": "Seamless Voicebox Mesh Choker",
+    "description_en": "[T=2 Refined] A refined frequency choker used by anarchist virtual terrorists solely to launder their comms."
+  },
+  "RING_REF_01": {
+    "name": "가상 암호화 키 반지",
+    "description": "[T=2 정제] 유령 노드 해킹 시 유효 방화벽 우회 효율을 수학적으로 증폭시키는 해커들의 정제 반지.",
+    "name_en": "Virtual Encryption Key Ring",
+    "description_en": "[T=2 Refined] A hacker's refined ring that mathematically amplifies firewall-bypass efficiency when hacking ghost nodes."
+  },
+  "RING_REF_02": {
+    "name": "하이브리드 공명 고리",
+    "description": "[T=2 정제] 세 기본 스탯이 안정적 대칭을 이룰 때 특화 스킬의 한계 레벨 확장 곡선 함수를 지원함.",
+    "name_en": "Hybrid Resonance Loop",
+    "description_en": "[T=2 Refined] Supports the level-cap extension curve of unique skills when the three base stats are in stable symmetry."
+  },
+  "RING_REF_03": {
+    "name": "티타늄 하운드 송곳니 인장",
+    "description": "[T=2 정제] 기계 괴수 타격 시 부품 내구도 파쇄 로그 가시화 확률 보정을 영구 각인한 인장 반지.",
+    "name_en": "Titanium Hound Fang Signet",
+    "description_en": "[T=2 Refined] A signet ring permanently engraved with a bonus to revealing part-durability shred logs when striking mech-beasts."
+  },
+  "RING_REF_04": {
+    "name": "알루미늄 다이얼 노브 링 v4",
+    "description": "[T=2 정제] 가용 RAM 소모 스킬 구동 시 10% 확률로 소모 연산 자원을 즉시 환급하는 마개조 반지.",
+    "name_en": "Aluminum Dial Knob Ring v4",
+    "description_en": "[T=2 Refined] A heavily modded ring with a 10% chance to instantly refund compute resources spent on RAM-cost skills."
+  },
+  "RING_REF_05": {
+    "name": "기업 스마트 칩셋 정제 반지",
+    "description": "[T=2 정제] 네오 아크 내부의 폐쇄 데이터 금고 자원 강제 인출 시 보안 부대의 눈을 속이는 반지.",
+    "name_en": "Refined Corporate Smart-Chip Ring",
+    "description_en": "[T=2 Refined] A ring that fools security squads when you forcibly extract resources from sealed data vaults inside Neo Arc."
+  },
+  "RING_REF_06": {
+    "name": "우회 프록시 일회용 키 링",
+    "description": "[T=2 정제] 동일 노드 장기간 장악 시 마스터 AI가 행하는 보안 프로토콜 원천 무력화 시점을 유예함.",
+    "name_en": "Disposable Bypass Proxy Key Loop",
+    "description_en": "[T=2 Refined] Delays when the Master AI's security protocols fully neutralize you for holding the same node too long."
+  },
+  "RING_REF_07": {
+    "name": "미세 전류 제어 3중 결속 고리",
+    "description": "[T=2 정제] 의체 관절 리미터 해제 시 동력원 과부하 편차를 최소 정수 1 단위로 홀딩하는 반지.",
+    "name_en": "Micro-Current Triple-Bound Loop",
+    "description_en": "[T=2 Refined] A ring that holds power-source overload variance to a minimum of 1 when cybernetic joint limiters are off."
+  },
+  "RING_REF_08": {
+    "name": "싱글래리티 특이점 미세 루프",
+    "description": "[T=2 정제] 계단식 가중치 급감 함수 f(A)의 임계점 마비 구간(스탯 25 초과) 효율을 소폭 복구함.",
+    "name_en": "Singularity Micro-Loop",
+    "description_en": "[T=2 Refined] Slightly restores efficiency in the paralysis bracket (stat above 25) of the stepped weight-falloff function f(A)."
+  },
+  "RING_REF_09": {
+    "name": "광섬유 매듭 형광 인장 링",
+    "description": "[T=2 정제] 사이버덱의 기본 가용 RAM 및 연산 처리량 파싱 시 가시성 피로도를 제거하는 반지.",
+    "name_en": "Fluorescent Fiber-Knot Signet",
+    "description_en": "[T=2 Refined] A ring that removes visual fatigue when parsing a cyberdeck's base RAM and compute throughput."
+  },
+  "RING_REF_10": {
+    "name": "스스럼 프록시 암호화 반지",
+    "description": "[T=2 정제] 전투 패배 위기 시 패널티 없는 공간 이동 및 도주 로그 활성화 확률 시스템을 지원함.",
+    "name_en": "Seamless Proxy Encryption Ring",
+    "description_en": "[T=2 Refined] Supports the system for penalty-free teleport and escape logs when facing defeat in combat."
+  },
+  "PART_REF_01": {
+    "name": "고출력 바이오 가속 모듈",
+    "description": "[T=2 정제] [공격] 특화 스킬 [의체 오버클럭] 가동 시 상시 선제 타격권 획득 / [페널티] 전투 중 신체 오염 저항력 RES = 0% 강제 마비 고정.",
+    "name_en": "High-Output Bio Accelerator Module",
+    "description_en": "[T=2 Refined] [Combat] Always gain first strike while unique skill [Overclock] is active / [Penalty] Contamination resistance RES locked at 0% during combat."
+  },
+  "PART_REF_02": {
+    "name": "주파수 중첩 증폭기",
+    "description": "[T=2 정제] [공격] 특화 스킬 [주파수 역추적] 성공 시 치명타 배율 베이스를 2.0으로 영구 상향 / [페널티] 해당 전투 종료 전까지 도망치기(Flee) 커맨드 영구 록업.",
+    "name_en": "Frequency Layering Amplifier",
+    "description_en": "[T=2 Refined] [Combat] Base crit multiplier permanently raised to 2.0 on a successful [Signal Trace] / [Penalty] Flee command locked until that combat ends."
+  },
+  "PART_REF_03": {
+    "name": "가상 전술 오버레이 패치",
+    "description": "[T=2 정제] [연산] 광역 바이러스 패킷 유포 시 모든 기계 괴수의 유효 방어력을 무조건 15 추가 관통 차감 / [페널티] 발동 턴당 최대 RAM 용량 1 강제 잠금 고정.",
+    "name_en": "Virtual Tactical Overlay Patch",
+    "description_en": "[T=2 Refined] [Net] Wide-area virus packets always pierce an extra 15 effective defense on every mech-beast / [Penalty] Max RAM locked by 1 per activation turn."
+  },
+  "PART_REF_04": {
+    "name": "봉합꾼 그리드 동기화 칩",
+    "description": "[T=2 정제] [공격] [바이오 적출] 발동 시 흡수하는 생존 수치 흡수량을 무조건 +10 고정 가산 복구 / [페널티] 인벤토리 무게 한도가 상시 -5kg 감산 고정.",
+    "name_en": "Stitcher Grid Sync Chip",
+    "description_en": "[T=2 Refined] [Combat] Survival absorbed by [Bio Reap] always +10 / [Penalty] Inventory weight limit fixed at -5kg."
+  },
+  "PART_REF_05": {
+    "name": "그리드 헌터 역설계 노즐",
+    "description": "[T=2 정제] [공격] 주무기 최종 표기 대미지 배율 +10% 영구 증폭 / [페널티] 연속 스킬 10회 초과 시 패턴 노출 페널티 수치가 판당 8%로 가속 차감.",
+    "name_en": "Grid Hunter Reverse-Engineered Nozzle",
+    "description_en": "[T=2 Refined] [Combat] Main weapon final damage multiplier +10% permanently / [Penalty] Beyond 10 consecutive skills, the pattern exposure penalty rises to 8% per use."
+  },
+  "PART_REF_06": {
+    "name": "보이드 인젝터 기초 펌프",
+    "description": "[T=2 정제] [연산] [프로토콜 위조] 성공률의 시스템 상한 제한을 깨부수고 최대 75%까지 동적 확장 / [페널티] 위조 실패 시 가해지는 뇌 손상 대미지 수치 200% 증가.",
+    "name_en": "Void Injector Base Pump",
+    "description_en": "[T=2 Refined] [Net] Breaks the system cap on [Protocol Glitch] success, raising it dynamically up to 75% / [Penalty] Brain damage from a failed forgery +200%."
+  },
+  "PART_REF_07": {
+    "name": "타이탄 크러셔 분쇄 모듈",
+    "description": "[T=2 정제] [공격] 적 기계 괴수 타격 시 물리 방어력 베이스를 무조건 15% 영구 삭감하는 디버프 가중치 적용 / [페널티] 내 행동 턴 우선권 지수(INIT)가 상시 -10 차감 고정.",
+    "name_en": "Titan Crusher Pulverizer Module",
+    "description_en": "[T=2 Refined] [Combat] Hits on mech-beasts apply a debuff that permanently cuts their base physical defense by 15% / [Penalty] Your initiative index (INIT) fixed at -10."
+  },
+  "PART_REF_08": {
+    "name": "센트리 인프라 오토 튠업",
+    "description": "[T=2 정제] [연산] 배치한 포탑의 전술 스킬 발동률 및 사거리 한도 계산식을 지력 함수 최고점에 수렴 고정 / [페널티] 포탑 파손 시 거점 물리 장벽 내구도 즉시 -50 패널티.",
+    "name_en": "Sentry Infra Auto Tune-Up",
+    "description_en": "[T=2 Refined] [Net] Turret skill trigger rate and range formulas converge on the peak of the Intellect function / [Penalty] Base barrier durability -50 immediately when a turret is destroyed."
+  },
+  "PART_REF_09": {
+    "name": "스머글러 패킷 압축 래퍼",
+    "description": "[T=2 정제] [연산] 전투 승리 시 드롭되는 고가치 티타늄 고철 및 자원 획득 확률 +5% 정량 보정 가산 / [페널티] 네오 아크 내부 방화벽 추적 지수 매 턴 누적치 +4 추가 가산.",
+    "name_en": "Smuggler Packet Compression Wrapper",
+    "description_en": "[T=2 Refined] [Net] +5% chance to obtain high-value titanium scrap and resources on victory / [Penalty] Neo Arc firewall trace index +4 extra every turn."
+  },
+  "PART_REF_10": {
+    "name": "바이오 적출 동력 서지 칩",
+    "description": "[T=2 정제] [공격] 선제 턴 기습 성공 시 적 전체의 행동 턴을 1턴간 강제로 동결(스킵)시키는 트리거 보정 / [페널티] 가동 전투 세션 동안 허기/갈증 생존 수치 감소 속도 1.5배 폭화.",
+    "name_en": "Bio Reap Power Surge Chip",
+    "description_en": "[T=2 Refined] [Combat] A successful first-turn ambush freezes (skips) all enemies' turns for 1 turn / [Penalty] Hunger/thirst drain x1.5 for the combat session while active."
+  },
+  "WEAPON_CORP_01": {
+    "name": "아마기리 나노 레이저 카타나",
+    "description": "[T=1 기업제] 고밀도 레이저 입자를 검신에 배열하여 물리 장벽과 의체를 분자 단위로 매끄럽게 가르는 기업 종결 도검.",
+    "name_en": "Amagiri Nano Laser Katana",
+    "description_en": "[T=1 Corporate] An endgame corporate blade lined with dense laser particles, slicing cleanly through barriers and cybernetics at the molecular level."
+  },
+  "WEAPON_CORP_02": {
+    "name": "스틸게이트 제식 레일건 v9",
+    "description": "[T=1 기업제] 네오 아크 치안대가 불모지 소탕 시 사용하는 초고속 가속포로, 십만 배수 실대미지의 정점을 연산하는 저격 화기.",
+    "name_en": "Steelgate Service Railgun v9",
+    "description_en": "[T=1 Corporate] The hypervelocity cannon Neo Arc security uses to purge the barrens, a sniper weapon computing the pinnacle of true damage."
+  },
+  "WEAPON_CORP_03": {
+    "name": "스트라토 플라즈마 블래스터",
+    "description": "[T=1 기업제] 전자기장을 구형으로 압축 가속해 발사하여 적의 최종 유효 방어력 수치를 40% 강제 무시하는 중화기.",
+    "name_en": "Strato Plasma Blaster",
+    "description_en": "[T=1 Corporate] A heavy weapon that compresses an electromagnetic field into a sphere and fires it, forcibly ignoring 40% of enemy final effective defense."
+  },
+  "WEAPON_CORP_04": {
+    "name": "셀리온 신경독소 방출기",
+    "description": "[T=1 기업제] 적 의체 내부의 유기 조직에 다이렉트로 마비 스택을 턴당 30씩 주입해 하드웨어를 얼려버리는 전술 화기.",
+    "name_en": "Cellion Neurotoxin Emitter",
+    "description_en": "[T=1 Corporate] A tactical weapon that injects 30 paralysis stacks per turn directly into the organic tissue inside enemy cybernetics, freezing their hardware."
+  },
+  "WEAPON_CORP_05": {
+    "name": "란위 초소형 스마트 피스톨",
+    "description": "[T=1 기업제] 민첩 가치 변환 함수와 연동 시, 적의 회피율 계산식을 완전히 씹어버리고 100% 명중 로그를 사수하는 유도 권총.",
+    "name_en": "Lanyu Micro Smart Pistol",
+    "description_en": "[T=1 Corporate] A guided pistol that, linked with Agility's value conversion, chews through enemy evasion formulas and guarantees a 100% hit log."
+  },
+  "WEAPON_CORP_06": {
+    "name": "레드라인 고주파 절단 매스",
+    "description": "[T=1 기업제] 의체 절단 로그 활성화 확률을 극대화하여 적 인간형 보병의 주무기를 단 1격에 무력화·파괴하는 하이테크 근접 병기.",
+    "name_en": "Redline HF Cutting Scalpel",
+    "description_en": "[T=1 Corporate] A high-tech melee weapon that maximizes cybernetic severing chance, disabling and destroying a human soldier's main weapon in a single strike."
+  },
+  "DECK_CORP_01": {
+    "name": "네오 아크 보안국 에이전트 덱",
+    "description": "[T=1 기업제] 마스터 AI 메인 서버의 백도어 프로토콜이 합법 라이선스로 심어져 있어 적 방화벽을 광속으로 해제하는 사이버덱.",
+    "name_en": "Neo Arc Security Agent Deck",
+    "description_en": "[T=1 Corporate] A cyberdeck with backdoor protocols to the Master AI main server installed under legal license, dropping enemy firewalls at light speed."
+  },
+  "DECK_CORP_02": {
+    "name": "네오넷 퀀텀 메인프레임 코어",
+    "description": "[T=1 기업제] 넷 포스의 가용 기본 RAM 용량 수식 베이스에 무조건 +8을 정량 추가 가산해 주는 무식한 데이터 뱅크 하드웨어.",
+    "name_en": "NeoNet Quantum Mainframe Core",
+    "description_en": "[T=1 Corporate] Brute-force data bank hardware that adds a flat +8 to the base of Net Force's available RAM formula."
+  },
+  "DECK_CORP_03": {
+    "name": "스틸게이트 전술 군용 방화벽 덱",
+    "description": "[T=1 기업제] 적 괴수의 디지털 역해킹(뇌 손상 및 시스템 쇼크) 대미지 패킷을 상시 50% 차단해 나약한 육체를 보호하는 덱.",
+    "name_en": "Steelgate Tactical Firewall Deck",
+    "description_en": "[T=1 Corporate] A deck that constantly blocks 50% of beasts' digital counter-hack (brain damage and system shock) packets, protecting your fragile body."
+  },
+  "DECK_CORP_04": {
+    "name": "비트레일 고속 패킷 웨어",
+    "description": "[T=1 기업제] 기초 해킹 연산 속도 가속율을 유저 지력 스탯 투자량과 무관하게 상시 맥스치(+50%)로 강제 고정하는 장치.",
+    "name_en": "Bitrail High-Speed Packetware",
+    "description_en": "[T=1 Corporate] Forcibly locks base hacking compute acceleration at max (+50%) regardless of your Intellect investment."
+  },
+  "DECK_CORP_05": {
+    "name": "셀리온 유기 회로 덱",
+    "description": "[T=1 기업제] [그리드 침투] 스킬 성공 시, 소모된 RAM 수치의 30%를 신체 HP 백배수 표기 생명력으로 실시간 치환·환원하는 생체 동화 덱.",
+    "name_en": "Cellion Organic Circuit Deck",
+    "description_en": "[T=1 Corporate] A bio-assimilating deck that converts 30% of RAM spent on a successful [Grid Intrude] back into displayed Vitality in real time."
+  },
+  "DECK_CORP_06": {
+    "name": "아마기리 다크넷 프로토콜 덱",
+    "description": "[T=1 기업제] [프로토콜 위조]의 전투 로그 위조 확률 수식에 지력 함수 최고점 승수를 가산해 글리치 성능을 폭화하는 사이버덱.",
+    "name_en": "Amagiri Darknet Protocol Deck",
+    "description_en": "[T=1 Corporate] A cyberdeck that adds the Intellect function's peak multiplier to [Protocol Glitch] forgery odds, supercharging glitch performance."
+  },
+  "CYBER_CORP_01": {
+    "name": "레드라인 바이오웨어 엔진",
+    "description": "[T=1 기업제] 나노 로봇이 유기 신호를 초단위로 수리하여 허기/갈증 소모 속도 감쇄율을 시스템 최고 상한선까지 끌어올리는 의체.",
+    "name_en": "Redline Bioware Engine",
+    "description_en": "[T=1 Corporate] Cybernetics whose nanobots repair organic signals every second, pushing hunger/thirst drain reduction to the system cap."
+  },
+  "CYBER_CORP_02": {
+    "name": "스틸게이트 강화 근력 서보 암",
+    "description": "[T=1 기업제] 군용 중장갑 모터 프레임. 컴뱃 포스의 특화 스킬 레벨 확장 곡선 함수(Soft-Cap) 임계점을 깨부수고 출력을 연장함.",
+    "name_en": "Steelgate Enhanced Strength Servo Arm",
+    "description_en": "[T=1 Corporate] A military heavy-armor motor frame. Breaks the soft-cap threshold of Combat Force's unique skill level curve to extend output."
+  },
+  "CYBER_CORP_03": {
+    "name": "아마기리 나노 반사 신경망",
+    "description": "[T=1 기업제] 척수 전반에 이식하는 광섬유 신경망. 민첩 스탯의 실효 가치 f(A) 연산 과부하 구간(스탯 15) 효율 저하를 무력화함.",
+    "name_en": "Amagiri Nano Reflex Network",
+    "description_en": "[T=1 Corporate] A fiber-optic nervous system implanted along the spine. Negates the efficiency drop in Agility's f(A) overload bracket (stat 15)."
+  },
+  "CYBER_CORP_04": {
+    "name": "스트라토 생체 방사능 필터 코어",
+    "description": "[T=1 기업제] 방사능 오염 분지 타일 진입 시, 턴당 누적되는 물리 오염 틱 수치를 상시 -20 정량 차감하는 하이엔드 인공 장기.",
+    "name_en": "Strato Bio Radiation Filter Core",
+    "description_en": "[T=1 Corporate] A high-end artificial organ that always cuts physical contamination ticks by a flat -20 per turn on irradiated basin tiles."
+  },
+  "CYBER_CORP_05": {
+    "name": "란위 지능형 연산 대뇌 피질",
+    "description": "[T=1 기업제] 고대 유물 감정 및 분석 성공 확률 공식을 무조건 시스템 최고 한계선인 95% 고점으로 프리셋 잠금하는 의체.",
+    "name_en": "Lanyu Intelligent Compute Cortex",
+    "description_en": "[T=1 Corporate] Cybernetics that preset-lock the ancient relic appraisal and analysis success formula at the system cap of 95%."
+  },
+  "CYBER_CORP_06": {
+    "name": "셀리온 유기 인공 심장",
+    "description": "[T=1 기업제] 레벨업 시 파생되는 최대 생명력 기본 연산식에 체력 가치 계수 1.5배 보너스를 상시 주입하는 엔진.",
+    "name_en": "Cellion Organic Artificial Heart",
+    "description_en": "[T=1 Corporate] An engine that always injects a 1.5x Vitality coefficient bonus into the base max-Vitality formula on level-up."
+  },
+  "BACK_CORP_01": {
+    "name": "테크노크라시 제트 부스터",
+    "description": "[T=1 기업제] 고압 가스를 분출해 행동 턴 우선권 지수(INIT) 수식을 폭발적으로 가속하고 필드 기습 조우율을 상쇄하는 등 부분 가속기.",
+    "name_en": "Technocracy Jet Booster",
+    "description_en": "[T=1 Corporate] A back-mounted accelerator that vents high-pressure gas to explosively speed up the initiative index (INIT) and offset field ambush rates."
+  },
+  "BACK_CORP_02": {
+    "name": "나노 탄소 확장형 물류 배낭",
+    "description": "[T=1 기업제] 인벤토리 소지 무게 한도 공식의 변수를 뻥튀기하여 무거운 기업제 장비 도배 시의 무게 페널티를 지워주는 가방.",
+    "name_en": "Nano-Carbon Expanding Logistics Pack",
+    "description_en": "[T=1 Corporate] A bag that inflates the carry weight formula's variables, erasing weight penalties from stacking heavy corporate gear."
+  },
+  "BACK_CORP_03": {
+    "name": "기업 특제 무한 가용 쿨링 타워",
+    "description": "[T=1 기업제] 단일 특화 스킬 연속 사용 시 쌓이는 패턴 노출도의 누적 스택을 3턴당 1씩 인위적으로 감산 세탁해 주는 동적 냉각 배낭.",
+    "name_en": "Corporate Infinite Cooling Tower",
+    "description_en": "[T=1 Corporate] A dynamic cooling pack that artificially launders 1 pattern-exposure stack every 3 turns when you spam one unique skill."
+  },
+  "BACK_CORP_04": {
+    "name": "전술 유도 드론 격납 랙 (Rack)",
+    "description": "[T=1 기업제] 자동화 엔지니어의 [센트리 인프라] 포탑 최종 표기 대미지 연산식을 오차 없이 상시 최고점으로 고정하는 배낭.",
+    "name_en": "Tactical Guided Drone Rack",
+    "description_en": "[T=1 Corporate] A pack that pins the final displayed damage of an automation engineer's [Sentry Infra] turrets at the peak, without variance."
+  },
+  "BACK_CORP_05": {
+    "name": "스트라토 에너지 가속 셀",
+    "description": "[T=1 기업제] 물리 거점 방벽 사수 및 레이드 방어 성공 로그 트리거 시, 소모 전력 신호 지수를 즉각 0으로 동결 수리하는 백팩.",
+    "name_en": "Strato Energy Accelerator Cell",
+    "description_en": "[T=1 Corporate] A backpack that instantly freezes the consumed power signal index to 0 when you hold a base barrier or repel a raid."
+  },
+  "BACK_CORP_06": {
+    "name": "비트레일 시그널 디플렉터",
+    "description": "[T=1 기업제] 가상 은신처 노드 스쿼팅 유지 시, 마스터 AI의 보안 프로토콜 통째 변경 패치 주기를 수학적 모델식으로 강제 지연시키는 가젯.",
+    "name_en": "Bitrail Signal Deflector",
+    "description_en": "[T=1 Corporate] A gadget that forcibly delays, by mathematical model, the Master AI's full security-protocol patch cycle while squatting on a virtual safehouse node."
+  },
+  "FACE_CORP_01": {
+    "name": "총괄국 홀로그램 바이저",
+    "description": "[T=1 기업제] 민첩 스탯 파생 지표와 동기화되어 치명타 확률 수식을 최고 한계선인 75% 고점으로 강제 고정 록업하는 안면 가젯.",
+    "name_en": "Bureau Hologram Visor",
+    "description_en": "[T=1 Corporate] A face gadget synced with Agility-derived stats that locks the crit chance formula at its cap of 75%."
+  },
+  "FACE_CORP_02": {
+    "name": "아마기리 중장갑 하이퍼 헬멧",
+    "description": "[T=1 기업제] 양대 핵심 진영 중 총괄국 우호 평판(평판 +500 이상) 달성 시 지급되며, 불모지 기습 조우율 3배 증가 페널티 조항을 완벽히 소거함.",
+    "name_en": "Amagiri Heavy Armor Hyper Helmet",
+    "description_en": "[T=1 Corporate] Issued upon reaching friendly Bureau reputation (+500 or more). Completely erases the tripled ambush rate penalty in the barrens."
+  },
+  "FACE_CORP_03": {
+    "name": "스틸게이트 전술 전면 가스 마스크",
+    "description": "[T=1 기업제] 상태 이상 및 속성 저항력 공식 판정 시 장 장비 가중치 계수를 최고점으로 동기화해 오염 오버플로우를 막는 마스크.",
+    "name_en": "Steelgate Tactical Full-Face Gas Mask",
+    "description_en": "[T=1 Corporate] A mask that syncs the gear weight coefficient to its peak in status and elemental resistance checks, preventing contamination overflow."
+  },
+  "FACE_CORP_04": {
+    "name": "란위 가변 다점 초점 안경",
+    "description": "[T=1 기업제] 지력 실효 가 가 함수 임계점 마비 구간(스탯 25 초과) 효율을 50% 수준으로 복구 복합 연산해 주는 스마트 안경.",
+    "name_en": "Lanyu Variable Multifocal Glasses",
+    "description_en": "[T=1 Corporate] Smart glasses that restore efficiency in Intellect's paralysis bracket (stat above 25) to around 50%."
+  },
+  "FACE_CORP_05": {
+    "name": "스트라토 여압식 HUD 바이저",
+    "description": "[T=1 기업제] 선제 턴 판정 시 치명타 배율 계산 가중치 축에 상시 +0.3 보너스 마진을 가산 출력하는 정밀 가젯.",
+    "name_en": "Strato Pressurized HUD Visor",
+    "description_en": "[T=1 Corporate] A precision gadget that always adds a +0.3 bonus margin to the crit multiplier axis on first-turn checks."
+  },
+  "FACE_CORP_06": {
+    "name": "셀리온 세포 분석 고글",
+    "description": "[T=1 기업제] 특화 스킬 [바이오 적출] 발동 확률 계산 수식에 상시 +6% 보정 상수를 다이렉트로 결속하는 고글.",
+    "name_en": "Cellion Cell Analysis Goggles",
+    "description_en": "[T=1 Corporate] Goggles that bind a permanent +6% correction constant directly into the [Bio Reap] trigger chance formula."
+  },
+  "TOP_CORP_01": {
+    "name": "총괄국 치안대 나노 섬유 슈트",
+    "description": "[T=1 기업제] 초고밀도 직조 방탄 섬유로 신체 생명력 백배수 UI 표기를 만 단위 이상으로 안정 보장하는 총괄국 정예 제식 상의.",
+    "name_en": "Bureau Security Nano-Fiber Suit",
+    "description_en": "[T=1 Corporate] The Bureau elite's standard top. Ultra-dense ballistic weave that reliably keeps displayed Vitality in the tens of thousands."
+  },
+  "TOP_CORP_02": {
+    "name": "기업 임원용 방화벽 롱코트",
+    "description": "[T=1 기업제] 네오 아크 내부 가상 은신처 보안 등급을 최고 우대로 동기화하여 도시 내 생존 안정성을 지배하는 하이엔드 아우터.",
+    "name_en": "Executive Firewall Long Coat",
+    "description_en": "[T=1 Corporate] High-end outerwear that syncs your virtual safehouse security grade inside Neo Arc to top priority, dominating survival stability in the city."
+  },
+  "TOP_CORP_03": {
+    "name": "아마기리 군용 나노 플레이트 흉갑",
+    "description": "[T=1 기업제] 물리 방어력 베이스 수식의 고정 상수를 폭발시켜 적 변종 괴수의 공격 대미지를 정수 1단위 최소선으로 밀어내는 갑옷.",
+    "name_en": "Amagiri Military Nano-Plate Cuirass",
+    "description_en": "[T=1 Corporate] Armor that blows up the fixed constant of the physical defense formula, pushing mutant beast damage down to the minimum of 1."
+  },
+  "TOP_CORP_04": {
+    "name": "스틸게이트 청소 부대 중장갑 가디언",
+    "description": "[T=1 기업제] 평판 지수 제로섬 규칙에 의해 불모지 약탈자 레이드가 거점에 발동할 시, 내 방벽 내구도를 실시간 복구 가속하는 장갑 상의.",
+    "name_en": "Steelgate Cleanup Squad Heavy Guardian",
+    "description_en": "[T=1 Corporate] An armored top that accelerates real-time barrier repair when barrens raiders hit your base under the reputation zero-sum rule."
+  },
+  "TOP_CORP_05": {
+    "name": "스트라토 충격 흡수 전술 슈트",
+    "description": "[T=1 기업제] 적 타이탄 크러셔의 고유 관통력(80) 타격 로그 발생 시, 최종 대미지 가중치 P 수치를 강제로 20% 경감 상쇄하는 상의.",
+    "name_en": "Strato Shock-Absorbing Tactical Suit",
+    "description_en": "[T=1 Corporate] A top that forcibly cuts the final damage weight P by 20% when a Titan Crusher's native penetration (80) strike lands."
+  },
+  "TOP_CORP_06": {
+    "name": "란위 하이브리드 공명 조끼",
+    "description": "[T=1 기업제] [시그널 고정 특성] 중 [황금 분할의 조율사] 조건 달성을 돕기 위해 기본 스탯 3종의 가치 불균형을 실시간 제어하는 특제 조끼.",
+    "name_en": "Lanyu Hybrid Resonance Vest",
+    "description_en": "[T=1 Corporate] A custom vest that controls imbalance among your three base stats in real time to help meet the [Golden Ratio Harmonizer] Signal-Locked Trait."
+  },
+  "BOTTOM_CORP_01": {
+    "name": "기업 임원용 전술 하의",
+    "description": "[T=1 기업제] 하체 의체 모터의 전력 소모 가중치를 제로화하여 황무지 횡단 시의 허기/갈증 차감 연산을 최적화하는 하의.",
+    "name_en": "Executive Tactical Pants",
+    "description_en": "[T=1 Corporate] Pants that zero out lower-body cybernetic motor power draw, optimizing hunger/thirst drain while crossing the wasteland."
+  },
+  "BOTTOM_CORP_02": {
+    "name": "아마기리 보안 가드 나노 진",
+    "description": "[T=1 기업제] 네오 아크 가상 노드 해킹 세션 진행 시, 가용 RAM 누수 오염 스택 트리거 턴을 수학적으로 차단하는 전술 바지.",
+    "name_en": "Amagiri Security Guard Nano Jeans",
+    "description_en": "[T=1 Corporate] Tactical pants that mathematically block the trigger turn of RAM-leak contamination stacks during Neo Arc virtual node hacking sessions."
+  },
+  "BOTTOM_CORP_03": {
+    "name": "스틸게이트 특수 요원 절연 카고",
+    "description": "[T=1 기업제] 시스템 쇼크 상태 이상 누적치가 100에 도달해 가용 RAM이 0으로 록업되는 치명적 에러 패널티를 영구 거부하는 하의.",
+    "name_en": "Steelgate Special Agent Insulated Cargo",
+    "description_en": "[T=1 Corporate] Pants that permanently refuse the fatal error penalty where system shock reaches 100 and locks available RAM at 0."
+  },
+  "BOTTOM_CORP_04": {
+    "name": "스트라토 기동형 가속 바지",
+    "description": "[T=1 기업제] 민첩 스탯 파생 지표인 기본 회피율 수식을 최대 한계선인 50% 고점으로 리미터 잠금하는 바지.",
+    "name_en": "Strato Mobility Accelerator Pants",
+    "description_en": "[T=1 Corporate] Pants that limiter-lock the base evasion formula, an Agility-derived stat, at its cap of 50%."
+  },
+  "BOTTOM_CORP_05": {
+    "name": "셀리온 세포 정제 오버롤",
+    "description": "[T=1 기업제] 생존 지표가 90% 이상인 위험 상태에서 가해지는 디버프 공격의 상태 이상 틱 수치를 소수점 단위까지 소거하는 하의.",
+    "name_en": "Cellion Cell-Refining Overalls",
+    "description_en": "[T=1 Corporate] Pants that erase status ticks from debuff attacks down to the decimal while you are in danger with survival stats above 90%."
+  },
+  "BOTTOM_CORP_06": {
+    "name": "란위 전술형 유압 제어 하의",
+    "description": "[T=1 기업제] 30%의 자유 AP 중 민첩 스탯 투자 효율을 극대화하여 컴뱃 포스 특화 스킬의 기습 턴 동결 성공률을 사수하는 바지.",
+    "name_en": "Lanyu Tactical Hydraulic Pants",
+    "description_en": "[T=1 Corporate] Pants that maximize the efficiency of investing the 30% free AP into Agility, securing Combat Force's ambush turn-freeze success rate."
+  },
+  "SHOES_CORP_01": {
+    "name": "자기부상 기동 슈즈",
+    "description": "[T=1 기업제] 지면 마찰을 완전히 무시하는 자기부상 나노 모터로 행동 턴 우선권 지수(INIT) 연산식에 독보적인 가산 승수를 더하는 신발.",
+    "name_en": "Maglev Mobility Shoes",
+    "description_en": "[T=1 Corporate] Shoes with maglev nano-motors that ignore ground friction entirely, adding an unrivaled multiplier to the initiative index (INIT) formula."
+  },
+  "SHOES_CORP_02": {
+    "name": "아마기리 나노 무소음 전술 워커",
+    "description": "[T=1 기업제] 필드 탐색 타일 이동 시 발생하는 소음/전력 신호 지수 누적을 원천 차단하여 효율 저지형 변종 괴수 레이드 발생 조항을 우회하는 신발.",
+    "name_en": "Amagiri Nano Silent Tactical Walkers",
+    "description_en": "[T=1 Corporate] Shoes that fully block noise/power signal buildup while moving across field tiles, bypassing the anti-farming mutant beast raid clause."
+  },
+  "SHOES_CORP_03": {
+    "name": "스틸게이트 중장갑 돌격대 안전화",
+    "description": "[T=1 기업제] 전투 시작 선제 턴 판정 시 100% 확률로 적에게 넉백 및 노크백 면역 로그를 활성화하는 강철 워커.",
+    "name_en": "Steelgate Heavy Assault Safety Boots",
+    "description_en": "[T=1 Corporate] Steel walkers that activate a knockback immunity log with 100% chance on the opening first-turn check of combat."
+  },
+  "SHOES_CORP_04": {
+    "name": "스트라토 위상 동기화 부츠",
+    "description": "[T=1 기업제] 게릴라 인필트레이터 전용으로, 전투 패배 임계점 도달 시 페널티 없는 도주 로그를 100% 무조건 화면에 띄워주는 슈즈.",
+    "name_en": "Strato Phase-Sync Boots",
+    "description_en": "[T=1 Corporate] For guerrilla infiltrators only: always displays a penalty-free flee log on screen when you reach the defeat threshold."
+  },
+  "SHOES_CORP_05": {
+    "name": "란위 지형 적응형 내산 장화",
+    "description": "[T=1 기업제] 방사능 용융 분지 등 위험 타일 횡단 시 정수 단위 오염 축적 공식 자체를 강제로 동결 일시정지시키는 특수 슈즈.",
+    "name_en": "Lanyu Terrain-Adaptive Acid Boots",
+    "description_en": "[T=1 Corporate] Special shoes that forcibly pause the contamination buildup formula itself while crossing hazardous tiles like molten radioactive basins."
+  },
+  "SHOES_CORP_06": {
+    "name": "셀리온 유기 근섬유 워커",
+    "description": "[T=1 기업제] 7:3 능력치 획득 비율 분배 법칙 가동 시, 자유 투자 AP 수치 1을 무조건 체력 스탯 축에 무상 부스팅하는 신발.",
+    "name_en": "Cellion Organic Muscle-Fiber Walkers",
+    "description_en": "[T=1 Corporate] Shoes that, whenever the 7:3 stat distribution rule runs, boost 1 point of free AP into Vitality for free."
+  },
+  "NECK_CORP_01": {
+    "name": "양자 가중 안정 초커",
+    "description": "[T=1 기업제] 모든 하이브리드 특화 스킬의 가중치 변환율 계수를 유저의 실제 기본 스탯 불균형과 관계없이 상시 최고 수치인 1.0으로 묶어버리는 초커.",
+    "name_en": "Quantum-Weighted Stabilizer Choker",
+    "description_en": "[T=1 Corporate] A choker that binds the weight conversion coefficient of every hybrid unique skill to its maximum of 1.0, regardless of your actual stat imbalance."
+  },
+  "NECK_CORP_02": {
+    "name": "아마기리 라이선스 세탁 초커",
+    "description": "[T=1 기업제] 네오 아크 도시 진입 시 발생하는 방화벽 추적 지수 누적 속도 200% 증가 디버프 조항을 논리적으로 소거 세탁하는 스마트 목걸이.",
+    "name_en": "Amagiri License-Laundering Choker",
+    "description_en": "[T=1 Corporate] A smart necklace that logically launders away the debuff that raises firewall trace buildup by 200% on entering Neo Arc."
+  },
+  "NECK_CORP_03": {
+    "name": "스틸게이트 전술 코어 동기화 체인",
+    "description": "[T=1 기업제] 무기에서 방어구로 강화를 계승 전이할 때, 등급 격차에 의한 패널티 지수 감산 조항을 무조건 추가로 1단계 더 감면 구제하는 목걸이.",
+    "name_en": "Steelgate Tactical Core Sync Chain",
+    "description_en": "[T=1 Corporate] A necklace that reduces the tier-gap penalty by one more step when transferring enhancement from a weapon to armor."
+  },
+  "NECK_CORP_04": {
+    "name": "스트라토 제로G 배선 펜던트",
+    "description": "[T=1 기업제] 인벤토리 소지 무게 한도를 무시하고 0티어 종결급 유물 장비의 장착 자원 결속 페널티 수치 자체를 퍼센트 단위로 가차 없이 감산하는 체인.",
+    "name_en": "Strato Zero-G Wiring Pendant",
+    "description_en": "[T=1 Corporate] A chain that ignores carry weight limits and mercilessly cuts the resource binding penalty of equipping tier-0 endgame relics by a percentage."
+  },
+  "NECK_CORP_05": {
+    "name": "란위 분석 행렬 해독 초커",
+    "description": "[T=1 기업제] 필드 탐색 시 1%의 유령 데이터 박스 탐지 및 고대 유물 분석 성공 확률 가중치 식을 연동 동기화하는 연산 가젯.",
+    "name_en": "Lanyu Analysis Matrix Decoder Choker",
+    "description_en": "[T=1 Corporate] A compute gadget that links the weighting of 1% ghost data box detection and ancient relic analysis success when searching the field."
+  },
+  "NECK_CORP_06": {
+    "name": "셀리온 생체 루프 링 체인",
+    "description": "[T=1 기업제] 물리 오염 또는 연산 오염 스택 축적 시, 매 턴 복구되는 기본 자연 소거값 상수를 상시 +5 부스팅하는 목걸이.",
+    "name_en": "Cellion Bio-Loop Ring Chain",
+    "description_en": "[T=1 Corporate] A necklace that always boosts the base natural decay constant recovered each turn by +5 as physical or compute contamination stacks build."
+  },
+  "RING_CORP_01": {
+    "name": "네오 아크 고위직 인장 반지",
+    "description": "[T=1 기업제] 중앙 통제 총괄국 고위 관료의 디지털 서명이 각인되어, 가상 은신처 노드 세탁 프로토콜 가동 시 100% 무조건 성공 로그를 띄우는 인장 반지.",
+    "name_en": "Neo Arc High Official's Signet",
+    "description_en": "[T=1 Corporate] Engraved with a senior Bureau official's digital signature, this signet always shows a 100% success log when running virtual safehouse node laundering."
+  },
+  "RING_CORP_02": {
+    "name": "아마기리 글리치 루프 스마트 링",
+    "description": "[T=1 기업제] 적 타이탄 크러셔나 그리드 헌터의 카운터 속성 저항력 수치를 해킹 툴로 낚아채 상시 30% 감쇄 삭감하는 반지.",
+    "name_en": "Amagiri Glitch-Loop Smart Ring",
+    "description_en": "[T=1 Corporate] A ring that snags the counter-element resistance of Titan Crushers and Grid Hunters with hacking tools, always cutting it by 30%."
+  },
+  "RING_CORP_03": {
+    "name": "스틸게이트 마스터 정제 공명 고리",
+    "description": "[T=1 기업제] 장비 공명 정제(강화) 실패 시 소멸하는 고가치 자원의 손실을 50% 확률로 세이브 복구해 주는 강화 보조형 반지.",
+    "name_en": "Steelgate Master Refining Resonance Loop",
+    "description_en": "[T=1 Corporate] An enhancement-support ring that has a 50% chance to save high-value resources lost when resonance refining (enhancement) fails."
+  },
+  "RING_CORP_04": {
+    "name": "스트라토 가용 RAM 버스트 링",
+    "description": "[T=1 기업제] 가용 RAM 소모 스킬 구동 성공 시, 20%의 고확률 장벽을 뚫고 해당 스킬의 소모 RAM을 즉시 100% 전액 환급하는 연산 고리.",
+    "name_en": "Strato RAM Burst Ring",
+    "description_en": "[T=1 Corporate] A compute loop that, on a successful RAM-cost skill, has a 20% chance to instantly refund 100% of the RAM spent."
+  },
+  "RING_CORP_05": {
+    "name": "란위 스탯 레조넌스 가젯 고리",
+    "description": "[T=1 기업제] [시그널 고정 특성]의 하드코어 달성 조건 턴 수를 단 3회 연속 성공 시점으로 완화 판정해 주는 스마트 반지.",
+    "name_en": "Lanyu Stat Resonance Gadget Loop",
+    "description_en": "[T=1 Corporate] A smart ring that relaxes the hardcore turn requirement of [Signal-Locked Traits] to just 3 consecutive successes."
+  },
+  "RING_CORP_06": {
+    "name": "셀리온 흡수율 오버레이 링",
+    "description": "[T=1 기업제] 하이브리드 특화 스킬 [바이오 적출] 발동 시, 흡수하는 생존 수치 및 HP 흡수량 공식 결과를 상시 2배 증폭하는 반지.",
+    "name_en": "Cellion Absorption Overlay Ring",
+    "description_en": "[T=1 Corporate] A ring that always doubles the survival and HP absorbed when the hybrid unique skill [Bio Reap] triggers."
+  },
+  "PART_CORP_01": {
+    "name": "보이드 인젝터 모듈 (v1.2)",
+    "description": "[T=1 기업제] [연산 - 현실 왜곡자] [프로토콜 위조] 성공률 상한선을 85%까지 확장 / [페널티] 위조 성공 시마다 가용 RAM 1개 영구 잠금 및 도시 방화벽 추적 지수 +20 즉시 가산.",
+    "name_en": "Void Injector Module (v1.2)",
+    "description_en": "[T=1 Corporate] [Net - Protocol Breaker] Raises the [Protocol Glitch] success cap to 85% / [Penalty] Each successful forgery permanently locks 1 available RAM and instantly adds +20 to the city firewall trace index."
+  },
+  "PART_CORP_02": {
+    "name": "아마기리 나노 클록 가속 칩",
+    "description": "[T=1 기업제] [공격 - 기동 타격대] 특화 스킬 [의체 오버클럭] 가동 중 행동 턴 우선권 지수(INIT)를 상시 2배로 강제 고정 증폭 / [페널티] 가동 전투 턴 동안 신체 오염 저항력이 무조건 0%로 록업 마비.",
+    "name_en": "Amagiri Nano Clock Accelerator Chip",
+    "description_en": "[T=1 Corporate] [Combat - Infiltrating Striker] Initiative index (INIT) forcibly doubled while unique skill [Overclock] is active / [Penalty] Contamination resistance locked at 0% for those combat turns."
+  },
+  "PART_CORP_03": {
+    "name": "스틸게이트 관통 전술 배선 패치",
+    "description": "[T=1 기업제] [공격 - 전술 보병] 내가 가하는 모든 물리 대미지의 디버프 가중치를 폭화하여 적 유효 방어력을 영구히 50% 삭감 고정 / [페널티] 내 신체 생명력 베이스가 강제로 -500 감산 고정.",
+    "name_en": "Steelgate Piercing Tactical Wiring Patch",
+    "description_en": "[T=1 Corporate] [Combat - Tactical Infantry] Supercharges the debuff weight of all your physical damage, permanently cutting enemy effective defense by 50% / [Penalty] Your base Vitality forcibly fixed at -500."
+  },
+  "PART_CORP_04": {
+    "name": "네오넷 광역 바이러스 마스터 팩",
+    "description": "[T=1 기업제] [연산 - 클래식 넷러너] 무차별 바이러스 패킷 유포 시 필드 내 모든 기계 괴수의 연산력을 동시 마비시키고 최종 표기 대미지 배율 +15% 증폭 / [페널티] 인벤토리 무게 한도가 상시 -10kg 록업.",
+    "name_en": "NeoNet Wide-Area Virus Master Pack",
+    "description_en": "[T=1 Corporate] [Net - Classic Netrunner] Indiscriminate virus packets paralyze the compute power of every mech-beast on the field and boost final damage multiplier by +15% / [Penalty] Inventory weight limit locked at -10kg."
+  },
+  "PART_CORP_05": {
+    "name": "란위 센트리 알고리즘 오버레이",
+    "description": "[T=1 기업제] [연산 - 자율 엔지니어] [센트리 인프라] 포탑의 사거리, 명중률, 전술 스킬 발동률 계산식을 유저 지력 스탯 최고점을 곱한 수치로 강제 잠금 / [페널티] 포탑 파손 시 가상 은신처가 30% 확률로 즉시 강제 차단 폐쇄.",
+    "name_en": "Lanyu Sentry Algorithm Overlay",
+    "description_en": "[T=1 Corporate] [Net - Autonomous Engineer] Locks [Sentry Infra] turret range, accuracy, and skill trigger formulas to values multiplied by your peak Intellect / [Penalty] 30% chance your virtual safehouse is instantly shut down when a turret is destroyed."
+  },
+  "PART_CORP_06": {
+    "name": "셀리온 절단 로그 적출 팁",
+    "description": "[T=1 기업제] [공격 - 의체 도살자] 특화 스킬 [바이오 적출] 발동 확률 보정 수식을 무조건 최고 한계치인 80% 고점으로 부스팅 / [페널티] 매 턴 종료 시마다 허기/갈증 지수가 무조건 +3씩 가속 차감 누적.",
+    "name_en": "Cellion Severing-Log Extraction Tip",
+    "description_en": "[T=1 Corporate] [Combat - Bio Reaper] Boosts the [Bio Reap] trigger chance formula to its cap of 80% / [Penalty] Hunger/thirst always drain +3 faster at the end of every turn."
+  },
+  "WEAPON_LEGACY_01": {
+    "name": "엑스칼리버 프로토",
+    "description": "[T=0 유물 / 기반: 아마기리 나노 레이저 카타나] 물리 스케일의 정점. 타격 시 [억 단위 대미지] 로그 출력을 지배하며 의체 절단 플래그를 100% 강제 활성화.",
+    "name_en": "Excalibur Proto",
+    "description_en": "[T=0 Relic / Base: Amagiri Nano Laser Katana] The pinnacle of physical scale. Dominates the log with [hundred-million damage] on hit and forces the cybernetic severing flag 100% of the time."
+  },
+  "WEAPON_LEGACY_02": {
+    "name": "리빌딩 하이페리온 레일 마스터",
+    "description": "[T=0 유물 / 기반: 스틸게이트 제식 레일건 v9] 적 기계 괴수의 최종 유효 방어력 수치를 연산식에서 지워버리고 즉시 0으로 처리하는 절대 관통.",
+    "name_en": "Rebuilt Hyperion Rail Master",
+    "description_en": "[T=0 Relic / Base: Steelgate Service Railgun v9] Absolute penetration that erases an enemy mech-beast's final effective defense from the formula and treats it as 0."
+  },
+  "WEAPON_LEGACY_03": {
+    "name": "싱귤래리티 크로노 블래스터",
+    "description": "[T=0 유물 / 기반: 스트라토 플라즈마 블래스터] 전자기장이 시간 축 코드를 왜곡. 적 피격 시 턴 우선권(INIT) 계산을 무력화하고 적의 다음 행동 턴을 완전히 삭제.",
+    "name_en": "Singularity Chrono Blaster",
+    "description_en": "[T=0 Relic / Base: Strato Plasma Blaster] Its field warps the code of the time axis. On hit, it nullifies the enemy's initiative (INIT) calculation and deletes their next turn entirely."
+  },
+  "WEAPON_LEGACY_04": {
+    "name": "메두사 나노 바이러스 오버로드",
+    "description": "[T=0 유물 / 기반: 셀리온 신경독소 방출기] 세포 붕괴 패킷을 살포. 매 턴 적 전체의 신경망에 전이 오염 스택을 즉시 +50씩 누적 폭화.",
+    "name_en": "Medusa Nano-Virus Overload",
+    "description_en": "[T=0 Relic / Base: Cellion Neurotoxin Emitter] Sprays cell-collapse packets, piling +50 spreading contamination stacks onto every enemy's nervous system each turn."
+  },
+  "WEAPON_LEGACY_05": {
+    "name": "아자토스 차원 유도 인젝터",
+    "description": "[T=0 유물 / 기반: 란위 초소형 스마트 피스톨] 적의 회피율 및 상태 저항을 0% 무력화하며, 전투 로그상 무조건 크리티컬 고정 연산.",
+    "name_en": "Azathoth Dimensional Guided Injector",
+    "description_en": "[T=0 Relic / Base: Lanyu Micro Smart Pistol] Reduces enemy evasion and status resistance to 0%, and every hit in the combat log is computed as a guaranteed critical."
+  },
+  "WEAPON_LEGACY_06": {
+    "name": "가이아 생체 파쇄 사일런서",
+    "description": "[T=0 유물 / 기반: 레드라인 고주파 절단 매스] 인간형 약탈자 레이드 격돌 시, 적 청부 부대 전체의 주무기 장비 위력을 영구 탈취해 내 위력에 합산 인코딩.",
+    "name_en": "Gaia Bio-Shredder Silencer",
+    "description_en": "[T=0 Relic / Base: Redline HF Cutting Scalpel] In clashes with human raider raids, permanently steals the main weapon power of the whole mercenary squad and encodes it into your own."
+  },
+  "DECK_LEGACY_01": {
+    "name": "네오 아크 오버로드 코어",
+    "description": "[T=0 유물 / 기반: 네오 아크 보안국 에이전트 덱] 마스터 AI의 감시망 자체를 아군 노드로 위장. 네오 아크 내 가상 은신처 보안 레이드를 원천 봉쇄 폐쇄.",
+    "name_en": "Neo Arc Overlord Core",
+    "description_en": "[T=0 Relic / Base: Neo Arc Security Agent Deck] Disguises the Master AI's surveillance net itself as a friendly node, completely sealing off security raids on virtual safehouses in Neo Arc."
+  },
+  "DECK_LEGACY_02": {
+    "name": "보이드 아키텍트 v4.0",
+    "description": "[T=0 유물 / 기반: 네오넷 퀀텀 메인프레임 코어] 가상 법칙 코드 왜곡. 적이 가한 수억의 대미지 로그 자체를 해킹하여 [ 대미지 0 ] 또는 팀킬로 완벽 세탁.",
+    "name_en": "Void Architect v4.0",
+    "description_en": "[T=0 Relic / Base: NeoNet Quantum Mainframe Core] Distorts virtual law code. Hacks the very log of the hundreds of millions of damage enemies deal, laundering it into [ 0 damage ] or friendly fire."
+  },
+  "DECK_LEGACY_03": {
+    "name": "이지스 매트릭스 갓 쉴드 (God)",
+    "description": "[T=0 유물 / 기반: 스틸게이트 전술 군용 방화벽 덱] 적 괴수의 디지털 역해킹 뇌 손상 반동 코드를 100% 원천 차단하고 그 반사 대미지를 실시간 십만 배수로 역환산.",
+    "name_en": "Aegis Matrix God Shield",
+    "description_en": "[T=0 Relic / Base: Steelgate Tactical Firewall Deck] Fully blocks the brain-damage recoil code of beasts' digital counter-hacks and converts the reflected damage back at massive scale in real time."
+  },
+  "DECK_LEGACY_04": {
+    "name": "구시대 유산: 프로토콜 디스트로이어",
+    "description": "[T=0 유물 / 기반: 비트레일 고속 패킷 웨어] 광역 바이러스 유포 패킷 가속율을 신의 영역으로 가동. 필드 내 기계 괴수 집단 제어 코어를 1턴 만에 전멸 마비.",
+    "name_en": "Old-World Legacy: Protocol Destroyer",
+    "description_en": "[T=0 Relic / Base: Bitrail High-Speed Packetware] Runs wide-area virus acceleration at a godlike level, paralyzing the group control cores of every mech-beast on the field within 1 turn."
+  },
+  "DECK_LEGACY_05": {
+    "name": "위그드라실 생명선 백도어",
+    "description": "[T=0 유물 / 기반: 셀리온 유기 회로 덱] 가용 RAM 소소 스킬 투사 성공 시, 소모 연산 자원 수치의 100%를 생명력 백배수 UI 표기로 실시간 치환 복구.",
+    "name_en": "Yggdrasil Lifeline Backdoor",
+    "description_en": "[T=0 Relic / Base: Cellion Organic Circuit Deck] On a successful RAM-cost skill, converts 100% of the compute resources spent into displayed Vitality in real time."
+  },
+  "DECK_LEGACY_06": {
+    "name": "아나키스트 보이드 묵시록",
+    "description": "[T=0 유물 / 기반: 아마기리 다크넷 프로토콜 덱] [프로토콜 위조] 시 위조 성공률의 시스템 한계식 자체를 소거하여, 적의 명중 및 이동 처리를 에러 로그로 차단.",
+    "name_en": "Anarchist Void Apocalypse",
+    "description_en": "[T=0 Relic / Base: Amagiri Darknet Protocol Deck] Erases the system cap formula on [Protocol Glitch] success itself, blocking enemy hits and movement with error logs."
+  },
+  "CYBER_LEGACY_01": {
+    "name": "프로토타입 하이페리온 코어",
+    "description": "[T=0 유물 / 기반: 레드라인 바이오웨어 엔진] 생체 피로도 완전 최적화. 황무지 타일 이동 시 깎이는 생존 수치 감쇄율을 상시 60% 최고점으로 프리셋 잠금.",
+    "name_en": "Prototype Hyperion Core",
+    "description_en": "[T=0 Relic / Base: Redline Bioware Engine] Perfectly optimizes bodily fatigue. Preset-locks the reduction of survival drain on wasteland tiles at its peak of 60%."
+  },
+  "CYBER_LEGACY_02": {
+    "name": "아틀라스 군용 크러셔 암",
+    "description": "[T=0 유물 / 기반: 스틸게이트 강화 근력 서보 암] 컴뱃 포스 전용. 기본 스탯 체력 가치 변환 곡선 함수 f(A)의 계단식 효율 저하 제약식을 파괴하여 상시 100% 효율 고정.",
+    "name_en": "Atlas Military Crusher Arm",
+    "description_en": "[T=0 Relic / Base: Steelgate Enhanced Strength Servo Arm] Combat Force only. Destroys the stepped efficiency falloff of the Vitality conversion curve f(A), locking it at 100% efficiency."
+  },
+  "CYBER_LEGACY_03": {
+    "name": "크로노스 위상 반사 신경 가드",
+    "description": "[T=0 유물 / 기반: 아마기리 나노 반사 신경망] 민첩 가치 체감 법칙 임계점을 원천 소거. 행동 턴 우선권(INIT) 계산 시 영구적인 선턴 강제 획득 연산 로그 사수.",
+    "name_en": "Chronos Phase Reflex Guard",
+    "description_en": "[T=0 Relic / Base: Amagiri Nano Reflex Network] Erases the Agility diminishing-returns threshold entirely, permanently securing the first turn in initiative (INIT) calculations."
+  },
+  "CYBER_LEGACY_04": {
+    "name": "싱글래리티 에너지 가이거 심장",
+    "description": "[T=0 유물 / 기반: 스트라토 생체 방사능 필터 코어] 방사능 최심부 이동 시 쌓이는 오염 스택 조항을 완전 소거하여 물리/연산 오염 페널티를 무조건 영구 면역 처리.",
+    "name_en": "Singularity Energy Geiger Heart",
+    "description_en": "[T=0 Relic / Base: Strato Bio Radiation Filter Core] Completely erases the contamination stacks that build in the deepest irradiated zones, granting permanent immunity to physical/compute contamination penalties."
+  },
+  "CYBER_LEGACY_05": {
+    "name": "공허 융합 인공 신경 오버레이",
+    "description": "[T=0 유물 / 기반: 란위 지능형 연산 대뇌 피질] 지력 체감 마비 임계점을 무력화. 고대 유물 분석 및 주파수 탐지 성공 확률식을 상시 무조건 100% 완벽 변환 고정.",
+    "name_en": "Void-Fused Neural Overlay",
+    "description_en": "[T=0 Relic / Base: Lanyu Intelligent Compute Cortex] Neutralizes the Intellect diminishing-returns threshold and always locks ancient relic analysis and frequency detection success at a perfect 100%."
+  },
+  "CYBER_LEGACY_06": {
+    "name": "구시대 마스터피스 생체 엔진",
+    "description": "[T=0 유물 / 기반: 셀리온 유기 인공 심장] 7:3 후반 성장 규칙 가동 시, 획득한 자유 투자 능력치 포인트(AP)의 스펙 변환 가치를 영구적으로 2배 하이퍼 스케일링 부스팅.",
+    "name_en": "Old-World Masterpiece Bio-Engine",
+    "description_en": "[T=0 Relic / Base: Cellion Organic Artificial Heart] Under the 7:3 late-game growth rule, permanently hyper-scales the stat value of earned free ability points (AP) by 2x."
+  },
+  "BACK_LEGACY_01": {
+    "name": "위상 이탈 차원 도약 부스터",
+    "description": "[T=0 유물 / 기반: 테크노크라시 제트 부스터] 공간 이동 도약 장치. 필드 기습 조우율 계산 변수를 0으로 동결하며 황무지 악천후 이동 페널티 로그를 소거함.",
+    "name_en": "Phase-Shift Dimensional Leap Booster",
+    "description_en": "[T=0 Relic / Base: Technocracy Jet Booster] A spatial leap device. Freezes the field ambush rate variable at 0 and erases wasteland bad-weather movement penalty logs."
+  },
+  "BACK_LEGACY_02": {
+    "name": "보이드 스페이스 압축 인프라",
+    "description": "[T=0 유물 / 기반: 나노 탄소 확장형 물류 배낭] 인벤토리 소지 무게 한도 규칙 자체를 시스템에서 삭제 처리. 플레이어 무게 제약 플레이를 영구 해제.",
+    "name_en": "Void Space Compression Infra",
+    "description_en": "[T=0 Relic / Base: Nano-Carbon Expanding Logistics Pack] Deletes the carry weight rule from the system entirely. Weight limits are permanently lifted."
+  },
+  "BACK_LEGACY_03": {
+    "name": "마스터 AI 추적 영구 무력화기",
+    "description": "[T=0 유물 / 기반: 기업 특제 무한 가용 쿨링 타워] 단일 특화 스킬 무한 연속 사용 시 적용되는 패턴 노출 페널티 함수 자체를 완전히 우회 소거하여 상시 대미지 100% 온전 보장.",
+    "name_en": "Master AI Trace Eternal Nullifier",
+    "description_en": "[T=0 Relic / Base: Corporate Infinite Cooling Tower] Completely bypasses the pattern exposure penalty function for spamming one unique skill, always guaranteeing 100% damage."
+  },
+  "BACK_LEGACY_04": {
+    "name": "엔지니어 그리드 오토마타 팩",
+    "description": "[T=0 유물 / 기반: 전술 유도 드론 격납 랙] 배치한 포탑의 전술 스킬 발동률 및 치명타 배율 계산식을 상시 한계치를 초월한 절대 고점으로 잠금 인코딩.",
+    "name_en": "Engineer Grid Automata Pack",
+    "description_en": "[T=0 Relic / Base: Tactical Guided Drone Rack] Lock-encodes your turrets' skill trigger rate and crit multiplier formulas at an absolute peak beyond their normal limits."
+  },
+  "BACK_LEGACY_05": {
+    "name": "테슬라 무한 동력 백팩",
+    "description": "[T=0 유물 / 기반: 스트라토 에너지 가속 셀] 물리 거점 방벽 사수 및 거점 레이드 발동 시, 발전기 내구도와 장벽 리소스를 턴당 무조건 최대로 자동 복구 수리 수렴 고정.",
+    "name_en": "Tesla Infinite Power Backpack",
+    "description_en": "[T=0 Relic / Base: Strato Energy Accelerator Cell] When holding a base barrier or during base raids, generator durability and barrier resources auto-repair to max every turn."
+  },
+  "BACK_LEGACY_06": {
+    "name": "유령 노드 영구 스쿼팅 래퍼",
+    "description": "[T=0 유물 / 기반: 비트레일 시그널 디플렉터] 동일 노드 장기간 장악 시 가해지는 마스터 AI 보안 프로토콜 원천 무력화 패치 주기를 무한 타일 스킵 유예 처리함.",
+    "name_en": "Ghost Node Eternal Squatting Wrapper",
+    "description_en": "[T=0 Relic / Base: Bitrail Signal Deflector] Indefinitely defers the Master AI's full security-neutralization patch cycle for holding the same node too long."
+  },
+  "FACE_LEGACY_01": {
+    "name": "공허 주시자의 완전형 안면",
+    "description": "[T=0 유물 / 기반: 총괄국 홀로그램 바이저] 치명타 확률 수식을 상시 최고 한계선인 75%로 리미터 고정하고, 선제 턴 판정 시 치명타 배율을 추가 폭화 가산.",
+    "name_en": "Void Watcher's Perfect Visage",
+    "description_en": "[T=0 Relic / Base: Bureau Hologram Visor] Limiter-locks the crit chance formula at its cap of 75% and further amplifies the crit multiplier on first-turn checks."
+  },
+  "FACE_LEGACY_02": {
+    "name": "구시대 군용 무적 마스터 헬멧",
+    "description": "[T=0 유물 / 기반: 아마기리 중장갑 하이퍼 헬멧] 평판 지수 제로섬 규칙에 의해 가해지는 불모지 약탈자 레이드 및 총괄국 청소 부대 기습의 물리 타격을 상시 퍼센트 단위 무조건 삭감.",
+    "name_en": "Old-World Invincible Master Helmet",
+    "description_en": "[T=0 Relic / Base: Amagiri Heavy Armor Hyper Helmet] Always cuts by a percentage the physical hits of barrens raider raids and Bureau cleanup squad ambushes triggered by the reputation zero-sum rule."
+  },
+  "FACE_LEGACY_03": {
+    "name": "아포칼립스 가이거 퓨리 마스크",
+    "description": "[T=0 유물 / 기반: 스틸게이트 전술 전면 가스 마스크] 환경 위험 구역 타일 진입 시, 상태 이상 및 속성 저항력 판정 가중치를 상시 최고 절대 장벽 안전선으로 승크로 잠금 고정.",
+    "name_en": "Apocalypse Geiger Fury Mask",
+    "description_en": "[T=0 Relic / Base: Steelgate Tactical Full-Face Gas Mask] On hazardous environment tiles, locks the status and elemental resistance check weight at the absolute highest safety line."
+  },
+  "FACE_LEGACY_04": {
+    "name": "싱글래리티 클럭 아이 (Eye)",
+    "description": "[T=0 유물 / 기반: 란위 가변 다점 초점 안경] 지력 실효 가치 함수 임계점 마비 구간을 영구 해제하여, 적 배선 로그 스캔 디버프 가중치 성능을 최고 한계선인 50%로 고정.",
+    "name_en": "Singularity Clock Eye",
+    "description_en": "[T=0 Relic / Base: Lanyu Variable Multifocal Glasses] Permanently lifts the paralysis bracket of Intellect's effective value function, locking enemy wiring-scan debuff performance at its cap of 50%."
+  },
+  "FACE_LEGACY_05": {
+    "name": "바운더리 브레이커 매트릭스 HUD",
+    "description": "[T=0 유물 / 기반: 스트라토 여압식 HUD 바이저] 치명타 대미지 증폭 배율 공식의 베이스 승수 마진을 영구적으로 최고점에 홀딩 파싱하는 절대 정밀 가젯.",
+    "name_en": "Boundary Breaker Matrix HUD",
+    "description_en": "[T=0 Relic / Base: Strato Pressurized HUD Visor] An absolute-precision gadget that permanently holds the base multiplier margin of the crit damage formula at its peak."
+  },
+  "FACE_LEGACY_06": {
+    "name": "봉합꾼 나노 바코드 스캐너",
+    "description": "[T=0 유물 / 기반: 셀리온 세포 분석 고글] 특화 스킬 [바이오 적출] 발동 확률 계산 수식 베이스 상수를 한계를 뚫고 무조건 상시 80% 고점으로 프리셋 잠금.",
+    "name_en": "Stitcher Nano Barcode Scanner",
+    "description_en": "[T=0 Relic / Base: Cellion Cell Analysis Goggles] Breaks the limit and preset-locks the base constant of the [Bio Reap] trigger chance formula at a permanent 80%."
+  },
+  "TOP_LEGACY_01": {
+    "name": "바운더리 가드 플레이트",
+    "description": "[T=0 유물 / 기반: 총괄국 치안대 나노 섬유 슈트] 표기 생명력 백배수 UI 정합성을 마 단위 이상으로 동적 가속 보장하며, 물리 방어력 베이스 수식 고정 상수를 폭발시킴.",
+    "name_en": "Boundary Guard Plate",
+    "description_en": "[T=0 Relic / Base: Bureau Security Nano-Fiber Suit] Dynamically guarantees displayed Vitality in the tens of thousands and above, and blows up the fixed constant of the physical defense formula."
+  },
+  "TOP_LEGACY_02": {
+    "name": "아나키스트의 왜곡 외장 코트",
+    "description": "[T=0 유물 / 기반: 기업 임원용 방화벽 롱코트] 도시 진입 시 가해지는 방화벽 추적 지수 누적 속도 200% 증가 디버프 조항과 가상 은신처 강제 차단 확률을 완벽히 무조건 소거 세탁.",
+    "name_en": "Anarchist's Distortion Outer Coat",
+    "description_en": "[T=0 Relic / Base: Executive Firewall Long Coat] Completely launders away both the 200% firewall trace buildup debuff on entering the city and the chance of forced virtual safehouse shutdown."
+  },
+  "TOP_LEGACY_03": {
+    "name": "쇼군 오버클럭 나노 하네스갑",
+    "description": "[T=0 유물 / 기반: 아마기리 군용 나노 플레이트 흉갑] 의체 오버클럭 물리 공방 스크립트 가동 중, 내 장갑판 구조에 면역 플래그를 심어 적의 유효 관통 수치를 강제로 0 고정.",
+    "name_en": "Shogun Overclock Nano Harness Armor",
+    "description_en": "[T=0 Relic / Base: Amagiri Military Nano-Plate Cuirass] While the Overclock combat script runs, plants an immunity flag in your armor, forcing enemy effective penetration to 0."
+  },
+  "TOP_LEGACY_04": {
+    "name": "황무지 저항군 수장 대장갑",
+    "description": "[T=0 유물 / 기반: 스틸게이트 청소 부대 중장갑 가디언] 평판 임계점 도달 시 적대 진영이 가하는 대미지 가중치 수식을 강제로 삭감 차단하고, 전투 성공 시 적 무기 위력을 역탈취함.",
+    "name_en": "Wasteland Resistance Chief's Great Armor",
+    "description_en": "[T=0 Relic / Base: Steelgate Cleanup Squad Heavy Guardian] At the reputation threshold, forcibly cuts the damage weighting of hostile factions, and steals enemy weapon power on victory."
+  },
+  "TOP_LEGACY_05": {
+    "name": "글리치 현실 크래시 슈트",
+    "description": "[T=0 유물 / 기반: 스트라토 충격 흡수 전술 슈트] 적 변종 괴수의 고유 기믹 타격이나 광역 파편 소음 신호 누적을 가상 현실 인코딩 에러 로그로 치환해 원천 무력화 소거.",
+    "name_en": "Glitch Reality Crash Suit",
+    "description_en": "[T=0 Relic / Base: Strato Shock-Absorbing Tactical Suit] Converts mutant beasts' signature gimmick strikes and wide-area shrapnel noise buildup into VR encoding error logs, nullifying them at the source."
+  },
+  "TOP_LEGACY_06": {
+    "name": "황금 분할의 공명 오버코트",
+    "description": "[T=0 유물 / 기반: 란위 하이브리드 공명 조끼] [하이브리드 공명] 특성을 강제 개방하여 모든 고유 특화 스킬 변환율을 기본 스탯 분산 수치와 무관하게 상시 최고점 고정.",
+    "name_en": "Golden Ratio Resonance Overcoat",
+    "description_en": "[T=0 Relic / Base: Lanyu Hybrid Resonance Vest] Forcibly unlocks the [Hybrid Resonance] trait, locking the conversion rate of every unique skill at its peak regardless of your stat spread."
+  },
+  "BOTTOM_LEGACY_01": {
+    "name": "아나키스트의 왜곡 하의",
+    "description": "[T=0 유물 / 기반: 기업 임원용 전술 하의] 하체 관절 모터 구동 자원 소모 가중치를 삭제. 황무지 타일 이동 턴 경과 시 생존 지표 감소 연산식을 기본값으로 동결 사수.",
+    "name_en": "Anarchist's Distortion Pants",
+    "description_en": "[T=0 Relic / Base: Executive Tactical Pants] Deletes the resource cost weight of lower-body joint motors. Freezes the survival drain formula for wasteland tile movement at its default value."
+  },
+  "BOTTOM_LEGACY_02": {
+    "name": "다크넷 인필트레이터 오버 카고",
+    "description": "[T=0 유물 / 기반: 아마기리 보안 가드 나노 진] 가상 은신처 노드 해킹 세션 진행 시, 가용 RAM 누수 오염 스택 및 지명수배 디버프 임계점 트리거를 수학적으로 소거 차단.",
+    "name_en": "Darknet Infiltrator Over-Cargo",
+    "description_en": "[T=0 Relic / Base: Amagiri Security Guard Nano Jeans] During virtual safehouse node hacking sessions, mathematically erases RAM-leak contamination stacks and the Wanted debuff threshold trigger."
+  },
+  "BOTTOM_LEGACY_03": {
+    "name": "앱솔루트 그라운딩 절연 레깅스",
+    "description": "[T=0 유물 / 기반: 스틸게이트 특수 요원 절연 카고] 연산 오염 누적치가 100에 도달하여 가용 RAM이 0으로 고정 록업되는 치명적 시스템 마비 페널티 프로토콜을 영구 거부 소거.",
+    "name_en": "Absolute Grounding Insulated Leggings",
+    "description_en": "[T=0 Relic / Base: Steelgate Special Agent Insulated Cargo] Permanently refuses the fatal system-paralysis penalty protocol where compute contamination reaches 100 and locks available RAM at 0."
+  },
+  "BOTTOM_LEGACY_04": {
+    "name": "위상 이탈 가속 섀도우 카고",
+    "description": "[T=0 유물 / 기반: 스트라토 기동형 가속 바지] 민첩 파생 지표인 기본 회피율 수식을 리미터 해제하여 시스템 장벽 최고 한계선인 무조건 상시 50% 고정 잠금.",
+    "name_en": "Phase-Shift Accelerated Shadow Cargo",
+    "description_en": "[T=0 Relic / Base: Strato Mobility Accelerator Pants] Lifts the limiter on the base evasion formula, an Agility-derived stat, and locks it at the system's absolute ceiling of 50%."
+  },
+  "BOTTOM_LEGACY_05": {
+    "name": "벼랑 끝의 생존자 메디컬 기어",
+    "description": "[T=0 유물 / 기반: 셀리온 세포 정제 오버롤] 생존 지표 감소 속도를 상시 저하하고, 오프라인 생존 수치가 동시에 90% 이상인 위험 상태에서 대미지 공식 승수 보너스 주입.",
+    "name_en": "Last-Stand Survivor Medical Gear",
+    "description_en": "[T=0 Relic / Base: Cellion Cell-Refining Overalls] Permanently slows survival drain, and injects a damage formula multiplier bonus while offline survival values are both at 90% or higher."
+  },
+  "BOTTOM_LEGACY_06": {
+    "name": "서보 링크 하이퍼 밸런서 진",
+    "description": "[T=0 유물 / 기반: 란위 전술형 유압 제어 하의] 30% 자유 AP 투자 효율의 수학적 마진을 폭화하여 컴뱃 포스 특화 스킬의 기습 선제 턴 및 적 턴 동결 로그를 100% 사수 확보.",
+    "name_en": "Servo-Link Hyper Balancer Jeans",
+    "description_en": "[T=0 Relic / Base: Lanyu Tactical Hydraulic Pants] Blows open the mathematical margin of 30% free AP efficiency, securing Combat Force ambush first turns and enemy turn-freeze logs 100% of the time."
+  },
+  "SHOES_LEGACY_01": {
+    "name": "차원 도약 위상 부츠",
+    "description": "[T=0 유물 / 기반: 자기부상 기동 슈즈] 지면 마찰 상수를 소거. 행동 턴 우선권 지수(INIT) 계산식에 독보적인 가산 배율을 심어 적이 인지하기도 전에 선턴 확정 지배.",
+    "name_en": "Dimensional Leap Phase Boots",
+    "description_en": "[T=0 Relic / Base: Maglev Mobility Shoes] Erases the ground friction constant. Plants an unrivaled multiplier in the initiative (INIT) formula, locking in the first turn before enemies even notice you."
+  },
+  "SHOES_LEGACY_02": {
+    "name": "고스트 인 쉘 섀도우 워커",
+    "description": "[T=0 유물 / 기반: 아마기리 나노 무소음 전술 워커] 소음/전력 신호 누적을 제로 포인터로 통제하여, 고효율 패턴 반복 시의 효율 저지형 변종 괴수 레이드 조항을 완벽 우회 차단.",
+    "name_en": "Ghost in the Shell Shadow Walker",
+    "description_en": "[T=0 Relic / Base: Amagiri Nano Silent Tactical Walkers] Holds noise/power signal buildup at a zero pointer, perfectly bypassing the anti-farming mutant beast raid clause for repeated efficient patterns."
+  },
+  "SHOES_LEGACY_03": {
+    "name": "가디언 인프라 타이탄 안전화",
+    "description": "[T=0 유물 / 기반: 스틸게이트 중장갑 돌격대 안전화] 전투 진입 기습 성공 시, 100% 무조건 아군 전체에게 넉백 면역 및 거점 방벽 재생 로그 가동 프로토콜을 다이렉트 주입.",
+    "name_en": "Guardian Infra Titan Safety Boots",
+    "description_en": "[T=0 Relic / Base: Steelgate Heavy Assault Safety Boots] On a successful opening ambush, always injects knockback immunity and base barrier regeneration protocols directly into your whole party."
+  },
+  "SHOES_LEGACY_04": {
+    "name": "시그널 대셔 인피니티 슈즈",
+    "description": "[T=0 유물 / 기반: 스트라토 위상 동기화 부츠] 게릴라 인필트레이터 특화. 전투 패배 리스크 봉쇄를 위해 페널티 없는 도주 로그를 100% 평등하게 상시 화면에 강제 출력 고정.",
+    "name_en": "Signal Dasher Infinity Shoes",
+    "description_en": "[T=0 Relic / Base: Strato Phase-Sync Boots] Guerrilla infiltrator specialty. To seal off the risk of defeat, always forces a penalty-free flee log onto the screen."
+  },
+  "SHOES_LEGACY_05": {
+    "name": "방사능 용융 분지 마스터 부츠",
+    "description": "[T=0 유물 / 기반: 란위 지형 적응형 내산 장화] 방사능 지대 등 위험 타 타 이동 시, 턴당 정수로 누적되는 물리 오염 축적 조항 자체를 강제로 일시정지 무력화 세탁함.",
+    "name_en": "Radioactive Basin Master Boots",
+    "description_en": "[T=0 Relic / Base: Lanyu Terrain-Adaptive Acid Boots] While moving across hazardous tiles like irradiated zones, forcibly pauses the very clause that accrues physical contamination per turn."
+  },
+  "SHOES_LEGACY_06": {
+    "name": "AP 레조넌스 오버클럭 슈즈",
+    "description": "[T=0 유물 / 기반: 셀리온 유기 근섬유 워커] 7:3 성장 비율 분배 가동 시마다 자유 AP 가치를 덧셈이 아닌 곱셈 보정으로 변환 파싱해 나만의 포지션 한계를 확장 구제함.",
+    "name_en": "AP Resonance Overclock Shoes",
+    "description_en": "[T=0 Relic / Base: Cellion Organic Muscle-Fiber Walkers] Each time the 7:3 growth split runs, parses free AP value as a multiplier instead of an addition, expanding the limits of your build."
+  },
+  "NECK_LEGACY_01": {
+    "name": "구시대 유산: 크로노스 펜던트",
+    "description": "[T=0 유물 / 기반: 양자 가중 안정 초커] 모든 특화 스킬 상호작용 변환율 계수 수치 행렬을 내 실제 스탯 투자 편차와 관계없이 상시 최고 절대치 1.0 고정 잠금.",
+    "name_en": "Old-World Legacy: Chronos Pendant",
+    "description_en": "[T=0 Relic / Base: Quantum-Weighted Stabilizer Choker] Locks the conversion coefficient matrix of every unique skill interaction at an absolute 1.0, regardless of your actual stat spread."
+  },
+  "NECK_LEGACY_02": {
+    "name": "도시 감시망 마스터 바이패서",
+    "description": "[T=0 유물 / 기반: 아마기리 라이선스 세탁 초커] 도시 내부 체류 턴 경과 시 방화벽 추적 지수 누적 속도를 0으로 동결 세탁하여 상시 합법 화이트 해커 에이전트 로그를 유지.",
+    "name_en": "City Surveillance Master Bypasser",
+    "description_en": "[T=0 Relic / Base: Amagiri License-Laundering Choker] Freezes firewall trace buildup at 0 while you stay in the city, keeping you logged as a legal white-hat agent at all times."
+  },
+  "NECK_LEGACY_03": {
+    "name": "단방향 가치 보존 인코더 초커",
+    "description": "[T=0 유물 / 기반: 스틸게이트 전술 코어 동기화 체인] 주무기/사이버덱 추출 정제 강화 수치를 방어구 장착물로 계승 이전할 때, 티어 격차 하락 감산식까지 무조건 100% 면제 구제.",
+    "name_en": "One-Way Value-Preserving Encoder Choker",
+    "description_en": "[T=0 Relic / Base: Steelgate Tactical Core Sync Chain] When transferring main weapon/cyberdeck refinement to armor, always waives 100% of the tier-gap reduction."
+  },
+  "NECK_LEGACY_04": {
+    "name": "유물 자원 결속 하이퍼 디플렉터",
+    "description": "[T=0 유물 / 기반: 스트라토 제로G 배선 펜던트] 종결급 유물 장비 누적 도배 시 가해지는 턴당 생존 자원 광속 고갈 페널티 공식의 상수를 강제로 소수점 단위 다운 삭감 제어.",
+    "name_en": "Relic Resource-Binding Hyper Deflector",
+    "description_en": "[T=0 Relic / Base: Strato Zero-G Wiring Pendant] Forcibly cuts to decimals the constant of the rapid per-turn survival depletion penalty from stacking endgame relic gear."
+  },
+  "NECK_LEGACY_05": {
+    "name": "유령 데이터 박스 절대 적출기",
+    "description": "[T=0 유물 / 기반: 란위 분석 행렬 해독 초커] 불모지 탐색 시 숨겨진 1%의 유령 데이터 박스 탐지 성공률 스크립트와 최종 자원 적출 드롭 로그 변수를 정량 가산 부스팅.",
+    "name_en": "Ghost Data Box Absolute Extractor",
+    "description_en": "[T=0 Relic / Base: Lanyu Analysis Matrix Decoder Choker] Boosts the detection script for the hidden 1% ghost data box in the barrens and the final resource drop log by a fixed amount."
+  },
+  "NECK_LEGACY_06": {
+    "name": "앱솔루트 오염 오버플로우 서지",
+    "description": "[T=0 유물 / 기반: 셀리온 생체 루프 링 체인] 물리/연산 오염 틱 누적 시, 매 턴 복구 소거되는 자연 감쇄값 상수를 상시 +10 부스팅하여 오염 마비를 차단.",
+    "name_en": "Absolute Contamination Overflow Surge",
+    "description_en": "[T=0 Relic / Base: Cellion Bio-Loop Ring Chain] As physical/compute contamination ticks build, always boosts the natural decay constant recovered each turn by +10, preventing contamination paralysis."
+  },
+  "RING_LEGACY_01": {
+    "name": "싱글래리티 특이점 고리",
+    "description": "[T=0 유물 / 기반: 네오 아크 고위직 인장 반지] 가상 은신처 노드 스쿼팅 유지 시 가해지는 마스터 AI 보안 패치를 원천 교란하여, 100% 무조건 성공 고정 버튼 로그를 사수.",
+    "name_en": "Singularity Loop",
+    "description_en": "[T=0 Relic / Base: Neo Arc High Official's Signet] Disrupts at the source the Master AI security patches applied while squatting on a virtual safehouse node, securing a guaranteed 100% success log."
+  },
+  "RING_LEGACY_02": {
+    "name": "카운터 변종 AI 매트릭스 브레이크",
+    "description": "[T=0 유물 / 기반: 아마기리 글리치 루프 스마트 링] 적 타이탄 크러셔나 그리드 헌터 변종 괴수의 고유 저항 속성 수치 행렬 장벽을 해킹 툴로 완전 소거 분쇄 처리.",
+    "name_en": "Counter-Mutant AI Matrix Break",
+    "description_en": "[T=0 Relic / Base: Amagiri Glitch-Loop Smart Ring] Completely shreds the native resistance matrix of mutant beasts like Titan Crushers and Grid Hunters with hacking tools."
+  },
+  "RING_LEGACY_03": {
+    "name": "안전 천장형 공명 절대 보정 링",
+    "description": "[T=0 유물 / 기반: 스틸게이트 마스터 정제 공명 고리] 장비 공명 정제(강화) 실패 시 자원 소멸 리스크를 강제 우회 차단하고 다음 보정 확률 누적 수치를 2배 폭화 합산.",
+    "name_en": "Safety-Ceiling Resonance Absolute Ring",
+    "description_en": "[T=0 Relic / Base: Steelgate Master Refining Resonance Loop] Forcibly bypasses resource loss when resonance refining (enhancement) fails and doubles the accumulated bonus chance for the next attempt."
+  },
+  "RING_LEGACY_04": {
+    "name": "인피니티 RAM 스크립트 서지 링",
+    "description": "[T=0 유물 / 기반: 스트라토 가용 RAM 버스트 링] 가용 RAM 소모 특화 스킬 구동 시, 50%의 압도적인 확률 장벽을 뚫고 해당 스킬의 소모 연산 자원을 100% 전액 환급 스크립트 가동.",
+    "name_en": "Infinity RAM Script Surge Ring",
+    "description_en": "[T=0 Relic / Base: Strato RAM Burst Ring] When running RAM-cost unique skills, breaks through an overwhelming 50% chance barrier to refund 100% of the compute resources spent."
+  },
+  "RING_LEGACY_05": {
+    "name": "시그널 고정 공명 마스터 링",
+    "description": "[T=0 유물 / 기반: 란위 스탯 レ조넌스 가젯 고리] [벼랑 끝의 생존자], [마스터 AI의 눈묵음] 등 히든 조건 특성 달성 플래그를 유저 현재 세션 상태와 무관하게 상시 즉각 개방.",
+    "name_en": "Signal-Locked Resonance Master Ring",
+    "description_en": "[T=0 Relic / Base: Lanyu Stat Resonance Gadget Loop] Instantly unlocks hidden-condition trait flags such as [Last-Stand Survivor] and [Silence of the Master AI's Eye], regardless of your current session state."
+  },
+  "RING_LEGACY_06": {
+    "name": "생존 지표 역류 하이퍼 사이클 링",
+    "description": "[T=0 유물 / 기반: 셀리온 흡수율 오버레이 링] 하이브리드 특화 스킬 [바이오 적출] 로그 활성화 시 흡수하는 생존 수치 흡수량 계산 수식을 한계 없이 상시 3배 증폭 고정.",
+    "name_en": "Survival-Backflow Hyper Cycle Ring",
+    "description_en": "[T=0 Relic / Base: Cellion Absorption Overlay Ring] While the hybrid unique skill [Bio Reap] is active, permanently triples the survival absorption formula with no cap."
+  },
+  "PART_LEGACY_01": {
+    "name": "리빌딩 마스터피스 보이드 인젝터",
+    "description": "[T=0 유물 / 기반: 보이드 인젝터 모듈 (v1.2)] [연산 - 현실 왜곡자] [프로토콜 위조] 성공률 상한 제한식을 지워버리고 최대 85% 고정 잠금 / [페널티] 위조 발동 성공 세션마다 가용 RAM 1개 영구 잠금 및 도시 방화벽 추적 지수 +20 즉시 가산.",
+    "name_en": "Rebuilt Masterpiece Void Injector",
+    "description_en": "[T=0 Relic / Base: Void Injector Module (v1.2)] [Net - Protocol Breaker] Deletes the [Protocol Glitch] success cap formula and locks it at up to 85% / [Penalty] Each successful forgery session permanently locks 1 available RAM and instantly adds +20 to the city firewall trace index."
+  },
+  "PART_LEGACY_02": {
+    "name": "아마기리 크로노스 클록 칩 v맥스",
+    "description": "[T=0 유물 / 기반: 아마기리 나노 클록 가속 칩] [공격 - 기동 타격대] 특화 스킬 [의체 오버클럭] 가동 중 행동 턴 우선권(INIT) 수치를 무조건 상시 2배 강제 고정 증폭 / [페널티] 가동 전투 턴 진행 동안 내 신체 오염 저항력이 강제로 무조건 0% 록업 마비.",
+    "name_en": "Amagiri Chronos Clock Chip vMax",
+    "description_en": "[T=0 Relic / Base: Amagiri Nano Clock Accelerator Chip] [Combat - Infiltrating Striker] Initiative (INIT) forcibly doubled while unique skill [Overclock] is active / [Penalty] Your contamination resistance forcibly locked at 0% for those combat turns."
+  },
+  "PART_LEGACY_03": {
+    "name": "스틸게이트 프레임 파쇄 마스터 패치",
+    "description": "[T=0 유물 / 기반: 스틸게이트 관통 전술 배선 패치] [공격 - 전술 보병] 물리 대미지의 디버프 가중치를 폭화하여 적 유효 방어력 구조를 무조건 상시 50% 삭감 고정 / [페널티] 내 신체 표기 생명력 베이스가 강제로 -500 감산 차감 고정.",
+    "name_en": "Steelgate Frame-Shredder Master Patch",
+    "description_en": "[T=0 Relic / Base: Steelgate Piercing Tactical Wiring Patch] [Combat - Tactical Infantry] Supercharges the debuff weight of physical damage, permanently cutting enemy effective defense by 50% / [Penalty] Your base Vitality forcibly fixed at -500."
+  },
+  "PART_LEGACY_04": {
+    "name": "네오넷 그리드 전멸 바이러스 패키지",
+    "description": "[T=0 유물 / 기반: 네오넷 광역 바이러스 마스터 팩] [연산 - 클래식 넷러너] 무차별 바이러스 유포 시 필드 기계 괴수 전체 연산 마비 스택 및 최종 표기 대미지 배율 +15% 증폭 / [페널티] 인벤토리 소지 무게 한도가 상시 -10kg 록업 고정.",
+    "name_en": "NeoNet Grid Annihilation Virus Package",
+    "description_en": "[T=0 Relic / Base: NeoNet Wide-Area Virus Master Pack] [Net - Classic Netrunner] Indiscriminate virus spread stacks compute paralysis on every mech-beast on the field and boosts final damage multiplier by +15% / [Penalty] Inventory weight limit locked at -10kg."
+  },
+  "PART_LEGACY_05": {
+    "name": "란위 센트리 자율 팩토리 오버레이",
+    "description": "[T=0 유물 / 기반: 란위 센트리 알고리즘 오버레이] [연산 - 자율 엔지니어] [센트리 인프라] 포탑 스킬 발동률 및 사거리를 유저 지력 최고 함수 점수로 강제 세팅 잠금 / [페널티] 포탑 파손 시 가상 은신처가 30% 확률로 즉각 강제 차단 폐쇄.",
+    "name_en": "Lanyu Sentry Autonomous Factory Overlay",
+    "description_en": "[T=0 Relic / Base: Lanyu Sentry Algorithm Overlay] [Net - Autonomous Engineer] Force-locks [Sentry Infra] turret trigger rate and range to your peak Intellect function score / [Penalty] 30% chance your virtual safehouse is instantly shut down when a turret is destroyed."
+  },
+  "PART_LEGACY_06": {
+    "name": "셀리온 하이퍼 리퍼 적출 칩",
+    "description": "[T=0 유물 / 기반: 셀리온 절단 로그 적출 팁] [공격 - 의체 도살자] 특화 스킬 [바이오 적출] 발동 확률 보정 수식을 무조건 최고 한계선인 80% 고점으로 부스팅 / [페널티] 매 턴 종료 마다 허기/갈증 생존 지표 감소 속도가 상시 +3 가속 차감 누적.",
+    "name_en": "Cellion Hyper Ripper Extraction Chip",
+    "description_en": "[T=0 Relic / Base: Cellion Severing-Log Extraction Tip] [Combat - Bio Reaper] Boosts the [Bio Reap] trigger chance formula to its cap of 80% / [Penalty] Hunger/thirst drain always +3 faster at the end of every turn."
+  }
+}
