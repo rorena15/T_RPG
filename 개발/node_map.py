@@ -165,6 +165,21 @@ class NodeMap(GameMap):
         p = tuple(pos if pos is not None else self.player_pos)
         return sorted(self.edges[p].items())
 
+    def road_keys(self, pos=None):
+        """{키: 지점} — 이어진 길(최대 4개)마다 W(북)·D(동)·S(남)·A(서) 하나씩. 방향이 가장 잘 맞게 나눈다 (겹치지 않는다)."""
+        import itertools
+        p = tuple(pos if pos is not None else self.player_pos)
+        roads = [q for q, _ in self.neighbors(p)]
+        want = {"D": 0, "W": 90, "A": 180, "S": 270}
+
+        def err(q, k):
+            a = math.degrees(math.atan2(q[1] - p[1], q[0] - p[0])) % 360
+            d = abs(a - want[k]) % 360
+            return min(d, 360 - d)
+        best = min(itertools.permutations("WASD", len(roads)),
+                   key=lambda ks: sum(err(q, k) ** 2 for q, k in zip(roads, ks)))
+        return dict(zip(best, roads))
+
     def edge_len(self, a, b):
         return self.edges[tuple(a)][tuple(b)]
 
@@ -221,13 +236,14 @@ class NodeMap(GameMap):
         if tier <= self.bunker_hint:   # 더 가까워질 때만 (경계에 걸린 두 지점을 오가면 문장이 번갈아 나왔다: 시드 20075)
             return None
         self.bunker_hint = tier
-        return t(f"bunker_hint_{tier}", dir=self.bunker_direction(fine=tier > 0))
+        self.bunker_hint_dir = self.bunker_direction(fine=tier > 0)   # 지도 화면 머리말에 남긴다 (마지막으로 본 방위)
+        return t(f"bunker_hint_{tier}", dir=self.bunker_hint_dir)
 
     # ── 직렬화 ──────────────────────────────────────────────────────────────
     def to_dict(self):
         d = super().to_dict()
         d.update(node_seed=self.seed, node_count=self.count, revealed=[list(p) for p in self.revealed],
-                 bunker_hint=self.bunker_hint)
+                 bunker_hint=self.bunker_hint, bunker_hint_dir=getattr(self, "bunker_hint_dir", None))
         d.pop("layout", None)
         d.pop("danger", None)   # 시드로 다시 만든다
         return d
@@ -244,6 +260,7 @@ class NodeMap(GameMap):
         self.revealed = {tuple(p) for p in data.get("revealed", [])} or set()
         self.reveal(self.player_pos)
         self.bunker_hint = data.get("bunker_hint", -1)
+        self.bunker_hint_dir = data.get("bunker_hint_dir")
 
     # ── 글 화면 ─────────────────────────────────────────────────────────────
     def draw(self, turn_count: int = 0):
