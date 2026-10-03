@@ -38,10 +38,13 @@ def safe_input(prompt):
 
 
 @track
-def wait_for_keypress():
-    """엔터 입력 불필요 아무 키나 누르는 즉시 화면 템포가 연출 모드로 진행"""
+def wait_for_keypress(force=False):
+    """엔터 입력 불필요 아무 키나 누르는 즉시 화면 템포가 연출 모드로 진행.
+    force: 탐색 화면에서도 꼭 기다린다 (굶어 죽은 뒤처럼 보고 나서 게임이 끝나는 곳)."""
     term = get_terminal()
     mgr = getattr(term, "_ui_manager", None) if term else None
+    if not force and mgr is not None and getattr(mgr, "_active", False) and getattr(mgr, "no_wait", False):
+        return   # 탐색 화면: 결과가 오른쪽 기록에 남으니 멈추지 않는다 (map_view.MapView.no_wait)
     if mgr is not None and getattr(mgr, "_active", False) and hasattr(mgr, "notice"):
         # 그림 화면(전투): 안내를 기록에 쌓지 않고, 기다리는 동안만 띄웠다가 지운다
         mgr.notice = t('wait_any_key').strip("[]. ")
@@ -264,6 +267,11 @@ def print_ambient_lore():
                  else constants.AMBIENT_LORE)
     if lore_list:
         lore = random.choice(lore_list)
+        term = get_terminal()
+        mgr = getattr(term, "_ui_manager", None) if term else None
+        if mgr is not None and getattr(mgr, "_active", False) and getattr(mgr, "no_wait", False):
+            print(f"  {lore}")   # 탐색 화면: 타자 연출·대기 없이 오른쪽 기록에 한 줄
+            return
         print()
         print("  " + "─" * 70)
         type_text(f"  {lore}", 0.018)

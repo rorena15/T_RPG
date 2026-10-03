@@ -165,20 +165,27 @@ def driver():
     log(v.player.turn_count > t0, "F 탐색 → 턴 진행",
         f"(턴 {t0}→{v.player.turn_count}, 화면 {type(term._ui_manager).__name__}, 뒤질 수 있음 {grid.can_search(v.player.turn_count)}, 최근 {[x[-40:] for x in v._recent_lines()[-2:]]})")
     opened = False
-    for _ in range(10):   # 빈 탐색 글 뒤의 '아무 키' 대기를 넘기면 조각을 줍고 읽기 화면이 열린다
-        if wait(lambda: type(term._ui_manager).__name__ == "ReadView", 1.0):
+    wait(lambda: type(term._ui_manager).__name__ == "ReadView", 4)   # 키 대기 없이 바로 조각을 줍고 읽기 화면이 열린다
+    recent_after = []
+    for _ in range(4):   # 읽기 화면을 닫고 지도로 돌아온 뒤의 기록
+        if type(term._ui_manager).__name__ == "ReadView":
             opened = True
-            break
-        raw_key(pygame.K_RETURN, "\r")
-    picked = list(archive.PICKED)
-    snap("4b_fragment_read")
-    log(opened and picked, "일기 조각을 주우면 읽기 화면이 바로 열림", f"{picked}")
-    Main.random = _random
-    archive.FRAGMENT_CHANCE = 0.0
-    for _ in range(3):   # 처음 키는 글을 다 펼치고, 다음 키가 닫는다
-        raw_key(pygame.K_RETURN, "\r"); time.sleep(0.4)
+            picked = list(archive.PICKED)
+            snap("4b_fragment_read")
+            raw_key(pygame.K_RETURN, "\r"); time.sleep(0.4)
+            continue
         if view():
             break
+        time.sleep(0.5)
+    wait(lambda: view() is not None, 4)
+    time.sleep(0.4)
+    recent_after = view()._recent_lines() if view() else []
+    log(not any("아무 키" in x for x in recent_after), "기록에 '아무 키나 누르면' 안내가 남지 않음", f"{[x[-30:] for x in recent_after]}")
+    log(bool(recent_after) and "뒤지기 시작" in recent_after[0], "기록은 이번 탐색 결과부터 (지난 턴 글 없음)")
+    if opened:
+        log(bool(picked), "일기 조각을 주우면 읽기 화면이 바로 열림 (키 대기 없이)", f"{picked}")
+    Main.random = _random
+    archive.FRAGMENT_CHANCE = 0.0
     log(wait(lambda: view() is not None, 6), "읽기 화면을 닫으면 지도 화면으로")
     # 길 위 조우: 2턴 이상인 길로, 조우 100%, 실제 전투 (Q 공격, Enter로 대기 넘기기)
     for _ in range(6):   # 탐색 결과 대기가 남아 있으면 넘긴다

@@ -450,14 +450,40 @@ class MapView(EventView):
             return sum(v for k, v in p.consumables.items() if constants.CONSUMABLES_DB.get(k, {}).get("type") == kind)
         return t('map_items', hp=count('hp'), food=count('food'), water=count('water'), mat=p.materials)
 
+    no_wait = True   # 탐색 화면에서는 '아무 키나 누르면 진행'을 기다리지 않는다 (결과는 오른쪽 기록에 남는다: ui.wait_for_keypress)
+
+    def mark_log(self):
+        """Main.py: 키를 받은 순간. 오른쪽 기록에는 이 뒤에 찍힌 글(이번 행동의 결과)만 보인다. 지난 턴 글은 지운다."""
+        buf = self._term._buf
+        self._log_mark = [buf, max(0, len(buf) - 1)]   # 지금 쓰던 마지막 줄부터 (print가 그 줄에 이어 쓴다)
+        self._log_carry = []   # 이번 행동 중에 버퍼가 바뀌었을 때(다른 화면을 열었다 닫음) 앞 버퍼에 찍힌 글
+        self._history, self._cur_lines, self._buf_key = [], [], None
+
+    @staticmethod
+    def _log_text(lines):
+        out = []
+        for line in lines:
+            text = "".join(seg[0] for seg in line).strip().strip("║│").strip()   # 상자 테두리 글자는 떼고 글만
+            if text and not set(text) <= set("═─━-=╔╗╚╝║|╭╮╰╯ "):
+                out.append(text)
+        return out
+
     def _recent_lines(self):
-        """터미널 버퍼의 최근 글 (빈 줄·테두리 줄 제외). 게임이 화면을 지워도 앞 기록은 이어서 보인다.
+        """터미널 버퍼의 최근 글 (빈 줄·테두리 줄 제외). mark_log 뒤로는 그 뒤에 찍힌 글만.
         타자 효과로 마지막 줄이 한 글자씩 늘어나는 동안은 같은 줄로 본다 (예전에는 늘어나는 조각마다 기록에 쌓였다)."""
         buf = self._term._buf
-        key = (id(buf), len(buf), len(buf[-1]) if buf else 0)
+        mark = getattr(self, "_log_mark", None)
+        if mark is not None and mark[0] is not buf:
+            # 다른 화면이 열렸다 닫히며 버퍼가 새로 생겼다: 앞 버퍼에 찍힌 이번 행동의 글을 넘겨 담고 새 버퍼 처음부터
+            self._log_carry += self._log_text(mark[0][mark[1]:])
+            mark[0], mark[1] = buf, 0
+        key = (id(buf), len(buf), len(buf[-1]) if buf else 0, mark and mark[1], len(getattr(self, "_log_carry", ())))
         if key == getattr(self, "_buf_key", None):
             return self._recent_cache
         self._buf_key = key
+        if mark is not None:   # 이번 행동의 결과만
+            self._recent_cache = (self._log_carry + self._log_text(buf[mark[1]:]))[-8:]
+            return self._recent_cache
         cur = []
         for line in buf:
             text = "".join(seg[0] for seg in line).strip()

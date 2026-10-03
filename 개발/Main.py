@@ -253,6 +253,11 @@ def run_game():
         if _ui_mgr:
             _ui_mgr.deactivate()
 
+    def _pause(sec):
+        """글 화면에서만 잠깐 멈춘다. 그림 화면은 글이 오른쪽 기록에 남으니 기다리지 않는다 (멈춘 것처럼 느껴졌다)."""
+        if not _ui_mgr:
+            time.sleep(sec)
+
     # 그림 화면 발밑 버튼: (보이는 키, 설명, 쓸 수 있음, 누르면 보낼 키). 글자 키(WASD·F·I·J·C·Q·U)도 그대로 된다 (map_view.KEYMAP)
     _EXPLORE_ACTIONS = [
         ("WASD", t('act_move'),      True, None),
@@ -278,27 +283,27 @@ def run_game():
             print(t('quest_failed', title=db_t(q, 'title')))
             log_diary(player, t('quest_fail_diary', title=db_t(q, 'title')))
             player.active_quest = None
-            time.sleep(1.5)
+            _pause(1.5)
             clear_screen()
 
         sound.map_mood(scene_art.world_time(player.turn_count))  # 밤·새벽엔 바람 밑에 어두운 음악
         sound.map_weather(scene_art.world_weather(player.turn_count))  # 날씨 환경음 (산성비·먼지 폭풍 등)
         if forge.check_hint(player, grid):  # 발칸을 오래 못 만났으면 방향 힌트 (forge.py)
-            time.sleep(1.2)
+            _pause(1.2)
         if getattr(grid, "is_node_map", False):   # 지점 지도: 이 지점의 권역(적 세기)과 방공호 힌트
             player.zone_danger = grid.danger_at()
             _bh = grid.bunker_hint_check()
             if _bh:
                 print(_bh)
                 log_diary(player, _bh.strip())
-                time.sleep(1.2)
+                _pause(1.2)
         _trait_lines = traits.check_new(player)  # 성향이 새 단계에 닿았으면 알림 (traits.py)
         if _trait_lines:
             sound.sfx("job")
             for _ln in _trait_lines:
                 print(_ln)
                 log_diary(player, _ln.strip())
-            time.sleep(1.2)
+            _pause(1.2)
         _actions = _EXPLORE_ACTIONS
         if grid.at_forge() and grid.forge_known():  # 강화소 칸: U로 발칸 게이츠 / 강화소 (forge.py)
             _flabel = t('act_forge') if forge.built(grid) else t('act_forge_npc')
@@ -328,7 +333,9 @@ def run_game():
 
         playtime.mark(player)                       # 지난 입력 뒤 이벤트·전투 처리 시간
         move = read_key()
-        playtime.mark(player, playtime.IDLE_CAP)    # 입력을 기다린 시간 (자리 비움은 5분까지만)
+        playtime.mark(player, playtime.IDLE_CAP)
+        if _ui_mgr:   # 오른쪽 기록은 이번 행동의 결과만 (지난 턴 글이 쌓여 올라가지 않게)
+            _ui_mgr.mark_log()    # 입력을 기다린 시간 (자리 비움은 5분까지만)
 
         if move in Player.QUICK_KEYS:  # 퀵슬롯 1~0: 바로 먹고 마시고 치료 (턴은 쓰지 않는다)
             _qk = player.quick_item(move)
@@ -374,7 +381,7 @@ def run_game():
             grid.use_search(player.turn_count)
             sound.sfx("search")
             print(t('search_start'))
-            time.sleep(0.5)
+            _pause(0.5)
 
             _danger = grid.danger_at()                     # 칸 위험도: 조우·보상 배율 (constants.DANGER_*)
             _yield = 1.0 / (1.0 + constants.DEPLETE * grid.depletion())   # 다시 채워진 칸은 덜 나온다

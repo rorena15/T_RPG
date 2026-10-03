@@ -292,7 +292,7 @@ class Player:
                 print()
                 for line in endings.card("starve_thirst" if self.thirst == 0 else "starve_hunger"):
                     print(line)
-                wait_for_keypress()
+                wait_for_keypress(force=True)   # 탐색 화면이어도 결말을 보고 나서 끝난다
                 sys.exit()
 
     def show_status(self):
