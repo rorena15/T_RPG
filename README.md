@@ -4,7 +4,7 @@
 
 ![PROTOCOL: STIGMA](assets/banner.png)
 
-- 다운로드: [릴리스 페이지](../../releases/latest)
+- 다운로드: [릴리스 페이지](../../releases/latest) · [itch.io](https://rorena15.itch.io/stigma)
 - 지원 환경: Windows 10/11, macOS (Apple Silicon)
 - 언어: 한국어, 영어
 
